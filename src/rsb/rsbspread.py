@@ -15,35 +15,31 @@
 #
 # ============================================================
 
-class Router:
-    """
-    Routers to publish and subscribe on events.
-    
-    @author: jwienke
-    """
+"""
+Spread port implementation for RSB.
 
-    def __init__(self, inType, outType):
-        self.__inPort = inType()
-        self.__outPort = outType()
-        self.__shutdown = False
+@author: jwienke
+"""
+
+import spread
+
+import rsb
+import Notification_pb2
+
+class SpreadPort(rsb.Port):
+    
+    def __init__(self):
+        self.__connection = None
         
-    def __del__(self):
-        if not self.__shutdown:
-            self.deactivate()
-
     def activate(self):
-        self.__inPort.activate()
-        self.__outPort.activate()
+        self.__connection = spread.connect()
     
-    def deactivate(self):
-        self.__shutdown = True
-        # TODO implement this
-    
-    def publish(self, event):
-        self.__outPort.push(event)
-
-    def subscribe(self, subscription):
-        pass
-    
-    def unsubscribe(self, subscription):
-        pass
+    def push(self, event):
+        # TODO convert data for sending
+        n = Notification_pb2.Notification()
+        n.eid = "not set yet"
+        n.uri = event.uri
+        n.standalone = False
+        
+        serialized = n.SerializeToString()
+        print(serialized)

@@ -143,3 +143,6 @@ class Subscription:
                 return False
 
         return True
+
+class Port:
+    pass

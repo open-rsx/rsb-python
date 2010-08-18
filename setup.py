@@ -95,9 +95,10 @@ class TestCommand(Command):
     description = "runs the unit tests"
 
     def initialize_options(self):
-        self.cwd = None
+        pass
+    
     def finalize_options(self):
-        self.cwd = os.getcwd()
+        pass
 
     def run(self):
         self.__runTests()
@@ -131,6 +132,39 @@ class TestCommand(Command):
                     testFiles.append(file[:-3])
                 
         return testFiles
+    
+class BuildProtobufs(Command):
+    '''
+    Distutils command to build the protocol buffers.
+    
+    @author: jwienke
+    '''
+    
+    user_options = []
+    description = "runs the unit tests"
+
+    def initialize_options(self):
+        pass
+    
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        
+        protoRoot = "/vol/nao/releases/cuttingedge/share/rsbprotocol"
+        protoFiles = []
+        for root, dirs, files in os.walk(protoRoot):
+            for file in files:
+                if file[-6:] == ".proto":
+                    protoFiles.append(os.path.join(root, file))
+        
+        for proto in protoFiles:
+            call = ["protoc", "-I=" + protoRoot, "--python_out=build", proto]
+            #print("calling: %s" % call)
+            ret = subprocess.call(call)
+            if ret != 0:
+                raise RuntimeError("Unable to build proto file: %s" % proto)
+  
 
 setup (name = 'RSB - Robotic Service Bus', 
        version = '0.1', 
@@ -141,4 +175,6 @@ setup (name = 'RSB - Robotic Service Bus',
        author_email = 'jwienke@techfak.uni-bielefeld.de',
        packages = ['rsb'],
        package_dir = {'rsb': 'src/rsb'},
-       cmdclass = {'test': TestCommand}) #'doc': ApiDocCommand
+       ext_modules = ["dummy"],
+       cmdclass = {'build_ext': BuildProtobufs,
+                   'test': TestCommand}) #'doc': ApiDocCommand
