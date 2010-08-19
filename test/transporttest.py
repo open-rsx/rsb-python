@@ -96,3 +96,50 @@ class RouterTest(unittest.TestCase):
         router.publish(event)
         self.assertEqual(None, PublishCheckRouter.lastEvent)
         
+    def testNotifyInPort(self):
+        
+        class SubscriptionTestPort:
+            
+            def __init__(self):
+                self.activated = False
+                self.deactivated = False
+                self.filterCalls = []
+            
+            def activate(self):
+                self.activated = True
+            def deactivate(self):
+                self.deactivated = True
+            def filterNotify(self, filter, action):
+                self.filterCalls.append((filter, action))
+        
+        ip = SubscriptionTestPort()
+        op = SubscriptionTestPort()
+        router = rsb.transport.Router(ip, op)
+        
+        f1 = 12
+        f2 = 24
+        f3 = 36
+        f4 = 48
+        subscription = rsb.Subscription()
+        subscription.appendFilter(f1)
+        subscription.appendFilter(f2)
+        
+        router.subscribe(subscription)
+        self.assertEqual(2, len(ip.filterCalls))
+        self.assertTrue((f1, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        self.assertTrue((f2, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        
+        subscription = rsb.Subscription()
+        subscription.appendFilter(f3)
+        subscription.appendFilter(f4)
+        
+        router.subscribe(subscription)
+        self.assertEqual(4, len(ip.filterCalls))
+        self.assertTrue((f3, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        self.assertTrue((f4, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        
+        router.unsubscribe(subscription)
+        self.assertEqual(6, len(ip.filterCalls))
+        self.assertTrue((f3, rsb.filter.FilterAction.REMOVE) in ip.filterCalls)
+        self.assertTrue((f4, rsb.filter.FilterAction.REMOVE) in ip.filterCalls)
+        

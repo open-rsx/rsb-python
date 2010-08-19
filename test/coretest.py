@@ -66,6 +66,18 @@ class SubscriptionTest(unittest.TestCase):
             
         self.s.appendFilter(DummyFilter())
         self.assertFalse(self.s.match(e))
+        
+    def testGetSetFilters(self):
+        
+        f1 = 42
+        f2 = 84
+        
+        s = rsb.Subscription()
+        s.appendFilter(f1)
+        s.appendFilter(f2)
+        
+        self.assertTrue(f1 in s.getFilters())
+        self.assertTrue(f2 in s.getFilters())
 
 def suite():
     suites = [unittest.makeSuite(RSBEventTest)]

@@ -14,7 +14,10 @@
 # GNU General Public License for more details.
 #
 # ============================================================
+
 import logging
+
+import rsb.filter
 
 class Router:
     """
@@ -65,8 +68,12 @@ class Router:
         else:
             self.__logger.warning("Router is not active. Cannot publish.")
 
+    def __notifyPorts(self, subscription, filterAction):
+        for f in subscription.getFilters():
+            self.__inPort.filterNotify(f, filterAction)
+
     def subscribe(self, subscription):
-        pass
+        self.__notifyPorts(subscription, rsb.filter.FilterAction.ADD)
     
     def unsubscribe(self, subscription):
-        pass
+        self.__notifyPorts(subscription, rsb.filter.FilterAction.REMOVE)

@@ -119,6 +119,15 @@ class Subscription:
         
         self.__filters.append(filter)
         
+    def getFilters(self):
+        """
+        Returns all registered filters of this subscription.
+        
+        @return: list of filters
+        """
+        
+        return self.__filters
+        
     def appendAction(self, action):
         """
         Appends an action this subscription shall match on.
@@ -145,4 +154,17 @@ class Subscription:
         return True
 
 class Port:
-    pass
+    """
+    Interface for transport-specific p;orts.
+    
+    @author: jwienke
+    """
+    
+    def activate(self):
+        pass
+    def deactivate(self):
+        pass
+    def publish(self, event):
+        pass
+    def filterNotify(self, filter, action):
+        pass
