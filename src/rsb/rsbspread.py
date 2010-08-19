@@ -21,6 +21,8 @@ Spread port implementation for RSB.
 @author: jwienke
 """
 
+import logging
+
 import spread
 
 import rsb
@@ -29,17 +31,41 @@ import Notification_pb2
 class SpreadPort(rsb.Port):
     
     def __init__(self):
+        self.__logger = logging.getLogger(str(self.__class__))
         self.__connection = None
         
     def activate(self):
+        self.__logger.info("Activating spread port")
         self.__connection = spread.connect()
+        
+    def deactivate(self):
+        if self.__connection != None:
+            self.__logger.info("Deactivating spread port")
+            self.__connection.disconnect()
+            self.__connection = None
+        else:
+            self.__logger.warning("spread port already deactivated")
     
     def push(self, event):
-        # TODO convert data for sending
+        
+        self.__logger.debug("Sending event: %s" % event)
+        
+        if self.__connection == None:
+            self.__logger.warning("Port not activated")
+            return
+        
+        # create message
         n = Notification_pb2.Notification()
         n.eid = "not set yet"
         n.uri = event.uri
         n.standalone = False
         
         serialized = n.SerializeToString()
-        print(serialized)
+        
+        # send message
+        sent = self.__connection.multicast(spread.RELIABLE_MESS, event.uri, serialized)
+        if (sent > 0):
+            self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
+        else:
+            self.__logger.warning("Error sending message, status code = %s" % sent)
+            
