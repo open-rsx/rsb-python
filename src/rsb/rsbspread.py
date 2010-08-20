@@ -25,6 +25,8 @@ import rsb
 import rsb.filter
 import Notification_pb2
 from rsb.transport import QueueAndDispatchTask
+from Notification_pb2 import Notification
+from google.protobuf.message import DecodeError
 
 class SpreadReceiverTask(object):
     """
@@ -39,6 +41,8 @@ class SpreadReceiverTask(object):
         
         @param mailbox: spread mailbox to receive from
         """
+        
+        self.__logger = logging.getLogger(str(self.__class__))
         
         self.__interrupted = False
         self.__interruptionLock = threading.RLock()
@@ -75,12 +79,15 @@ class SpreadReceiverTask(object):
                 if self.__wakeupGroup in message.groups:
                     continue
                 
-                print "got message: %s" % message.message
-                self.__dispatchTask.dispatch(message)
+                notification = Notification()
+                notification.ParseFromString(message.message)
+                self.__dispatchTask.dispatch(notification)
                 
             except (AttributeError, TypeError): 
                 # nothing to do here, this is not a regular message
                 pass
+            except DecodeError, e:
+                self.__logger.error("Error decoding notification: %s", e)
             
         # leave task id group to clean up
         self.__mailbox.leave(self.__wakeupGroup)
