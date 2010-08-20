@@ -14,6 +14,8 @@
 # GNU General Public License for more details.
 #
 # ============================================================
+import threading
+import uuid
 
 """
 Spread port implementation for RSB.
@@ -29,7 +31,78 @@ import rsb
 import rsb.filter
 import Notification_pb2
 
+class SpreadReceiverTask:
+    """
+    Thread used to receive messages from a spread connection.
+    
+    @author: jwienke
+    """
+    
+    def __init__(self, mailbox):
+        """
+        Constructor.
+        
+        @param mailbox: spread mailbox to receive from
+        """
+        
+        self.__interrupted = False
+        self.__interruptionLock = threading.RLock()
+        
+        self.__mailbox = mailbox
+        
+        self.__taskId = uuid.uuid1()
+        # narf, spread groups are 32 chars long but 0-terminated... truncate id
+        self.__wakeupGroup = str(self.__taskId).replace("-", "")[:-1]
+    
+    def __call__(self):
+        
+        # join my id to receive interrupt messages.
+        # receive cannot have a timeout, hence we need a way to stop receiving
+        # messages on interruption even if no one else sends messages.
+        # Otherwise deactivate blocks until another message is received.
+        self.__mailbox.join(self.__wakeupGroup)
+        
+        while True:
+            
+            # check interruption
+            # TODO is setting 
+            self.__interruptionLock.acquire()
+            interrupted = self.__interrupted
+            self.__interruptionLock.release()
+            
+            if interrupted:
+                break
+            
+            message = self.__mailbox.receive()
+            try:
+                
+                # ignore the deactivate wakeup message
+                if self.__wakeupGroup in message.groups:
+                    continue
+                
+                print "got message: %s" % message.message
+            except (AttributeError, TypeError): 
+                # nothing to do here, this is not a regular message
+                pass
+            
+        # leave task id group to clean up
+        self.__mailbox.leave(self.__wakeupGroup)
+                    
+    def interrupt(self):
+        self.__interruptionLock.acquire()
+        self.__interrupted = True
+        self.__interruptionLock.release()
+        
+        # send the interruption message to wake up receive as mentioned above
+        self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
+        
+
 class SpreadPort(rsb.Port):
+    """
+    Spread-based implementation of a port.
+    
+    @author: jwienke 
+    """
     
     def __init__(self, spreadModule = spread):
         self.__spreadModule = spreadModule
@@ -39,15 +112,24 @@ class SpreadPort(rsb.Port):
         """
         A map of uri subscriptions with the list of subscriptions.
         """
+        self.__receiveThread = None
+        self.__receiveTask = None
         
     def activate(self):
         if self.__connection == None:
             self.__logger.info("Activating spread port")
             self.__connection = self.__spreadModule.connect()
+            self.__receiveTask = SpreadReceiverTask(self.__connection)
+            self.__receiveThread = threading.Thread(target = self.__receiveTask)
+            self.__receiveThread.start()
         
     def deactivate(self):
         if self.__connection != None:
             self.__logger.info("Deactivating spread port")
+            self.__receiveTask.interrupt()
+            self.__receiveThread.join()
+            self.__receiveThread = None
+            self.__receiveTask = None
             self.__connection.disconnect()
             self.__connection = None
         else:
@@ -115,3 +197,6 @@ class SpreadPort(rsb.Port):
                 
         else:
             self.__logger.debug("Ignoring filter %s with action %s" % (filter, action))
+
+    def setObserverAction(self, observerAction):
+        pass

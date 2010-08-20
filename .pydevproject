@@ -9,5 +9,6 @@
 <path>/RSBPython/test</path>
 <path>/RSBPython/build</path>
 <path>/RSBPython/build/introspection</path>
+<path>/RSBPython/examples</path>
 </pydev_pathproperty>
 </pydev_project>

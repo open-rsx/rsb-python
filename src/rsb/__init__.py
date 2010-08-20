@@ -168,3 +168,13 @@ class Port:
         pass
     def filterNotify(self, filter, action):
         pass
+    
+    def setObserverAction(self, observerAction):
+        """
+        Sets the action used by the port to notify about incomming events.
+        The call to this method must be thread-safe.
+        
+        @param observerAction: action called if a new message is received from
+                               the port. Must accept an RSBEvent as parameter.
+        """
+        pass
