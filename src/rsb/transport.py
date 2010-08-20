@@ -18,6 +18,8 @@
 import logging
 
 import rsb.filter
+from Queue import Queue, Empty
+from multiprocessing.synchronize import RLock
 
 class Router(object):
     """
@@ -77,3 +79,54 @@ class Router(object):
     
     def unsubscribe(self, subscription):
         self.__notifyPorts(subscription, rsb.filter.FilterAction.REMOVE)
+        
+class QueueAndDispatchTask(object):
+    """
+    A task that receives events from an external thread and dispatches them to
+    a registered observer.
+    
+    @author: jwienke
+    """
+    
+    def __init__(self, observer):
+        """
+        Constructs a new task object.
+        
+        @type observer: callable object with one argument, the item from the
+                        queue
+        @param observer: observer that will be called for every new item in the
+                         queue
+        """
+        
+        self.__queue = Queue()
+        self.__interrupted = False
+        self.__interruptionLock = RLock()
+        self.__observer = observer
+        
+    def __call__(self):
+        
+        while True:
+            
+            # check interruption
+            self.__interruptionLock.acquire()
+            interrupted = self.__interrupted
+            self.__interruptionLock.release()
+            
+            if interrupted:
+                break
+            
+            try:
+                
+                item = self.__queue.get(True, 1)
+                self.__observer(item)
+                
+            except Empty:
+                continue
+        
+    def interrupt(self):
+        self.__interruptionLock.acquire()
+        self.__interrupted = True
+        self.__interruptionLock.release()
+        
+    def dispatch(self, item):
+        self.__queue.put(item)

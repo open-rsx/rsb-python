@@ -14,22 +14,17 @@
 # GNU General Public License for more details.
 #
 # ============================================================
-import threading
-import uuid
-
-"""
-Spread port implementation for RSB.
-
-@author: jwienke
-"""
 
 import logging
+import threading
+import uuid
 
 import spread
 
 import rsb
 import rsb.filter
 import Notification_pb2
+from rsb.transport import QueueAndDispatchTask
 
 class SpreadReceiverTask(object):
     """
@@ -38,7 +33,7 @@ class SpreadReceiverTask(object):
     @author: jwienke
     """
     
-    def __init__(self, mailbox):
+    def __init__(self, mailbox, dispatchTask):
         """
         Constructor.
         
@@ -49,6 +44,7 @@ class SpreadReceiverTask(object):
         self.__interruptionLock = threading.RLock()
         
         self.__mailbox = mailbox
+        self.__dispatchTask = dispatchTask
         
         self.__taskId = uuid.uuid1()
         # narf, spread groups are 32 chars long but 0-terminated... truncate id
@@ -65,7 +61,6 @@ class SpreadReceiverTask(object):
         while True:
             
             # check interruption
-            # TODO is setting 
             self.__interruptionLock.acquire()
             interrupted = self.__interrupted
             self.__interruptionLock.release()
@@ -81,6 +76,8 @@ class SpreadReceiverTask(object):
                     continue
                 
                 print "got message: %s" % message.message
+                self.__dispatchTask.dispatch(message)
+                
             except (AttributeError, TypeError): 
                 # nothing to do here, this is not a regular message
                 pass
@@ -114,22 +111,40 @@ class SpreadPort(rsb.Port):
         """
         self.__receiveThread = None
         self.__receiveTask = None
+        self.__dispatchThread = None
+        self.__dispatchTask = None
         
     def activate(self):
         if self.__connection == None:
             self.__logger.info("Activating spread port")
+            
             self.__connection = self.__spreadModule.connect()
-            self.__receiveTask = SpreadReceiverTask(self.__connection)
+            
+            def dummyObserver(item):
+                print(item)
+            
+            self.__dispatchTask = QueueAndDispatchTask(dummyObserver)
+            self.__dispatchThread = threading.Thread(target = self.__dispatchTask)
+            self.__dispatchThread.start()
+            
+            self.__receiveTask = SpreadReceiverTask(self.__connection, self.__dispatchTask)
             self.__receiveThread = threading.Thread(target = self.__receiveTask)
             self.__receiveThread.start()
         
     def deactivate(self):
         if self.__connection != None:
             self.__logger.info("Deactivating spread port")
+            
             self.__receiveTask.interrupt()
             self.__receiveThread.join()
             self.__receiveThread = None
             self.__receiveTask = None
+            
+            self.__dispatchTask.interrupt()
+            self.__dispatchThread.join()
+            self.__dispatchThread = None
+            self.__dispatchTask = None
+            
             self.__connection.disconnect()
             self.__connection = None
         else:
