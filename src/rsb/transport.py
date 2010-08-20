@@ -19,7 +19,7 @@ import logging
 
 import rsb.filter
 
-class Router:
+class Router(object):
     """
     Routers to publish and subscribe on events.
     

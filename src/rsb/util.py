@@ -15,9 +15,9 @@
 #
 # ============================================================
 
-class Enum:
+class Enum(object):
     
-    class EnumValue:
+    class EnumValue(object):
         
         def __init__(self, name):
             self.__name = name

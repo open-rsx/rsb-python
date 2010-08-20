@@ -35,7 +35,8 @@ def testRoundtrip():
     port.filterNotify(filter, FilterAction.ADD)
     
     event = RSBEvent()
-    event.uri = goodUri
+    event.setURI(goodUri)
+    event.data = "dummy data"
     
     port.push(event)
     

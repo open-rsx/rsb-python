@@ -19,7 +19,7 @@ import rsb.util
 
 FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
 
-class AbstractFilter:
+class AbstractFilter(object):
     """
     Interface for concrete filters.
     

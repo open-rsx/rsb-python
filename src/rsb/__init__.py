@@ -17,7 +17,7 @@
 
 import uuid
 
-class RSBEvent:
+class RSBEvent(object):
     '''
     Basic event class.
     
@@ -50,6 +50,7 @@ class RSBEvent:
         
         @param uuid: uuid to set
         """
+        
         self.__uuid = uuid
         
     uuid = property(getUUID, setUUID)
@@ -93,8 +94,12 @@ class RSBEvent:
         self.__data = data
         
     data = property(getData, setData)
+    
+    def __str__(self):
+        
+        return "%s[uuid = %s, uri = '%s', data = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data)
 
-class Subscription:
+class Subscription(object):
     """
     A subscription in the RSB system. A subscription can be restricted by
     actions and additional filter for the matching process.
@@ -153,7 +158,7 @@ class Subscription:
 
         return True
 
-class Port:
+class Port(object):
     """
     Interface for transport-specific p;orts.
     

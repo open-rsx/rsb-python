@@ -31,7 +31,7 @@ import rsb
 import rsb.filter
 import Notification_pb2
 
-class SpreadReceiverTask:
+class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
     
