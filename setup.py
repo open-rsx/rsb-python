@@ -95,7 +95,9 @@ class TestCommand(Command):
     description = "runs the unit tests"
 
     def initialize_options(self):
-        pass
+        self.__projectRoot = ""
+        if ("/" in __file__):
+            self.__projectRoot = str(__file__).split("/")[-2]
     
     def finalize_options(self):
         pass
@@ -109,8 +111,9 @@ class TestCommand(Command):
         '''
         
         # append test path to pythonpath
-        sys.path.append(os.path.join(os.getcwd(), "src"))
-        sys.path.append(os.path.join(os.getcwd(), "test"))
+        sys.path.append(os.path.join(self.__projectRoot, "src"))
+        sys.path.append(os.path.join(self.__projectRoot, "test"))
+        sys.path.append(os.path.join(self.__projectRoot, "build"))
         
         testFiles = self.__findTestModules()
         #print("trying to load test cases: %s" % testFiles)
@@ -126,7 +129,7 @@ class TestCommand(Command):
         '''
         
         testFiles = []
-        for root, dirs, files in os.walk('test'):
+        for root, dirs, files in os.walk(os.path.join(self.__projectRoot, 'test')):
             for file in files:
                 if file[-3:] == ".py" and not file == "__init__.py":
                     testFiles.append(file[:-3])
