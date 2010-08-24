@@ -130,3 +130,30 @@ class QueueAndDispatchTask(object):
         
     def dispatch(self, item):
         self.__queue.put(item)
+        
+
+class Port(object):
+    """
+    Interface for transport-specific p;orts.
+    
+    @author: jwienke
+    """
+    
+    def activate(self):
+        pass
+    def deactivate(self):
+        pass
+    def publish(self, event):
+        pass
+    def filterNotify(self, filter, action):
+        pass
+    
+    def setObserverAction(self, observerAction):
+        """
+        Sets the action used by the port to notify about incomming events.
+        The call to this method must be thread-safe.
+        
+        @param observerAction: action called if a new message is received from
+                               the port. Must accept an RSBEvent as parameter.
+        """
+        pass

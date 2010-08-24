@@ -19,13 +19,19 @@ import unittest
 import rsb
 import rsb.rsbspread
 import rsb.filter
+from threading import Condition
 
 class SpreadPortTest(unittest.TestCase):
+    
+    class DummyMessage:
+        pass
     
     class DummyConnection:
         
         def __init__(self):
             self.clear()
+            self.__cond = Condition()
+            self.__lastMessage = None
             
         def clear(self):
             self.joinCalls = []
@@ -40,6 +46,24 @@ class SpreadPortTest(unittest.TestCase):
             
         def disconnect(self):
             self.disconnectCalls = self.disconnectCalls + 1
+            
+        def receive(self):
+            self.__cond.acquire()
+            while self.__lastMessage == None:
+                self.__cond.wait()
+            msg = self.__lastMessage
+            self.__lastMessage = None
+            self.__cond.release()
+            print("Returning message with groups: %s" % (msg.groups))
+            return msg
+        
+        def multicast(self, type, group, message):
+            print("Got multicast for group %s with message %s" % (group, message))
+            self.__cond.acquire()
+            self.__lastMessage = SpreadPortTest.DummyMessage()
+            self.__lastMessage.groups = [group]
+            self.__cond.notify()
+            self.__cond.release()
     
     class DummySpread:
         
@@ -61,6 +85,7 @@ class SpreadPortTest(unittest.TestCase):
         # second activation must not do anything
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
+        port.deactivate()
         
     def testDeactivate(self):
         
@@ -89,7 +114,8 @@ class SpreadPortTest(unittest.TestCase):
         f1 = rsb.filter.ScopeFilter(s1)
         port.filterNotify(f1, rsb.filter.FilterAction.ADD)
         
-        self.assertEqual(1, len(connection.joinCalls))
+        # remember the self-connect for disable
+        self.assertEqual(2, len(connection.joinCalls))
         self.assertTrue(s1 in connection.joinCalls)
         
         connection.clear()
@@ -104,3 +130,5 @@ class SpreadPortTest(unittest.TestCase):
         port.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
         self.assertEqual(1, len(connection.leaveCalls))
         self.assertTrue(s1 in connection.leaveCalls)
+        
+        port.deactivate()

@@ -162,6 +162,7 @@ class BuildProtobufs(Command):
                     protoFiles.append(os.path.join(root, file))
         
         for proto in protoFiles:
+            # TODO use project root for out path as defined in the test command
             call = ["protoc", "-I=" + protoRoot, "--python_out=build", proto]
             #print("calling: %s" % call)
             ret = subprocess.call(call)

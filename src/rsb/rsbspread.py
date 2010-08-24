@@ -21,8 +21,8 @@ import uuid
 
 import spread
 
-import rsb
 import rsb.filter
+import rsb.transport
 import Notification_pb2
 from rsb.transport import QueueAndDispatchTask
 from Notification_pb2 import Notification
@@ -101,7 +101,7 @@ class SpreadReceiverTask(object):
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
         
 
-class SpreadPort(rsb.Port):
+class SpreadPort(rsb.transport.Port):
     """
     Spread-based implementation of a port.
     
