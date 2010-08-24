@@ -97,7 +97,7 @@ class TestCommand(Command):
     def initialize_options(self):
         self.__projectRoot = ""
         if ("/" in __file__):
-            self.__projectRoot = str(__file__).split("/")[-2]
+            self.__projectRoot = str(__file__).rpartition("/")[0]
     
     def finalize_options(self):
         pass
