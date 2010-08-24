@@ -20,6 +20,7 @@ import logging
 import rsb.filter
 from Queue import Queue, Empty
 from multiprocessing.synchronize import RLock
+from rsb import EventProcessor
 
 class Router(object):
     """
@@ -28,17 +29,29 @@ class Router(object):
     @author: jwienke
     """
 
-    def __init__(self, inPort, outPort):
+    def __init__(self, inPort=None, outPort=None, eventProcessor=EventProcessor()):
         """
         Creates a new router.
         
-        @param inPort: port for ingoing communication
-        @param outPort: port for outgoing communication
+        @param inPort: port for ingoing communication or None for no port
+        @param outPort: port for outgoing communication or None for no port
+        @param eventProcessor: event processor to use
         """
         
         self.__logger = logging.getLogger(str(self.__class__))
-        self.__inPort = inPort
-        self.__outPort = outPort
+        
+        if inPort:
+            self.__inPort = inPort
+            self.__eventProcessor = eventProcessor
+            self.__inPort.setObserverAction(self.__eventProcessor.process)
+        else:
+            self.__inPort = None
+            self.__eventProcessor = None
+        if outPort:
+            self.__outPort = outPort
+        else:
+            self.__outPort = None
+            
         self.__active = False
         
     def __del__(self):
@@ -48,8 +61,10 @@ class Router(object):
     def activate(self):
         if not self.__active:
             self.__logger.info("Activating router")
-            self.__inPort.activate()
-            self.__outPort.activate()
+            if self.__inPort:
+                self.__inPort.activate()
+            if self.__outPort:
+                self.__outPort.activate()
             self.__active = True
         else:
             self.__logger.warning("Router was already activated")
@@ -57,28 +72,35 @@ class Router(object):
     def deactivate(self):
         if self.__active:
             self.__logger.info("Deactivating router")
-            self.__inPort.deactivate()
-            self.__outPort.deactivate()
+            if self.__inPort:
+                self.__inPort.deactivate()
+            if self.__outPort:
+                self.__outPort.deactivate()
             self.__active = False
         else:
             self.__logger.warning("Router was not active")
     
     def publish(self, event):
-        if self.__active:
+        if self.__active and self.__outPort:
             self.__logger.debug("Publishing event: %s" % event)
             self.__outPort.push(event)
         else:
-            self.__logger.warning("Router is not active. Cannot publish.")
+            self.__logger.warning("Router is not active or has no outgoing port. Cannot publish.")
 
     def __notifyPorts(self, subscription, filterAction):
-        for f in subscription.getFilters():
-            self.__inPort.filterNotify(f, filterAction)
+        if self.__inPort:
+            for f in subscription.getFilters():
+                self.__inPort.filterNotify(f, filterAction)
 
     def subscribe(self, subscription):
         self.__notifyPorts(subscription, rsb.filter.FilterAction.ADD)
+        if self.__eventProcessor:
+            self.__eventProcessor.subscribe(subscription)
     
     def unsubscribe(self, subscription):
         self.__notifyPorts(subscription, rsb.filter.FilterAction.REMOVE)
+        if self.__eventProcessor:
+            self.__eventProcessor.unsubscribe(subscription)
         
 class QueueAndDispatchTask(object):
     """
@@ -88,7 +110,7 @@ class QueueAndDispatchTask(object):
     @author: jwienke
     """
     
-    def __init__(self, observer):
+    def __init__(self, observer=None):
         """
         Constructs a new task object.
         
@@ -118,7 +140,8 @@ class QueueAndDispatchTask(object):
             try:
                 
                 item = self.__queue.get(True, 1)
-                self.__observer(item)
+                if self.__observer != None:
+                    self.__observer(item)
                 
             except Empty:
                 continue
@@ -130,6 +153,16 @@ class QueueAndDispatchTask(object):
         
     def dispatch(self, item):
         self.__queue.put(item)
+        
+    def setObserverAction(self, observer):
+        """
+        Sets the observer to execute with new elements to dispatch.
+        
+        @param observer: callable object with one argument, the item from the
+                         queue. None for no action
+        @todo: does this need locking?
+        """
+        self.__observer = observer
         
 
 class Port(object):

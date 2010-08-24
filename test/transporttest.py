@@ -22,7 +22,7 @@ class RouterTest(unittest.TestCase):
         
     def testActivate(self):
         
-        class ActivateCountingPort:
+        class ActivateCountingPort(object):
             
             activations = 0
             
@@ -30,6 +30,9 @@ class RouterTest(unittest.TestCase):
                 ActivateCountingPort.activations = ActivateCountingPort.activations + 1
             
             def deactivate(self):
+                pass
+            
+            def setObserverAction(self, action):
                 pass
                 
         router = rsb.transport.Router(ActivateCountingPort(), ActivateCountingPort())
@@ -42,7 +45,7 @@ class RouterTest(unittest.TestCase):
         
     def testDeactivate(self):
         
-        class DeactivateCountingPort:
+        class DeactivateCountingPort(object):
             
             deactivations = 0
             
@@ -51,6 +54,9 @@ class RouterTest(unittest.TestCase):
             
             def deactivate(self):
                 DeactivateCountingPort.deactivations = DeactivateCountingPort.deactivations + 1
+                
+            def setObserverAction(self, action):
+                pass
         
         router = rsb.transport.Router(DeactivateCountingPort(), DeactivateCountingPort())
         self.assertEqual(0, DeactivateCountingPort.deactivations)
@@ -67,7 +73,7 @@ class RouterTest(unittest.TestCase):
         
     def testPublish(self):
         
-        class PublishCheckRouter:
+        class PublishCheckRouter(object):
             
             lastEvent = None
             
@@ -78,6 +84,9 @@ class RouterTest(unittest.TestCase):
             
             def push(self, event):
                 PublishCheckRouter.lastEvent = event
+                
+            def setObserverAction(self, action):
+                pass
         
         router = rsb.transport.Router(PublishCheckRouter(), PublishCheckRouter())
         
@@ -98,7 +107,7 @@ class RouterTest(unittest.TestCase):
         
     def testNotifyInPort(self):
         
-        class SubscriptionTestPort:
+        class SubscriptionTestPort(object):
             
             def __init__(self):
                 self.activated = False
@@ -111,6 +120,8 @@ class RouterTest(unittest.TestCase):
                 self.deactivated = True
             def filterNotify(self, filter, action):
                 self.filterCalls.append((filter, action))
+            def setObserverAction(self, action):
+                pass
         
         ip = SubscriptionTestPort()
         op = SubscriptionTestPort()

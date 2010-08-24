@@ -120,6 +120,7 @@ class SpreadPort(rsb.transport.Port):
         self.__receiveTask = None
         self.__dispatchThread = None
         self.__dispatchTask = None
+        self.__observerAction = None
         
     def activate(self):
         if self.__connection == None:
@@ -127,10 +128,7 @@ class SpreadPort(rsb.transport.Port):
             
             self.__connection = self.__spreadModule.connect()
             
-            def dummyObserver(item):
-                print(item)
-            
-            self.__dispatchTask = QueueAndDispatchTask(dummyObserver)
+            self.__dispatchTask = QueueAndDispatchTask(self.__observerAction)
             self.__dispatchThread = threading.Thread(target = self.__dispatchTask)
             self.__dispatchThread.start()
             
@@ -221,4 +219,6 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.debug("Ignoring filter %s with action %s" % (filter, action))
 
     def setObserverAction(self, observerAction):
-        pass
+        self.__observerAction = observerAction
+        if self.__dispatchTask != None:
+            self.__dispatchTask.setObserverAction(observerAction)

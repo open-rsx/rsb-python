@@ -62,4 +62,30 @@ class ScopeFilter(AbstractFilter):
 
     def match(self, event):
         return event.uri == self.__uri
+    
+class RecordingTrueFilter(AbstractFilter):
+    
+    def __init__(self):
+        self.events = []
+        
+    def match(self, event):
+        self.events.append(event)
+        return True
+    
+class RecordingFalseFilter(AbstractFilter):
+    
+    def __init__(self):
+        self.events = []
+        
+    def match(self, event):
+        self.events.append(event)
+        return False   
+    
+class TrueFilter(AbstractFilter):
+        def match(self, event):
+            return True
+        
+class FalseFilter(AbstractFilter):
+    def match(self, event):
+        return False
         

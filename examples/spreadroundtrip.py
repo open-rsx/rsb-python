@@ -20,6 +20,7 @@ from rsb.filter import ScopeFilter, FilterAction
 from rsb import RSBEvent
 
 import logging
+import time
 
 def testRoundtrip():
     
@@ -27,6 +28,9 @@ def testRoundtrip():
     logging.getLogger().setLevel(logging.DEBUG)
     
     port = SpreadPort()
+    def printAction(event):
+        print("Received: %s" % event)
+    port.setObserverAction(printAction)
     port.activate()
     
     goodUri = "good"
@@ -43,6 +47,8 @@ def testRoundtrip():
     event.uri = "notGood"
     
     port.push(event)
+    
+    time.sleep(0.5)
     
     port.deactivate()
 

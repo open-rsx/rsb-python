@@ -20,6 +20,8 @@ import uuid
 import unittest
 
 import rsb
+from rsb import EventProcessor, Subscription, RSBEvent
+from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 
 class RSBEventTest(unittest.TestCase):
     
@@ -79,9 +81,70 @@ class SubscriptionTest(unittest.TestCase):
         self.assertTrue(f1 in s.getFilters())
         self.assertTrue(f2 in s.getFilters())
 
-def suite():
-    suites = [unittest.makeSuite(RSBEventTest)]
-    return unittest.TestSuite(suites)
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='suite')
+class EventProcessorTest(unittest.TestCase):
+    
+    def testProcess(self):
+        
+        ep = EventProcessor(5)
+        
+        matchingCalls1 = []
+        matchingCalls2 = []
+        
+        def matchingAction1(event):
+            matchingCalls1.append(event)
+        def matchingAction2(event):
+            matchingCalls2.append(event)
+        
+        matchingRecordingFilter1 = RecordingTrueFilter()
+        matchingRecordingFilter2 = RecordingTrueFilter()
+        matching = Subscription()
+        matching.appendFilter(matchingRecordingFilter1)
+        matching.appendFilter(matchingRecordingFilter2)
+        matching.appendAction(matchingAction1)
+        matching.appendAction(matchingAction2)
+        
+        noMatchCalls = []
+        def noMatchAction(event):
+            noMatchCalls.append(event)
+        
+        noMatch = Subscription()
+        noMatchRecordingFilter = RecordingFalseFilter()
+        noMatch.appendFilter(noMatchRecordingFilter)
+        noMatch.appendAction(noMatchAction)
+        
+        event1 = RSBEvent()
+        event2 = RSBEvent()
+        event3 = RSBEvent()
+        
+        ep.subscribe(matching)
+        ep.subscribe(noMatch)
+        
+        ep.process(event1)
+        ep.process(event2)
+        ep.unsubscribe(matching)
+        ep.process(event3)
+        
+        # both filters must have been called
+        self.assertEqual(2, len(matchingRecordingFilter1.events))
+        self.assertTrue(event1 in matchingRecordingFilter1.events)
+        self.assertTrue(event2 in matchingRecordingFilter1.events)
+        
+        self.assertEqual(2, len(matchingRecordingFilter2.events))
+        self.assertTrue(event1 in matchingRecordingFilter2.events)
+        self.assertTrue(event2 in matchingRecordingFilter2.events)
+        
+        # both actions must have been called
+        self.assertEqual(2, len(matchingCalls1))
+        self.assertTrue(event1 in matchingCalls1)
+        self.assertTrue(event2 in matchingCalls1)
+        
+        self.assertEqual(2, len(matchingCalls2))
+        self.assertTrue(event1 in matchingCalls2)
+        self.assertTrue(event2 in matchingCalls2)
+        
+        # noMatch subscriber must not have been called
+        self.assertEqual(3, len(noMatchRecordingFilter.events))
+        self.assertTrue(event1 in noMatchRecordingFilter.events)
+        self.assertTrue(event2 in noMatchRecordingFilter.events)
+        self.assertTrue(event3 in noMatchRecordingFilter.events)
+        

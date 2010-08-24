@@ -137,11 +137,21 @@ class Subscription(object):
         """
         Appends an action this subscription shall match on.
         
-        @param action: action to append
+        @param action: action to append. callable with one argument, the
+                       RSBEvent
         """
         
         if not action in self.__actions:
             self.__actions.append(action)
+            
+    def getActions(self):
+        """
+        Returns the list of all registered actions.
+        
+        @return: list of actions to execute on matches
+        @rtype: list of callables accepting an RSBEvent
+        """
+        return self.__actions
             
     def match(self, event):
         """
@@ -157,3 +167,43 @@ class Subscription(object):
                 return False
 
         return True
+    
+class EventProcessor(object):
+    """
+    @author: jwienke
+    """
+    
+    def __init__(self, numThreads = 5):
+        # TODO threading!!!
+        self.__pool = None
+        self.__subscriptions = []
+    
+    def process(self, event):
+        """
+        Dispatches the event to all registered subscribers.
+        
+        @type event: RSBEvent
+        @param event: event to dispatch
+        """
+        for sub in self.__subscriptions:
+            if sub.match(event):
+                for action in sub.getActions():
+                    action(event)                
+    
+    def subscribe(self, subscription):
+        """
+        Subscribe on selected actions.
+        
+        @type subscription: Subscription
+        @param subscription: the subscription to add
+        """
+        self.__subscriptions.append(subscription)
+    
+    def unsubscribe(self, subscription):
+        """
+        Unsubscribe.
+        
+        @type subscription: Subscription
+        @param subscription: subscription to remove
+        """
+        self.__subscriptions.remove(subscription)
