@@ -16,6 +16,11 @@
 # ============================================================
 
 class Enum(object):
+    """
+    Generates enum-like classes in python with proper printing support.
+    
+    @author: jwienke
+    """
     
     class EnumValue(object):
         
@@ -32,6 +37,14 @@ class Enum(object):
                 return False
     
     def __init__(self, name, keys):
+        """
+        Generates a new enum.
+        
+        @param name: name of the enum to create. Will normally be the name of 
+                     the variable this constructor call is assigned to. For
+                     Used for printing.
+        @param keys: list of enum keys to generate
+        """
         
         self.__name = name
         self.__keys = keys
