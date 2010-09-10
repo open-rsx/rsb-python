@@ -309,4 +309,6 @@ class OrderedQueueDispatcherPool(object):
         self.__started = False
         
         self.__logger.info("Stopped thread pool")
-                
+
+def getLoggerByClass(klass):
+    return logging.getLogger(klass.__module__ + "." + klass.__name__)

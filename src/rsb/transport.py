@@ -21,6 +21,7 @@ import rsb.filter
 from Queue import Queue, Empty
 from multiprocessing.synchronize import RLock
 from rsb import EventProcessor
+from rsb.util import getLoggerByClass
 
 class Router(object):
     """
@@ -38,7 +39,7 @@ class Router(object):
         @param eventProcessor: event processor to use
         """
         
-        self.__logger = logging.getLogger(str(self.__class__))
+        self.__logger = getLoggerByClass(self.__class__)
         
         if inPort:
             self.__inPort = inPort
@@ -167,7 +168,7 @@ class QueueAndDispatchTask(object):
 
 class Port(object):
     """
-    Interface for transport-specific p;orts.
+    Interface for transport-specific ports.
     
     @author: jwienke
     """

@@ -15,42 +15,37 @@
 #
 # ============================================================
 
-from rsb.rsbspread import SpreadPort
-from rsb.filter import ScopeFilter, FilterAction
-from rsb import RSBEvent
-
 import logging
-import time
+from rsb.rsbspread import SpreadPort
+from rsb.transport import Router
+from rsb import Publisher, Subscriber, Subscription
+from rsb.filter import ScopeFilter
 
-def testRoundtrip():
+def printer(data):
+    print("received: %s" % data)
+
+def roundtrip():
     
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
     
-    port = SpreadPort()
-    def printAction(event):
-        print("Received: %s" % event)
-    port.setObserverAction(printAction)
-    port.activate()
+    inport = SpreadPort()
+    outport = SpreadPort()
     
-    goodUri = "good"
-    filter = ScopeFilter(goodUri)
+    outRouter = Router(outPort = outport)
+    inRouter = Router(inPort = outport)
     
-    port.filterNotify(filter, FilterAction.ADD)
+    uri = "rsb://test/it"
+    publisher = Publisher(uri, outRouter)
+    subscriber = Subscriber(uri, inRouter)
     
-    event = RSBEvent()
-    event.setURI(goodUri)
-    event.data = "dummy data"
+    subscription = Subscription()
+    subscription.appendFilter(ScopeFilter(uri))
+    subscription.appendAction(printer)
+    subscriber.addSubscription(subscription)
     
-    port.push(event)
-    
-    event.uri = "notGood"
-    
-    port.push(event)
-    
-    time.sleep(0.5)
-    
-    port.deactivate()
+    data1 = "a string to test"
+    publisher.publishData(data1)
 
 if __name__ == '__main__':
-    testRoundtrip()
+    roundtrip()

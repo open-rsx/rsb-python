@@ -16,6 +16,9 @@
 # ============================================================
 
 import uuid
+import logging
+import threading
+from rsb.util import getLoggerByClass
 
 class RSBEvent(object):
     '''
@@ -23,13 +26,13 @@ class RSBEvent(object):
     
     @author: jwienke
     '''
-    
+
     def __init__(self):
         """
         Constructs a new event with undefined type, empty uri and no data.
         The uuid is randomly generated.
         """
-        
+
         self.__uuid = uuid.uuid1()
         self.__uri = ""
         self.__data = None
@@ -41,62 +44,62 @@ class RSBEvent(object):
         
         @return: uuid id of the event
         """
-        
+
         return self.__uuid
-    
+
     def setUUID(self, uuid):
         """
         Sets the uuid of the event.
         
         @param uuid: uuid to set
         """
-        
+
         self.__uuid = uuid
-        
+
     uuid = property(getUUID, setUUID)
-    
+
     def getURI(self):
         """
         Returns the uri of this event.
         
         @return: uri
         """
-        
+
         return self.__uri
-    
+
     def setURI(self, uri):
         """
         Sets the uri of this event.
         
         @param uri: uri to set
         """
-        
+
         self.__uri = uri
-        
+
     uri = property(getURI, setURI)
-        
+
     def getData(self):
         """
         Returns the user data of this event.
         
         @return: user data
         """
-        
+
         return self.__data
-    
+
     def setData(self, data):
         """
         Sets the user data of this event
         
         @param data: user data
         """
-        
+
         self.__data = data
-        
+
     data = property(getData, setData)
-    
+
     def __str__(self):
-        
+
         return "%s[uuid = %s, uri = '%s', data = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data)
 
 class Subscription(object):
@@ -106,33 +109,33 @@ class Subscription(object):
     
     @author: jwienke
     """
-    
+
     def __init__(self):
         """
         Creates a new subscription that does not match anything.
         """
-        
+
         self.__filters = []
         self.__actions = []
-        
+
     def appendFilter(self, filter):
         """
         Appends a filter to restrict this subscription.
         
         @param filter: filter to add
         """
-        
+
         self.__filters.append(filter)
-        
+
     def getFilters(self):
         """
         Returns all registered filters of this subscription.
         
         @return: list of filters
         """
-        
+
         return self.__filters
-        
+
     def appendAction(self, action):
         """
         Appends an action this subscription shall match on.
@@ -140,10 +143,10 @@ class Subscription(object):
         @param action: action to append. callable with one argument, the
                        RSBEvent
         """
-        
+
         if not action in self.__actions:
             self.__actions.append(action)
-            
+
     def getActions(self):
         """
         Returns the list of all registered actions.
@@ -152,7 +155,7 @@ class Subscription(object):
         @rtype: list of callables accepting an RSBEvent
         """
         return self.__actions
-            
+
     def match(self, event):
         """
         Matches this subscription against the provided event.
@@ -161,23 +164,23 @@ class Subscription(object):
         @rtype: bool
         @return: True if the subscription accepts the event, else False
         """
-        
+
         for filter in self.__filters:
             if not filter.match(event):
                 return False
 
         return True
-    
+
 class EventProcessor(object):
     """
     @author: jwienke
     """
-    
-    def __init__(self, numThreads = 5):
+
+    def __init__(self, numThreads=5):
         # TODO threading!!!
         self.__pool = None
         self.__subscriptions = []
-    
+
     def process(self, event):
         """
         Dispatches the event to all registered subscribers.
@@ -188,8 +191,8 @@ class EventProcessor(object):
         for sub in self.__subscriptions:
             if sub.match(event):
                 for action in sub.getActions():
-                    action(event)                
-    
+                    action(event)
+
     def subscribe(self, subscription):
         """
         Subscribe on selected actions.
@@ -198,7 +201,7 @@ class EventProcessor(object):
         @param subscription: the subscription to add
         """
         self.__subscriptions.append(subscription)
-    
+
     def unsubscribe(self, subscription):
         """
         Unsubscribe.
@@ -207,3 +210,116 @@ class EventProcessor(object):
         @param subscription: subscription to remove
         """
         self.__subscriptions.remove(subscription)
+
+class Publisher(object):
+    """
+    Event-sending part of the communication pattern.
+    
+    @author: jwienke
+    """
+
+    def __init__(self, uri, router):
+        """
+        Constructs a new Publisher.
+        
+        @param uri: uri of the publisher
+        @param router: router object with open outgoing port for communication
+        """
+
+        self.__logger = getLoggerByClass(self.__class__)
+
+        self.__uri = uri
+        self.__router = router
+
+        self.__active = False
+        self.__mutex = threading.Lock()
+
+        self.activate()
+
+    def __del__(self):
+        self.deactivate()
+
+    def publishData(self, data):
+        # TODO check activation
+        self.__logger.debug("Publishing data '%s'" % data)
+        event = RSBEvent()
+        event.setData(data)
+        self.publishEvent(event)
+
+    def publishEvent(self, event):
+        # TODO check activation
+        event.setURI(self.__uri)
+        self.__logger.debug("Publishing event '%s'" % event)
+        self.__router.publish(event)
+
+    def activate(self):
+        with self.__mutex:
+            if not self.__active:
+                self.__router.activate()
+                self.__active = True
+                self.__logger.info("Activated publisher")
+            else:
+                self.__logger.info("Activate called even though publisher was already active")
+
+    def deactivate(self):
+        with self.__mutex:
+            if self.__active:
+                self.__router.deactivate()
+                self.__active = False
+                self.__logger.info("Deactivated publisher")
+            else:
+                self.__logger.info("Deactivate called even though publisher was not active")
+
+class Subscriber(object):
+    """
+    Event-receiving part of the communication pattern
+    
+    @author: jwienke
+    """
+
+    def __init__(self, uri, router):
+        """
+        Create a new subscriber for the specified uri.
+        
+        @todo: why the duplicated uri, also passed in using the scope filter?
+        @param uri: uri to subscribe one
+        @param router: router with existing inport
+        """
+
+        self.__logger = getLoggerByClass(self.__class__)
+
+        self.__uri = uri
+        self.__router = router
+
+        self.__mutex = threading.Lock()
+        self.__active = False
+
+        self.activate()
+
+    def __del__(self):
+        self.deactivate()
+
+    def activate(self):
+        # TODO commonality with Publisher... refactor
+        with self.__mutex:
+            if not self.__active:
+                self.__router.activate()
+                self.__active = True
+                self.__logger.info("Activated subscriber")
+            else:
+                self.__logger.info("Activate called even though subscriber was already active")
+
+    def deactivate(self):
+        with self.__mutex:
+            if self.__active:
+                self.__router.deactivate()
+                self.__active = False
+                self.__logger.info("Deactivated subscriber")
+            else:
+                self.__logger.info("Deactivate called even though subscriber was not active")
+
+    def addSubscription(self, subscription):
+        self.__router.subscribe(subscription)
+        
+    def removeSubscription(self, subscription):
+        self.__router.unsubscribe(subscription)

@@ -27,6 +27,7 @@ import Notification_pb2
 from rsb.transport import QueueAndDispatchTask
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError
+from rsb.util import getLoggerByClass
 
 class SpreadReceiverTask(object):
     """
@@ -42,7 +43,7 @@ class SpreadReceiverTask(object):
         @param mailbox: spread mailbox to receive from
         """
         
-        self.__logger = logging.getLogger(str(self.__class__))
+        self.__logger = getLoggerByClass(self.__class__)
         
         self.__interrupted = False
         self.__interruptionLock = threading.RLock()
@@ -110,7 +111,7 @@ class SpreadPort(rsb.transport.Port):
     
     def __init__(self, spreadModule = spread):
         self.__spreadModule = spreadModule
-        self.__logger = logging.getLogger(str(self.__class__))
+        self.__logger = getLoggerByClass(self.__class__)
         self.__connection = None
         self.__uriSubscribers = {}
         """
