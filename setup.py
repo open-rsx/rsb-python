@@ -19,6 +19,7 @@ from setuptools import setup
 from setuptools import find_packages
 from setuptools import Command
 
+from distutils.command.build import build
 from distutils.spawn import find_executable
 
 import os
@@ -53,8 +54,7 @@ class ApiDocCommand(Command):
     def run(self):
 
         # ensure that everything that's needed is built
-        buildCmd = self.get_finalized_command('build')
-        buildCmd.run()
+        self.run_command('build')
 
         outdir = os.path.join("doc", self.format)
         try:
@@ -115,6 +115,10 @@ class BuildProtobufs(Command):
                 if file[-6:] == ".proto":
                     protoFiles.append(os.path.join(root, file))
 
+        if len(protoFiles) == 0:
+            raise RuntimeError(("Could not find rsb protocol at '%s'. " + 
+                               "Please specify it's location using the command option or config file.") % protoRoot)
+
         print("Building protocol files: %s" % protoFiles)
         for proto in protoFiles:
             # TODO use project root for out path as defined in the test command
@@ -124,12 +128,24 @@ class BuildProtobufs(Command):
             if ret != 0:
                 raise RuntimeError("Unable to build proto file: %s" % proto)
 
+class Build(build):
+    """
+    Simple wrapper around the normal build command to require protobuf build
+    before normal build.
+    
+    @author: jwienke
+    """
+    
+    def run(self):
+        self.run_command('proto')
+        build.run(self)
+
 # TODO how to express the dependency of build on proto?
 setup(name='RSB - Robotic Service Bus',
       version='0.1',
-      description=''''
-                    TODO!!!
-                    ''',
+      description='''
+                  Fully event-driven Robotics Systems Bus
+                  ''',
       author='Johannes Wienke',
       author_email='jwienke@techfak.uni-bielefeld.de',
       license="GPLv2",
@@ -138,7 +154,7 @@ setup(name='RSB - Robotic Service Bus',
       packages=find_packages(exclude=["test", "examples", "build"]),
       test_suite="test.suite",
 
-      ext_modules=[],
       cmdclass={'doc' : ApiDocCommand,
-                'proto': BuildProtobufs},
+                'proto': BuildProtobufs,
+                'build' : Build},
       )
