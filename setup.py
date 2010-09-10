@@ -18,6 +18,7 @@
 from setuptools import setup
 from setuptools import find_packages
 from setuptools import Command
+from setuptools.command.test import test
 
 from distutils.command.build import build
 from distutils.spawn import find_executable
@@ -140,7 +141,17 @@ class Build(build):
         self.run_command('proto')
         build.run(self)
 
-# TODO how to express the dependency of build on proto?
+class Test(test):
+    """
+    Wrapper for test command to execute build before.
+    
+    @author: jwienke
+    """
+    
+    def run(self):
+        self.run_command('build')
+        test.run(self)
+
 setup(name='RSB - Robotic Service Bus',
       version='0.1',
       description='''
@@ -156,5 +167,6 @@ setup(name='RSB - Robotic Service Bus',
 
       cmdclass={'doc' : ApiDocCommand,
                 'proto': BuildProtobufs,
-                'build' : Build},
+                'build' : Build,
+                'test' : Test},
       )
