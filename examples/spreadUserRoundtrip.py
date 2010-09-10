@@ -33,10 +33,10 @@ def roundtrip():
     outport = SpreadPort()
     
     outRouter = Router(outPort = outport)
-    inRouter = Router(inPort = outport)
+    inRouter = Router(inPort = inport)
     
     uri = "rsb://test/it"
-    publisher = Publisher(uri, outRouter)
+    publisher = Publisher(uri, outRouter, "string")
     subscriber = Subscriber(uri, inRouter)
     
     subscription = Subscription()

@@ -16,7 +16,6 @@
 # ============================================================
 
 import unittest
-import rsb
 import rsb.rsbspread
 import rsb.filter
 from threading import Condition

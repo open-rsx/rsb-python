@@ -36,7 +36,7 @@ class RSBEvent(object):
         self.__uuid = uuid.uuid1()
         self.__uri = ""
         self.__data = None
-        #self.__type = None 
+        self.__type = None
 
     def getUUID(self):
         """
@@ -98,9 +98,29 @@ class RSBEvent(object):
 
     data = property(getData, setData)
 
+    def getType(self):
+        """
+        Returns the type of the user data of this event.
+        
+        @return: user data type
+        """
+
+        return self.__type
+
+    def setType(self, type):
+        """
+        Sets the type of the user data of this event
+        
+        @param type: user data type
+        """
+
+        self.__type = type
+
+    type = property(getType, setType)
+
     def __str__(self):
 
-        return "%s[uuid = %s, uri = '%s', data = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data)
+        return "%s[uuid = %s, uri = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data, self.__type)
 
 class Subscription(object):
     """
@@ -218,18 +238,23 @@ class Publisher(object):
     @author: jwienke
     """
 
-    def __init__(self, uri, router):
+    def __init__(self, uri, router, type):
         """
         Constructs a new Publisher.
         
         @param uri: uri of the publisher
         @param router: router object with open outgoing port for communication
+        @param type: type identifier string
+        @todo: maybe provide an automatic type identifier deduction for default
+               types?
         """
 
         self.__logger = getLoggerByClass(self.__class__)
 
         self.__uri = uri
         self.__router = router
+        # TODO check that type can be converted
+        self.__type = type
 
         self.__active = False
         self.__mutex = threading.Lock()
@@ -244,10 +269,12 @@ class Publisher(object):
         self.__logger.debug("Publishing data '%s'" % data)
         event = RSBEvent()
         event.setData(data)
+        event.setType(self.__type)
         self.publishEvent(event)
 
     def publishEvent(self, event):
         # TODO check activation
+        # TODO check that type is available and suitable
         event.setURI(self.__uri)
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
@@ -320,6 +347,6 @@ class Subscriber(object):
 
     def addSubscription(self, subscription):
         self.__router.subscribe(subscription)
-        
+
     def removeSubscription(self, subscription):
         self.__router.unsubscribe(subscription)

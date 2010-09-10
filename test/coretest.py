@@ -52,6 +52,11 @@ class RSBEventTest(unittest.TestCase):
         self.e.uuid = id
         self.assertEqual(id, self.e.uuid)
         
+    def testType(self):
+        t = "asdasd"
+        self.e.type = t
+        self.assertEqual(t, self.e.type)
+        
 class SubscriptionTest(unittest.TestCase):
     
     def setUp(self):

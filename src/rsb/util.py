@@ -119,7 +119,7 @@ class OrderedQueueDispatcherPool(object):
                           receiver. Default accepts every message.
         """
         
-        self.__logger = logging.getLogger(str(self.__class__))
+        self.__logger = getLoggerByClass(self.__class__)
         
         if threadPoolSize < 1:
             raise ValueError("Thread pool size must be at least 1, %d was given." % threadPoolSize)
