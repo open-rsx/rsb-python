@@ -57,7 +57,10 @@ class ApiDocCommand(Command):
         buildCmd.run()
 
         outdir = os.path.join("doc", self.format)
-        os.makedirs(outdir)
+        try:
+            os.makedirs(outdir)
+        except OSError:
+            pass
 
         # build the argument string
         cmdline = ["epydoc"]
