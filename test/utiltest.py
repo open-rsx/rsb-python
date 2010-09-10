@@ -175,3 +175,10 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
         time.sleep(0.1)
         
         self.assertEqual(0, len(receiver.messages))
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EnumValueTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EnumTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OrderedQueueDispatcherPoolTest))
+    return suite

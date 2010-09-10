@@ -21,14 +21,20 @@ import rsb
 class ScopeFilterTest(unittest.TestCase):
 
     def testMatch(self):
-        
+
         uri = "rsb:/bla"
         f = rsb.filter.ScopeFilter(uri)
         self.assertEqual(uri, f.getURI())
-        
+
         e = rsb.RSBEvent()
         e.uri = uri
         self.assertTrue(f.match(e))
-        
+
         e.uri = "blubbbbbb"
         self.assertFalse(f.match(e))
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
+    return suite
+

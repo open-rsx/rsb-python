@@ -22,7 +22,6 @@ import spread
 
 import rsb.filter
 import rsb.transport
-import Notification_pb2
 from rsb.transport import QueueAndDispatchTask, UnknownConverterError
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError

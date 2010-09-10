@@ -15,3 +15,18 @@
 #
 # ============================================================
 
+import unittest
+import coretest
+import filtertest
+import rsbspreadtest
+import transporttest
+import utiltest
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(coretest.suite())
+    suite.addTest(filtertest.suite())
+    suite.addTest(rsbspreadtest.suite())
+    suite.addTest(transporttest.suite())
+    suite.addTest(utiltest.suite())
+    return suite

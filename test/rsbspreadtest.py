@@ -131,3 +131,8 @@ class SpreadPortTest(unittest.TestCase):
         self.assertTrue(s1 in connection.leaveCalls)
         
         port.deactivate()
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadPortTest))
+    return suite
