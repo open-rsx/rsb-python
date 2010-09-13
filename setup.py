@@ -18,14 +18,17 @@
 from setuptools import setup
 from setuptools import find_packages
 from setuptools import Command
-from setuptools.command.test import test
 
 from distutils.command.build import build
 from distutils.spawn import find_executable
 
+from unittest import TestResult
+
+import coverage
 import os
-import sys
+import setuptools.command.test
 import subprocess
+import sys
 
 class ApiDocCommand(Command):
     '''
@@ -117,7 +120,7 @@ class BuildProtobufs(Command):
                     protoFiles.append(os.path.join(root, file))
 
         if len(protoFiles) == 0:
-            raise RuntimeError(("Could not find rsb protocol at '%s'. " + 
+            raise RuntimeError(("Could not find rsb protocol at '%s'. " +
                                "Please specify it's location using the command option or config file.") % protoRoot)
 
         print("Building protocol files: %s" % protoFiles)
@@ -129,6 +132,35 @@ class BuildProtobufs(Command):
             if ret != 0:
                 raise RuntimeError("Unable to build proto file: %s" % proto)
 
+class Coverage(Command):
+    """
+    A command to generate a coverage report using coverage.py.
+    
+    @author: jwienke
+    """
+
+    user_options = []
+    description = "generates a coverag report"
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        cov = coverage.coverage(branch=True,source=["rsb"],omit=["*_pb2*"])
+        cov.erase()
+        cov.start()
+        import test
+        suite = test.suite()
+        results = TestResult()
+        suite.run(results)
+        if not results.wasSuccessful():
+            print("Unit tests failed while generating test report.")
+        cov.stop()
+        cov.html_report(directory='covhtml')
+
 class Build(build):
     """
     Simple wrapper around the normal build command to require protobuf build
@@ -136,21 +168,21 @@ class Build(build):
     
     @author: jwienke
     """
-    
+
     def run(self):
         self.run_command('proto')
         build.run(self)
 
-class Test(test):
+class Test(setuptools.command.test.test):
     """
     Wrapper for test command to execute build before.
     
     @author: jwienke
     """
-    
+
     def run(self):
         self.run_command('build')
-        test.run(self)
+        setuptools.command.test.test.run(self)
 
 setup(name='RSB - Robotic Service Bus',
       version='0.1',
@@ -168,5 +200,6 @@ setup(name='RSB - Robotic Service Bus',
       cmdclass={'doc' : ApiDocCommand,
                 'proto': BuildProtobufs,
                 'build' : Build,
-                'test' : Test},
+                'test' : Test,
+                'coverage' : Coverage},
       )
