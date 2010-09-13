@@ -24,7 +24,6 @@ from distutils.spawn import find_executable
 
 from unittest import TestResult
 
-import coverage
 import os
 import setuptools.command.test
 import subprocess
@@ -149,6 +148,7 @@ class Coverage(Command):
         pass
 
     def run(self):
+        import coverage
         cov = coverage.coverage(branch=True,source=["rsb"],omit=["*_pb2*"])
         cov.erase()
         cov.start()
@@ -193,6 +193,8 @@ setup(name='RSB - Robotic Service Bus',
       author_email='jwienke@techfak.uni-bielefeld.de',
       license="GPLv2",
       url="https://code.cor-lab.org/projects/rsb",
+
+      setup_requires=["coverage"],
 
       packages=find_packages(exclude=["test", "examples", "build"]),
       test_suite="test.suite",
