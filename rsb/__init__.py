@@ -205,7 +205,6 @@ class EventProcessor(object):
         self.__pool.start()
 
     def __del__(self):
-        print("DEL")
         self.__pool.stop()
 
     @classmethod
