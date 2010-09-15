@@ -46,6 +46,11 @@ def roundtrip():
     
     data1 = "a string to test"
     publisher.publishData(data1)
+    
+    publisher.deactivate()
+    subscriber.deactivate()
+    
+    print("deactivated")
 
 if __name__ == '__main__':
     roundtrip()

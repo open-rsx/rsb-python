@@ -22,11 +22,12 @@ import spread
 
 import rsb.filter
 import rsb.transport
-from rsb.transport import QueueAndDispatchTask, UnknownConverterError
+from rsb.transport import QueueAndDispatchTask
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
 from rsb import RSBEvent
+from rsb.transport.converter import UnknownConverterError
 
 class SpreadReceiverTask(object):
     """
@@ -135,6 +136,9 @@ class SpreadPort(rsb.transport.Port):
         self.__dispatchThread = None
         self.__dispatchTask = None
         self.__observerAction = None
+        
+    def __del__(self):
+        self.deactivate()
 
     def activate(self):
         if self.__connection == None:
@@ -178,7 +182,7 @@ class SpreadPort(rsb.transport.Port):
             return
 
         # create message
-        n = Notification_pb2.Notification()
+        n = Notification()
         n.eid = "not set yet"
         n.uri = event.uri
         n.standalone = False

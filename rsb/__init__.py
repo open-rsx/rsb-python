@@ -206,6 +206,9 @@ class EventProcessor(object):
 
     def __del__(self):
         self.__pool.stop()
+        
+    def deactivate(self):
+        self.__pool.stop()
 
     @classmethod
     def __deliver(cls, subscription, event):
