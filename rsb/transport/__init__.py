@@ -94,11 +94,13 @@ class Router(object):
                 self.__inPort.filterNotify(f, filterAction)
 
     def subscribe(self, subscription):
+        self.__logger.debug("New subscription %s" % subscription)
         self.__notifyPorts(subscription, rsb.filter.FilterAction.ADD)
         if self.__eventProcessor:
             self.__eventProcessor.subscribe(subscription)
 
     def unsubscribe(self, subscription):
+        self.__logger.debug("Remove subscription %s" % subscription)
         self.__notifyPorts(subscription, rsb.filter.FilterAction.REMOVE)
         if self.__eventProcessor:
             self.__eventProcessor.unsubscribe(subscription)

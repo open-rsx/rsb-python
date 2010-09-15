@@ -22,6 +22,8 @@ import unittest
 import rsb
 from rsb import EventProcessor, Subscription, RSBEvent
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
+import time
+from threading import Condition
 
 class RSBEventTest(unittest.TestCase):
 
@@ -92,13 +94,19 @@ class EventProcessorTest(unittest.TestCase):
 
         ep = EventProcessor(5)
 
+        mc1Cond = Condition()
         matchingCalls1 = []
+        mc2Cond = Condition()
         matchingCalls2 = []
 
         def matchingAction1(event):
-            matchingCalls1.append(event)
+            with mc1Cond:
+                matchingCalls1.append(event)
+                mc1Cond.notifyAll()
         def matchingAction2(event):
-            matchingCalls2.append(event)
+            with mc2Cond:
+                matchingCalls2.append(event)
+                mc2Cond.notifyAll()
 
         matchingRecordingFilter1 = RecordingTrueFilter()
         matchingRecordingFilter2 = RecordingTrueFilter()
@@ -126,32 +134,50 @@ class EventProcessorTest(unittest.TestCase):
 
         ep.process(event1)
         ep.process(event2)
+        
+        # both filters must have been called
+        with matchingRecordingFilter1.condition:
+            while len(matchingRecordingFilter1.events) < 2:
+                matchingRecordingFilter1.condition.wait()
+                    
+            self.assertEqual(2, len(matchingRecordingFilter1.events))
+            self.assertTrue(event1 in matchingRecordingFilter1.events)
+            self.assertTrue(event2 in matchingRecordingFilter1.events)
+
+        with matchingRecordingFilter2.condition:
+            while len(matchingRecordingFilter2.events) < 2:
+                matchingRecordingFilter2.condition.wait()
+                
+            self.assertEqual(2, len(matchingRecordingFilter2.events))
+            self.assertTrue(event1 in matchingRecordingFilter2.events)
+            self.assertTrue(event2 in matchingRecordingFilter2.events)
+
+        # both actions must have been called
+        with mc1Cond:
+            while len(matchingCalls1) < 2:
+                mc1Cond.wait()
+            self.assertEqual(2, len(matchingCalls1))
+            self.assertTrue(event1 in matchingCalls1)
+            self.assertTrue(event2 in matchingCalls1)
+
+        with mc2Cond:
+            while len(matchingCalls2) < 2:
+                mc2Cond.wait()
+            self.assertEqual(2, len(matchingCalls2))
+            self.assertTrue(event1 in matchingCalls2)
+            self.assertTrue(event2 in matchingCalls2)
+        
         ep.unsubscribe(matching)
         ep.process(event3)
 
-        # both filters must have been called
-        self.assertEqual(2, len(matchingRecordingFilter1.events))
-        self.assertTrue(event1 in matchingRecordingFilter1.events)
-        self.assertTrue(event2 in matchingRecordingFilter1.events)
-
-        self.assertEqual(2, len(matchingRecordingFilter2.events))
-        self.assertTrue(event1 in matchingRecordingFilter2.events)
-        self.assertTrue(event2 in matchingRecordingFilter2.events)
-
-        # both actions must have been called
-        self.assertEqual(2, len(matchingCalls1))
-        self.assertTrue(event1 in matchingCalls1)
-        self.assertTrue(event2 in matchingCalls1)
-
-        self.assertEqual(2, len(matchingCalls2))
-        self.assertTrue(event1 in matchingCalls2)
-        self.assertTrue(event2 in matchingCalls2)
-
         # noMatch subscriber must not have been called
-        self.assertEqual(3, len(noMatchRecordingFilter.events))
-        self.assertTrue(event1 in noMatchRecordingFilter.events)
-        self.assertTrue(event2 in noMatchRecordingFilter.events)
-        self.assertTrue(event3 in noMatchRecordingFilter.events)
+        with noMatchRecordingFilter.condition:
+            while len(noMatchRecordingFilter.events) < 3:
+                noMatchRecordingFilter.condition.wait()
+            self.assertEqual(3, len(noMatchRecordingFilter.events))
+            self.assertTrue(event1 in noMatchRecordingFilter.events)
+            self.assertTrue(event2 in noMatchRecordingFilter.events)
+            self.assertTrue(event3 in noMatchRecordingFilter.events)
 
 def suite():
     suite = unittest.TestSuite()

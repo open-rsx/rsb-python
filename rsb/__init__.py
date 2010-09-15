@@ -18,7 +18,7 @@
 import uuid
 import logging
 import threading
-from rsb.util import getLoggerByClass
+from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
 
 class RSBEvent(object):
     '''
@@ -190,6 +190,9 @@ class Subscription(object):
                 return False
 
         return True
+    
+    def __str__(self):
+        return "Subscription[filters = %s, actions = %s]" % (self.__filters, self.__actions)
 
 class EventProcessor(object):
     """
@@ -197,9 +200,22 @@ class EventProcessor(object):
     """
 
     def __init__(self, numThreads=5):
-        # TODO threading!!!
-        self.__pool = None
-        self.__subscriptions = []
+        self.__logger = getLoggerByClass(self.__class__)
+        self.__pool = OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=EventProcessor.__deliver, filterFunc=EventProcessor.__filter)
+        self.__pool.start()
+
+    def __del__(self):
+        print("DEL")
+        self.__pool.stop()
+
+    @classmethod
+    def __deliver(cls, subscription, event):
+        for action in subscription.getActions():
+            action(event)
+
+    @classmethod
+    def __filter(cls, subscription, event):
+        return subscription.match(event)
 
     def process(self, event):
         """
@@ -208,10 +224,8 @@ class EventProcessor(object):
         @type event: RSBEvent
         @param event: event to dispatch
         """
-        for sub in self.__subscriptions:
-            if sub.match(event):
-                for action in sub.getActions():
-                    action(event)
+        self.__logger.debug("Processing event %s" % event)
+        self.__pool.push(event)
 
     def subscribe(self, subscription):
         """
@@ -220,7 +234,8 @@ class EventProcessor(object):
         @type subscription: Subscription
         @param subscription: the subscription to add
         """
-        self.__subscriptions.append(subscription)
+        self.__logger.debug("Subscription added %s" % subscription)
+        self.__pool.registerReceiver(subscription)
 
     def unsubscribe(self, subscription):
         """
@@ -229,7 +244,8 @@ class EventProcessor(object):
         @type subscription: Subscription
         @param subscription: subscription to remove
         """
-        self.__subscriptions.remove(subscription)
+        self.__logger.debug("Subscription removed %s" % subscription)
+        self.__pool.unregisterReceiver(subscription)
 
 class Publisher(object):
     """
@@ -346,7 +362,9 @@ class Subscriber(object):
                 self.__logger.info("Deactivate called even though subscriber was not active")
 
     def addSubscription(self, subscription):
+        self.__logger.debug("New subscription %s" % subscription)
         self.__router.subscribe(subscription)
 
     def removeSubscription(self, subscription):
+        self.__logger("Removing subscription %s" % subscription)
         self.__router.unsubscribe(subscription)

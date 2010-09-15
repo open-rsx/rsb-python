@@ -16,6 +16,7 @@
 # ============================================================
 
 import rsb.util
+from threading import Condition
 
 FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
 
@@ -25,7 +26,7 @@ class AbstractFilter(object):
     
     @author: jwienke
     """
-    
+
     def match(self, event):
         """
         Matches this filter against a given event.
@@ -43,7 +44,7 @@ class ScopeFilter(AbstractFilter):
     
     @author: jwienke
     """
-    
+
     def __init__(self, uri):
         """
         Constructs a new scope filter with a given uri to restrict to.
@@ -51,7 +52,7 @@ class ScopeFilter(AbstractFilter):
         @param uri: top-level uri to accept and al child scopes
         """
         self.__uri = uri
-        
+
     def getURI(self):
         """
         Returns the top-level uri this filter matches for.
@@ -62,30 +63,35 @@ class ScopeFilter(AbstractFilter):
 
     def match(self, event):
         return event.uri == self.__uri
-    
+
 class RecordingTrueFilter(AbstractFilter):
-    
+
     def __init__(self):
         self.events = []
-        
+        self.condition = Condition()
+
     def match(self, event):
-        self.events.append(event)
-        return True
-    
+        with self.condition:
+            self.events.append(event)
+            self.condition.notifyAll()
+            return True
+
 class RecordingFalseFilter(AbstractFilter):
-    
+
     def __init__(self):
         self.events = []
-        
+        self.condition = Condition()
+
     def match(self, event):
-        self.events.append(event)
-        return False   
-    
+        with self.condition:
+            self.events.append(event)
+            self.condition.notifyAll()
+            return False
+
 class TrueFilter(AbstractFilter):
         def match(self, event):
             return True
-        
+
 class FalseFilter(AbstractFilter):
     def match(self, event):
         return False
-        

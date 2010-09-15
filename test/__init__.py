@@ -22,6 +22,11 @@ import rsbspreadtest
 import transporttest
 import utiltest
 
+import logging
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(coretest.suite())
