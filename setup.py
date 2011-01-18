@@ -194,7 +194,8 @@ setup(name='RSB - Robotic Service Bus',
       license="GPLv2",
       url="https://code.cor-lab.org/projects/rsb",
 
-      setup_requires=["coverage"],
+      setup_requires=["coverage", "epydoc"],
+      install_requires=["SpreadModule"],
 
       packages=find_packages(exclude=["test", "examples", "build"]),
       test_suite="test.suite",
