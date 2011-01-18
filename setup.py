@@ -194,7 +194,7 @@ class Test(setuptools.command.test.test):
         '''
         import unittest
         import xmlrunner
-        from pkg_resources import *
+        from pkg_resources import EntryPoint
         loader_ep = EntryPoint.parse("x="+self.test_loader)
         loader_class = loader_ep.load(require=False)
         unittest.main(
