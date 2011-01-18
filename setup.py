@@ -187,6 +187,11 @@ class Test(setuptools.command.test.test):
         
     
     def run_tests(self):
+        '''
+        This method is overridden because setuptools 0.6 does not contain
+        support for handling different test runners. In later versions it is
+        probably not required to override this method.
+        '''
         import unittest
         import xmlrunner
         from pkg_resources import *
@@ -202,7 +207,7 @@ class Test(setuptools.command.test.test):
 setup(name='RSB - Robotic Service Bus',
       version='0.1',
       description='''
-                  Fully event-driven Robotics Systems Bus
+                  Fully event-driven Robotics Service Bus
                   ''',
       author='Johannes Wienke',
       author_email='jwienke@techfak.uni-bielefeld.de',
