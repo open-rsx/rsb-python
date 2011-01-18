@@ -175,7 +175,8 @@ class Build(build):
 
 class Test(setuptools.command.test.test):
     """
-    Wrapper for test command to execute build before.
+    Wrapper for test command to execute build before testing use a custom test
+    runner.
     
     @author: jwienke
     """
@@ -183,6 +184,20 @@ class Test(setuptools.command.test.test):
     def run(self):
         self.run_command('build')
         setuptools.command.test.test.run(self)
+        
+    
+    def run_tests(self):
+        import unittest
+        import xmlrunner
+        from pkg_resources import *
+        loader_ep = EntryPoint.parse("x="+self.test_loader)
+        loader_class = loader_ep.load(require=False)
+        unittest.main(
+            None, None, [unittest.__file__]+self.test_args,
+            testLoader = loader_class(),
+            testRunner=xmlrunner.XMLTestRunner(output='test-reports')
+        )
+
 
 setup(name='RSB - Robotic Service Bus',
       version='0.1',
@@ -194,7 +209,7 @@ setup(name='RSB - Robotic Service Bus',
       license="GPLv2",
       url="https://code.cor-lab.org/projects/rsb",
 
-      setup_requires=["coverage", "epydoc"],
+      setup_requires=["coverage", "epydoc", "unittest-xml-reporting"],
       install_requires=["SpreadModule"],
 
       packages=find_packages(exclude=["test", "examples", "build"]),

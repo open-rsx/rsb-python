@@ -23,6 +23,8 @@ Running Unit Tests
 
 python setup.py test
 
+Reports will be generated in test-reports and on the command line.
+
 Generating the API Documentation
 --------------------------------
 
