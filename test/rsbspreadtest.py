@@ -21,7 +21,19 @@ import rsb.filter
 from threading import Condition
 from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
-from rsb import RSBEvent
+from rsb import RSBEvent, Publisher, Subscription, Subscriber
+from rsb.transport import Router
+
+class SettingReceiver(object):
+    
+    def __init__(self):
+        self.resultEvent = None
+        self.resultCondition = Condition()
+    
+    def __call__(self, event):
+        with self.resultCondition:
+            self.resultEvent = event
+            self.resultCondition.notifyAll()
 
 class SpreadPortTest(unittest.TestCase):
     
@@ -139,17 +151,6 @@ class SpreadPortTest(unittest.TestCase):
         
         port = SpreadPort()
         port.activate()
-        
-        class SettingReceiver(object):
-            
-            def __init__(self):
-                self.resultEvent = None
-                self.resultCondition = Condition()
-            
-            def __call__(self, event):
-                with self.resultCondition:
-                    self.resultEvent = event
-                    self.resultCondition.notifyAll()
             
         receiver = SettingReceiver()
         port.setObserverAction(receiver)
@@ -174,6 +175,33 @@ class SpreadPortTest(unittest.TestCase):
             receiver.resultCondition.wait(5)
                
             self.assertEqual(receiver.resultEvent, event)
+            
+    def testUserRoundtrip(self):
+        
+        inport = SpreadPort()
+        outport = SpreadPort()
+        
+        outRouter = Router(outPort = outport)
+        inRouter = Router(inPort = inport)
+        
+        uri = "rsb://test/it"
+        publisher = Publisher(uri, outRouter, "string")
+        subscriber = Subscriber(uri, inRouter)
+        
+        receiver = SettingReceiver()
+        
+        subscription = Subscription()
+        subscription.appendFilter(ScopeFilter(uri))
+        subscription.appendAction(receiver)
+        subscriber.addSubscription(subscription)
+        
+        data1 = "a string to test"
+        publisher.publishData(data1)
+        
+        with receiver.resultCondition:
+            receiver.resultCondition.wait(5)
+               
+            self.assertEqual(receiver.resultEvent.data, data1)
 
 def suite():
     suite = unittest.TestSuite()

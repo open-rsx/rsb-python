@@ -254,4 +254,4 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.debug("Passing observer to dispatch task")
             self.__dispatchTask.setObserverAction(observerAction)
         else:
-            self.__logger.warn("Ignoring observer action %s because there is no dispatch task" % s)
+            self.__logger.warn("Ignoring observer action %s because there is no dispatch task" % observerAction)
