@@ -29,9 +29,9 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 def suite():
     suite = unittest.TestSuite()
-    #suite.addTest(coretest.suite())
-    #suite.addTest(filtertest.suite())
+    suite.addTest(coretest.suite())
+    suite.addTest(filtertest.suite())
     suite.addTest(rsbspreadtest.suite())
-    #suite.addTest(transporttest.suite())
-    #suite.addTest(utiltest.suite())
+    suite.addTest(transporttest.suite())
+    suite.addTest(utiltest.suite())
     return suite

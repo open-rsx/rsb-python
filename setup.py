@@ -28,6 +28,18 @@ import os
 import setuptools.command.test
 import subprocess
 import sys
+import time
+
+class CommandStarter(object):
+    
+    def __init__(self, command):
+        self.__open = subprocess.Popen(command)
+        time.sleep(2)
+        
+    def __del__(self):
+        print("Stopping command %s" % self.__open)
+        self.__open.terminate()
+        self.__open.wait()
 
 class ApiDocCommand(Command):
     '''
@@ -145,16 +157,25 @@ class Coverage(Command):
     @author: jwienke
     """
 
-    user_options = []
-    description = "generates a coverag report"
+    user_options = [('spread=', 'd',
+                     "spread executable to use")]
+    description = "generates a coverage report"
 
     def initialize_options(self):
-        pass
+        self.spread = None
 
     def finalize_options(self):
-        pass
+        if self.spread == None:
+            self.spread = find_executable("spread")
+            if self.spread == None:
+                print("WARNING: no spread daemon found. Make sure that one is running before starting the coverage report")
 
     def run(self):
+        
+        spread = None
+        if self.spread:
+            spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
+        
         import coverage
         cov = coverage.coverage(branch=True,source=["rsb"],omit=["*_pb2*"])
         cov.erase()
@@ -183,15 +204,33 @@ class Build(build):
 class Test(setuptools.command.test.test):
     """
     Wrapper for test command to execute build before testing use a custom test
-    runner.
+    runner. It also starts a spread daemon.
     
     @author: jwienke
     """
 
+    user_options = setuptools.command.test.test.user_options + [('spread=', 'd',
+                     "spread executable to use")]
+
+    def initialize_options(self):
+        setuptools.command.test.test.initialize_options(self)
+        self.spread = None
+
+    def finalize_options(self):
+        setuptools.command.test.test.finalize_options(self)
+        if self.spread == None:
+            self.spread = find_executable("spread")
+            if self.spread == None:
+                print("WARNING: no spread daemon found. Make sure that one is running before starting the unit tests")
+
     def run(self):
         self.run_command('build')
-        setuptools.command.test.test.run(self)
         
+        spread = None
+        if self.spread:
+            spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
+        
+        setuptools.command.test.test.run(self)
     
     def run_tests(self):
         '''
