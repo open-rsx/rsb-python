@@ -119,8 +119,16 @@ class RSBEvent(object):
     type = property(getType, setType)
 
     def __str__(self):
-
         return "%s[uuid = %s, uri = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data, self.__type)
+
+    def __eq__(self, other):
+        try:
+            return (self.__uuid == other.__uuid) and (self.__uri == other.__uri) and (self.__type == other.__type) and (self.__data == other.__data)
+        except (TypeError, AttributeError):
+            return False
+        
+    def __neq__(self, other):
+        return not self.__eq__(other) 
 
 class Subscription(object):
     """
@@ -190,7 +198,7 @@ class Subscription(object):
                 return False
 
         return True
-    
+
     def __str__(self):
         return "Subscription[filters = %s, actions = %s]" % (self.__filters, self.__actions)
 
@@ -205,10 +213,13 @@ class EventProcessor(object):
         self.__pool.start()
 
     def __del__(self):
-        self.__pool.stop()
-        
+        self.__logger.debug("Destructing EventProcesor")
+        self.deactivate()
+
     def deactivate(self):
+        self.__logger.debug("Deactivating EventProcesor")
         self.__pool.stop()
+        self.__pool = None
 
     @classmethod
     def __deliver(cls, subscription, event):
@@ -280,6 +291,7 @@ class Publisher(object):
         self.activate()
 
     def __del__(self):
+        self.__logger.debug("Destructing Publisher")
         self.deactivate()
 
     def publishData(self, data):

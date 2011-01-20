@@ -21,7 +21,7 @@ import rsb.filter
 import converter
 
 from Queue import Queue, Empty
-from rsb import EventProcessor
+from rsb import EventProcessor, util
 from rsb.util import getLoggerByClass
 from threading import RLock
 
@@ -32,7 +32,7 @@ class Router(object):
     @author: jwienke
     """
 
-    def __init__(self, inPort=None, outPort=None, eventProcessor=EventProcessor()):
+    def __init__(self, inPort=None, outPort=None, eventProcessor=None):
         """
         Creates a new router.
         
@@ -43,9 +43,13 @@ class Router(object):
 
         self.__logger = getLoggerByClass(self.__class__)
 
+        self.__logger.debug("Creating router with inPort = %s, outPort = %s and eventProcessor = %s" % (inPort, outPort, eventProcessor))
+
         if inPort:
             self.__inPort = inPort
             self.__eventProcessor = eventProcessor
+            if self.__eventProcessor == None:
+                self.__eventProcessor = EventProcessor()
             self.__inPort.setObserverAction(self.__eventProcessor.process)
         else:
             self.__inPort = None
@@ -58,6 +62,7 @@ class Router(object):
         self.__active = False
 
     def __del__(self):
+        self.__logger.debug("Destructing router")
         if self.__active:
             self.deactivate()
 
@@ -116,6 +121,14 @@ class QueueAndDispatchTask(object):
     
     @author: jwienke
     """
+    
+    class __InterruptedTag(object):
+        """
+        A special tag object to "interrupt" waiting on the internal queue.
+        
+        @author: jwienke
+        """
+        pass
 
     def __init__(self, observer=None):
         """
@@ -127,36 +140,43 @@ class QueueAndDispatchTask(object):
                          queue
         """
 
+        self.__logger = util.getLoggerByClass(self.__class__)
+
         self.__queue = Queue()
         self.__interrupted = False
         self.__interruptionLock = RLock()
         self.__observer = observer
+        self.__interruptedTag = self.__InterruptedTag()
 
     def __call__(self):
 
         while True:
 
-            # check interruption
-            self.__interruptionLock.acquire()
-            interrupted = self.__interrupted
-            self.__interruptionLock.release()
-
-            if interrupted:
-                break
-
             try:
 
                 item = self.__queue.get(True, 1)
+                self.__logger.debug("Got item from queue %s" % item)
+                
+                with self.__interruptionLock:
+                    if self.__interrupted:
+                        self.__logger.debug("Got element from queue but I am interrupted.")
+                        return
+                    
                 if self.__observer != None:
+                    self.__logger.debug("Starting to pass item to observer")
                     self.__observer(item)
+                    self.__logger.debug("Passed item to observer")
+                else:
+                    self.__logger.warn("No observer to dispatch the item to")
 
             except Empty:
                 continue
 
     def interrupt(self):
-        self.__interruptionLock.acquire()
-        self.__interrupted = True
-        self.__interruptionLock.release()
+        self.__logger.debug("Interrupting processing")
+        with self.__interruptionLock:
+            self.__interrupted = True
+        self.__queue.put(self.__interruptedTag)
 
     def dispatch(self, item):
         self.__queue.put(item)
@@ -169,6 +189,7 @@ class QueueAndDispatchTask(object):
                          queue. None for no action
         @todo: does this need locking?
         """
+        self.__logger.debug("Received observer action %s" % observer)
         self.__observer = observer
 
 
@@ -188,12 +209,12 @@ class Port(object):
                              map of converters for the selected targetType is
                              used
         """
-        
+
         self.__logger = getLoggerByClass(self.__class__)
-        
+
         if targetType == None:
             raise ValueError("Target type must be a class or primitive type, None given")
-        
+
         if converterMap == None:
             self.__logger.debug("Using global converter map for target type %s" % targetType)
             self.__converterMap = converter.getGlobalConverterMap(targetType)
@@ -221,7 +242,7 @@ class Port(object):
         """
         self.__logger.debug("Searching for converter with sourceType '%s' in map %s" % (sourceType, self.__converterMap))
         return self.__converterMap.getConverter(sourceType)
-    
+
     def _getConverterMap(self):
         return self.__converterMap
 

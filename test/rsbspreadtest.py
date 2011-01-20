@@ -19,6 +19,9 @@ import unittest
 import rsb.rsbspread
 import rsb.filter
 from threading import Condition
+from rsb.rsbspread import SpreadPort
+from rsb.filter import ScopeFilter, FilterAction
+from rsb import RSBEvent
 
 class SpreadPortTest(unittest.TestCase):
     
@@ -131,6 +134,46 @@ class SpreadPortTest(unittest.TestCase):
         self.assertTrue(s1 in connection.leaveCalls)
         
         port.deactivate()
+        
+    def testRoundtrip(self):
+        
+        port = SpreadPort()
+        port.activate()
+        
+        class SettingReceiver(object):
+            
+            def __init__(self):
+                self.resultEvent = None
+                self.resultCondition = Condition()
+            
+            def __call__(self, event):
+                with self.resultCondition:
+                    self.resultEvent = event
+                    self.resultCondition.notifyAll()
+            
+        receiver = SettingReceiver()
+        port.setObserverAction(receiver)
+        
+        goodUri = "good"
+        filter = ScopeFilter(goodUri)
+        
+        port.filterNotify(filter, FilterAction.ADD)
+
+        # first an event that we do not want        
+        event = RSBEvent()
+        event.uri = "notGood"
+        event.data = "dummy data"
+        event.type = "string"
+        port.push(event)
+        
+        # and then a desired event
+        event.uri = goodUri
+        port.push(event)
+        
+        with receiver.resultCondition:
+            receiver.resultCondition.wait(5)
+               
+            self.assertEqual(receiver.resultEvent, event)
 
 def suite():
     suite = unittest.TestSuite()

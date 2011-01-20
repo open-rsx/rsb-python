@@ -122,10 +122,17 @@ class BuildProtobufs(Command):
             raise RuntimeError(("Could not find rsb protocol at '%s'. " +
                                "Please specify it's location using the command option or config file.") % protoRoot)
 
+        # create output directory
+        outdir = "rsb/rsbspread"
+        try:
+            os.makedirs(outdir)
+        except os.error:
+            pass
+
         print("Building protocol files: %s" % protoFiles)
         for proto in protoFiles:
             # TODO use project root for out path as defined in the test command
-            call = [self.protoc, "-I=" + protoRoot, "--python_out=rsb/rsbspread", proto]
+            call = [self.protoc, "-I=" + protoRoot, "--python_out=" + outdir, proto]
             #print("calling: %s" % call)
             ret = subprocess.call(call)
             if ret != 0:

@@ -79,6 +79,7 @@ class SpreadReceiverTask(object):
                 break
 
             message = self.__mailbox.receive()
+            self.__logger.debug("received message %s" % message)
             try:
 
                 # ignore the deactivate wakeup message
@@ -87,12 +88,15 @@ class SpreadReceiverTask(object):
 
                 notification = Notification()
                 notification.ParseFromString(message.message)
+                self.__logger.debug("Received notification from bus: %s" % notification)
 
                 # build rsbevent from notification
                 event = RSBEvent()
+                event.uuid = uuid.UUID(notification.eid)
                 event.uri = notification.uri
                 event.type = notification.type_id
                 event.data = self.__converterMap.getConverter(event.type).deserialize(notification.data.binary)
+                self.__logger.debug("Sending event to dispatch task: %s" % event)
 
                 self.__dispatchTask.dispatch(event)
 
@@ -170,6 +174,8 @@ class SpreadPort(rsb.transport.Port):
 
             self.__connection.disconnect()
             self.__connection = None
+            
+            self.__logger.debug("SpreadPort deactivated")
         else:
             self.__logger.warning("spread port already deactivated")
 
@@ -180,13 +186,13 @@ class SpreadPort(rsb.transport.Port):
         if self.__connection == None:
             self.__logger.warning("Port not activated")
             return
-
+        
         # create message
         n = Notification()
-        n.eid = "not set yet"
+        n.eid = str(event.uuid)
         n.uri = event.uri
         n.standalone = False
-        n.type_id = event.type
+        n.type_id = str(event.type)
         converted = self._getConverter(event.type).serialize(event.data)
         n.data.binary = converted
         n.data.length = len(converted)
@@ -201,6 +207,8 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.warning("Error sending message, status code = %s" % sent)
 
     def filterNotify(self, filter, action):
+        
+        self.__logger.debug("Got filter notification with filter %s and action %s" % (filter, action))
 
         if self.__connection == None:
             raise RuntimeError("SpreadPort not activated")
@@ -243,4 +251,7 @@ class SpreadPort(rsb.transport.Port):
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
         if self.__dispatchTask != None:
+            self.__logger.debug("Passing observer to dispatch task")
             self.__dispatchTask.setObserverAction(observerAction)
+        else:
+            self.__logger.warn("Ignoring observer action %s because there is no dispatch task" % s)
