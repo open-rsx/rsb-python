@@ -12,7 +12,7 @@ Dependencies
 Installation
 ------------
 
-Modify the contents of setup.py according to your needs. Especially the
+Modify the contents of setup.cfg according to your needs. Especially the
 "protocolroot" needs to be adjusted to point to your installation of
 RSBProtocol. The given path must point to the folder containing the first proto
 files.
