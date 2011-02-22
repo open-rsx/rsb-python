@@ -282,6 +282,7 @@ class OrderedQueueDispatcherPool(object):
 
             for i in range(self.__threadPoolSize):
                 worker = Thread(target=self.__worker, args=[i])
+		worker.setDaemon(True)
                 worker.start()
                 self.__threadPool.append(worker)
 

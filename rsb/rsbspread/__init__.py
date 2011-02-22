@@ -152,10 +152,12 @@ class SpreadPort(rsb.transport.Port):
 
             self.__dispatchTask = QueueAndDispatchTask(self.__observerAction)
             self.__dispatchThread = threading.Thread(target=self.__dispatchTask)
+	    self.__dispatchThread.setDaemon(True)
             self.__dispatchThread.start()
 
             self.__receiveTask = SpreadReceiverTask(self.__connection, self.__dispatchTask, self._getConverterMap())
             self.__receiveThread = threading.Thread(target=self.__receiveTask)
+	    self.__receiveThread.setDaemon(True)
             self.__receiveThread.start()
 
     def deactivate(self):
@@ -163,12 +165,12 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.info("Deactivating spread port")
 
             self.__receiveTask.interrupt()
-            self.__receiveThread.join()
+            self.__receiveThread.join(timeout=1)
             self.__receiveThread = None
             self.__receiveTask = None
 
             self.__dispatchTask.interrupt()
-            self.__dispatchThread.join()
+            self.__dispatchThread.join(timeout=1)
             self.__dispatchThread = None
             self.__dispatchTask = None
 
