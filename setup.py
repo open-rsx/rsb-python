@@ -31,11 +31,11 @@ import sys
 import time
 
 class CommandStarter(object):
-    
+
     def __init__(self, command):
         self.__open = subprocess.Popen(command)
         time.sleep(2)
-        
+
     def __del__(self):
         print("Stopping command %s" % self.__open)
         self.__open.terminate()
@@ -132,7 +132,7 @@ class BuildProtobufs(Command):
 
         if len(protoFiles) == 0:
             raise RuntimeError(("Could not find rsb protocol at '%s'. " +
-                               "Please specify it's location using the command option or config file.") % protoRoot)
+                                "Please specify it's location using the command option or config file.") % protoRoot)
 
         # create output directory
         outdir = "rsb/rsbspread"
@@ -171,13 +171,13 @@ class Coverage(Command):
                 print("WARNING: no spread daemon found. Make sure that one is running before starting the coverage report")
 
     def run(self):
-        
+
         spread = None
         if self.spread:
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
-        
+
         import coverage
-        cov = coverage.coverage(branch=True,source=["rsb"],omit=["*_pb2*"])
+        cov = coverage.coverage(branch=True, source=["rsb"], omit=["*_pb2*"])
         cov.erase()
         cov.start()
         import test
@@ -225,13 +225,13 @@ class Test(setuptools.command.test.test):
 
     def run(self):
         self.run_command('build')
-        
+
         spread = None
         if self.spread:
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
-        
+
         setuptools.command.test.test.run(self)
-    
+
     def run_tests(self):
         '''
         This method is overridden because setuptools 0.6 does not contain
@@ -241,11 +241,11 @@ class Test(setuptools.command.test.test):
         import unittest
         import xmlrunner
         from pkg_resources import EntryPoint
-        loader_ep = EntryPoint.parse("x="+self.test_loader)
+        loader_ep = EntryPoint.parse("x=" + self.test_loader)
         loader_class = loader_ep.load(require=False)
         unittest.main(
-            None, None, [unittest.__file__]+self.test_args,
-            testLoader = loader_class(),
+            None, None, [unittest.__file__] + self.test_args,
+            testLoader=loader_class(),
             testRunner=xmlrunner.XMLTestRunner(output='test-reports')
         )
 
