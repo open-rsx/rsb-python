@@ -22,7 +22,6 @@ import spread
 
 import rsb.filter
 import rsb.transport
-from rsb.transport import QueueAndDispatchTask
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
@@ -34,14 +33,15 @@ class SpreadReceiverTask(object):
     Thread used to receive messages from a spread connection.
     
     @author: jwienke
+    @todo: check that the observerAction can be changed without locking 
     """
 
-    def __init__(self, mailbox, dispatchTask, converterMap):
+    def __init__(self, mailbox, observerAction, converterMap):
         """
         Constructor.
         
         @param mailbox: spread mailbox to receive from
-        @param dispatchTask: task that dispatches events
+        @param observerAction: callable to execute if a new event is received
         @param converterMap: converters for data
         """
 
@@ -51,7 +51,7 @@ class SpreadReceiverTask(object):
         self.__interruptionLock = threading.RLock()
 
         self.__mailbox = mailbox
-        self.__dispatchTask = dispatchTask
+        self.__observerAction = observerAction
 
         self.__converterMap = converterMap
         assert(converterMap.getTargetType() == str)
@@ -98,7 +98,8 @@ class SpreadReceiverTask(object):
                 event.data = self.__converterMap.getConverter(event.type).deserialize(notification.data.binary)
                 self.__logger.debug("Sending event to dispatch task: %s" % event)
 
-                self.__dispatchTask.dispatch(event)
+                if self.__observerAction:
+                    self.__observerAction(event)
 
             except (AttributeError, TypeError), e:
                 self.__logger.info("Attribute or TypeError receiving message: %s" % e)
@@ -118,6 +119,9 @@ class SpreadReceiverTask(object):
         # send the interruption message to wake up receive as mentioned above
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
 
+    def setObserverAction(self, action):
+        # TODO does this need locking?
+        self.__observerAction = action
 
 class SpreadPort(rsb.transport.Port):
     """
@@ -137,8 +141,6 @@ class SpreadPort(rsb.transport.Port):
         """
         self.__receiveThread = None
         self.__receiveTask = None
-        self.__dispatchThread = None
-        self.__dispatchTask = None
         self.__observerAction = None
         
     def __del__(self):
@@ -150,14 +152,9 @@ class SpreadPort(rsb.transport.Port):
 
             self.__connection = self.__spreadModule.connect()
 
-            self.__dispatchTask = QueueAndDispatchTask(self.__observerAction)
-            self.__dispatchThread = threading.Thread(target=self.__dispatchTask)
-	    self.__dispatchThread.setDaemon(True)
-            self.__dispatchThread.start()
-
-            self.__receiveTask = SpreadReceiverTask(self.__connection, self.__dispatchTask, self._getConverterMap())
+            self.__receiveTask = SpreadReceiverTask(self.__connection, self.__observerAction, self._getConverterMap())
             self.__receiveThread = threading.Thread(target=self.__receiveTask)
-	    self.__receiveThread.setDaemon(True)
+            self.__receiveThread.setDaemon(True)
             self.__receiveThread.start()
 
     def deactivate(self):
@@ -168,11 +165,6 @@ class SpreadPort(rsb.transport.Port):
             self.__receiveThread.join(timeout=1)
             self.__receiveThread = None
             self.__receiveTask = None
-
-            self.__dispatchTask.interrupt()
-            self.__dispatchThread.join(timeout=1)
-            self.__dispatchThread = None
-            self.__dispatchTask = None
 
             self.__connection.disconnect()
             self.__connection = None
@@ -234,7 +226,7 @@ class SpreadPort(rsb.transport.Port):
                 # leave group if no more subscriptions exist
 
                 if not uri in self.__uriSubscribers:
-                    self.__logger.warning("Got unsubscribe for uri '%s' eventhough I was not subscribed" % filter.getURI())
+                    self.__logger.warning("Got unsubscribe for uri '%s' even though I was not subscribed" % filter.getURI())
                     return
 
                 assert(self.__uriSubscribers[uri] > 0)
@@ -252,8 +244,8 @@ class SpreadPort(rsb.transport.Port):
 
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
-        if self.__dispatchTask != None:
-            self.__logger.debug("Passing observer to dispatch task")
-            self.__dispatchTask.setObserverAction(observerAction)
+        if self.__receiveTask != None:
+            self.__logger.debug("Passing observer to receive task")
+            self.__receiveTask.setObserverAction(observerAction)
         else:
             self.__logger.warn("Ignoring observer action %s because there is no dispatch task" % observerAction)
