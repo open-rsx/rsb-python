@@ -92,9 +92,9 @@ class SpreadReceiverTask(object):
 
                 # build rsbevent from notification
                 event = RSBEvent()
-                event.uuid = uuid.UUID(notification.eid)
-                event.uri = notification.uri
-                event.type = notification.type_id
+                event.uuid = uuid.UUID(notification.id)
+                event.uri = notification.scope
+                event.type = notification.wire_schema
                 event.data = self.__converterMap.getConverter(event.type).deserialize(notification.data.binary)
                 self.__logger.debug("Sending event to dispatch task: %s" % event)
 
@@ -183,10 +183,9 @@ class SpreadPort(rsb.transport.Port):
         
         # create message
         n = Notification()
-        n.eid = str(event.uuid)
-        n.uri = event.uri
-        n.standalone = False
-        n.type_id = str(event.type)
+        n.id = str(event.uuid)
+        n.scope = event.uri
+        n.wire_schema = str(event.type)
         converted = self._getConverter(event.type).serialize(event.data)
         n.data.binary = converted
         n.data.length = len(converted)
