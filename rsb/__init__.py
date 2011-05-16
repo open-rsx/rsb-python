@@ -193,18 +193,18 @@ class RSBEvent(object):
 
     def __init__(self):
         """
-        Constructs a new event with undefined type, empty uri and no data.
+        Constructs a new event with undefined type, root scope and no data.
         The uuid is randomly generated.
         """
 
         self.__uuid = uuid.uuid1()
-        self.__uri = ""
+        self.__scope = Scope("/")
         self.__data = None
         self.__type = None
 
     def getUUID(self):
         """
-        Returns the uri of this event.
+        Returns the uuid of this event.
         
         @return: uuid id of the event
         """
@@ -222,25 +222,25 @@ class RSBEvent(object):
 
     uuid = property(getUUID, setUUID)
 
-    def getURI(self):
+    def getScope(self):
         """
-        Returns the uri of this event.
+        Returns the scope of this event.
         
-        @return: uri
+        @return: scope
         """
 
-        return self.__uri
+        return self.__scope
 
-    def setURI(self, uri):
+    def setScope(self, scope):
         """
-        Sets the uri of this event.
+        Sets the scope of this event.
         
-        @param uri: uri to set
+        @param scope: scope to set
         """
 
-        self.__uri = uri
+        self.__scope = scope
 
-    uri = property(getURI, setURI)
+    scope = property(getScope, setScope)
 
     def getData(self):
         """
@@ -283,11 +283,11 @@ class RSBEvent(object):
     type = property(getType, setType)
 
     def __str__(self):
-        return "%s[uuid = %s, uri = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__uri, self.__data, self.__type)
+        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__scope, self.__data, self.__type)
 
     def __eq__(self, other):
         try:
-            return (self.__uuid == other.__uuid) and (self.__uri == other.__uri) and (self.__type == other.__type) and (self.__data == other.__data)
+            return (self.__uuid == other.__uuid) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
         except (TypeError, AttributeError):
             return False
         
@@ -431,11 +431,11 @@ class Publisher(object):
     @author: jwienke
     """
 
-    def __init__(self, uri, router, type):
+    def __init__(self, scope, router, type):
         """
         Constructs a new Publisher.
         
-        @param uri: uri of the publisher
+        @param scope: scope of the publisher
         @param router: router object with open outgoing port for communication
         @param type: type identifier string
         @todo: maybe provide an automatic type identifier deduction for default
@@ -444,7 +444,7 @@ class Publisher(object):
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__uri = uri
+        self.__scope = scope
         self.__router = router
         # TODO check that type can be converted
         self.__type = type
@@ -469,7 +469,7 @@ class Publisher(object):
     def publishEvent(self, event):
         # TODO check activation
         # TODO check that type is available and suitable
-        event.setURI(self.__uri)
+        event.setScope(self.__scope)
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
 
@@ -498,18 +498,18 @@ class Subscriber(object):
     @author: jwienke
     """
 
-    def __init__(self, uri, router):
+    def __init__(self, scope, router):
         """
-        Create a new subscriber for the specified uri.
+        Create a new subscriber for the specified scope.
         
-        @todo: why the duplicated uri, also passed in using the scope filter?
-        @param uri: uri to subscribe one
+        @todo: why the duplicated scope, also passed in using the scope filter?
+        @param scope: scope to subscribe one
         @param router: router with existing inport
         """
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__uri = uri
+        self.__scope = scope
         self.__router = router
 
         self.__mutex = threading.Lock()

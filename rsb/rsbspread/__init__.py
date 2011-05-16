@@ -25,7 +25,7 @@ import rsb.transport
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
-from rsb import RSBEvent
+from rsb import RSBEvent, Scope
 from rsb.transport.converter import UnknownConverterError
 import hashlib
 
@@ -96,7 +96,7 @@ class SpreadReceiverTask(object):
                 # build rsbevent from notification
                 event = RSBEvent()
                 event.uuid = uuid.UUID(notification.id)
-                event.uri = notification.scope
+                event.scope = Scope(notification.scope)
                 event.type = notification.wire_schema
                 event.data = self.__converterMap.getConverter(event.type).deserialize(notification.data.binary)
                 self.__logger.debug("Sending event to dispatch task: %s" % event)
@@ -138,9 +138,9 @@ class SpreadPort(rsb.transport.Port):
         self.__spreadModule = spreadModule
         self.__logger = getLoggerByClass(self.__class__)
         self.__connection = None
-        self.__uriSubscribers = {}
+        self.__groupNameSubscribers = {}
         """
-        A map of uri subscriptions with the list of subscriptions.
+        A map of scope subscriptions with the list of subscriptions.
         """
         self.__receiveThread = None
         self.__receiveTask = None
@@ -178,7 +178,7 @@ class SpreadPort(rsb.transport.Port):
 
     def __groupName(self, scope):
         sum = hashlib.md5()
-        sum.update(scope)
+        sum.update(scope.toString())
         return sum.hexdigest()[:-1]
 
     def push(self, event):
@@ -192,7 +192,7 @@ class SpreadPort(rsb.transport.Port):
         # create message
         n = Notification()
         n.id = str(event.uuid)
-        n.scope = event.uri
+        n.scope = event.scope.toString()
         n.wire_schema = str(event.type)
         converted = self._getConverter(event.type).serialize(event.data)
         n.data.binary = converted
@@ -201,7 +201,7 @@ class SpreadPort(rsb.transport.Port):
         serialized = n.SerializeToString()
 
         # send message
-        sent = self.__connection.multicast(spread.RELIABLE_MESS, self.__groupName(event.uri), serialized)
+        sent = self.__connection.multicast(spread.RELIABLE_MESS, self.__groupName(event.scope), serialized)
         if (sent > 0):
             self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
         else:
@@ -217,31 +217,31 @@ class SpreadPort(rsb.transport.Port):
         # scope filter is the only interesting filter
         if (isinstance(filter, rsb.filter.ScopeFilter)):
 
-            uri = self.__groupName(filter.getURI());
+            groupName = self.__groupName(filter.getScope());
 
             if action == rsb.filter.FilterAction.ADD:
                 # join group if necessary, else only increment subscription counter
 
-                if not uri in self.__uriSubscribers:
-                    self.__connection.join(uri)
-                    self.__uriSubscribers[uri] = 1
-                    self.__logger.info("joined group '%s'" % uri)
+                if not groupName in self.__groupNameSubscribers:
+                    self.__connection.join(groupName)
+                    self.__groupNameSubscribers[groupName] = 1
+                    self.__logger.info("joined group '%s'" % groupName)
                 else:
-                    self.__uriSubscribers[uri] = self.__uriSubscribers[uri] + 1
+                    self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] + 1
 
             elif action == rsb.filter.FilterAction.REMOVE:
                 # leave group if no more subscriptions exist
 
-                if not uri in self.__uriSubscribers:
-                    self.__logger.warning("Got unsubscribe for uri '%s' even though I was not subscribed" % filter.getURI())
+                if not groupName in self.__groupNameSubscribers:
+                    self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed" % filter.getScope())
                     return
 
-                assert(self.__uriSubscribers[uri] > 0)
-                self.__uriSubscribers[uri] = self.__uriSubscribers[uri] - 1
-                if self.__uriSubscribers[uri] == 0:
-                    self.__connection.leave(uri)
-                    self.__logger.info("left group '%s'" % uri)
-                    del self.__uriSubscribers[uri]
+                assert(self.__groupNameSubscribers[groupName] > 0)
+                self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] - 1
+                if self.__groupNameSubscribers[groupName] == 0:
+                    self.__connection.leave(groupName)
+                    self.__logger.info("left group '%s'" % groupName)
+                    del self.__groupNameSubscribers[groupName]
 
             else:
                 self.__logger.warning("Received unknown filter action %s for filter %s" % (action, filter))

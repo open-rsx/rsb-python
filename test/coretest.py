@@ -20,7 +20,7 @@ import uuid
 import unittest
 
 import rsb
-from rsb import EventProcessor, Subscription, RSBEvent
+from rsb import EventProcessor, Subscription, RSBEvent, Scope
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 import time
 from threading import Condition
@@ -135,7 +135,7 @@ class RSBEventTest(unittest.TestCase):
     def testConstructor(self):
 
         self.assertEqual(None, self.e.getData())
-        self.assertEqual("", self.e.getURI())
+        self.assertEqual(Scope("/"), self.e.getScope())
         self.assertEqual(type(self.e.getUUID()), uuid.UUID)
 
     def testData(self):
@@ -144,11 +144,11 @@ class RSBEventTest(unittest.TestCase):
         self.e.data = data
         self.assertEqual(data, self.e.data)
 
-    def testURI(self):
+    def testScope(self):
 
-        uri = "123/456"
-        self.e.uri = uri
-        self.assertEqual(uri, self.e.uri)
+        scope = Scope("/123/456")
+        self.e.scope = scope
+        self.assertEqual(scope, self.e.scope)
 
     def testUUID(self):
 

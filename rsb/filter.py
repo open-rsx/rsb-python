@@ -40,29 +40,29 @@ class AbstractFilter(object):
 
 class ScopeFilter(AbstractFilter):
     """
-    A filter to restrict the uri scope for events.
+    A filter to restrict the scope for events.
     
     @author: jwienke
     """
 
-    def __init__(self, uri):
+    def __init__(self, scope):
         """
-        Constructs a new scope filter with a given uri to restrict to.
+        Constructs a new scope filter with a given scope to restrict to.
         
-        @param uri: top-level uri to accept and al child scopes
+        @param scope: top-level scope to accept and al child scopes
         """
-        self.__uri = uri
+        self.__scope = scope
 
-    def getURI(self):
+    def getScope(self):
         """
-        Returns the top-level uri this filter matches for.
+        Returns the top-level scope this filter matches for.
         
-        @return: uri
+        @return: scope
         """
-        return self.__uri
+        return self.__scope
 
     def match(self, event):
-        return event.uri == self.__uri
+        return event.scope == self.__scope
 
 class RecordingTrueFilter(AbstractFilter):
 

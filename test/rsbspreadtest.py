@@ -21,7 +21,7 @@ import rsb.filter
 from threading import Condition
 from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
-from rsb import RSBEvent, Publisher, Subscription, Subscriber
+from rsb import RSBEvent, Publisher, Subscription, Subscriber, Scope
 from rsb.transport import Router
 import hashlib
 
@@ -126,12 +126,12 @@ class SpreadPortTest(unittest.TestCase):
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
         
-        s1 = "xxx"
+        s1 = Scope("/xxx")
         f1 = rsb.filter.ScopeFilter(s1)
         port.filterNotify(f1, rsb.filter.FilterAction.ADD)
 
         hasher = hashlib.md5()
-        hasher.update(s1)
+        hasher.update(s1.toString())
         hashed = hasher.hexdigest()[:-1]
         self.assertTrue(hashed in connection.joinCalls)
         
@@ -158,20 +158,20 @@ class SpreadPortTest(unittest.TestCase):
         receiver = SettingReceiver()
         port.setObserverAction(receiver)
         
-        goodUri = "good"
-        filter = ScopeFilter(goodUri)
+        goodScope = Scope("/good")
+        filter = ScopeFilter(goodScope)
         
         port.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want        
         event = RSBEvent()
-        event.uri = "notGood"
+        event.scope = Scope("/notGood")
         event.data = "dummy data"
         event.type = "string"
         port.push(event)
         
         # and then a desired event
-        event.uri = goodUri
+        event.scope = goodScope
         port.push(event)
         
         with receiver.resultCondition:
@@ -187,14 +187,14 @@ class SpreadPortTest(unittest.TestCase):
         outRouter = Router(outPort = outport)
         inRouter = Router(inPort = inport)
         
-        uri = "rsb://test/it"
-        publisher = Publisher(uri, outRouter, "string")
-        subscriber = Subscriber(uri, inRouter)
+        scope = Scope("/test/it")
+        publisher = Publisher(scope, outRouter, "string")
+        subscriber = Subscriber(scope, inRouter)
         
         receiver = SettingReceiver()
         
         subscription = Subscription()
-        subscription.appendFilter(ScopeFilter(uri))
+        subscription.appendFilter(ScopeFilter(scope))
         subscription.appendAction(receiver)
         subscriber.addSubscription(subscription)
         
