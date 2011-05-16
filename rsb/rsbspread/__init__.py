@@ -68,6 +68,7 @@ class SpreadReceiverTask(object):
         # messages on interruption even if no one else sends messages.
         # Otherwise deactivate blocks until another message is received.
         self.__mailbox.join(self.__wakeupGroup)
+        self.__logger.debug("joined wakup group %s" % self.__wakeupGroup)
 
         while True:
 
@@ -79,6 +80,7 @@ class SpreadReceiverTask(object):
             if interrupted:
                 break
 
+            self.__logger.debug("waiting for new messages")
             message = self.__mailbox.receive()
             self.__logger.debug("received message %s" % message)
             try:

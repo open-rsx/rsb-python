@@ -54,6 +54,7 @@ class SpreadPortTest(unittest.TestCase):
             self.disconnectCalls = 0
             
         def join(self, group):
+            print("Join called with group %s" % group)
             self.joinCalls.append(group)
             
         def leave(self, group):
@@ -128,9 +129,7 @@ class SpreadPortTest(unittest.TestCase):
         s1 = "xxx"
         f1 = rsb.filter.ScopeFilter(s1)
         port.filterNotify(f1, rsb.filter.FilterAction.ADD)
-        
-        # remember the self-connect for disable
-        self.assertEqual(2, len(connection.joinCalls))
+
         hasher = hashlib.md5()
         hasher.update(s1)
         hashed = hasher.hexdigest()[:-1]
@@ -203,8 +202,9 @@ class SpreadPortTest(unittest.TestCase):
         publisher.publishData(data1)
         
         with receiver.resultCondition:
-            receiver.resultCondition.wait(5)
-               
+            receiver.resultCondition.wait(10)
+            if receiver.resultEvent == None:
+                self.fail("Subscriber did not receive an event")
             self.assertEqual(receiver.resultEvent.data, data1)
 
 def suite():
