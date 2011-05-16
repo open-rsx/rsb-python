@@ -36,12 +36,12 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(1, len(onePart.getComponents()))
         self.assertEqual("test", onePart.getComponents()[0])
     
-        manyParts = rsb.Scope("/this/is/a/dumb/test/")
+        manyParts = rsb.Scope("/this/is/a/dumb3/test/")
         self.assertEqual(5, len(manyParts.getComponents()))
         self.assertEqual("this", manyParts.getComponents()[0])
         self.assertEqual("is", manyParts.getComponents()[1])
         self.assertEqual("a", manyParts.getComponents()[2])
-        self.assertEqual("dumb", manyParts.getComponents()[3])
+        self.assertEqual("dumb3", manyParts.getComponents()[3])
         self.assertEqual("test", manyParts.getComponents()[4])
     
         # also ensure that the shortcut syntax works
@@ -54,9 +54,7 @@ class ScopeTest(unittest.TestCase):
         
         self.assertRaises(ValueError, rsb.Scope, "")
         self.assertRaises(ValueError, rsb.Scope, " ")
-        self.assertRaises(ValueError, rsb.Scope, "/23")
         self.assertRaises(ValueError, rsb.Scope, "/with space/does/not/work/")
-        self.assertRaises(ValueError, rsb.Scope, "/withnumbers/does/not43as/work/")
         self.assertRaises(ValueError, rsb.Scope, "/with/do#3es/not43as/work/")
         self.assertRaises(ValueError, rsb.Scope, "/this//is/not/allowed/")
         self.assertRaises(ValueError, rsb.Scope, "/this/ /is/not/allowed/")
@@ -89,6 +87,45 @@ class ScopeTest(unittest.TestCase):
         self.assertTrue(rsb.Scope("/c/") > rsb.Scope("/a/"))
         self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/a/"))
         self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/c/"))
+
+    def testHierarchyComparison(self):
+        
+        self.assertTrue(rsb.Scope("/a/").isSubScopeOf(rsb.Scope("/")))
+        self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/")))
+        self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/")))
+        self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/d/")))
+        self.assertFalse(rsb.Scope("/a/x/c/").isSubScopeOf(rsb.Scope("/a/b/")))
+    
+        self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/")))
+        self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertTrue(rsb.Scope("/a/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(rsb.Scope("/a/b/c/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(rsb.Scope("/a/b/c/d/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))        
+
+    def testSuperScopes(self):
+        
+        self.assertEqual(0, len(rsb.Scope("/").superScopes()))
+
+        supers = rsb.Scope("/this/is/a/test/").superScopes()
+        self.assertEqual(4, len(supers))
+        self.assertEqual(rsb.Scope("/"), supers[0])
+        self.assertEqual(rsb.Scope("/this/"), supers[1])
+        self.assertEqual(rsb.Scope("/this/is/"), supers[2])
+        self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
+    
+        supers = rsb.Scope("/").superScopes(True)
+        self.assertEqual(1, len(supers))
+        self.assertEqual(rsb.Scope("/"), supers[0])
+    
+        supers = rsb.Scope("/this/is/a/test/").superScopes(True)
+        self.assertEqual(5, len(supers))
+        self.assertEqual(rsb.Scope("/"), supers[0])
+        self.assertEqual(rsb.Scope("/this/"), supers[1])
+        self.assertEqual(rsb.Scope("/this/is/"), supers[2])
+        self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
+        self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
 
 class RSBEventTest(unittest.TestCase):
 

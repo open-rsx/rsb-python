@@ -31,7 +31,7 @@ class Scope(object):
     '''
     
     __COMPONENT_SEPARATOR = "/"
-    __COMPONENT_REGEX = re.compile("^[a-zA-Z]+$")
+    __COMPONENT_REGEX = re.compile("^[a-zA-Z0-9]+$")
     
     def __init__(self, stringRep):
         '''
@@ -106,6 +106,65 @@ class Scope(object):
         newScope.__components = copy.copy(self.__components)
         newScope.__components += childScope.__components
         return newScope
+    
+    def isSubScopeOf(self, other):
+        '''
+        Tests whether this scope is a sub-scope of the given other scope, which
+        means that the other scope is a prefix of this scope. E.g. "/a/b/" is a
+        sub-scope of "/a/".
+        
+        @param other: other scope to test
+        @type other: Scope
+        @return: @c true if this is a sub-scope of the other scope, equality gives
+                @c false, too
+        @rtype: Bool
+        '''
+        
+        if len(self.__components) <= len(other.__components):
+            return False
+
+        return other.__components == self.__components[:len(other.__components)]
+    
+    def isSuperScopeOf(self, other):
+        '''
+        Inverse operation of #isSubScopeOf.
+       
+        @param other: other scope to test
+        @type other: Scope
+        @return: @c true if this scope is a strict super scope of the other scope.
+                 equality also gives @c false.
+        @rtype: Bool
+        '''
+        
+        if len(self.__components) >= len(other.__components):
+            return False
+        
+        return self.__components == other.__components[:len(self.__components)]
+    
+    def superScopes(self, includeSelf = False):
+        '''
+        Generates all super scopes of this scope including the root scope "/".
+        The returned list of scopes is ordered by hierarchy with "/" being the
+        first entry.
+        
+        @param includeSelf: if set to @true, this scope is also included as last
+                            element of the returned list
+        @type includeSelf: Bool
+        @return: list of all super scopes ordered by hierarchy, "/" being first
+        @rtype: list of Scopes
+        '''
+        
+        supers = []
+        
+        maxIndex = len(self.__components)
+        if not includeSelf:
+            maxIndex -= 1
+        for i in range(maxIndex + 1):
+            super = Scope("/")
+            super.__components = self.__components[:i]
+            supers.append(super)
+        
+        return supers
     
     def __eq__(self, other):
         return self.__components == other.__components
