@@ -27,6 +27,7 @@ from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
 from rsb import RSBEvent
 from rsb.transport.converter import UnknownConverterError
+import hashlib
 
 class SpreadReceiverTask(object):
     """
@@ -173,6 +174,11 @@ class SpreadPort(rsb.transport.Port):
         else:
             self.__logger.warning("spread port already deactivated")
 
+    def __groupName(self, scope):
+        sum = hashlib.md5()
+        sum.update(scope)
+        return sum.hexdigest()[:-1]
+
     def push(self, event):
 
         self.__logger.debug("Sending event: %s" % event)
@@ -193,7 +199,7 @@ class SpreadPort(rsb.transport.Port):
         serialized = n.SerializeToString()
 
         # send message
-        sent = self.__connection.multicast(spread.RELIABLE_MESS, event.uri, serialized)
+        sent = self.__connection.multicast(spread.RELIABLE_MESS, self.__groupName(event.uri), serialized)
         if (sent > 0):
             self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
         else:
@@ -209,7 +215,7 @@ class SpreadPort(rsb.transport.Port):
         # scope filter is the only interesting filter
         if (isinstance(filter, rsb.filter.ScopeFilter)):
 
-            uri = filter.getURI()
+            uri = self.__groupName(filter.getURI());
 
             if action == rsb.filter.FilterAction.ADD:
                 # join group if necessary, else only increment subscription counter

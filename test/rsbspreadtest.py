@@ -23,6 +23,7 @@ from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
 from rsb import RSBEvent, Publisher, Subscription, Subscriber
 from rsb.transport import Router
+import hashlib
 
 class SettingReceiver(object):
     
@@ -130,7 +131,10 @@ class SpreadPortTest(unittest.TestCase):
         
         # remember the self-connect for disable
         self.assertEqual(2, len(connection.joinCalls))
-        self.assertTrue(s1 in connection.joinCalls)
+        hasher = hashlib.md5()
+        hasher.update(s1)
+        hashed = hasher.hexdigest()[:-1]
+        self.assertTrue(hashed in connection.joinCalls)
         
         connection.clear()
         
@@ -143,7 +147,7 @@ class SpreadPortTest(unittest.TestCase):
         self.assertEqual(0, len(connection.leaveCalls))
         port.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
         self.assertEqual(1, len(connection.leaveCalls))
-        self.assertTrue(s1 in connection.leaveCalls)
+        self.assertTrue(hashed in connection.leaveCalls)
         
         port.deactivate()
         
