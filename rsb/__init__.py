@@ -16,9 +16,114 @@
 # ============================================================
 
 import uuid
+import copy
 import logging
 import threading
 from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
+import re
+
+class Scope(object):
+    '''
+    A scope defines a channel of the hierarchical unified bus covered by RSB.
+    It is defined by a surface syntax like "/a/deep/scope".
+    
+    @author: jwienke
+    '''
+    
+    __COMPONENT_SEPARATOR = "/"
+    __COMPONENT_REGEX = re.compile("^[a-zA-Z]+$")
+    
+    def __init__(self, stringRep):
+        '''
+        Parses a scope from a string representation.
+        
+        @param stringRep: string representation of the scope
+        @raise ValueError: if the given string does not have the right syntax
+        '''
+        
+        if len(stringRep) == 0:
+            raise ValueError("Empty scope is invalid.")
+        
+        # append missing trailing slash
+        if stringRep[-1] != self.__COMPONENT_SEPARATOR:
+            stringRep += self.__COMPONENT_SEPARATOR
+            
+        rawComponents = stringRep.split('/')
+        if len(rawComponents) < 1:
+            raise ValueError("Empty scope is not allowed.")
+        if len(rawComponents[0]) != 0:
+            raise ValueError("Scope must start with a slash. Given was '%s'." % stringRep)
+        if len(rawComponents[-1]) != 0:
+            raise ValueError("Scope must end with a slash. Given was '%s'." % stringRep)
+        
+        self.__components = rawComponents[1:-1]
+        
+        for com in self.__components:
+            if not self.__COMPONENT_REGEX.match(com):
+                raise ValueError("Invalid character in component %s. Given was scope '%s'." % (com, stringRep))
+        
+    def getComponents(self):
+        '''
+        Returns all components of the scope as an ordered list. Components are
+        the names between the separator character '/'. The first entry in the
+        list is the highest level of hierarchy. The scope '/' returns an empty
+        list.
+        
+        @return: components of the represented scope as ordered list with highest
+                 level as first entry
+        @rtype: list
+        '''
+        return copy.copy(self.__components)
+    
+    def toString(self):
+        '''
+        Reconstructs a fully formal string representation of the scope with
+        leading an trailing slashes.
+     
+        @return: string representation of the scope
+        @rtype: string
+        '''
+        
+        string = self.__COMPONENT_SEPARATOR
+        for com in self.__components:
+            string += com
+            string += self.__COMPONENT_SEPARATOR
+        return string
+    
+    def concat(self, childScope):
+        '''
+        Creates a new scope that is a sub-scope of this one with the subordinated
+        scope described by the given argument. E.g. "/this/is/".concat("/a/test/")
+        results in "/this/is/a/test".
+        
+        @param: childScope child to concatenate to the current scope for forming a
+                           sub-scope
+        @type childScope: Scope
+        @return: new scope instance representing the created sub-scope
+        @rtype: Scope
+        '''
+        newScope = Scope("/")
+        newScope.__components = copy.copy(self.__components)
+        newScope.__components += childScope.__components
+        return newScope
+    
+    def __eq__(self, other):
+        return self.__components == other.__components
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        return self.toString() < other.toString()
+
+    def __le__(self, other):
+        return self.toString() <= other.toString()
+
+    def __gt__(self, other):
+        return self.toString() > other.toString()
+
+    def __ge__(self, other):
+        return self.toString() >= other.toString()
 
 class RSBEvent(object):
     '''

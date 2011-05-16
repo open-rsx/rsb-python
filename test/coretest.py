@@ -2,14 +2,14 @@
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
 #
-# This program is free software; you can redistribute it
+# This program is free software you can redistribute it
 # and/or modify it under the terms of the GNU General
-# Public License as published by the Free Software Foundation;
+# Public License as published by the Free Software Foundation
 # either version 2, or (at your option)
 # any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -24,6 +24,71 @@ from rsb import EventProcessor, Subscription, RSBEvent
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 import time
 from threading import Condition
+
+class ScopeTest(unittest.TestCase):
+
+    def testParsing(self):
+
+        root = rsb.Scope("/")
+        self.assertEqual(0, len(root.getComponents()))
+    
+        onePart = rsb.Scope("/test/")
+        self.assertEqual(1, len(onePart.getComponents()))
+        self.assertEqual("test", onePart.getComponents()[0])
+    
+        manyParts = rsb.Scope("/this/is/a/dumb/test/")
+        self.assertEqual(5, len(manyParts.getComponents()))
+        self.assertEqual("this", manyParts.getComponents()[0])
+        self.assertEqual("is", manyParts.getComponents()[1])
+        self.assertEqual("a", manyParts.getComponents()[2])
+        self.assertEqual("dumb", manyParts.getComponents()[3])
+        self.assertEqual("test", manyParts.getComponents()[4])
+    
+        # also ensure that the shortcut syntax works
+        shortcut = rsb.Scope("/this/is")
+        self.assertEqual(2, len(shortcut.getComponents()))
+        self.assertEqual("this", shortcut.getComponents()[0])
+        self.assertEqual("is", shortcut.getComponents()[1])
+        
+    def testParsingError(self):
+        
+        self.assertRaises(ValueError, rsb.Scope, "")
+        self.assertRaises(ValueError, rsb.Scope, " ")
+        self.assertRaises(ValueError, rsb.Scope, "/23")
+        self.assertRaises(ValueError, rsb.Scope, "/with space/does/not/work/")
+        self.assertRaises(ValueError, rsb.Scope, "/withnumbers/does/not43as/work/")
+        self.assertRaises(ValueError, rsb.Scope, "/with/do#3es/not43as/work/")
+        self.assertRaises(ValueError, rsb.Scope, "/this//is/not/allowed/")
+        self.assertRaises(ValueError, rsb.Scope, "/this/ /is/not/allowed/")
+        
+    def testToString(self):
+        
+        self.assertEqual("/", rsb.Scope("/").toString())
+        self.assertEqual("/foo/", rsb.Scope("/foo/").toString())
+        self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar/").toString())
+        self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar").toString())
+        
+    def testConcat(self):
+        
+        self.assertEqual(rsb.Scope("/"), rsb.Scope("/").concat(rsb.Scope("/")))
+        self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/").concat(rsb.Scope("/a/test/")))
+        self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/a/test/").concat(rsb.Scope("/")))
+        self.assertEqual(rsb.Scope("/a/test/example"), rsb.Scope("/a/test/").concat(rsb.Scope("/example/")))
+
+    def testComparison(self):
+        
+        self.assertTrue(rsb.Scope("/") == rsb.Scope("/"))
+        self.assertFalse(rsb.Scope("/") != rsb.Scope("/"))
+        self.assertFalse(rsb.Scope("/") == rsb.Scope("/foo/"))
+        self.assertTrue(rsb.Scope("/") != rsb.Scope("/foo/"))
+    
+        self.assertTrue(rsb.Scope("/a/") < rsb.Scope("/c/"))
+        self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/c/"))
+        self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/a"))
+        self.assertFalse(rsb.Scope("/a/") > rsb.Scope("/c/"))
+        self.assertTrue(rsb.Scope("/c/") > rsb.Scope("/a/"))
+        self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/a/"))
+        self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/c/"))
 
 class RSBEventTest(unittest.TestCase):
 
@@ -134,12 +199,12 @@ class EventProcessorTest(unittest.TestCase):
 
         ep.process(event1)
         ep.process(event2)
-        
+
         # both filters must have been called
         with matchingRecordingFilter1.condition:
             while len(matchingRecordingFilter1.events) < 2:
                 matchingRecordingFilter1.condition.wait()
-                    
+
             self.assertEqual(2, len(matchingRecordingFilter1.events))
             self.assertTrue(event1 in matchingRecordingFilter1.events)
             self.assertTrue(event2 in matchingRecordingFilter1.events)
@@ -147,7 +212,7 @@ class EventProcessorTest(unittest.TestCase):
         with matchingRecordingFilter2.condition:
             while len(matchingRecordingFilter2.events) < 2:
                 matchingRecordingFilter2.condition.wait()
-                
+
             self.assertEqual(2, len(matchingRecordingFilter2.events))
             self.assertTrue(event1 in matchingRecordingFilter2.events)
             self.assertTrue(event2 in matchingRecordingFilter2.events)
@@ -166,7 +231,7 @@ class EventProcessorTest(unittest.TestCase):
             self.assertEqual(2, len(matchingCalls2))
             self.assertTrue(event1 in matchingCalls2)
             self.assertTrue(event2 in matchingCalls2)
-        
+
         ep.unsubscribe(matching)
         ep.process(event3)
 
@@ -181,6 +246,7 @@ class EventProcessorTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RSBEventTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SubscriptionTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventProcessorTest))
