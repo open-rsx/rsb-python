@@ -19,8 +19,146 @@ import uuid
 import copy
 import logging
 import threading
-from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, ParticipantConfig, Enum
+from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, Enum
 import re
+import os
+import ConfigParser
+
+class ParticipantConfig (object):
+    '''
+    @author: jmoringe
+    '''
+    
+    class Transport (object):
+        def __init__(self, name, options={}):
+            self._name = name
+            self._enabled = options.get('enabled', '1') == 1
+            self._options = dict([ (key, value) for (key, value) in options.items()
+                                   if not '.' in key and not key == 'enabled' ])
+
+        def getOptions(self):
+            return self._options
+
+        def __str__(self):
+            return ('ParticipantConfig.Transport[%s, enabled = %s,  %s]'
+                    % (self._name, self._enabled, self._options))
+
+        def __repr__(self):
+            return str(self)
+
+    def __init__(self, transports={}, options={}):
+        self._transports = transports
+        self._options = options
+
+    def getTransport(self, name):
+        return self._transports[name]
+
+    def __str__(self):
+        return 'ParticipantConfig[%s %s]' % (self._transports.values(), self._options)
+
+    def __repr__(self):
+        return str(self)
+
+    @classmethod
+    def _fromDict(clazz, options):
+        def sectionOptions(section):
+            return [ (key[len(section) + 1:], value) for (key, value) in options.items()
+                     if key.startswith(section) ]
+        result = ParticipantConfig()
+        for transport in [ 'spread' ]:
+            options = dict(sectionOptions('transport.%s' % transport))
+            result._transports[transport] = clazz.Transport(transport, options)
+        return result
+
+    @classmethod
+    def _fromFile(clazz, path, defaults={}):
+        parser = ConfigParser.RawConfigParser()
+        parser.read(path)
+        options = defaults
+        for section in parser.sections():
+            for (k, v) in parser.items(section):
+                options[section + '.' + k] = v
+        return options
+
+    @classmethod
+    def fromFile(clazz, path, defaults={}):
+        '''
+        Obtain configuration options from the configuration file @a
+        path, store them in a @ref ParticipantConfig object and return
+        it.
+
+        A simple configuration file may look like this:
+        @verbatim
+        [transport.spread]
+        host = azurit # default type is string
+        port = 5301 # types can be specified in angle brackets
+        # A comment
+        @endverbatim
+
+        @param path File of path
+        @param defaults  defaults
+        @return
+
+        @see fromEnvironment, fromDefaultSources
+        '''
+        return clazz._fromDict(clazz._fromFile(path, defaults))
+
+    @classmethod
+    def _fromEnvironment(clazz, defaults={}):
+        options = defaults
+        for (key, value) in os.environ.items():
+            if key.startswith('RSB_'):
+                options[key[4:].lower().replace('_', '.')] = value
+        return options
+
+    @classmethod
+    def fromEnvironment(clazz, defaults={}):
+        '''
+        Obtain configuration options from environment variables, store
+        them in a @ref ParticipantConfig object and return
+        it. Environment variable names are mapped to RSB option names
+        as illustrated in the following example:
+
+        @verbatim
+        RSB_TRANSPORT_SPREAD_PORT -> transport spread port
+        @endverbatim
+
+        @param defaults A @ref ParticipantConfig object that supplies
+        values for configuration options for which no environment
+        variables are found.
+        @return A @ref ParticipantConfig object that contains the
+        merged configuration options from @a defaults and relevant
+        environment variables.
+
+        @see fromFile, fromDefaultSources
+        '''
+        return clazz._fromDict(clazz._fromEnvironment(defaults))
+
+    @classmethod
+    def fromDefaultSources(clazz, defaults={}):
+        '''
+        Obtain configuration options from multiple sources, store
+        them in a @ref ParticipantConfig object and return it. The
+        following sources of configuration information will be
+        consulted:
+        
+        -# ~/.config/rsb.conf
+        -# \$(PWD)/rsb.conf
+        -# Environment Variables
+        
+        @param defaults A @ref ParticipantConfig object the options
+        of which should be used as defaults.
+        
+        @return A @ref ParticipantConfig object that contains the
+        merged configuration options from the sources mentioned
+        above.
+        
+        @see fromFile, fromEnvironment
+        '''
+        partial = clazz._fromFile(os.path.expanduser("~/.config/rsb.conf"))
+        partial = clazz._fromFile("rsb.conf", partial)
+        options = clazz._fromEnvironment(partial)
+        return clazz._fromDict(options)
 
 class QualityOfServiceSpec(object):
     '''
@@ -32,11 +170,11 @@ class QualityOfServiceSpec(object):
     
     @author: jwienke
     '''
-    
+
     Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
     Reliability = Enum("Reliability", ["UNRELIABLE", "RELIABLE"], [10, 20])
-        
-    def __init__(self, ordering = Ordering.UNORDERED, reliability = Reliability.RELIABLE):
+
+    def __init__(self, ordering=Ordering.UNORDERED, reliability=Reliability.RELIABLE):
         '''
         Constructs a new QoS specification with desired details. Defaults are
         unordered but reliable.
@@ -95,7 +233,7 @@ class QualityOfServiceSpec(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-    
+
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.__ordering, self.__reliability)
 
@@ -218,7 +356,7 @@ class Scope(object):
 
         return self.__components == other.__components[:len(self.__components)]
 
-    def superScopes(self, includeSelf = False):
+    def superScopes(self, includeSelf=False):
         '''
         Generates all super scopes of this scope including the root scope "/".
         The returned list of scopes is ordered by hierarchy with "/" being the
@@ -522,8 +660,8 @@ class Publisher(object):
     """
 
     def __init__(self, scope, type,
-                 config = ParticipantConfig.fromDefaultSources(),
-                 router = None):
+                 config=ParticipantConfig.fromDefaultSources(),
+                 router=None):
         """
         Constructs a new Publisher.
 
@@ -542,7 +680,7 @@ class Publisher(object):
         if router:
             self.__router = router
         else:
-            self.__router = Router(outPort=SpreadPort(options = config.getTransport('spread').getOptions()))
+            self.__router = Router(outPort=SpreadPort(options=config.getTransport('spread').getOptions()))
         # TODO check that type can be converted
         self.__type = type
 
@@ -596,8 +734,8 @@ class Subscriber(object):
     """
 
     def __init__(self, scope,
-                 config = ParticipantConfig.fromDefaultSources(),
-                 router = None):
+                 config=ParticipantConfig.fromDefaultSources(),
+                 router=None):
         """
         Create a new subscriber for the specified scope.
 
@@ -614,7 +752,7 @@ class Subscriber(object):
         if router:
             self.__router = router
         else:
-            self.__router = Router(inPort=SpreadPort(options = config.getTransport('spread').getOptions()))
+            self.__router = Router(inPort=SpreadPort(options=config.getTransport('spread').getOptions()))
 
 
         self.__mutex = threading.Lock()
