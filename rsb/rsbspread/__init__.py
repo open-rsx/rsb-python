@@ -42,6 +42,7 @@ class Assembly(object):
     def __init__(self, notification):
         
         self.__requiredParts = notification.num_data_parts
+        assert(self.__requiredParts > 1)
         self.__id = notification.id
         self.__parts = {notification.data_part : notification}
         
@@ -62,7 +63,7 @@ class Assembly(object):
         keys.sort()
         finalData = ""
         for key in keys:
-            finalData += self.__parts[key].data
+            finalData += self.__parts[key].data.binary
         return finalData
 
 class AssemblyPool(object):
@@ -72,6 +73,21 @@ class AssemblyPool(object):
     
     @author: jwienke
     """
+    
+    def __init__(self):
+        self.__assemblies = {}
+        
+    def add(self, notification):
+        if notification.num_data_parts == 1:
+            return notification.data.binary
+        if not notification.id in self.__assemblies:
+            self.__assemblies[notification.id] = Assembly(notification)
+            return None
+        else:
+            result = self.__assemblies[notification.id].add(notification)
+            if result != None:
+                del self.__assemblies[notification.id]
+            return result
 
 class SpreadReceiverTask(object):
     """
@@ -104,6 +120,8 @@ class SpreadReceiverTask(object):
         self.__taskId = uuid.uuid1()
         # narf, spread groups are 32 chars long but 0-terminated... truncate id
         self.__wakeupGroup = str(self.__taskId).replace("-", "")[:-1]
+        
+        self.__assemblyPool = AssemblyPool()
 
     def __call__(self):
 
@@ -141,21 +159,25 @@ class SpreadReceiverTask(object):
                         data = data[:5000] + " [... truncated for printing]"
                     self.__logger.debug("Received notification from bus: %s" % data)
 
-                # build rsbevent from notification
-                event = RSBEvent()
-                event.uuid = uuid.UUID(notification.id)
-                event.scope = Scope(notification.scope)
-                event.type = notification.wire_schema
-                event.data = self.__converterMap.getConverter(event.type).deserialize(notification.data.binary)
-                self.__logger.debug("Sending event to dispatch task: %s" % event)
+                joinedData = self.__assemblyPool.add(notification)
 
-                if self.__observerAction:
-                    self.__observerAction(event)
+                if joinedData:
+
+                    # build rsbevent from notification
+                    event = RSBEvent()
+                    event.uuid = uuid.UUID(notification.id)
+                    event.scope = Scope(notification.scope)
+                    event.type = notification.wire_schema
+                    event.data = self.__converterMap.getConverter(event.type).deserialize(joinedData)
+                    self.__logger.debug("Sending event to dispatch task: %s" % event)
+    
+                    if self.__observerAction:
+                        self.__observerAction(event)
 
             except (AttributeError, TypeError), e:
                 self.__logger.info("Attribute or TypeError receiving message: %s" % e)
             except UnknownConverterError, e:
-                self.__logger.error("Unable to deserialize message> %s", e)
+                self.__logger.error("Unable to deserialize message: %s", e)
             except DecodeError, e:
                 self.__logger.error("Error decoding notification: %s", e)
 
