@@ -35,29 +35,29 @@ class Assembly(object):
     """
     A class that maintains one fragmented messages and assembles them if all
     parts are received.
-    
+
     @author: jwienke
     """
-    
+
     def __init__(self, notification):
-        
+
         self.__requiredParts = notification.num_data_parts
         assert(self.__requiredParts > 1)
         self.__id = notification.id
         self.__parts = {notification.data_part : notification}
-        
+
     def add(self, notification):
         assert(notification.id == self.__id)
         if notification.data_part in self.__parts:
             raise ValueError("Received part %u for notification with id %s again." % (notification.data_part, notification.id))
-        
+
         self.__parts[notification.data_part] = notification
-        
+
         if len(self.__parts) == self.__requiredParts:
             return self.__join()
         else:
             return None
-        
+
     def __join(self):
         keys = self.__parts.keys()
         keys.sort()
@@ -70,7 +70,7 @@ class AssemblyPool(object):
     """
     Maintains the parallel joining of notfications that are received in an
     interleaved fashion.
-    
+
     @author: jwienke
     """
     
@@ -92,15 +92,15 @@ class AssemblyPool(object):
 class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
-    
+
     @author: jwienke
-    @todo: check that the observerAction can be changed without locking 
+    @todo: check that the observerAction can be changed without locking
     """
 
     def __init__(self, mailbox, observerAction, converterMap):
         """
         Constructor.
-        
+
         @param mailbox: spread mailbox to receive from
         @param observerAction: callable to execute if a new event is received
         @param converterMap: converters for data
@@ -199,14 +199,22 @@ class SpreadReceiverTask(object):
 class SpreadPort(rsb.transport.Port):
     """
     Spread-based implementation of a port.
-    
-    @author: jwienke 
+
+    @author: jwienke
     """
 
     __MAX_MSG_LENGTH = 100000
 
-    def __init__(self, spreadModule=spread, converterMap=None):
+    def __init__(self, spreadModule=spread, converterMap=None,
+                 options = {}):
         rsb.transport.Port.__init__(self, str, converterMap)
+        host = options.get('host', None)
+        port = options.get('port', '4803')
+        if host:
+            self.__daemonName = '%s@%s' % (port, host)
+        else:
+            self.__daemonName = port
+
         self.__spreadModule = spreadModule
         self.__logger = getLoggerByClass(self.__class__)
         self.__connection = None
@@ -217,15 +225,15 @@ class SpreadPort(rsb.transport.Port):
         self.__receiveThread = None
         self.__receiveTask = None
         self.__observerAction = None
-        
+
     def __del__(self):
         self.deactivate()
 
     def activate(self):
         if self.__connection == None:
-            self.__logger.info("Activating spread port")
+            self.__logger.info("Activating spread port with daemon name %s" % self.__daemonName)
 
-            self.__connection = self.__spreadModule.connect()
+            self.__connection = self.__spreadModule.connect(self.__daemonName)
 
             self.__receiveTask = SpreadReceiverTask(self.__connection, self.__observerAction, self._getConverterMap())
             self.__receiveThread = threading.Thread(target=self.__receiveTask)
@@ -243,7 +251,7 @@ class SpreadPort(rsb.transport.Port):
 
             self.__connection.disconnect()
             self.__connection = None
-            
+
             self.__logger.debug("SpreadPort deactivated")
         else:
             self.__logger.warning("spread port already deactivated")
@@ -260,16 +268,16 @@ class SpreadPort(rsb.transport.Port):
         if self.__connection == None:
             self.__logger.warning("Port not activated")
             return
-        
+
         # convert data
         converted = self._getConverter(event.type).serialize(event.data)
-        
+
         # find out the number of required messages
         if len(converted) > 0:
             requiredParts = int(math.ceil(float(len(converted)) / float(self.__MAX_MSG_LENGTH)))
         else:
             requiredParts = 1
-        
+
         # build partial messages and send them
         self.__logger.debug("Sending %u messages" % requiredParts)
         for i in range(requiredParts):
@@ -284,11 +292,11 @@ class SpreadPort(rsb.transport.Port):
             n.data.length = len(dataPart)
             n.num_data_parts = requiredParts
             n.data_part = i
-    
+
             serialized = n.SerializeToString()
-            
+
             self.__logger.debug("Sending part %u with data length %u" % (i + 1, len(dataPart)))
-    
+
             # send message
             # TODO respect QoS
             scopes = event.scope.superScopes(True)
@@ -301,7 +309,7 @@ class SpreadPort(rsb.transport.Port):
                 self.__logger.warning("Error sending message, status code = %s" % sent)
 
     def filterNotify(self, filter, action):
-        
+
         self.__logger.debug("Got filter notification with filter %s and action %s" % (filter, action))
 
         if self.__connection == None:

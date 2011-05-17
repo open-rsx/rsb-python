@@ -19,35 +19,35 @@ import uuid
 import copy
 import logging
 import threading
-from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
+from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, ParticipantConfig
 import re
 
 class Scope(object):
     '''
     A scope defines a channel of the hierarchical unified bus covered by RSB.
     It is defined by a surface syntax like "/a/deep/scope".
-    
+
     @author: jwienke
     '''
-    
+
     __COMPONENT_SEPARATOR = "/"
     __COMPONENT_REGEX = re.compile("^[a-zA-Z0-9]+$")
-    
+
     def __init__(self, stringRep):
         '''
         Parses a scope from a string representation.
-        
+
         @param stringRep: string representation of the scope
         @raise ValueError: if the given string does not have the right syntax
         '''
-        
+
         if len(stringRep) == 0:
             raise ValueError("Empty scope is invalid.")
-        
+
         # append missing trailing slash
         if stringRep[-1] != self.__COMPONENT_SEPARATOR:
             stringRep += self.__COMPONENT_SEPARATOR
-            
+
         rawComponents = stringRep.split('/')
         if len(rawComponents) < 1:
             raise ValueError("Empty scope is not allowed.")
@@ -55,47 +55,47 @@ class Scope(object):
             raise ValueError("Scope must start with a slash. Given was '%s'." % stringRep)
         if len(rawComponents[-1]) != 0:
             raise ValueError("Scope must end with a slash. Given was '%s'." % stringRep)
-        
+
         self.__components = rawComponents[1:-1]
-        
+
         for com in self.__components:
             if not self.__COMPONENT_REGEX.match(com):
                 raise ValueError("Invalid character in component %s. Given was scope '%s'." % (com, stringRep))
-        
+
     def getComponents(self):
         '''
         Returns all components of the scope as an ordered list. Components are
         the names between the separator character '/'. The first entry in the
         list is the highest level of hierarchy. The scope '/' returns an empty
         list.
-        
+
         @return: components of the represented scope as ordered list with highest
                  level as first entry
         @rtype: list
         '''
         return copy.copy(self.__components)
-    
+
     def toString(self):
         '''
         Reconstructs a fully formal string representation of the scope with
         leading an trailing slashes.
-     
+
         @return: string representation of the scope
         @rtype: string
         '''
-        
+
         string = self.__COMPONENT_SEPARATOR
         for com in self.__components:
             string += com
             string += self.__COMPONENT_SEPARATOR
         return string
-    
+
     def concat(self, childScope):
         '''
         Creates a new scope that is a sub-scope of this one with the subordinated
         scope described by the given argument. E.g. "/this/is/".concat("/a/test/")
         results in "/this/is/a/test".
-        
+
         @param: childScope child to concatenate to the current scope for forming a
                            sub-scope
         @type childScope: Scope
@@ -106,56 +106,56 @@ class Scope(object):
         newScope.__components = copy.copy(self.__components)
         newScope.__components += childScope.__components
         return newScope
-    
+
     def isSubScopeOf(self, other):
         '''
         Tests whether this scope is a sub-scope of the given other scope, which
         means that the other scope is a prefix of this scope. E.g. "/a/b/" is a
         sub-scope of "/a/".
-        
+
         @param other: other scope to test
         @type other: Scope
         @return: @c true if this is a sub-scope of the other scope, equality gives
                 @c false, too
         @rtype: Bool
         '''
-        
+
         if len(self.__components) <= len(other.__components):
             return False
 
         return other.__components == self.__components[:len(other.__components)]
-    
+
     def isSuperScopeOf(self, other):
         '''
         Inverse operation of #isSubScopeOf.
-       
+
         @param other: other scope to test
         @type other: Scope
         @return: @c true if this scope is a strict super scope of the other scope.
                  equality also gives @c false.
         @rtype: Bool
         '''
-        
+
         if len(self.__components) >= len(other.__components):
             return False
-        
+
         return self.__components == other.__components[:len(self.__components)]
-    
+
     def superScopes(self, includeSelf = False):
         '''
         Generates all super scopes of this scope including the root scope "/".
         The returned list of scopes is ordered by hierarchy with "/" being the
         first entry.
-        
+
         @param includeSelf: if set to @true, this scope is also included as last
                             element of the returned list
         @type includeSelf: Bool
         @return: list of all super scopes ordered by hierarchy, "/" being first
         @rtype: list of Scopes
         '''
-        
+
         supers = []
-        
+
         maxIndex = len(self.__components)
         if not includeSelf:
             maxIndex -= 1
@@ -163,9 +163,9 @@ class Scope(object):
             super = Scope("/")
             super.__components = self.__components[:i]
             supers.append(super)
-        
+
         return supers
-    
+
     def __eq__(self, other):
         return self.__components == other.__components
 
@@ -183,17 +183,17 @@ class Scope(object):
 
     def __ge__(self, other):
         return self.toString() >= other.toString()
-    
+
     def __str__(self):
         return "Scope[%s]" % self.toString()
-    
+
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self.toString())
 
 class RSBEvent(object):
     '''
     Basic event class.
-    
+
     @author: jwienke
     '''
 
@@ -211,7 +211,7 @@ class RSBEvent(object):
     def getUUID(self):
         """
         Returns the uuid of this event.
-        
+
         @return: uuid id of the event
         """
 
@@ -220,7 +220,7 @@ class RSBEvent(object):
     def setUUID(self, uuid):
         """
         Sets the uuid of the event.
-        
+
         @param uuid: uuid to set
         """
 
@@ -231,7 +231,7 @@ class RSBEvent(object):
     def getScope(self):
         """
         Returns the scope of this event.
-        
+
         @return: scope
         """
 
@@ -240,7 +240,7 @@ class RSBEvent(object):
     def setScope(self, scope):
         """
         Sets the scope of this event.
-        
+
         @param scope: scope to set
         """
 
@@ -251,7 +251,7 @@ class RSBEvent(object):
     def getData(self):
         """
         Returns the user data of this event.
-        
+
         @return: user data
         """
 
@@ -260,7 +260,7 @@ class RSBEvent(object):
     def setData(self, data):
         """
         Sets the user data of this event
-        
+
         @param data: user data
         """
 
@@ -271,7 +271,7 @@ class RSBEvent(object):
     def getType(self):
         """
         Returns the type of the user data of this event.
-        
+
         @return: user data type
         """
 
@@ -280,7 +280,7 @@ class RSBEvent(object):
     def setType(self, type):
         """
         Sets the type of the user data of this event
-        
+
         @param type: user data type
         """
 
@@ -299,15 +299,15 @@ class RSBEvent(object):
             return (self.__uuid == other.__uuid) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
         except (TypeError, AttributeError):
             return False
-        
+
     def __neq__(self, other):
-        return not self.__eq__(other) 
+        return not self.__eq__(other)
 
 class Subscription(object):
     """
     A subscription in the RSB system. A subscription can be restricted by
     actions and additional filter for the matching process.
-    
+
     @author: jwienke
     """
 
@@ -323,7 +323,7 @@ class Subscription(object):
     def appendFilter(self, filter):
         """
         Appends a filter to restrict this subscription.
-        
+
         @param filter: filter to add
         """
 
@@ -332,7 +332,7 @@ class Subscription(object):
     def getFilters(self):
         """
         Returns all registered filters of this subscription.
-        
+
         @return: list of filters
         """
 
@@ -341,7 +341,7 @@ class Subscription(object):
     def appendAction(self, action):
         """
         Appends an action this subscription shall match on.
-        
+
         @param action: action to append. callable with one argument, the
                        RSBEvent
         """
@@ -352,7 +352,7 @@ class Subscription(object):
     def getActions(self):
         """
         Returns the list of all registered actions.
-        
+
         @return: list of actions to execute on matches
         @rtype: list of callables accepting an RSBEvent
         """
@@ -361,7 +361,7 @@ class Subscription(object):
     def match(self, event):
         """
         Matches this subscription against the provided event.
-        
+
         @param event: event to match against
         @rtype: bool
         @return: True if the subscription accepts the event, else False
@@ -410,7 +410,7 @@ class EventProcessor(object):
     def process(self, event):
         """
         Dispatches the event to all registered subscribers.
-        
+
         @type event: RSBEvent
         @param event: event to dispatch
         """
@@ -420,7 +420,7 @@ class EventProcessor(object):
     def subscribe(self, subscription):
         """
         Subscribe on selected actions.
-        
+
         @type subscription: Subscription
         @param subscription: the subscription to add
         """
@@ -430,7 +430,7 @@ class EventProcessor(object):
     def unsubscribe(self, subscription):
         """
         Unsubscribe.
-        
+
         @type subscription: Subscription
         @param subscription: subscription to remove
         """
@@ -440,25 +440,32 @@ class EventProcessor(object):
 class Publisher(object):
     """
     Event-sending part of the communication pattern.
-    
+
     @author: jwienke
     """
 
-    def __init__(self, scope, router, type):
+    def __init__(self, scope, type,
+                 config = ParticipantConfig.fromDefaultSources(),
+                 router = None):
         """
         Constructs a new Publisher.
-        
+
         @param scope: scope of the publisher
         @param router: router object with open outgoing port for communication
         @param type: type identifier string
         @todo: maybe provide an automatic type identifier deduction for default
                types?
         """
+        from rsbspread import SpreadPort
+        from transport import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 
         self.__scope = scope
-        self.__router = router
+        if router:
+            self.__router = router
+        else:
+            self.__router = transport.Router(outPort=SpreadPort(options = config.getTransport('spread').getOptions()))
         # TODO check that type can be converted
         self.__type = type
 
@@ -507,23 +514,31 @@ class Publisher(object):
 class Subscriber(object):
     """
     Event-receiving part of the communication pattern
-    
+
     @author: jwienke
     """
 
-    def __init__(self, scope, router):
+    def __init__(self, scope,
+                 config = ParticipantConfig.fromDefaultSources(),
+                 router = None):
         """
         Create a new subscriber for the specified scope.
-        
+
         @todo: why the duplicated scope, also passed in using the scope filter?
         @param scope: scope to subscribe one
         @param router: router with existing inport
         """
+        from rsbspread import SpreadPort
+        from transport import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 
         self.__scope = scope
-        self.__router = router
+        if router:
+            self.__router = router
+        else:
+            self.__router = Router(inPort=SpreadPort(options = config.getTransport('spread').getOptions()))
+
 
         self.__mutex = threading.Lock()
         self.__active = False
