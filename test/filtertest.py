@@ -30,6 +30,8 @@ class ScopeFilterTest(unittest.TestCase):
         e = rsb.RSBEvent()
         e.scope = scope
         self.assertTrue(f.match(e))
+        e.scope = scope.concat(Scope("/sub/scope"))
+        self.assertTrue(f.match(e))
 
         e.scope = Scope("/blubbbbbb")
         self.assertFalse(f.match(e))

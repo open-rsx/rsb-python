@@ -62,7 +62,7 @@ class ScopeFilter(AbstractFilter):
         return self.__scope
 
     def match(self, event):
-        return event.scope == self.__scope
+        return event.scope == self.__scope or event.scope.isSubScopeOf(self.__scope)
 
 class RecordingTrueFilter(AbstractFilter):
 

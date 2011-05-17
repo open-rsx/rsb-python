@@ -201,7 +201,10 @@ class SpreadPort(rsb.transport.Port):
         serialized = n.SerializeToString()
 
         # send message
-        sent = self.__connection.multicast(spread.RELIABLE_MESS, self.__groupName(event.scope), serialized)
+        scopes = event.scope.superScopes(True)
+        groupNames = [self.__groupName(scope) for scope in scopes]
+        self.__logger.debug("Sending to scopes %s which are groupNames %s" % (scopes, groupNames))
+        sent = self.__connection.multigroup_multicast(spread.RELIABLE_MESS, tuple(groupNames), serialized)
         if (sent > 0):
             self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
         else:

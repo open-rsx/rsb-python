@@ -183,6 +183,12 @@ class Scope(object):
 
     def __ge__(self, other):
         return self.toString() >= other.toString()
+    
+    def __str__(self):
+        return "Scope[%s]" % self.toString()
+    
+    def __repr__(self):
+        return '%s("%s")' % (self.__class__.__name__, self.toString())
 
 class RSBEvent(object):
     '''
@@ -309,6 +315,7 @@ class Subscription(object):
 
         self.__filters = []
         self.__actions = []
+        self.__logger = getLoggerByClass(self.__class__)
 
     def appendFilter(self, filter):
         """
@@ -359,8 +366,10 @@ class Subscription(object):
 
         for filter in self.__filters:
             if not filter.match(event):
+                self.__logger.debug("Filter %s filter did not match event %s" % (filter, event))
                 return False
 
+        self.__logger.debug("All filters matched event %s " % event)
         return True
 
     def __str__(self):

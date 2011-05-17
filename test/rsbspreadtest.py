@@ -24,17 +24,22 @@ from rsb.filter import ScopeFilter, FilterAction
 from rsb import RSBEvent, Publisher, Subscription, Subscriber, Scope
 from rsb.transport import Router
 import hashlib
+import sys
 
 class SettingReceiver(object):
     
-    def __init__(self):
+    def __init__(self, scope):
         self.resultEvent = None
         self.resultCondition = Condition()
+        self.scope = scope
     
     def __call__(self, event):
         with self.resultCondition:
             self.resultEvent = event
             self.resultCondition.notifyAll()
+            
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.scope)
 
 class SpreadPortTest(unittest.TestCase):
     
@@ -155,10 +160,10 @@ class SpreadPortTest(unittest.TestCase):
         port = SpreadPort()
         port.activate()
             
-        receiver = SettingReceiver()
+        goodScope = Scope("/good")
+        receiver = SettingReceiver(goodScope)
         port.setObserverAction(receiver)
         
-        goodScope = Scope("/good")
         filter = ScopeFilter(goodScope)
         
         port.filterNotify(filter, FilterAction.ADD)
@@ -191,7 +196,7 @@ class SpreadPortTest(unittest.TestCase):
         publisher = Publisher(scope, outRouter, "string")
         subscriber = Subscriber(scope, inRouter)
         
-        receiver = SettingReceiver()
+        receiver = SettingReceiver(scope)
         
         subscription = Subscription()
         subscription.appendFilter(ScopeFilter(scope))
@@ -206,6 +211,45 @@ class SpreadPortTest(unittest.TestCase):
             if receiver.resultEvent == None:
                 self.fail("Subscriber did not receive an event")
             self.assertEqual(receiver.resultEvent.data, data1)
+            
+    def testHierarchySending(self):
+        
+        sendScope = Scope("/this/is/a/test")
+        superScopes = sendScope.superScopes(True)
+        
+        outport = SpreadPort()
+        outRouter = Router(outPort = outport)
+        publisher = Publisher(sendScope, outRouter, "string")
+
+        # set up subscribers on the complete hierarchy
+        subscribers = []
+        receivers = []
+        for scope in superScopes:
+
+            inport = SpreadPort()
+            inRouter = Router(inPort = inport)
+            
+            subscriber = Subscriber(scope, inRouter)
+            subscribers.append(subscriber)
+            
+            receiver = SettingReceiver(scope)
+            
+            subscription = Subscription()
+            subscription.appendFilter(ScopeFilter(scope))
+            subscription.appendAction(receiver)
+            subscriber.addSubscription(subscription)
+            
+            receivers.append(receiver)
+        
+        data = "a string to test"
+        publisher.publishData(data)
+        
+        for receiver in receivers:
+            with receiver.resultCondition:
+                receiver.resultCondition.wait(10)
+                if receiver.resultEvent == None:
+                    self.fail("Subscriber on scope %s did not receive an event" % receiver.scope)
+                self.assertEqual(receiver.resultEvent.data, data)
 
 def suite():
     suite = unittest.TestSuite()
