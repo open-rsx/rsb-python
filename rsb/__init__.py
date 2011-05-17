@@ -289,7 +289,10 @@ class RSBEvent(object):
     type = property(getType, setType)
 
     def __str__(self):
-        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__scope, self.__data, self.__type)
+        printData = self.__data
+        if isinstance(self.__data, str) and len(self.__data) > 10000:
+            printData = "string with length %u" % len(self.__data)
+        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__scope, printData, self.__type)
 
     def __eq__(self, other):
         try:

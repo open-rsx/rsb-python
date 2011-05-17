@@ -28,6 +28,50 @@ from rsb.util import getLoggerByClass
 from rsb import RSBEvent, Scope
 from rsb.transport.converter import UnknownConverterError
 import hashlib
+import math
+import logging
+
+class Assembly(object):
+    """
+    A class that maintains one fragmented messages and assembles them if all
+    parts are received.
+    
+    @author: jwienke
+    """
+    
+    def __init__(self, notification):
+        
+        self.__requiredParts = notification.num_data_parts
+        self.__id = notification.id
+        self.__parts = {notification.data_part : notification}
+        
+    def add(self, notification):
+        assert(notification.id == self.__id)
+        if notification.data_part in self.__parts:
+            raise ValueError("Received part %u for notification with id %s again." % (notification.data_part, notification.id))
+        
+        self.__parts[notification.data_part] = notification
+        
+        if len(self.__parts) == self.__requiredParts:
+            return self.__join()
+        else:
+            return None
+        
+    def __join(self):
+        keys = self.__parts.keys()
+        keys.sort()
+        finalData = ""
+        for key in keys:
+            finalData += self.__parts[key].data
+        return finalData
+
+class AssemblyPool(object):
+    """
+    Maintains the parallel joining of notfications that are received in an
+    interleaved fashion.
+    
+    @author: jwienke
+    """
 
 class SpreadReceiverTask(object):
     """
@@ -91,7 +135,11 @@ class SpreadReceiverTask(object):
 
                 notification = Notification()
                 notification.ParseFromString(message.message)
-                self.__logger.debug("Received notification from bus: %s" % notification)
+                if self.__logger.isEnabledFor(logging.DEBUG):
+                    data = str(notification)
+                    if len(data) > 5000:
+                        data = data[:5000] + " [... truncated for printing]"
+                    self.__logger.debug("Received notification from bus: %s" % data)
 
                 # build rsbevent from notification
                 event = RSBEvent()
@@ -132,6 +180,8 @@ class SpreadPort(rsb.transport.Port):
     
     @author: jwienke 
     """
+
+    __MAX_MSG_LENGTH = 100000
 
     def __init__(self, spreadModule=spread, converterMap=None):
         rsb.transport.Port.__init__(self, str, converterMap)
@@ -189,26 +239,44 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.warning("Port not activated")
             return
         
-        # create message
-        n = Notification()
-        n.id = str(event.uuid)
-        n.scope = event.scope.toString()
-        n.wire_schema = str(event.type)
+        # convert data
         converted = self._getConverter(event.type).serialize(event.data)
-        n.data.binary = converted
-        n.data.length = len(converted)
-
-        serialized = n.SerializeToString()
-
-        # send message
-        scopes = event.scope.superScopes(True)
-        groupNames = [self.__groupName(scope) for scope in scopes]
-        self.__logger.debug("Sending to scopes %s which are groupNames %s" % (scopes, groupNames))
-        sent = self.__connection.multigroup_multicast(spread.RELIABLE_MESS, tuple(groupNames), serialized)
-        if (sent > 0):
-            self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
+        
+        # find out the number of required messages
+        if len(converted) > 0:
+            requiredParts = int(math.ceil(float(len(converted)) / float(self.__MAX_MSG_LENGTH)))
         else:
-            self.__logger.warning("Error sending message, status code = %s" % sent)
+            requiredParts = 1
+        
+        # build partial messages and send them
+        self.__logger.debug("Sending %u messages" % requiredParts)
+        for i in range(requiredParts):
+
+            # create message
+            n = Notification()
+            n.id = str(event.uuid)
+            n.scope = event.scope.toString()
+            n.wire_schema = str(event.type)
+            dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
+            n.data.binary = dataPart
+            n.data.length = len(dataPart)
+            n.num_data_parts = requiredParts
+            n.data_part = i
+    
+            serialized = n.SerializeToString()
+            
+            self.__logger.debug("Sending part %u with data length %u" % (i + 1, len(dataPart)))
+    
+            # send message
+            # TODO respect QoS
+            scopes = event.scope.superScopes(True)
+            groupNames = [self.__groupName(scope) for scope in scopes]
+            self.__logger.debug("Sending to scopes %s which are groupNames %s" % (scopes, groupNames))
+            sent = self.__connection.multigroup_multicast(spread.RELIABLE_MESS, tuple(groupNames), serialized)
+            if (sent > 0):
+                self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
+            else:
+                self.__logger.warning("Error sending message, status code = %s" % sent)
 
     def filterNotify(self, filter, action):
         
