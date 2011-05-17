@@ -30,19 +30,40 @@ class Enum(object):
 
     class EnumValue(object):
 
-        def __init__(self, name):
+        def __init__(self, name, value=None):
             self.__name = name
+            self.__value = value
+            if self.__value == None:
+                self.__value = name
 
         def __str__(self):
             return "%s" % (self.__name)
 
+        def __repr__(self):
+            return "%s(%r, %r)" % (self.__class__.__name__, self.__name, self.__value)
+
         def __eq__(self, other):
             try:
-                return other.__name == self.__name
+                return other.__value == self.__value
             except (AttributeError, TypeError):
                 return False
 
-    def __init__(self, name, keys):
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
+        def __lt__(self, other):
+            return self.__value < other.__value
+
+        def __le__(self, other):
+            return self.__value <= other.__value
+
+        def __gt__(self, other):
+            return self.__value > other.__value
+
+        def __ge__(self, other):
+            return self.__value >= other.__value
+
+    def __init__(self, name, keys, values=None):
         """
         Generates a new enum.
 
@@ -52,14 +73,24 @@ class Enum(object):
         @param keys: list of enum keys to generate
         """
 
+        if values != None and len(values) != len(keys):
+            raise ValueError("Length of enum key list must be the same as value list, keys: %s, values: %s" % (keys, values))
+
         self.__name = name
         self.__keys = keys
+        self.__values = values
         self.__keyString = ", ".join(keys)
-        for key in keys:
-            setattr(self, key, Enum.EnumValue(key))
+        for i in range(len(keys)):
+            if values:
+                setattr(self, keys[i], Enum.EnumValue(keys[i], values[i]))
+            else:
+                setattr(self, keys[i], Enum.EnumValue(keys[i]))
 
     def __str__(self):
         return "Enum %s: %s" % (self.__name, self.__keyString)
+
+    def __repr__(self):
+        return '%s(%r, %r, %r)' % (self.__class__.__name__, self.__keys, self.__values)
 
 class InterruptedError(RuntimeError):
     """
@@ -282,7 +313,7 @@ class OrderedQueueDispatcherPool(object):
 
             for i in range(self.__threadPoolSize):
                 worker = Thread(target=self.__worker, args=[i])
-		worker.setDaemon(True)
+                worker.setDaemon(True)
                 worker.start()
                 self.__threadPool.append(worker)
 
@@ -316,8 +347,8 @@ def getLoggerByClass(klass):
 
 class ParticipantConfig (object):
     class Transport (object):
-        def __init__(self, name, options = {}):
-            self._name    = name
+        def __init__(self, name, options={}):
+            self._name = name
             self._enabled = options.get('enabled', '1') == 1
             self._options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
@@ -332,9 +363,9 @@ class ParticipantConfig (object):
         def __repr__(self):
             return str(self)
 
-    def __init__(self, transports = {}, options = {}):
+    def __init__(self, transports={}, options={}):
         self._transports = transports
-        self._options    = options
+        self._options = options
 
     def getTransport(self, name):
         return self._transports[name]
@@ -348,7 +379,7 @@ class ParticipantConfig (object):
     @classmethod
     def _fromDict(clazz, options):
         def sectionOptions(section):
-            return [ (key[len(section)+1:], value) for (key, value) in options.items()
+            return [ (key[len(section) + 1:], value) for (key, value) in options.items()
                      if key.startswith(section) ]
         result = ParticipantConfig()
         for transport in [ 'spread' ]:
@@ -357,7 +388,7 @@ class ParticipantConfig (object):
         return result
 
     @classmethod
-    def _fromFile(clazz, path, defaults = {}):
+    def _fromFile(clazz, path, defaults={}):
         parser = ConfigParser.RawConfigParser()
         parser.read(path)
         options = defaults
@@ -367,7 +398,7 @@ class ParticipantConfig (object):
         return options
 
     @classmethod
-    def fromFile(clazz, path, defaults = {}):
+    def fromFile(clazz, path, defaults={}):
         '''
         Obtain configuration options from the configuration file @a
         path, store them in a @ref ParticipantConfig object and return
@@ -390,7 +421,7 @@ class ParticipantConfig (object):
         return clazz._fromDict(clazz._fromFile(path, defaults))
 
     @classmethod
-    def _fromEnvironment(clazz, defaults = {}):
+    def _fromEnvironment(clazz, defaults={}):
         options = defaults
         for (key, value) in os.environ.items():
             if key.startswith('RSB_'):
@@ -398,7 +429,7 @@ class ParticipantConfig (object):
         return options
 
     @classmethod
-    def fromEnvironment(clazz, defaults = {}):
+    def fromEnvironment(clazz, defaults={}):
         '''
         Obtain configuration options from environment variables, store
         them in a @ref ParticipantConfig object and return
@@ -421,7 +452,7 @@ class ParticipantConfig (object):
         return clazz._fromDict(clazz._fromEnvironment(defaults))
 
     @classmethod
-    def fromDefaultSources(clazz, defaults = {}):
+    def fromDefaultSources(clazz, defaults={}):
           '''
           Obtain configuration options from multiple sources, store
           them in a @ref ParticipantConfig object and return it. The

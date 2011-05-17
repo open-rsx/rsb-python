@@ -19,8 +19,85 @@ import uuid
 import copy
 import logging
 import threading
-from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, ParticipantConfig
+from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, ParticipantConfig, Enum
 import re
+
+class QualityOfServiceSpec(object):
+    '''
+    Specification of desired quality of service settings for sending and
+    receiving events. Specification given here are required "at least". This
+    means concrete port instances can implement "better" QoS specs without any
+    notification to the clients. Better is decided by the integer value of the
+    specification enums. Higher values mean better services.
+    
+    @author: jwienke
+    '''
+    
+    Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
+    Reliability = Enum("Reliability", ["UNRELIABLE", "RELIABLE"], [10, 20])
+        
+    def __init__(self, ordering = Ordering.UNORDERED, reliability = Reliability.RELIABLE):
+        '''
+        Constructs a new QoS specification with desired details. Defaults are
+        unordered but reliable.
+        
+        @param ordering: desired ordering type
+        @param reliability: desired reliability type
+        '''
+        self.__ordering = ordering
+        self.__reliability = reliability
+
+    def getOrdering(self):
+        '''
+        Returns the desired ordering settings.
+        
+        @return: ordering settings
+        '''
+
+        return self.__ordering
+
+    def setOrdering(self, ordering):
+        '''
+        Sets the desired ordering settings
+        
+        @param ordering: ordering to set
+        '''
+
+        self.__ordering = ordering
+
+    ordering = property(getOrdering, setOrdering)
+
+    def getReliability(self):
+        '''
+        Returns the desired reliability settings.
+        
+        @return: reliability settings
+        '''
+
+        return self.__reliability
+
+    def setReliability(self, reliability):
+        '''
+        Sets the desired reliability settings
+        
+        @param reliability: reliability to set
+        '''
+
+        self.__reliability = reliability
+
+    reliability = property(getReliability, setReliability)
+
+    def __eq__(self, other):
+        try:
+            return other.__reliability == self.__reliability and other.__ordering == self.__ordering
+        except (AttributeError, TypeError):
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    def __repr__(self):
+        return "%s(%r, %r)" % (self.__class__.__name__, self.__ordering, self.__reliability)
 
 class Scope(object):
     '''
@@ -465,7 +542,7 @@ class Publisher(object):
         if router:
             self.__router = router
         else:
-            self.__router = transport.Router(outPort=SpreadPort(options = config.getTransport('spread').getOptions()))
+            self.__router = Router(outPort=SpreadPort(options = config.getTransport('spread').getOptions()))
         # TODO check that type can be converted
         self.__type = type
 

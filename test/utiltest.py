@@ -32,8 +32,20 @@ class EnumValueTest(unittest.TestCase):
         val2 = rsb.util.Enum.EnumValue("OTHER")
         self.assertNotEqual(val1, val2)
         
+        self.assertTrue(val1 > val2)
+        self.assertTrue(val1 >= val2)
+        self.assertFalse(val1 < val2)
+        self.assertFalse(val1 <= val2)
+        
         val2 = rsb.util.Enum.EnumValue("TEST")
         self.assertEqual(val1, val2)
+        
+        val1 = rsb.util.Enum.EnumValue("TEST", 5)
+        val2 = rsb.util.Enum.EnumValue("OTHER", 10)
+        self.assertFalse(val1 > val2)
+        self.assertFalse(val1 >= val2)
+        self.assertTrue(val1 < val2)
+        self.assertTrue(val1 <= val2)
         
     def testStr(self):
         
@@ -50,6 +62,14 @@ class EnumTest(unittest.TestCase):
         self.assertEqual(rsb.util.Enum.EnumValue("C"), e.C)
         
         self.assertEqual("Enum e: A, B, C", str(e))
+        
+    def testValueEnum(self):
+        
+        e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
+        
+        self.assertEqual(rsb.util.Enum.EnumValue("A", 10), e.A)
+        self.assertEqual(rsb.util.Enum.EnumValue("B", 20), e.B)
+        self.assertEqual(rsb.util.Enum.EnumValue("C", 30), e.C)
         
 class OrderedQueueDispatcherPoolTest(unittest.TestCase):
     

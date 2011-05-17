@@ -20,10 +20,22 @@ import uuid
 import unittest
 
 import rsb
-from rsb import EventProcessor, Subscription, RSBEvent, Scope
+from rsb import EventProcessor, Subscription, RSBEvent, Scope, QualityOfServiceSpec
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 import time
 from threading import Condition
+
+class QualityOfServiceSpecTest(unittest.TestCase):
+    
+    def testConstruction(self):
+        
+        specs = QualityOfServiceSpec()
+        self.assertEqual(QualityOfServiceSpec.Ordering.UNORDERED, specs.getOrdering())
+        self.assertEqual(QualityOfServiceSpec.Reliability.RELIABLE, specs.getReliability())
+        
+    def testComparison(self):
+        
+        self.assertEqual(QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED, QualityOfServiceSpec.Reliability.RELIABLE), QualityOfServiceSpec())
 
 class ScopeTest(unittest.TestCase):
 
@@ -283,6 +295,7 @@ class EventProcessorTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RSBEventTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SubscriptionTest))
