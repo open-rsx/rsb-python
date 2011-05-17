@@ -394,8 +394,9 @@ class EventProcessor(object):
 
     def deactivate(self):
         self.__logger.debug("Deactivating EventProcesor")
-        self.__pool.stop()
-        self.__pool = None
+        if self.__pool:
+            self.__pool.stop()
+            self.__pool = None
 
     @classmethod
     def __deliver(cls, subscription, event):
