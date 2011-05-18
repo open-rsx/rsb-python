@@ -33,5 +33,6 @@ def suite():
     suite.addTest(filtertest.suite())
     suite.addTest(rsbspreadtest.suite())
     suite.addTest(transporttest.suite())
+    suite.addTest(convertertest.suite())
     suite.addTest(utiltest.suite())
     return suite
