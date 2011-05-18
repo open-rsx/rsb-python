@@ -163,7 +163,7 @@ class SpreadReceiverTask(object):
 
                 if joinedData:
                     # find a suitable converter
-                    converter = self.__converterMap.getConverterForWireSchema(notification.type)
+                    converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                     # build rsbevent from notification
                     event = RSBEvent()
                     event.uuid = uuid.UUID(notification.id)
@@ -181,6 +181,10 @@ class SpreadReceiverTask(object):
                 self.__logger.error("Unable to deserialize message: %s", e)
             except DecodeError, e:
                 self.__logger.error("Error decoding notification: %s", e)
+            except Exception, e:
+                self.__logger.error("Error decoding notification: %s", e)
+                raise e
+
 
         # leave task id group to clean up
         self.__mailbox.leave(self.__wakeupGroup)
@@ -272,7 +276,9 @@ class SpreadPort(rsb.transport.Port):
             return
 
         # convert data
-        converted = self._getConverterForDataType(event.type).serialize(event.data)
+        converter = self._getConverterForDataType(event.type)
+        converted = converter.serialize(event.data)
+        wireSchema = converter.getWireSchema()
 
         # find out the number of required messages
         if len(converted) > 0:
@@ -288,7 +294,7 @@ class SpreadPort(rsb.transport.Port):
             n = Notification()
             n.id = str(event.uuid)
             n.scope = event.scope.toString()
-            n.wire_schema = str(event.type)
+            n.wire_schema = wireSchema
             dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
             n.data.binary = dataPart
             n.data.length = len(dataPart)

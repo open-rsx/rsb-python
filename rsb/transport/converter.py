@@ -103,7 +103,7 @@ class ConverterMap(object):
         self.__converters[key] = converter
 
     def __getConverterForWireSchema(self, wireSchema):
-        for ((concerterWireSchema, ignored), converter) in self.__converters.items():
+        for ((converterWireSchema, ignored), converter) in self.__converters.items():
             if converterWireSchema == wireSchema:
                 return converter
 
