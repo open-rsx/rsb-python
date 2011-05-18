@@ -31,7 +31,7 @@ class QualityOfServiceSpec(object):
     means concrete port instances can implement "better" QoS specs without any
     notification to the clients. Better is decided by the integer value of the
     specification enums. Higher values mean better services.
-    
+
     @author: jwienke
     '''
 
@@ -42,7 +42,7 @@ class QualityOfServiceSpec(object):
         '''
         Constructs a new QoS specification with desired details. Defaults are
         unordered but reliable.
-        
+
         @param ordering: desired ordering type
         @param reliability: desired reliability type
         '''
@@ -52,7 +52,7 @@ class QualityOfServiceSpec(object):
     def getOrdering(self):
         '''
         Returns the desired ordering settings.
-        
+
         @return: ordering settings
         '''
 
@@ -61,7 +61,7 @@ class QualityOfServiceSpec(object):
     def setOrdering(self, ordering):
         '''
         Sets the desired ordering settings
-        
+
         @param ordering: ordering to set
         '''
 
@@ -72,7 +72,7 @@ class QualityOfServiceSpec(object):
     def getReliability(self):
         '''
         Returns the desired reliability settings.
-        
+
         @return: reliability settings
         '''
 
@@ -81,7 +81,7 @@ class QualityOfServiceSpec(object):
     def setReliability(self, reliability):
         '''
         Sets the desired reliability settings
-        
+
         @param reliability: reliability to set
         '''
 
@@ -103,22 +103,51 @@ class QualityOfServiceSpec(object):
 
 class ParticipantConfig (object):
     '''
+    Objects of this class describe desired configurations for newly
+    created participants with respect to:
+    - Quality of service settings
+    - Error handling strategies (not currently used)
+    - Employed transport mechanisms
+      - Their configurations (e.g. port numbers)
+      - Associated converters
+
     @author: jmoringe
     '''
-    
+
     class Transport (object):
+        '''
+        Objects of this class describe configurations of transports
+        connectors. These consist of
+        - Transport name
+        - Enabled vs. Disabled
+        - Optional converter selection
+        - Transport-specific options
+
+        @author: jmoringe
+        '''
         def __init__(self, name, options={}):
             self.__name = name
-            self.__enabled = options.get('enabled', '1') == 1
+            self.__enabled = options.get('enabled', '1') in ('1', 'true', 'yes')
+            self.__converters = [ (key[10:], value) for (key, value) in options.items()
+                                  if key.startswith('converter') ]
             self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
+
+        def getName(self):
+            return self.__name
+
+        def isEnabled(self):
+            return self.__enabled
+
+        def getConverters(self):
+            return self.__converters
 
         def getOptions(self):
             return self.__options
 
         def __str__(self):
-            return ('ParticipantConfig.Transport[%s, enabled = %s,  %s]'
-                    % (self.__name, self.__enabled, self.__options))
+            return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, options = %s]'
+                    % (self.__name, self.__enabled, self.__converters, self.__options))
 
         def __repr__(self):
             return str(self)
@@ -128,9 +157,13 @@ class ParticipantConfig (object):
         self.__options = options
         self.__qos = qos
 
+    def getTransports(self, includeDisabled=False):
+        return [ t for t in self.__transports.values()
+                 if includeDisabled or t.isEnabled() ]
+
     def getTransport(self, name):
         return self.__transports[name]
-    
+
     def getQualityOfServiceSpec(self):
         return self.__qos
 
@@ -222,18 +255,18 @@ class ParticipantConfig (object):
         them in a @ref ParticipantConfig object and return it. The
         following sources of configuration information will be
         consulted:
-        
+
         -# ~/.config/rsb.conf
         -# \$(PWD)/rsb.conf
         -# Environment Variables
-        
+
         @param defaults A @ref ParticipantConfig object the options
         of which should be used as defaults.
-        
+
         @return A @ref ParticipantConfig object that contains the
         merged configuration options from the sources mentioned
         above.
-        
+
         @see fromFile, fromEnvironment
         '''
         partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"))
