@@ -39,8 +39,8 @@ class UnambiguousConverterMapTest (unittest.TestCase):
     def testAddConverter(self):
         map = UnambiguousConverterMap(str)
         map.addConverter(StringConverter())
-        self.assertRaises(Exception, map.addConverter, ConflicitingStringConverter())
-        self.assertRaises(Exception, map.addConverter, ConflicitingStringConverter(), True)
+        self.assertRaises(Exception, map.addConverter, ConflictingStringConverter())
+        self.assertRaises(Exception, map.addConverter, ConflictingStringConverter(), True)
         map.addConverter(StringConverter(), override = True)
 
 def suite():
