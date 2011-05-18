@@ -20,6 +20,7 @@ import coretest
 import filtertest
 import rsbspreadtest
 import transporttest
+import convertertest
 import utiltest
 
 import logging
