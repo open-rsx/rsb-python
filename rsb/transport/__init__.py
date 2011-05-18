@@ -28,14 +28,14 @@ from threading import RLock
 class Router(object):
     """
     Routers to publish and subscribe on events.
-    
+
     @author: jwienke
     """
 
     def __init__(self, inPort=None, outPort=None, eventProcessor=None):
         """
         Creates a new router.
-        
+
         @param inPort: port for ingoing communication or None for no port
         @param outPort: port for outgoing communication or None for no port
         @param eventProcessor: event processor to use
@@ -65,7 +65,7 @@ class Router(object):
         self.__logger.debug("Destructing router")
         if self.__active:
             self.deactivate()
-            
+
     def setQualityOfServiceSpec(self, qos):
         if self.__inPort:
             self.__inPort.setQualityOfServiceSpec(qos)
@@ -123,15 +123,15 @@ class Router(object):
 class Port(object):
     """
     Interface for transport-specific ports.
-    
+
     @author: jwienke
     """
 
-    def __init__(self, targetType, converterMap=None):
+    def __init__(self, wireType, converterMap=None):
         """
-        Creates a new port with a serialization type targetType.
-        
-        @param targetType: the serialization python type used
+        Creates a new port with a serialization type wireType.
+
+        @param wireType: the type of serialized data used by this port.
         @param converterMap: map of converters to use. If None, the global
                              map of converters for the selected targetType is
                              used
@@ -139,36 +139,49 @@ class Port(object):
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        if targetType == None:
-            raise ValueError("Target type must be a class or primitive type, None given")
+        if wireType == None:
+            raise ValueError("Wire type must be a class or primitive type, None given")
 
         if converterMap == None:
-            self.__logger.debug("Using global converter map for target type %s" % targetType)
-            self.__converterMap = converter.getGlobalConverterMap(targetType)
+            self.__logger.debug("Using global converter map for wire-type %s" % wireType)
+            self.__converterMap = converter.getGlobalConverterMap(wireType)
         else:
-            self.__logger.debug("Using specified converter map for target type %s" % targetType)
+            self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
             self.__converterMap = converterMap
-        assert(self.__converterMap.getTargetType() == targetType)
-        self.__targetType = targetType
+        assert(self.__converterMap.getWireType() == wireType)
+        self.__wireType = wireType
 
-    def getTargetType(self):
+    def getWireType(self):
         """
         Returns the serialization type used for this port.
-        
+
         @return: python serialization type
         """
-        return self.__targetType
+        return self.__wireType
 
-    def _getConverter(self, sourceType):
+    def _getConverterForDataType(self, dataType):
         """
-        Returns the converter for the source type.
-        
-        @param sourceType: source type
+        Returns a converter that can convert the supplied data to the
+        wire-type.
+
+        @param dataType: the type of the object for which a suitable
+                         converter should returned.
         @return: converter
-        @raise KeyError: no converter for the source type available
+        @raise KeyError: no converter is available for the supplied data.
         """
-        self.__logger.debug("Searching for converter with sourceType '%s' in map %s" % (sourceType, self.__converterMap))
-        return self.__converterMap.getConverter(sourceType)
+        #self.__logger.debug("Searching for converter for data '%s' in map %s" % (data, self.__converterMap))
+        return self.__converterMap.getConverterForDataType(dataType)
+
+    def _getConverterForWireSchema(self, wireSchema):
+        """
+        Returns the converter for the wire-schema.
+
+        @param wireSchema: the wire-schema to or from which the returned converter should convert
+        @return: converter
+        @raise KeyError: no converter is available for the specified wire-schema
+        """
+        self.__logger.debug("Searching for converter with wireSchema '%s' in map %s" % (wireSchema, self.__converterMap))
+        return self.__converterMap.getConverterForWireSchema(wireSchema)
 
     def _getConverterMap(self):
         return self.__converterMap
@@ -188,7 +201,7 @@ class Port(object):
         """
         Sets the action used by the port to notify about incomming events.
         The call to this method must be thread-safe.
-        
+
         @param observerAction: action called if a new message is received from
                                the port. Must accept an RSBEvent as parameter.
         """

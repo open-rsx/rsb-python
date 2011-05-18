@@ -73,10 +73,10 @@ class AssemblyPool(object):
 
     @author: jwienke
     """
-    
+
     def __init__(self):
         self.__assemblies = {}
-        
+
     def add(self, notification):
         if notification.num_data_parts == 1:
             return notification.data.binary
@@ -115,12 +115,12 @@ class SpreadReceiverTask(object):
         self.__observerAction = observerAction
 
         self.__converterMap = converterMap
-        assert(converterMap.getTargetType() == str)
+        assert(converterMap.getWireType() == str)
 
         self.__taskId = uuid.uuid1()
         # narf, spread groups are 32 chars long but 0-terminated... truncate id
         self.__wakeupGroup = str(self.__taskId).replace("-", "")[:-1]
-        
+
         self.__assemblyPool = AssemblyPool()
 
     def __call__(self):
@@ -162,15 +162,16 @@ class SpreadReceiverTask(object):
                 joinedData = self.__assemblyPool.add(notification)
 
                 if joinedData:
-
+                    # find a suitable converter
+                    converter = self.__converterMap.getConverterForWireSchema(notification.type)
                     # build rsbevent from notification
                     event = RSBEvent()
                     event.uuid = uuid.UUID(notification.id)
                     event.scope = Scope(notification.scope)
-                    event.type = notification.wire_schema
-                    event.data = self.__converterMap.getConverter(event.type).deserialize(joinedData)
+                    event.type = converter.getDataType()
+                    event.data = converter.deserialize(joinedData)
                     self.__logger.debug("Sending event to dispatch task: %s" % event)
-    
+
                     if self.__observerAction:
                         self.__observerAction(event)
 
@@ -271,7 +272,7 @@ class SpreadPort(rsb.transport.Port):
             return
 
         # convert data
-        converted = self._getConverter(event.type).serialize(event.data)
+        converted = self._getConverterForDataType(event.type).serialize(event.data)
 
         # find out the number of required messages
         if len(converted) > 0:

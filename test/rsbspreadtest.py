@@ -27,6 +27,7 @@ import hashlib
 import sys
 import random
 import string
+import time
 
 class SettingReceiver(object):
 
@@ -174,7 +175,7 @@ class SpreadPortTest(unittest.TestCase):
         event = RSBEvent()
         event.scope = Scope("/notGood")
         event.data = "dummy data"
-        event.type = "string"
+        event.type = str
         port.push(event)
 
         # and then a desired event
@@ -195,7 +196,7 @@ class SpreadPortTest(unittest.TestCase):
         inRouter = Router(inPort = inport)
 
         scope = Scope("/test/it")
-        publisher = Publisher(scope, "string", router = outRouter)
+        publisher = Publisher(scope, str, router = outRouter)
         subscriber = Subscriber(scope, router = inRouter)
 
         receiver = SettingReceiver(scope)
@@ -221,7 +222,7 @@ class SpreadPortTest(unittest.TestCase):
 
         outport = SpreadPort()
         outRouter = Router(outPort = outport)
-        publisher = Publisher(sendScope, "string", router = outRouter)
+        publisher = Publisher(sendScope, str, router = outRouter)
 
         # set up subscribers on the complete hierarchy
         subscribers = []
@@ -270,7 +271,7 @@ class SpreadPortTest(unittest.TestCase):
         event = RSBEvent()
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
-        event.type = "string"
+        event.type = str
         port.push(event)
 
         # and then a desired event
