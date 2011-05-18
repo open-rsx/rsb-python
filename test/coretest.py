@@ -15,26 +15,49 @@
 #
 # ============================================================
 
+import os
 import uuid
 
 import unittest
 
 import rsb
-from rsb import EventProcessor, Subscription, RSBEvent, Scope, QualityOfServiceSpec
+from rsb import EventProcessor, Subscription, RSBEvent, Scope, QualityOfServiceSpec, ParticipantConfig
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 import time
 from threading import Condition
 
-class QualityOfServiceSpecTest(unittest.TestCase):
-    
+######################################################################
+#
+# Unit Tests
+#
+######################################################################
+
+import unittest
+
+class ParticipantConfigTest (unittest.TestCase):
     def testConstruction(self):
-        
+        config = ParticipantConfig()
+
+    def testFromFile(self):
+        pass
+
+    def testFromEnvironment(self):
+        os.environ['RSB_TRANSPORT_SPREAD_CONVERTER_FOO'] = 'bar'
+
+    def testFromDefaultSource(self):
+        # TODO how to test this?
+        pass
+
+class QualityOfServiceSpecTest(unittest.TestCase):
+
+    def testConstruction(self):
+
         specs = QualityOfServiceSpec()
         self.assertEqual(QualityOfServiceSpec.Ordering.UNORDERED, specs.getOrdering())
         self.assertEqual(QualityOfServiceSpec.Reliability.RELIABLE, specs.getReliability())
-        
+
     def testComparison(self):
-        
+
         self.assertEqual(QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED, QualityOfServiceSpec.Reliability.RELIABLE), QualityOfServiceSpec())
 
 class ScopeTest(unittest.TestCase):
@@ -43,11 +66,11 @@ class ScopeTest(unittest.TestCase):
 
         root = rsb.Scope("/")
         self.assertEqual(0, len(root.getComponents()))
-    
+
         onePart = rsb.Scope("/test/")
         self.assertEqual(1, len(onePart.getComponents()))
         self.assertEqual("test", onePart.getComponents()[0])
-    
+
         manyParts = rsb.Scope("/this/is/a/dumb3/test/")
         self.assertEqual(5, len(manyParts.getComponents()))
         self.assertEqual("this", manyParts.getComponents()[0])
@@ -55,43 +78,43 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual("a", manyParts.getComponents()[2])
         self.assertEqual("dumb3", manyParts.getComponents()[3])
         self.assertEqual("test", manyParts.getComponents()[4])
-    
+
         # also ensure that the shortcut syntax works
         shortcut = rsb.Scope("/this/is")
         self.assertEqual(2, len(shortcut.getComponents()))
         self.assertEqual("this", shortcut.getComponents()[0])
         self.assertEqual("is", shortcut.getComponents()[1])
-        
+
     def testParsingError(self):
-        
+
         self.assertRaises(ValueError, rsb.Scope, "")
         self.assertRaises(ValueError, rsb.Scope, " ")
         self.assertRaises(ValueError, rsb.Scope, "/with space/does/not/work/")
         self.assertRaises(ValueError, rsb.Scope, "/with/do#3es/not43as/work/")
         self.assertRaises(ValueError, rsb.Scope, "/this//is/not/allowed/")
         self.assertRaises(ValueError, rsb.Scope, "/this/ /is/not/allowed/")
-        
+
     def testToString(self):
-        
+
         self.assertEqual("/", rsb.Scope("/").toString())
         self.assertEqual("/foo/", rsb.Scope("/foo/").toString())
         self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar/").toString())
         self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar").toString())
-        
+
     def testConcat(self):
-        
+
         self.assertEqual(rsb.Scope("/"), rsb.Scope("/").concat(rsb.Scope("/")))
         self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/").concat(rsb.Scope("/a/test/")))
         self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/a/test/").concat(rsb.Scope("/")))
         self.assertEqual(rsb.Scope("/a/test/example"), rsb.Scope("/a/test/").concat(rsb.Scope("/example/")))
 
     def testComparison(self):
-        
+
         self.assertTrue(rsb.Scope("/") == rsb.Scope("/"))
         self.assertFalse(rsb.Scope("/") != rsb.Scope("/"))
         self.assertFalse(rsb.Scope("/") == rsb.Scope("/foo/"))
         self.assertTrue(rsb.Scope("/") != rsb.Scope("/foo/"))
-    
+
         self.assertTrue(rsb.Scope("/a/") < rsb.Scope("/c/"))
         self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/c/"))
         self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/a"))
@@ -101,23 +124,23 @@ class ScopeTest(unittest.TestCase):
         self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/c/"))
 
     def testHierarchyComparison(self):
-        
+
         self.assertTrue(rsb.Scope("/a/").isSubScopeOf(rsb.Scope("/")))
         self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/")))
         self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/")))
         self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/")))
         self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/d/")))
         self.assertFalse(rsb.Scope("/a/x/c/").isSubScopeOf(rsb.Scope("/a/b/")))
-    
+
         self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/")))
         self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
         self.assertTrue(rsb.Scope("/a/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
         self.assertFalse(rsb.Scope("/a/b/c/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
         self.assertFalse(rsb.Scope("/a/b/c/d/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
-        self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))        
+        self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
 
     def testSuperScopes(self):
-        
+
         self.assertEqual(0, len(rsb.Scope("/").superScopes()))
 
         supers = rsb.Scope("/this/is/a/test/").superScopes()
@@ -126,11 +149,11 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(rsb.Scope("/this/"), supers[1])
         self.assertEqual(rsb.Scope("/this/is/"), supers[2])
         self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
-    
+
         supers = rsb.Scope("/").superScopes(True)
         self.assertEqual(1, len(supers))
         self.assertEqual(rsb.Scope("/"), supers[0])
-    
+
         supers = rsb.Scope("/this/is/a/test/").superScopes(True)
         self.assertEqual(5, len(supers))
         self.assertEqual(rsb.Scope("/"), supers[0])
@@ -295,6 +318,7 @@ class EventProcessorTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RSBEventTest))
