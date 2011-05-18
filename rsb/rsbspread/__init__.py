@@ -25,7 +25,7 @@ import rsb.transport
 from Notification_pb2 import Notification
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
-from rsb import RSBEvent, Scope
+from rsb import RSBEvent, Scope, QualityOfServiceSpec
 from rsb.transport.converter import UnknownConverterError
 import hashlib
 import math
@@ -225,6 +225,7 @@ class SpreadPort(rsb.transport.Port):
         self.__receiveThread = None
         self.__receiveTask = None
         self.__observerAction = None
+        self.setQualityOfServiceSpec(QualityOfServiceSpec())
 
     def __del__(self):
         self.deactivate()
@@ -302,7 +303,7 @@ class SpreadPort(rsb.transport.Port):
             scopes = event.scope.superScopes(True)
             groupNames = [self.__groupName(scope) for scope in scopes]
             self.__logger.debug("Sending to scopes %s which are groupNames %s" % (scopes, groupNames))
-            sent = self.__connection.multigroup_multicast(spread.RELIABLE_MESS, tuple(groupNames), serialized)
+            sent = self.__connection.multigroup_multicast(self.__msgType, tuple(groupNames), serialized)
             if (sent > 0):
                 self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
             else:
@@ -349,6 +350,18 @@ class SpreadPort(rsb.transport.Port):
 
         else:
             self.__logger.debug("Ignoring filter %s with action %s" % (filter, action))
+
+    def setQualityOfServiceSpec(self, qos):
+        if qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
+            self.__msgType = spread.UNRELIABLE_MESS
+        elif qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
+            self.__msgType = spread.FIFO_MESS
+        elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
+            self.__msgType = spread.RELIABLE_MESS
+        elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
+            self.__msgType = spread.FIFO_MESS
+        else:
+            assert(False)
 
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction

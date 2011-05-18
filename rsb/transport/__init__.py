@@ -65,6 +65,12 @@ class Router(object):
         self.__logger.debug("Destructing router")
         if self.__active:
             self.deactivate()
+            
+    def setQualityOfServiceSpec(self, qos):
+        if self.__inPort:
+            self.__inPort.setQualityOfServiceSpec(qos)
+        if self.__outPort:
+            self.__outPort.setQualityOfServiceSpec(qos)
 
     def activate(self):
         if not self.__active:
@@ -174,6 +180,8 @@ class Port(object):
     def publish(self, event):
         raise NotImplementedError()
     def filterNotify(self, filter, action):
+        raise NotImplementedError()
+    def setQualityOfServiceSpec(self, qos):
         raise NotImplementedError()
 
     def setObserverAction(self, observerAction):
