@@ -128,8 +128,8 @@ class ParticipantConfig (object):
         def __init__(self, name, options={}):
             self.__name = name
             self.__enabled = options.get('enabled', '1') in ('1', 'true', 'yes')
-            self.__converters = [ (key[10:], value) for (key, value) in options.items()
-                                  if key.startswith('converter') ]
+            self.__converters = [ (key[17:], value) for (key, value) in options.items()
+                                  if key.startswith('converter.python') ]
             self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
 
