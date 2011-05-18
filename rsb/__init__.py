@@ -31,47 +31,47 @@ class ParticipantConfig (object):
     
     class Transport (object):
         def __init__(self, name, options={}):
-            self._name = name
-            self._enabled = options.get('enabled', '1') == 1
-            self._options = dict([ (key, value) for (key, value) in options.items()
+            self.__name = name
+            self.__enabled = options.get('enabled', '1') == 1
+            self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
 
         def getOptions(self):
-            return self._options
+            return self.__options
 
         def __str__(self):
             return ('ParticipantConfig.Transport[%s, enabled = %s,  %s]'
-                    % (self._name, self._enabled, self._options))
+                    % (self.__name, self.__enabled, self.__options))
 
         def __repr__(self):
             return str(self)
 
     def __init__(self, transports={}, options={}):
-        self._transports = transports
-        self._options = options
+        self.__transports = transports
+        self.__options = options
 
     def getTransport(self, name):
-        return self._transports[name]
+        return self.__transports[name]
 
     def __str__(self):
-        return 'ParticipantConfig[%s %s]' % (self._transports.values(), self._options)
+        return 'ParticipantConfig[%s %s]' % (self.__transports.values(), self.__options)
 
     def __repr__(self):
         return str(self)
 
     @classmethod
-    def _fromDict(clazz, options):
+    def __fromDict(clazz, options):
         def sectionOptions(section):
             return [ (key[len(section) + 1:], value) for (key, value) in options.items()
                      if key.startswith(section) ]
         result = ParticipantConfig()
         for transport in [ 'spread' ]:
             options = dict(sectionOptions('transport.%s' % transport))
-            result._transports[transport] = clazz.Transport(transport, options)
+            result.__transports[transport] = clazz.Transport(transport, options)
         return result
 
     @classmethod
-    def _fromFile(clazz, path, defaults={}):
+    def __fromFile(clazz, path, defaults={}):
         parser = ConfigParser.RawConfigParser()
         parser.read(path)
         options = defaults
@@ -101,10 +101,10 @@ class ParticipantConfig (object):
 
         @see fromEnvironment, fromDefaultSources
         '''
-        return clazz._fromDict(clazz._fromFile(path, defaults))
+        return clazz.__fromDict(clazz.__fromFile(path, defaults))
 
     @classmethod
-    def _fromEnvironment(clazz, defaults={}):
+    def __fromEnvironment(clazz, defaults={}):
         options = defaults
         for (key, value) in os.environ.items():
             if key.startswith('RSB_'):
@@ -132,7 +132,7 @@ class ParticipantConfig (object):
 
         @see fromFile, fromDefaultSources
         '''
-        return clazz._fromDict(clazz._fromEnvironment(defaults))
+        return clazz.__fromDict(clazz.__fromEnvironment(defaults))
 
     @classmethod
     def fromDefaultSources(clazz, defaults={}):
@@ -155,10 +155,10 @@ class ParticipantConfig (object):
         
         @see fromFile, fromEnvironment
         '''
-        partial = clazz._fromFile(os.path.expanduser("~/.config/rsb.conf"))
-        partial = clazz._fromFile("rsb.conf", partial)
-        options = clazz._fromEnvironment(partial)
-        return clazz._fromDict(options)
+        partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"))
+        partial = clazz.__fromFile("rsb.conf", partial)
+        options = clazz.__fromEnvironment(partial)
+        return clazz.__fromDict(options)
 
 class QualityOfServiceSpec(object):
     '''
