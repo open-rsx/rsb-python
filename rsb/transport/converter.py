@@ -136,11 +136,28 @@ class ConverterMap(object):
             return converter
         raise KeyError, dataType
 
+    def getConverters(self):
+          return self.__converters
+
     def __str__(self):
         s = "ConverterMap(wireType = %s):\n" % self.__wireType
         for converter in self.__converters.values():
             s = s + ("\t%s <-> %s\n" % (converter.getWireSchema(), converter.getDataType()))
         return s[:-1]
+
+class UnambiguousConverterMap (ConverterMap):
+    def __init__(self, wireType):
+        super(UnambiguousConverterMap, self).__init__(wireType)
+
+    def addConverter(self, converter, override=False):
+        for (wireSchema, dataType) in self.getConverters().keys():
+            if wireSchema == converter.getWireSchema():
+                if dataType == converter.getDataType():
+                    super(UnambiguousConverterMap, self).addConverter(converter, override)
+                else:
+                    raise RuntimeError("Trying to register ambiguous converter with data type `%s' for wire-schema `%s' (present converter is for data type `%s')."
+                                       % (converter.getDataType(), wireSchema, dataType))
+        super(UnambiguousConverterMap, self).addConverter(converter, override)
 
 __globalConverterMaps = {}
 
