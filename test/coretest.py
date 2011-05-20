@@ -92,6 +92,24 @@ class ParticipantConfigTest (unittest.TestCase):
         #self.assertTrue(converters.getConverterForWireSchema('bool'))
         #self.assertTrue(converters.getConverterForDataType(bool))
 
+
+    def testOverwritingDefaults(self):
+        defaults = { 'transport.spread.enabled':     'yes',
+                     'qualityofservice.reliability': 'UNRELIABLE' }
+        config = ParticipantConfig.fromDict(defaults)
+        self.assertEqual(config.getQualityOfServiceSpec().getReliability(),
+                         QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertTrue(config.getTransport('spread').isEnabled())
+
+        os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'RELIABLE'
+        os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'no'
+        config = ParticipantConfig.fromEnvironment(defaults)
+
+        # Check overwritten values
+        self.assertEqual(config.getQualityOfServiceSpec().getReliability(),
+                         QualityOfServiceSpec.Reliability.RELIABLE)
+        self.assertFalse(config.getTransport('spread').isEnabled())
+
     def testFromDefaultSource(self):
         # TODO how to test this?
         pass

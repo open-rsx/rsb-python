@@ -227,6 +227,10 @@ class ParticipantConfig (object):
         return options
 
     @classmethod
+    def fromDict(clazz, options):
+        return clazz.__fromDict(options)
+
+    @classmethod
     def fromFile(clazz, path, defaults={}):
         '''
         Obtain configuration options from the configuration file @a
