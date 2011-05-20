@@ -171,18 +171,18 @@ def registerGlobalConverter(converter, override=False):
         __globalConverterMaps[converter.getWireType()] = ConverterMap(converter.getWireType())
     __globalConverterMaps[converter.getWireType()].addConverter(converter, override)
 
-def getGlobalConverterMap(targetType):
+def getGlobalConverterMap(wireType):
     """
     Get a map with all globally known converters for the desired target
     serialization type.
 
-    @param targetType: python type for target serialization
+    @param wireType: python type for target serialization
     @return: converter map constantly updated
     """
 
-    if not targetType in __globalConverterMaps:
-        __globalConverterMaps[targetType] = ConverterMap(targetType)
-    return __globalConverterMaps[targetType]
+    if not wireType in __globalConverterMaps:
+        __globalConverterMaps[wireType] = ConverterMap(wireType)
+    return __globalConverterMaps[wireType]
 
 # --- converters with str as serialization type ---
 
