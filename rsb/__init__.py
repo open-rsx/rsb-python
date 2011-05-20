@@ -300,7 +300,7 @@ class Scope(object):
         if stringRep[-1] != self.__COMPONENT_SEPARATOR:
             stringRep += self.__COMPONENT_SEPARATOR
 
-        rawComponents = stringRep.split('/')
+        rawComponents = stringRep.split(self.__COMPONENT_SEPARATOR)
         if len(rawComponents) < 1:
             raise ValueError("Empty scope is not allowed.")
         if len(rawComponents[0]) != 0:
