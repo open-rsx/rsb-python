@@ -71,6 +71,13 @@ class EnumTest(unittest.TestCase):
         self.assertEqual(rsb.util.Enum.EnumValue("B", 20), e.B)
         self.assertEqual(rsb.util.Enum.EnumValue("C", 30), e.C)
 
+    def testFromString(self):
+         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
+         self.assertEqual(e.fromString('A'), e.A)
+         self.assertEqual(e.fromString('B'), e.B)
+         self.assertEqual(e.fromString('C'), e.C)
+         self.assertRaises(ValueError, e.fromString, 'D')
+
 class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
     def setUp(self):

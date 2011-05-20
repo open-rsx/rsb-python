@@ -84,6 +84,11 @@ class Enum(object):
             else:
                 setattr(self, keys[i], Enum.EnumValue(keys[i]))
 
+    def fromString(self, string):
+        if not string in self.__keys:
+            raise ValueError, "Invalid enum item `%s'" % string
+        return getattr(self, string)
+
     def __str__(self):
         return "Enum %s: %s" % (self.__name, self.__keyString)
 
