@@ -39,10 +39,58 @@ class ParticipantConfigTest (unittest.TestCase):
         config = ParticipantConfig()
 
     def testFromFile(self):
-        pass
+        config = ParticipantConfig.fromFile('test/smoke-test.conf')
+
+        # Check quality of service specs
+        self.assertEqual(config.getQualityOfServiceSpec().getReliability(),
+                         QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertEqual(config.getQualityOfServiceSpec().getOrdering(),
+                         QualityOfServiceSpec.Ordering.UNORDERED)
+
+        self.assertEqual(len(config.getTransports()), 1)
+        self.assertEqual(len(config.getTransports(includeDisabled = True)), 1)
+
+        # Check spread transport
+        transport = config.getTransport('spread')
+        self.assertEqual(transport.getName(), 'spread')
+        self.assertTrue(transport.isEnabled())
+
+        # Check converters of spread transport
+        converters = transport.getConverters()
+        self.assertTrue(converters.getConverterForWireSchema('string'))
+        self.assertTrue(converters.getConverterForDataType(str))
+        # not yet
+        #self.assertTrue(converters.getConverterForWireSchema('bool'))
+        #self.assertTrue(converters.getConverterForDataType(bool))
 
     def testFromEnvironment(self):
-        os.environ['RSB_TRANSPORT_SPREAD_CONVERTER_FOO'] = 'bar'
+        os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
+        os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'
+        os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'yes'
+
+        config = ParticipantConfig.fromEnvironment()
+
+        # Check quality of service specs
+        self.assertEqual(config.getQualityOfServiceSpec().getReliability(),
+                         QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertEqual(config.getQualityOfServiceSpec().getOrdering(),
+                         QualityOfServiceSpec.Ordering.UNORDERED)
+
+        self.assertEqual(len(config.getTransports()), 1)
+        self.assertEqual(len(config.getTransports(includeDisabled = True)), 1)
+
+        # Check spread transport
+        transport = config.getTransport('spread')
+        self.assertEqual(transport.getName(), 'spread')
+        self.assertTrue(transport.isEnabled())
+
+        # Check converters of spread transport
+        converters = transport.getConverters()
+        self.assertTrue(converters.getConverterForWireSchema('string'))
+        self.assertTrue(converters.getConverterForDataType(str))
+        # not yet
+        #self.assertTrue(converters.getConverterForWireSchema('bool'))
+        #self.assertTrue(converters.getConverterForDataType(bool))
 
     def testFromDefaultSource(self):
         # TODO how to test this?
