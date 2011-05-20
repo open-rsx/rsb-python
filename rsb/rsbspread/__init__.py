@@ -146,8 +146,6 @@ class SpreadReceiverTask(object):
             message = self.__mailbox.receive()
             self.__logger.debug("received message %s" % message)
             try:
-
-            try:
                 # Process regular message
                 if isinstance(message, spread.RegularMsgType):
                     # ignore the deactivate wakeup message
