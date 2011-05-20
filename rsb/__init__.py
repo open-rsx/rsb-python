@@ -128,7 +128,7 @@ class ParticipantConfig (object):
         def __init__(self, name, options={}):
             import rsb.transport.converter
             self.__name = name
-            self.__enabled = options.get('enabled', '1') in ('1', 'true', 'yes')
+            self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes')
 
             # Obtain a consistent converter set for the wire-type of
             # the transport:
@@ -204,6 +204,13 @@ class ParticipantConfig (object):
             return [ (key[len(section) + 1:], value) for (key, value) in options.items()
                      if key.startswith(section) ]
         result = ParticipantConfig()
+
+        # Quality of service
+        qosOptions = dict(sectionOptions('qualityofservice'))
+        result.__qos.setReliability(QualityOfServiceSpec.Reliability.fromString(qosOptions.get('reliability', 'UNRELIABLE')))
+        result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', 'UNORDERED')))
+
+        # Transport options
         for transport in [ 'spread' ]:
             options = dict(sectionOptions('transport.%s' % transport))
             result.__transports[transport] = clazz.Transport(transport, options)
@@ -216,7 +223,7 @@ class ParticipantConfig (object):
         options = defaults
         for section in parser.sections():
             for (k, v) in parser.items(section):
-                options[section + '.' + k] = v
+                options[section + '.' + k] = v.split('#')[0].strip()
         return options
 
     @classmethod
