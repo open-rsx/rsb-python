@@ -210,9 +210,8 @@ class SpreadPort(rsb.transport.Port):
 
     __MAX_MSG_LENGTH = 100000
 
-    def __init__(self, spreadModule=spread, converterMap=None,
-                 options = {}):
-        rsb.transport.Port.__init__(self, str, converterMap)
+    def __init__(self, converterMap, options = {}, spreadModule=spread):
+        super(SpreadPort, self).__init__(str, converterMap)
         host = options.get('host', None)
         port = options.get('port', '4803')
         if host:

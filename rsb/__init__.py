@@ -126,10 +126,35 @@ class ParticipantConfig (object):
         @author: jmoringe
         '''
         def __init__(self, name, options={}):
+            import rsb.transport.converter
             self.__name = name
             self.__enabled = options.get('enabled', '1') in ('1', 'true', 'yes')
-            self.__converters = [ (key[17:], value) for (key, value) in options.items()
-                                  if key.startswith('converter.python') ]
+
+            # Obtain a consistent converter set for the wire-type of
+            # the transport:
+            # 1. Find global converter map for the wire-type
+            # 2. Find configuration options that specify converters
+            #    for the transport
+            # 3. Add converters from the global map to the unambiguous
+            #    map of the transport, resolving conflicts based on
+            #    configuration options when necessary
+            wireType = str
+            self.__converters = rsb.transport.converter.UnambiguousConverterMap(wireType)
+            # Find and transform configuration options
+            converterOptions = dict([ (key[17:], value) for (key, value) in options.items()
+                                      if key.startswith('converter.python') ])
+            # Try to add converters form global map
+            globalMap = rsb.transport.converter.getGlobalConverterMap(wireType)
+            for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
+                # Converter can be added if converterOptions does not
+                # contain a disambiguation that gives precedence to a
+                # different converter. map may still raise an
+                # exception in case of ambiguity.
+                if not wireSchema in converterOptions \
+                        or dataType.__name__ == converterOptions[wireSchema]:
+                    self.__converters.addConverter(converter)
+
+            # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
 
@@ -717,7 +742,9 @@ class Publisher(object):
         if router:
             self.__router = router
         else:
-            self.__router = Router(outPort=SpreadPort(options=config.getTransport('spread').getOptions()))
+            transport = config.getTransport('spread')
+            self.__router = Router(outPort=SpreadPort(converterMap=transport.getConverters(),
+                                                      options=transport.getOptions()))
         self.__router.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         # TODO check that type can be converted
         self.__type = type
@@ -790,7 +817,9 @@ class Subscriber(object):
         if router:
             self.__router = router
         else:
-            self.__router = Router(inPort=SpreadPort(options=config.getTransport('spread').getOptions()))
+            transport = config.getTransport('spread')
+            self.__router = Router(inPort=SpreadPort(converterMap = transport.getConverters(),
+                                                     options=transport.getOptions()))
 
 
         self.__mutex = threading.Lock()

@@ -23,6 +23,7 @@ from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
 from rsb import RSBEvent, Publisher, Subscription, Subscriber, Scope
 from rsb.transport import Router
+from rsb.transport.converter import getGlobalConverterMap
 import hashlib
 import sys
 import random
@@ -100,9 +101,9 @@ class SpreadPortTest(unittest.TestCase):
             return c
 
     def testActivate(self):
-
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(spreadModule = dummySpread)
+        port = rsb.rsbspread.SpreadPort(converterMap = getGlobalConverterMap(str),
+                                        spreadModule = dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
 
@@ -112,9 +113,9 @@ class SpreadPortTest(unittest.TestCase):
         port.deactivate()
 
     def testDeactivate(self):
-
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(spreadModule = dummySpread)
+        port = rsb.rsbspread.SpreadPort(converterMap = getGlobalConverterMap(str),
+                                        spreadModule = dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
@@ -127,9 +128,9 @@ class SpreadPortTest(unittest.TestCase):
         self.assertEqual(1, connection.disconnectCalls)
 
     def testSpreadSubscription(self):
-
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(spreadModule = dummySpread)
+        port = rsb.rsbspread.SpreadPort(converterMap = getGlobalConverterMap(str),
+                                        spreadModule = dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
@@ -159,8 +160,7 @@ class SpreadPortTest(unittest.TestCase):
         port.deactivate()
 
     def testRoundtrip(self):
-
-        port = SpreadPort()
+        port = SpreadPort(converterMap = getGlobalConverterMap(str))
         port.activate()
 
         goodScope = Scope("/good")
@@ -183,14 +183,12 @@ class SpreadPortTest(unittest.TestCase):
         port.push(event)
 
         with receiver.resultCondition:
-            receiver.resultCondition.wait(5)
-
+            receiver.resultCondition.wait(10)
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-
-        inport = SpreadPort()
-        outport = SpreadPort()
+        inport = SpreadPort(converterMap = getGlobalConverterMap(str))
+        outport = SpreadPort(converterMap = getGlobalConverterMap(str))
 
         outRouter = Router(outPort = outport)
         inRouter = Router(inPort = inport)
@@ -220,7 +218,7 @@ class SpreadPortTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outport = SpreadPort()
+        outport = SpreadPort(converterMap = getGlobalConverterMap(str))
         outRouter = Router(outPort = outport)
         publisher = Publisher(sendScope, str, router = outRouter)
 
@@ -229,7 +227,7 @@ class SpreadPortTest(unittest.TestCase):
         receivers = []
         for scope in superScopes:
 
-            inport = SpreadPort()
+            inport = SpreadPort(converterMap = getGlobalConverterMap(str))
             inRouter = Router(inPort = inport)
 
             subscriber = Subscriber(scope, router = inRouter)
@@ -255,8 +253,7 @@ class SpreadPortTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-
-        port = SpreadPort()
+        port = SpreadPort(converterMap = getGlobalConverterMap(str))
         port.activate()
 
         goodScope = Scope("/good")
@@ -279,7 +276,7 @@ class SpreadPortTest(unittest.TestCase):
         port.push(event)
 
         with receiver.resultCondition:
-            receiver.resultCondition.wait(5)
+            receiver.resultCondition.wait(10)
             if receiver.resultEvent == None:
                 self.fail("Did not receive an event")
             #self.assertEqual(receiver.resultEvent, event)

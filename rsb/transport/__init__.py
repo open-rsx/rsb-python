@@ -127,7 +127,7 @@ class Port(object):
     @author: jwienke
     """
 
-    def __init__(self, wireType, converterMap=None):
+    def __init__(self, wireType, converterMap):
         """
         Creates a new port with a serialization type wireType.
 
@@ -142,12 +142,8 @@ class Port(object):
         if wireType == None:
             raise ValueError("Wire type must be a class or primitive type, None given")
 
-        if converterMap == None:
-            self.__logger.debug("Using global converter map for wire-type %s" % wireType)
-            self.__converterMap = converter.getGlobalConverterMap(wireType)
-        else:
-            self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
-            self.__converterMap = converterMap
+        self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
+        self.__converterMap = converterMap
         assert(self.__converterMap.getWireType() == wireType)
         self.__wireType = wireType
 
