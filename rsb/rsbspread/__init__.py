@@ -147,33 +147,40 @@ class SpreadReceiverTask(object):
             self.__logger.debug("received message %s" % message)
             try:
 
-                # ignore the deactivate wakeup message
-                if self.__wakeupGroup in message.groups:
-                    continue
+            try:
+                # Process regular message
+                if isinstance(message, spread.RegularMsgType):
+                    # ignore the deactivate wakeup message
+                    if self.__wakeupGroup in message.groups:
+                        continue
 
-                notification = Notification()
-                notification.ParseFromString(message.message)
-                if self.__logger.isEnabledFor(logging.DEBUG):
-                    data = str(notification)
-                    if len(data) > 5000:
-                        data = data[:5000] + " [... truncated for printing]"
-                    self.__logger.debug("Received notification from bus: %s" % data)
+                    notification = Notification()
+                    notification.ParseFromString(message.message)
+                    if self.__logger.isEnabledFor(logging.DEBUG):
+                        data = str(notification)
+                        if len(data) > 5000:
+                            data = data[:5000] + " [... truncated for printing]"
+                        self.__logger.debug("Received notification from bus: %s" % data)
 
-                joinedData = self.__assemblyPool.add(notification)
+                    joinedData = self.__assemblyPool.add(notification)
 
-                if joinedData:
-                    # find a suitable converter
-                    converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
-                    # build rsbevent from notification
-                    event = RSBEvent()
-                    event.uuid = uuid.UUID(notification.id)
-                    event.scope = Scope(notification.scope)
-                    event.type = converter.getDataType()
-                    event.data = converter.deserialize(joinedData)
-                    self.__logger.debug("Sending event to dispatch task: %s" % event)
+                    if joinedData:
+                        # find a suitable converter
+                        converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
+                        # build rsbevent from notification
+                        event = RSBEvent()
+                        event.uuid = uuid.UUID(notification.id)
+                        event.scope = Scope(notification.scope)
+                        event.type = converter.getDataType()
+                        event.data = converter.deserialize(joinedData)
+                        self.__logger.debug("Sending event to dispatch task: %s" % event)
 
-                    if self.__observerAction:
-                        self.__observerAction(event)
+                        if self.__observerAction:
+                            self.__observerAction(event)
+
+                # Process membership message
+                elif isinstance(message, spread.MembershipMsgType):
+                    self.__logger.info("Received membership message for group `%s'" % message.group)
 
             except (AttributeError, TypeError), e:
                 self.__logger.info("Attribute or TypeError receiving message: %s" % e)
