@@ -33,8 +33,8 @@ import logging
 
 class Assembly(object):
     """
-    A class that maintains one fragmented messages and assembles them if all
-    parts are received.
+    A class that maintains a collection of fragments of one fragmented
+    notification and assembles them if all fragments are received.
 
     @author: jwienke
     """
