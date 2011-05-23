@@ -754,8 +754,10 @@ class Publisher(object):
             self.__router = router
         else:
             transport = config.getTransport('spread')
-            self.__router = Router(outPort=SpreadPort(converterMap=transport.getConverters(),
-                                                      options=transport.getOptions()))
+            port = SpreadPort(converterMap=transport.getConverters(),
+                              options=transport.getOptions())
+            port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__router = Router(outPort=port)
         self.__router.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         # TODO check that type can be converted
         self.__type = type
@@ -829,8 +831,10 @@ class Subscriber(object):
             self.__router = router
         else:
             transport = config.getTransport('spread')
-            self.__router = Router(inPort=SpreadPort(converterMap = transport.getConverters(),
-                                                     options=transport.getOptions()))
+            port = SpreadPort(converterMap = transport.getConverters(),
+                              options=transport.getOptions())
+            port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__router = Router(inPort=port)
 
 
         self.__mutex = threading.Lock()
