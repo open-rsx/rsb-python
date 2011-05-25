@@ -251,7 +251,7 @@ class Test(setuptools.command.test.test):
 
 
 setup(name='rsb-python',
-      version='0.1',
+      version='0.2',
       description='''
                   Fully event-driven Robotics Service Bus
                   ''',
