@@ -188,6 +188,7 @@ class Coverage(Command):
             print("Unit tests failed while generating test report.")
         cov.stop()
         cov.html_report(directory='covhtml')
+        cov.xml_report(outfile='coverage.xml')
 
 class Build(build):
     """
