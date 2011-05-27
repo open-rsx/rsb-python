@@ -17,6 +17,8 @@
 
 from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
 import rsb
+from threading import RLock
+from rsb.filter import FilterAction
 
 class EventProcessor(object):
     """
@@ -25,8 +27,10 @@ class EventProcessor(object):
 
     def __init__(self, numThreads=5):
         self.__logger = getLoggerByClass(self.__class__)
-        self.__pool = OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=EventProcessor.__deliver, filterFunc=EventProcessor.__filter)
+        self.__pool = OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=self.__deliver, filterFunc=self.__filter)
         self.__pool.start()
+        self.__filters = []
+        self.__filtersMutex = RLock()
 
     def __del__(self):
         self.__logger.debug("Destructing EventProcesor")
@@ -38,14 +42,17 @@ class EventProcessor(object):
             self.__pool.stop()
             self.__pool = None
 
-    @classmethod
-    def __deliver(cls, subscription, event):
-        for action in subscription.getActions():
-            action(event)
+    def __deliver(self, action, event):
+        action(event)
 
-    @classmethod
-    def __filter(cls, subscription, event):
-        return subscription.match(event)
+    def __filter(self, action, event):
+        with self.__filtersMutex:
+            filterCopy = list(self.__filters)
+            
+        for filter in filterCopy:
+            if not filter.match(event):
+                return False
+        return True
 
     def process(self, event):
         """
@@ -57,26 +64,12 @@ class EventProcessor(object):
         self.__logger.debug("Processing event %s" % event)
         self.__pool.push(event)
 
-    def subscribe(self, subscription):
-        """
-        Subscribe on selected actions.
-
-        @type subscription: Subscription
-        @param subscription: the subscription to add
-        """
-        self.__logger.debug("Subscription added %s" % subscription)
-        self.__pool.registerReceiver(subscription)
-
-    def unsubscribe(self, subscription):
-        """
-        Unsubscribe.
-
-        @type subscription: Subscription
-        @param subscription: subscription to remove
-        """
-        self.__logger.debug("Subscription removed %s" % subscription)
-        self.__pool.unregisterReceiver(subscription)
-
+    def addAction(self, action):
+        self.__pool.registerReceiver(action)
+    
+    def addFilter(self, filter):
+        with self.__filtersMutex:
+            self.__filters.append(filter)
 
 class Router(object):
     """
@@ -156,19 +149,9 @@ class Router(object):
         else:
             self.__logger.warning("Router is not active or has no outgoing port. Cannot publish.")
 
-    def __notifyPorts(self, subscription, filterAction):
-        if self.__inPort:
-            for f in subscription.getFilters():
-                self.__inPort.filterNotify(f, filterAction)
+    def actionAdded(self, action):
+        self.__eventProcessor.addAction(action)
 
-    def subscribe(self, subscription):
-        self.__logger.debug("New subscription %s" % subscription)
-        self.__notifyPorts(subscription, rsb.filter.FilterAction.ADD)
-        if self.__eventProcessor:
-            self.__eventProcessor.subscribe(subscription)
-
-    def unsubscribe(self, subscription):
-        self.__logger.debug("Remove subscription %s" % subscription)
-        self.__notifyPorts(subscription, rsb.filter.FilterAction.REMOVE)
-        if self.__eventProcessor:
-            self.__eventProcessor.unsubscribe(subscription)
+    def filterAdded(self, filter):
+        self.__eventProcessor.addFilter(filter)
+        self.__inPort.filterNotify(filter, FilterAction.ADD)

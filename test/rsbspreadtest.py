@@ -21,13 +21,12 @@ import rsb.filter
 from threading import Condition
 from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
-from rsb import Event, Informer, Subscription, Listener, Scope
+from rsb import Event, Informer, Listener, Scope
 from rsb.transport.converter import getGlobalConverterMap
 import hashlib
 import sys
 import random
 import string
-import time
 from rsb.eventprocessing import Router
 
 class SettingReceiver(object):
@@ -199,10 +198,8 @@ class SpreadPortTest(unittest.TestCase):
 
         receiver = SettingReceiver(scope)
 
-        subscription = Subscription()
-        subscription.appendFilter(ScopeFilter(scope))
-        subscription.appendAction(receiver)
-        listener.addSubscription(subscription)
+        listener.addFilter(ScopeFilter(scope))
+        listener.addAction(receiver)
 
         data1 = "a string to test"
         publisher.publishData(data1)
@@ -235,10 +232,8 @@ class SpreadPortTest(unittest.TestCase):
 
             receiver = SettingReceiver(scope)
 
-            subscription = Subscription()
-            subscription.appendFilter(ScopeFilter(scope))
-            subscription.appendAction(receiver)
-            listener.addSubscription(subscription)
+            listener.addFilter(ScopeFilter(scope))
+            listener.addAction(receiver)
 
             receivers.append(receiver)
 

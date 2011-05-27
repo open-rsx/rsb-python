@@ -495,7 +495,7 @@ class Event(object):
         self.__scope = Scope("/")
         self.__data = None
         self.__type = None
-
+        
     def getId(self):
         """
         Returns the id of this event.
@@ -582,6 +582,9 @@ class Event(object):
             printData = "string with length %u" % len(self.__data)
         return "%s[id = %s, scope = '%s', data = '%s', type = '%s']" % ("Event", self.__id, self.__scope, printData, self.__type)
 
+    def __repr__(self):
+        return self.__str__()
+
     def __eq__(self, other):
         try:
             return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
@@ -590,81 +593,6 @@ class Event(object):
 
     def __neq__(self, other):
         return not self.__eq__(other)
-
-class Subscription(object):
-    """
-    A subscription in the RSB system. A subscription can be restricted by
-    actions and additional filter for the matching process.
-
-    @author: jwienke
-    """
-
-    def __init__(self):
-        """
-        Creates a new subscription that does not match anything.
-        """
-
-        self.__filters = []
-        self.__actions = []
-        self.__logger = getLoggerByClass(self.__class__)
-
-    def appendFilter(self, filter):
-        """
-        Appends a filter to restrict this subscription.
-
-        @param filter: filter to add
-        """
-
-        self.__filters.append(filter)
-
-    def getFilters(self):
-        """
-        Returns all registered filters of this subscription.
-
-        @return: list of filters
-        """
-
-        return self.__filters
-
-    def appendAction(self, action):
-        """
-        Appends an action this subscription shall match on.
-
-        @param action: action to append. callable with one argument, the
-                       Event
-        """
-
-        if not action in self.__actions:
-            self.__actions.append(action)
-
-    def getActions(self):
-        """
-        Returns the list of all registered actions.
-
-        @return: list of actions to execute on matches
-        @rtype: list of callables accepting an Event
-        """
-        return self.__actions
-
-    def match(self, event):
-        """
-        Matches this subscription against the provided event.
-
-        @param event: event to match against
-        @rtype: bool
-        @return: True if the subscription accepts the event, else False
-        """
-
-        for filter in self.__filters:
-            if not filter.match(event):
-                self.__logger.debug("Filter %s filter did not match event %s" % (filter, event))
-                return False
-
-        self.__logger.debug("All filters matched event %s " % event)
-        return True
-
-    def __str__(self):
-        return "Subscription[filters = %s, actions = %s]" % (self.__filters, self.__actions)
 
 class Informer(object):
     """
@@ -780,6 +708,9 @@ class Listener(object):
 
         self.__mutex = threading.Lock()
         self.__active = False
+        
+        self.__filters = []
+        self.__actions = []
 
         self.__activate()
 
@@ -805,10 +736,42 @@ class Listener(object):
             else:
                 self.__logger.info("Deactivate called even though listener was not active")
 
-    def addSubscription(self, subscription):
-        self.__logger.debug("New subscription %s" % subscription)
-        self.__router.subscribe(subscription)
+    def addFilter(self, filter):
+        """
+        Appends a filter to restrict the events received by this listener.
 
-    def removeSubscription(self, subscription):
-        self.__logger("Removing subscription %s" % subscription)
-        self.__router.unsubscribe(subscription)
+        @param filter: filter to add
+        """
+
+        self.__filters.append(filter)
+        self.__router.filterAdded(filter)
+
+    def getFilters(self):
+        """
+        Returns all registered filters of this listener.
+
+        @return: list of filters
+        """
+
+        return self.__filters
+
+    def addAction(self, action):
+        """
+        Appends an action this listener shall invoke for new events.
+
+        @param action: action to append. callable with one argument, the
+                       Event
+        """
+
+        if not action in self.__actions:
+            self.__actions.append(action)
+            self.__router.actionAdded(action)
+
+    def getActions(self):
+        """
+        Returns the list of all registered actions.
+
+        @return: list of actions to execute on matches
+        @rtype: list of callables accepting an Event
+        """
+        return self.__actions

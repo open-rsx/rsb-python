@@ -240,9 +240,9 @@ class EventTest(unittest.TestCase):
         self.e.scope = scope
         self.assertEqual(scope, self.e.scope)
 
-    def testUUID(self):
+    def testId(self):
 
-        id = uuid.uuid1()
+        id = uuid.uuid4()
         self.e.id = id
         self.assertEqual(id, self.e.id)
 
@@ -251,40 +251,10 @@ class EventTest(unittest.TestCase):
         self.e.type = t
         self.assertEqual(t, self.e.type)
 
-class SubscriptionTest(unittest.TestCase):
-
-    def setUp(self):
-        self.s = rsb.Subscription()
-
-    def testFilterMatching(self):
-
-        e = rsb.Event()
-        self.assertTrue(self.s.match(e))
-
-        class DummyFilter:
-            def match(self, event):
-                return False
-
-        self.s.appendFilter(DummyFilter())
-        self.assertFalse(self.s.match(e))
-
-    def testGetSetFilters(self):
-
-        f1 = 42
-        f2 = 84
-
-        s = rsb.Subscription()
-        s.appendFilter(f1)
-        s.appendFilter(f2)
-
-        self.assertTrue(f1 in s.getFilters())
-        self.assertTrue(f2 in s.getFilters())
-
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SubscriptionTest))
     return suite

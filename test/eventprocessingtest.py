@@ -19,12 +19,13 @@ import unittest
 from rsb.eventprocessing import EventProcessor, Router
 from threading import Condition
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
-from rsb import Subscription, Event
+from rsb import Event
 import rsb
 
 class EventProcessorTest(unittest.TestCase):
 
-    def testProcess(self):
+    def testMatchingProcess(self):
+        
 
         ep = EventProcessor(5)
 
@@ -44,45 +45,31 @@ class EventProcessorTest(unittest.TestCase):
 
         matchingRecordingFilter1 = RecordingTrueFilter()
         matchingRecordingFilter2 = RecordingTrueFilter()
-        matching = Subscription()
-        matching.appendFilter(matchingRecordingFilter1)
-        matching.appendFilter(matchingRecordingFilter2)
-        matching.appendAction(matchingAction1)
-        matching.appendAction(matchingAction2)
-
-        noMatchCalls = []
-        def noMatchAction(event):
-            noMatchCalls.append(event)
-
-        noMatch = Subscription()
-        noMatchRecordingFilter = RecordingFalseFilter()
-        noMatch.appendFilter(noMatchRecordingFilter)
-        noMatch.appendAction(noMatchAction)
+        ep.addFilter(matchingRecordingFilter1)
+        ep.addFilter(matchingRecordingFilter2)
+        ep.addAction(matchingAction1)
+        ep.addAction(matchingAction2)
 
         event1 = Event()
         event2 = Event()
-        event3 = Event()
-
-        ep.subscribe(matching)
-        ep.subscribe(noMatch)
 
         ep.process(event1)
         ep.process(event2)
 
         # both filters must have been called
         with matchingRecordingFilter1.condition:
-            while len(matchingRecordingFilter1.events) < 2:
+            while len(matchingRecordingFilter1.events) < 4:
                 matchingRecordingFilter1.condition.wait()
 
-            self.assertEqual(2, len(matchingRecordingFilter1.events))
+            self.assertEqual(4, len(matchingRecordingFilter1.events))
             self.assertTrue(event1 in matchingRecordingFilter1.events)
             self.assertTrue(event2 in matchingRecordingFilter1.events)
 
         with matchingRecordingFilter2.condition:
-            while len(matchingRecordingFilter2.events) < 2:
+            while len(matchingRecordingFilter2.events) < 4:
                 matchingRecordingFilter2.condition.wait()
 
-            self.assertEqual(2, len(matchingRecordingFilter2.events))
+            self.assertEqual(4, len(matchingRecordingFilter2.events))
             self.assertTrue(event1 in matchingRecordingFilter2.events)
             self.assertTrue(event2 in matchingRecordingFilter2.events)
 
@@ -101,7 +88,25 @@ class EventProcessorTest(unittest.TestCase):
             self.assertTrue(event1 in matchingCalls2)
             self.assertTrue(event2 in matchingCalls2)
 
-        ep.unsubscribe(matching)
+    def testNotMatchingProcess(self):
+
+        ep = EventProcessor(5)
+
+        noMatchingCalls = []
+
+        def noMatchingAction(event):
+            noMatchingCalls.append(event)
+
+        noMatchRecordingFilter = RecordingFalseFilter()
+        ep.addFilter(noMatchRecordingFilter)
+        ep.addAction(noMatchingAction)
+
+        event1 = Event()
+        event2 = Event()
+        event3 = Event()
+
+        ep.process(event1)
+        ep.process(event2)
         ep.process(event3)
 
         # noMatch listener must not have been called
@@ -112,6 +117,8 @@ class EventProcessorTest(unittest.TestCase):
             self.assertTrue(event1 in noMatchRecordingFilter.events)
             self.assertTrue(event2 in noMatchRecordingFilter.events)
             self.assertTrue(event3 in noMatchRecordingFilter.events)
+
+        self.assertEqual(0, len(noMatchingCalls))
 
 class RouterTest(unittest.TestCase):
 
@@ -226,28 +233,18 @@ class RouterTest(unittest.TestCase):
         f2 = 24
         f3 = 36
         f4 = 48
-        subscription = rsb.Subscription()
-        subscription.appendFilter(f1)
-        subscription.appendFilter(f2)
-
-        router.subscribe(subscription)
+        router.filterAdded(f1)
+        router.filterAdded(f2)
         self.assertEqual(2, len(ip.filterCalls))
         self.assertTrue((f1, rsb.filter.FilterAction.ADD) in ip.filterCalls)
         self.assertTrue((f2, rsb.filter.FilterAction.ADD) in ip.filterCalls)
 
-        subscription = rsb.Subscription()
-        subscription.appendFilter(f3)
-        subscription.appendFilter(f4)
+        router.filterAdded(f3)
+        router.filterAdded(f4)
 
-        router.subscribe(subscription)
         self.assertEqual(4, len(ip.filterCalls))
         self.assertTrue((f3, rsb.filter.FilterAction.ADD) in ip.filterCalls)
         self.assertTrue((f4, rsb.filter.FilterAction.ADD) in ip.filterCalls)
-
-        router.unsubscribe(subscription)
-        self.assertEqual(6, len(ip.filterCalls))
-        self.assertTrue((f3, rsb.filter.FilterAction.REMOVE) in ip.filterCalls)
-        self.assertTrue((f4, rsb.filter.FilterAction.REMOVE) in ip.filterCalls)
 
 def suite():
     suite = unittest.TestSuite()
