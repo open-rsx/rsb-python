@@ -478,7 +478,7 @@ class Scope(object):
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self.toString())
 
-class RSBEvent(object):
+class Event(object):
     '''
     Basic event class.
 
@@ -580,7 +580,7 @@ class RSBEvent(object):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("RSBEvent", self.__uuid, self.__scope, printData, self.__type)
+        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("Event", self.__uuid, self.__scope, printData, self.__type)
 
     def __eq__(self, other):
         try:
@@ -631,7 +631,7 @@ class Subscription(object):
         Appends an action this subscription shall match on.
 
         @param action: action to append. callable with one argument, the
-                       RSBEvent
+                       Event
         """
 
         if not action in self.__actions:
@@ -642,7 +642,7 @@ class Subscription(object):
         Returns the list of all registered actions.
 
         @return: list of actions to execute on matches
-        @rtype: list of callables accepting an RSBEvent
+        @rtype: list of callables accepting an Event
         """
         return self.__actions
 
@@ -697,9 +697,9 @@ class EventProcessor(object):
 
     def process(self, event):
         """
-        Dispatches the event to all registered subscribers.
+        Dispatches the event to all registered listeners.
 
-        @type event: RSBEvent
+        @type event: Event
         @param event: event to dispatch
         """
         self.__logger.debug("Processing event %s" % event)
@@ -725,7 +725,7 @@ class EventProcessor(object):
         self.__logger.debug("Subscription removed %s" % subscription)
         self.__pool.unregisterReceiver(subscription)
 
-class Publisher(object):
+class Informer(object):
     """
     Event-sending part of the communication pattern.
 
@@ -736,9 +736,9 @@ class Publisher(object):
                  config=ParticipantConfig.fromDefaultSources(),
                  router=None):
         """
-        Constructs a new Publisher.
+        Constructs a new Informer.
 
-        @param scope: scope of the publisher
+        @param scope: scope of the informer
         @param router: router object with open outgoing port for communication
         @param type: type identifier string
         @todo: maybe provide an automatic type identifier deduction for default
@@ -765,16 +765,16 @@ class Publisher(object):
         self.__active = False
         self.__mutex = threading.Lock()
 
-        self.activate()
+        self.__activate()
 
     def __del__(self):
-        self.__logger.debug("Destructing Publisher")
+        self.__logger.debug("Destructing Informer")
         self.deactivate()
 
     def publishData(self, data):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
-        event = RSBEvent()
+        event = Event()
         event.setData(data)
         event.setType(self.__type)
         self.publishEvent(event)
@@ -786,25 +786,25 @@ class Publisher(object):
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
 
-    def activate(self):
+    def __activate(self):
         with self.__mutex:
             if not self.__active:
                 self.__router.activate()
                 self.__active = True
-                self.__logger.info("Activated publisher")
+                self.__logger.info("Activated informer")
             else:
-                self.__logger.info("Activate called even though publisher was already active")
+                self.__logger.info("Activate called even though informer was already active")
 
     def deactivate(self):
         with self.__mutex:
             if self.__active:
                 self.__router.deactivate()
                 self.__active = False
-                self.__logger.info("Deactivated publisher")
+                self.__logger.info("Deactivated informer")
             else:
-                self.__logger.info("Deactivate called even though publisher was not active")
+                self.__logger.info("Deactivate called even though informer was not active")
 
-class Subscriber(object):
+class Listener(object):
     """
     Event-receiving part of the communication pattern
 
@@ -815,7 +815,7 @@ class Subscriber(object):
                  config=ParticipantConfig.fromDefaultSources(),
                  router=None):
         """
-        Create a new subscriber for the specified scope.
+        Create a new listener for the specified scope.
 
         @todo: why the duplicated scope, also passed in using the scope filter?
         @param scope: scope to subscribe one
@@ -840,29 +840,29 @@ class Subscriber(object):
         self.__mutex = threading.Lock()
         self.__active = False
 
-        self.activate()
+        self.__activate()
 
     def __del__(self):
         self.deactivate()
 
-    def activate(self):
-        # TODO commonality with Publisher... refactor
+    def __activate(self):
+        # TODO commonality with Informer... refactor
         with self.__mutex:
             if not self.__active:
                 self.__router.activate()
                 self.__active = True
-                self.__logger.info("Activated subscriber")
+                self.__logger.info("Activated listener")
             else:
-                self.__logger.info("Activate called even though subscriber was already active")
+                self.__logger.info("Activate called even though listener was already active")
 
     def deactivate(self):
         with self.__mutex:
             if self.__active:
                 self.__router.deactivate()
                 self.__active = False
-                self.__logger.info("Deactivated subscriber")
+                self.__logger.info("Deactivated listener")
             else:
-                self.__logger.info("Deactivate called even though subscriber was not active")
+                self.__logger.info("Deactivate called even though listener was not active")
 
     def addSubscription(self, subscription):
         self.__logger.debug("New subscription %s" % subscription)

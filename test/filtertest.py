@@ -27,7 +27,7 @@ class ScopeFilterTest(unittest.TestCase):
         f = rsb.filter.ScopeFilter(scope)
         self.assertEqual(scope, f.getScope())
 
-        e = rsb.RSBEvent()
+        e = rsb.Event()
         e.scope = scope
         self.assertTrue(f.match(e))
         e.scope = scope.concat(Scope("/sub/scope"))

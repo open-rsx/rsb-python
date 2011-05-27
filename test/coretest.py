@@ -21,7 +21,7 @@ import uuid
 import unittest
 
 import rsb
-from rsb import EventProcessor, Subscription, RSBEvent, Scope, QualityOfServiceSpec, ParticipantConfig
+from rsb import EventProcessor, Subscription, Event, Scope, QualityOfServiceSpec, ParticipantConfig
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 import time
 from threading import Condition
@@ -231,7 +231,7 @@ class ScopeTest(unittest.TestCase):
 class RSBEventTest(unittest.TestCase):
 
     def setUp(self):
-        self.e = rsb.RSBEvent()
+        self.e = rsb.Event()
 
     def testConstructor(self):
 
@@ -269,7 +269,7 @@ class SubscriptionTest(unittest.TestCase):
 
     def testFilterMatching(self):
 
-        e = rsb.RSBEvent()
+        e = rsb.Event()
         self.assertTrue(self.s.match(e))
 
         class DummyFilter:
@@ -328,9 +328,9 @@ class EventProcessorTest(unittest.TestCase):
         noMatch.appendFilter(noMatchRecordingFilter)
         noMatch.appendAction(noMatchAction)
 
-        event1 = RSBEvent()
-        event2 = RSBEvent()
-        event3 = RSBEvent()
+        event1 = Event()
+        event2 = Event()
+        event3 = Event()
 
         ep.subscribe(matching)
         ep.subscribe(noMatch)
@@ -373,7 +373,7 @@ class EventProcessorTest(unittest.TestCase):
         ep.unsubscribe(matching)
         ep.process(event3)
 
-        # noMatch subscriber must not have been called
+        # noMatch listener must not have been called
         with noMatchRecordingFilter.condition:
             while len(noMatchRecordingFilter.events) < 3:
                 noMatchRecordingFilter.condition.wait()
