@@ -237,7 +237,7 @@ class RSBEventTest(unittest.TestCase):
 
         self.assertEqual(None, self.e.getData())
         self.assertEqual(Scope("/"), self.e.getScope())
-        self.assertEqual(type(self.e.getUUID()), uuid.UUID)
+        self.assertEqual(type(self.e.getId()), uuid.UUID)
 
     def testData(self):
 
@@ -254,8 +254,8 @@ class RSBEventTest(unittest.TestCase):
     def testUUID(self):
 
         id = uuid.uuid1()
-        self.e.uuid = id
-        self.assertEqual(id, self.e.uuid)
+        self.e.id = id
+        self.assertEqual(id, self.e.id)
 
     def testType(self):
         t = "asdasd"

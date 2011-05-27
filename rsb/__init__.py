@@ -177,7 +177,7 @@ class ParticipantConfig (object):
         def __repr__(self):
             return str(self)
 
-    def __init__(self, transports={}, options={}, qos = QualityOfServiceSpec()):
+    def __init__(self, transports={}, options={}, qos=QualityOfServiceSpec()):
         self.__transports = transports
         self.__options = options
         self.__qos = qos
@@ -488,33 +488,33 @@ class Event(object):
     def __init__(self):
         """
         Constructs a new event with undefined type, root scope and no data.
-        The uuid is randomly generated.
+        The id is randomly generated.
         """
 
-        self.__uuid = uuid.uuid1()
+        self.__id = uuid.uuid4()
         self.__scope = Scope("/")
         self.__data = None
         self.__type = None
 
-    def getUUID(self):
+    def getId(self):
         """
-        Returns the uuid of this event.
+        Returns the id of this event.
 
-        @return: uuid id of the event
-        """
-
-        return self.__uuid
-
-    def setUUID(self, uuid):
-        """
-        Sets the uuid of the event.
-
-        @param uuid: uuid to set
+        @return: id of the event
         """
 
-        self.__uuid = uuid
+        return self.__id
 
-    uuid = property(getUUID, setUUID)
+    def setId(self, uuid):
+        """
+        Sets the id of the event.
+
+        @param id: id to set
+        """
+
+        self.__id = uuid
+
+    id = property(getId, setId)
 
     def getScope(self):
         """
@@ -580,11 +580,11 @@ class Event(object):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        return "%s[uuid = %s, scope = '%s', data = '%s', type = '%s']" % ("Event", self.__uuid, self.__scope, printData, self.__type)
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s']" % ("Event", self.__id, self.__scope, printData, self.__type)
 
     def __eq__(self, other):
         try:
-            return (self.__uuid == other.__uuid) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
+            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
         except (TypeError, AttributeError):
             return False
 
@@ -831,7 +831,7 @@ class Listener(object):
             self.__router = router
         else:
             transport = config.getTransport('spread')
-            port = SpreadPort(converterMap = transport.getConverters(),
+            port = SpreadPort(converterMap=transport.getConverters(),
                               options=transport.getOptions())
             port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__router = Router(inPort=port)

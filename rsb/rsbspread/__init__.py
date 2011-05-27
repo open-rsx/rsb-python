@@ -167,7 +167,7 @@ class SpreadReceiverTask(object):
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
                         event = Event()
-                        event.uuid = uuid.UUID(notification.id)
+                        event.id = uuid.UUID(notification.id)
                         event.scope = Scope(notification.scope)
                         event.type = converter.getDataType()
                         event.data = converter.deserialize(joinedData)
@@ -296,7 +296,7 @@ class SpreadPort(rsb.transport.Port):
 
             # create message
             n = Notification()
-            n.id = str(event.uuid)
+            n.id = str(event.id)
             n.scope = event.scope.toString()
             n.wire_schema = wireSchema
             dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
