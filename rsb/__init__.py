@@ -666,65 +666,6 @@ class Subscription(object):
     def __str__(self):
         return "Subscription[filters = %s, actions = %s]" % (self.__filters, self.__actions)
 
-class EventProcessor(object):
-    """
-    @author: jwienke
-    """
-
-    def __init__(self, numThreads=5):
-        self.__logger = getLoggerByClass(self.__class__)
-        self.__pool = OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=EventProcessor.__deliver, filterFunc=EventProcessor.__filter)
-        self.__pool.start()
-
-    def __del__(self):
-        self.__logger.debug("Destructing EventProcesor")
-        self.deactivate()
-
-    def deactivate(self):
-        self.__logger.debug("Deactivating EventProcesor")
-        if self.__pool:
-            self.__pool.stop()
-            self.__pool = None
-
-    @classmethod
-    def __deliver(cls, subscription, event):
-        for action in subscription.getActions():
-            action(event)
-
-    @classmethod
-    def __filter(cls, subscription, event):
-        return subscription.match(event)
-
-    def process(self, event):
-        """
-        Dispatches the event to all registered listeners.
-
-        @type event: Event
-        @param event: event to dispatch
-        """
-        self.__logger.debug("Processing event %s" % event)
-        self.__pool.push(event)
-
-    def subscribe(self, subscription):
-        """
-        Subscribe on selected actions.
-
-        @type subscription: Subscription
-        @param subscription: the subscription to add
-        """
-        self.__logger.debug("Subscription added %s" % subscription)
-        self.__pool.registerReceiver(subscription)
-
-    def unsubscribe(self, subscription):
-        """
-        Unsubscribe.
-
-        @type subscription: Subscription
-        @param subscription: subscription to remove
-        """
-        self.__logger.debug("Subscription removed %s" % subscription)
-        self.__pool.unregisterReceiver(subscription)
-
 class Informer(object):
     """
     Event-sending part of the communication pattern.
@@ -745,7 +686,7 @@ class Informer(object):
                types?
         """
         from rsbspread import SpreadPort
-        from transport import Router
+        from eventprocessing import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 
@@ -822,7 +763,7 @@ class Listener(object):
         @param router: router with existing inport
         """
         from rsbspread import SpreadPort
-        from transport import Router
+        from eventprocessing import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 

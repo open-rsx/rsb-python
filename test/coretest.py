@@ -21,18 +21,7 @@ import uuid
 import unittest
 
 import rsb
-from rsb import EventProcessor, Subscription, Event, Scope, QualityOfServiceSpec, ParticipantConfig
-from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
-import time
-from threading import Condition
-
-######################################################################
-#
-# Unit Tests
-#
-######################################################################
-
-import unittest
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig
 
 class ParticipantConfigTest (unittest.TestCase):
     def testConstruction(self):
@@ -228,7 +217,7 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
         self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
 
-class RSBEventTest(unittest.TestCase):
+class EventTest(unittest.TestCase):
 
     def setUp(self):
         self.e = rsb.Event()
@@ -291,103 +280,11 @@ class SubscriptionTest(unittest.TestCase):
         self.assertTrue(f1 in s.getFilters())
         self.assertTrue(f2 in s.getFilters())
 
-class EventProcessorTest(unittest.TestCase):
-
-    def testProcess(self):
-
-        ep = EventProcessor(5)
-
-        mc1Cond = Condition()
-        matchingCalls1 = []
-        mc2Cond = Condition()
-        matchingCalls2 = []
-
-        def matchingAction1(event):
-            with mc1Cond:
-                matchingCalls1.append(event)
-                mc1Cond.notifyAll()
-        def matchingAction2(event):
-            with mc2Cond:
-                matchingCalls2.append(event)
-                mc2Cond.notifyAll()
-
-        matchingRecordingFilter1 = RecordingTrueFilter()
-        matchingRecordingFilter2 = RecordingTrueFilter()
-        matching = Subscription()
-        matching.appendFilter(matchingRecordingFilter1)
-        matching.appendFilter(matchingRecordingFilter2)
-        matching.appendAction(matchingAction1)
-        matching.appendAction(matchingAction2)
-
-        noMatchCalls = []
-        def noMatchAction(event):
-            noMatchCalls.append(event)
-
-        noMatch = Subscription()
-        noMatchRecordingFilter = RecordingFalseFilter()
-        noMatch.appendFilter(noMatchRecordingFilter)
-        noMatch.appendAction(noMatchAction)
-
-        event1 = Event()
-        event2 = Event()
-        event3 = Event()
-
-        ep.subscribe(matching)
-        ep.subscribe(noMatch)
-
-        ep.process(event1)
-        ep.process(event2)
-
-        # both filters must have been called
-        with matchingRecordingFilter1.condition:
-            while len(matchingRecordingFilter1.events) < 2:
-                matchingRecordingFilter1.condition.wait()
-
-            self.assertEqual(2, len(matchingRecordingFilter1.events))
-            self.assertTrue(event1 in matchingRecordingFilter1.events)
-            self.assertTrue(event2 in matchingRecordingFilter1.events)
-
-        with matchingRecordingFilter2.condition:
-            while len(matchingRecordingFilter2.events) < 2:
-                matchingRecordingFilter2.condition.wait()
-
-            self.assertEqual(2, len(matchingRecordingFilter2.events))
-            self.assertTrue(event1 in matchingRecordingFilter2.events)
-            self.assertTrue(event2 in matchingRecordingFilter2.events)
-
-        # both actions must have been called
-        with mc1Cond:
-            while len(matchingCalls1) < 2:
-                mc1Cond.wait()
-            self.assertEqual(2, len(matchingCalls1))
-            self.assertTrue(event1 in matchingCalls1)
-            self.assertTrue(event2 in matchingCalls1)
-
-        with mc2Cond:
-            while len(matchingCalls2) < 2:
-                mc2Cond.wait()
-            self.assertEqual(2, len(matchingCalls2))
-            self.assertTrue(event1 in matchingCalls2)
-            self.assertTrue(event2 in matchingCalls2)
-
-        ep.unsubscribe(matching)
-        ep.process(event3)
-
-        # noMatch listener must not have been called
-        with noMatchRecordingFilter.condition:
-            while len(noMatchRecordingFilter.events) < 3:
-                noMatchRecordingFilter.condition.wait()
-            self.assertEqual(3, len(noMatchRecordingFilter.events))
-            self.assertTrue(event1 in noMatchRecordingFilter.events)
-            self.assertTrue(event2 in noMatchRecordingFilter.events)
-            self.assertTrue(event3 in noMatchRecordingFilter.events)
-
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RSBEventTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SubscriptionTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventProcessorTest))
     return suite

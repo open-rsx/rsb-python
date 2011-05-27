@@ -22,13 +22,13 @@ from threading import Condition
 from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
 from rsb import Event, Informer, Subscription, Listener, Scope
-from rsb.transport import Router
 from rsb.transport.converter import getGlobalConverterMap
 import hashlib
 import sys
 import random
 import string
 import time
+from rsb.eventprocessing import Router
 
 class SettingReceiver(object):
 

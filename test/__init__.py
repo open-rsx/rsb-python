@@ -17,6 +17,7 @@
 
 import unittest
 import coretest
+import eventprocessingtest
 import filtertest
 import rsbspreadtest
 import transporttest
@@ -31,6 +32,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(coretest.suite())
+    suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())
     suite.addTest(rsbspreadtest.suite())
     suite.addTest(transporttest.suite())
