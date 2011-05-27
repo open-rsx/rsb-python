@@ -23,6 +23,7 @@ from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, Enum
 import re
 import os
 import ConfigParser
+from rsb.filter import ScopeFilter
 
 class QualityOfServiceSpec(object):
     '''
@@ -705,7 +706,6 @@ class Listener(object):
             port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__router = Router(inPort=port)
 
-
         self.__mutex = threading.Lock()
         self.__active = False
         
@@ -713,6 +713,7 @@ class Listener(object):
         self.__actions = []
 
         self.__activate()
+        self.__router.filterAdded(ScopeFilter(self.__scope))
 
     def __del__(self):
         self.deactivate()
