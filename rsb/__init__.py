@@ -19,6 +19,7 @@ import uuid
 import copy
 import logging
 import threading
+import time
 from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, Enum
 import re
 import os
@@ -479,6 +480,104 @@ class Scope(object):
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self.toString())
 
+class MetaData (object):
+    """
+    Objects of this class store RSB-specific and user-supplied
+    meta-data items such as timing information.
+
+    @author jmoringe
+    """
+    def __init__(self,
+                 senderId = None,
+                 createTime = None, sendTime = None, receiveTime = None, deliverTime = None,
+                 userTimes = {}, userInfos = {}):
+        """
+        Constructs a new MetaData object.
+
+        @param senderId: The id of the participant at which the associated event originated.
+        @param createTime: A timestamp designating the time at which the associated event was created.
+        @param sendTime: A timestamp designating the time at which the associated event was sent onto the bus.
+        @param receiveTime: A timestamp designating the time at which the associated event was received from the bus.
+        @param deliverTime: A timestamp designating the time at which the associated event was delivered to the user-level handler by RSB.
+        @param userTimes: A dictionary of user-supplied timestamps.
+        @param userInfos: A dictionary of user-supplied meta-data items.
+        """
+        self.__senderId    = senderId
+        if createTime is None:
+            self.__createTime = time.time()
+        else:
+            self.__createTime = createTime
+        self.__sendTime    = sendTime
+        self.__receiveTime = receiveTime
+        self.__deliverTime = deliverTime
+        self.__userTimes   = userTimes
+        self.__userInfos   = userInfos
+
+    def getSenderId(self):
+        return self.__senderId
+
+    def setSenderId(self, senderId):
+        self.__senderId = senderId
+
+    senderId = property(getSenderId, setSenderId)
+
+    def getCreateTime(self):
+        return self.__createTime
+
+    def setCreateTime(self, createTime):
+        self.__createTime = createTime
+
+    createTime = property(getCreateTime, setCreateTime)
+
+    def getSendTime(self):
+        return self.__sendTime
+
+    def setSendTime(self, sendTime):
+        self.__sendTime = sendTime
+
+    sendTime = property(getSendTime, setSendTime)
+
+    def getReceiveTime(self):
+        return self.__receiveTime
+
+    def setReceiveTime(self, receiveTime):
+        self.__receiveTime = receiveTime
+
+    receiveTime = property(getReceiveTime, setReceiveTime)
+
+    def getDeliverTime(self):
+        return self.__deliverTime
+
+    def setDeliverTime(self, deliverTime):
+        self.__deliverTime = deliverTime
+
+    deliverTime = property(getDeliverTime, setDeliverTime)
+
+    def getUserTimes(self):
+        return self.__userTimes
+
+    def setUserTimes(self, userTimes):
+        self.__userTimes = userTimes
+
+    userTimes = property(getUserTimes, setUserTimes)
+
+    def getUserInfos(self):
+        return self.__userInfos
+
+    def setUserInfos(self, userInfos):
+        self.__userInfos = userInfos
+
+    userInfos = property(getUserInfos, setUserInfos)
+
+    def __str__(self):
+        return '%s[sender = %s, create = %s, send = %s, receive = %s, deliver = %s, userTimes = %s, userInfos = %s]' \
+            % ('MetaData', self.__senderId,
+               self.__createTime, self.__sendTime, self.__receiveTime, self.__deliverTime,
+               self.__userTimes, self.__userInfos)
+
+    def __repr__(self):
+        return self.__str__()
+
 class Event(object):
     '''
     Basic event class.
@@ -486,7 +585,7 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self):
+    def __init__(self, metaData = None):
         """
         Constructs a new event with undefined type, root scope and no data.
         The id is randomly generated.
@@ -496,6 +595,10 @@ class Event(object):
         self.__scope = Scope("/")
         self.__data = None
         self.__type = None
+        if metaData is None:
+            self.__metaData = MetaData()
+        else:
+            self.__metaData = metaData
 
     def getId(self):
         """
@@ -577,11 +680,20 @@ class Event(object):
 
     type = property(getType, setType)
 
+    def getMetaData(self):
+        return self.__metaData
+
+    def setMetaData(self, metaData):
+        self.__metaData = metaData
+
+    metaData = property(getMetaData, setMetaData)
+
     def __str__(self):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s']" % ("Event", self.__id, self.__scope, printData, self.__type)
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s]" \
+            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData)
 
     def __repr__(self):
         return self.__str__()
