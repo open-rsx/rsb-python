@@ -323,6 +323,13 @@ class Scope(object):
     __COMPONENT_SEPARATOR = "/"
     __COMPONENT_REGEX = re.compile("^[a-zA-Z0-9]+$")
 
+    @classmethod
+    def ensureScope(cls, thing):
+        if isinstance(thing, cls):
+            return thing
+        else:
+            return Scope(thing)
+
     def __init__(self, stringRep):
         '''
         Parses a scope from a string representation.
@@ -707,7 +714,7 @@ class Event(object):
     def __neq__(self, other):
         return not self.__eq__(other)
 
-class Participant (object):
+class Participant(object):
     """
     Base class for specialized bus participant classes. Has a unique
     id and a scope.
@@ -924,3 +931,57 @@ class Listener(Participant):
         @rtype: list of callables accepting an Event
         """
         return self.__actions
+
+__defaultParticipantConfig = ParticipantConfig.fromDefaultSources()
+
+def getDefaultParticipantConfig():
+    """
+    Returns the current default configuration for new objects.
+    """
+    return __defaultParticipantConfig
+
+def setDefaultParticipantConfig(config):
+    """
+    Replaces the default configuration for new objects.
+
+    @param config: A ParticipantConfig object which contains the new defaults.
+    """
+    __defaultParticipantConfig = config
+
+def createListener(scope, config = None):
+    """
+    Creates a new Listener for the specified scope.
+
+    @param scope: the scope of the new Listener. Can be a Scope object or a string.
+    @return: a new Listener object.
+    """
+    if config is None:
+        config = __defaultParticipantConfig
+    return Listener(Scope.ensureScope(scope), config)
+
+def createInformer(scope, config = None, dataType = object):
+    """
+    Creates a new Informer in the specified scope.
+
+    @param scope: The scope of the new Informer. Can be a Scope object or a string.
+    @param dataType: the string representation of the data type used to select converters
+    @return: a new Informer object.
+    """
+    if config is None:
+        config = __defaultParticipantConfig
+    return Informer(Scope.ensureScope(scope), dataType, config)
+
+def createService(scope):
+    """
+    Creates a Service object operating on the given scope.
+
+    @param scope: parent-scope of the new service. Can be a Scope object or a string.
+    @return: new Service object
+    """
+    raise RuntimeError, "not implemented"
+
+def createServer(scope):
+    raise RuntimeError, "not implemented"
+
+def createRemoteServer(scope):
+    raise RuntimeError, "not implemented"
