@@ -393,7 +393,7 @@ class Scope(object):
         scope described by the given argument. E.g. "/this/is/".concat("/a/test/")
         results in "/this/is/a/test".
 
-        @param: childScope child to concatenate to the current scope for forming a
+        @param childScope: child to concatenate to the current scope for forming a
                            sub-scope
         @type childScope: Scope
         @return: new scope instance representing the created sub-scope
@@ -616,14 +616,14 @@ class Event(object):
 
         return self.__id
 
-    def setId(self, uuid):
+    def setId(self, id):
         """
         Sets the id of the event.
 
         @param id: id to set
         """
 
-        self.__id = uuid
+        self.__id = id
 
     id = property(getId, setId)
 
