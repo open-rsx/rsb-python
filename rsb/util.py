@@ -129,6 +129,7 @@ class OrderedQueueDispatcherPool(object):
             self.queue = Queue()
             self.processing = False
             self.processingMutex = Lock()
+            self.processingCondition = Condition()
 
     def __trueFilter(self, receiver, message):
         return True
@@ -205,11 +206,21 @@ class OrderedQueueDispatcherPool(object):
         @return: True if one or more receivers were unregistered, else False
         """
 
+        removed = None
         with self.__condition:
-            oldSize = len(self.__receivers)
-            self.__receivers = [r for r in self.__receivers if r.receiver != receiver]
-            self.__logger.info("Unregistered receiver %s %d times." % (receiver, oldSize - len(self.__receivers)))
-            return oldSize != len(self.__receivers)
+            kept = []
+            for r in self.__receivers:
+                if r.receiver == receiver:
+                    removed = r
+                else:
+                    kept.append(r)
+            self.__receivers = kept
+        if removed:
+            with removed.processingCondition:
+                while removed.processing:
+                    self.__logger.info("Waiting for receiver %s to finish" % receiver)
+                    removed.processingCondition.wait()
+        return not (removed is None)
 
     def push(self, message):
         """
@@ -271,7 +282,9 @@ class OrderedQueueDispatcherPool(object):
 
         with self.__condition:
 
-            receiver.processing = False
+            with receiver.processingCondition:
+                receiver.processing = False
+                receiver.processingCondition.notifyAll()
             if not receiver.queue.empty():
                 self.__jobsAvailable = True
                 self.__logger.debug("Worker %d: new jobs available, notifying one" % (workerNum))
