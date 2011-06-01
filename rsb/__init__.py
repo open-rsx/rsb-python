@@ -496,7 +496,7 @@ class Event(object):
         self.__scope = Scope("/")
         self.__data = None
         self.__type = None
-        
+
     def getId(self):
         """
         Returns the id of this event.
@@ -595,7 +595,40 @@ class Event(object):
     def __neq__(self, other):
         return not self.__eq__(other)
 
-class Informer(object):
+class Participant (object):
+    """
+    Base class for specialized bus participant classes. Has a unique
+    id and a scope.
+
+    @author jmoringe
+    """
+    def __init__(self, scope):
+        """
+        Constructs a new Participant. This should not be done by
+        clients.
+
+        @param scope: scope of the bus channel.
+        """
+        self.__id = uuid.uuid4()
+        self.__scope = scope
+
+    def getId(self):
+        return self.__id
+
+    def setId(self, id):
+        self.__id = id
+
+    id = property(getId, setId)
+
+    def getScope(self):
+        return self.__scope
+
+    def setScope(self, scope):
+        self.__scope = scope
+
+    scope = property(getScope, setScope)
+
+class Informer(Participant):
     """
     Event-sending part of the communication pattern.
 
@@ -614,12 +647,13 @@ class Informer(object):
         @todo: maybe provide an automatic type identifier deduction for default
                types?
         """
+        super(Informer, self).__init__(scope)
+
         from rsbspread import SpreadPort
         from eventprocessing import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__scope = scope
         if router:
             self.__router = router
         else:
@@ -652,7 +686,7 @@ class Informer(object):
     def publishEvent(self, event):
         # TODO check activation
         # TODO check that type is available and suitable
-        event.setScope(self.__scope)
+        event.setScope(self.scope)
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
 
@@ -674,7 +708,7 @@ class Informer(object):
             else:
                 self.__logger.info("Deactivate called even though informer was not active")
 
-class Listener(object):
+class Listener(Participant):
     """
     Event-receiving part of the communication pattern
 
@@ -691,12 +725,13 @@ class Listener(object):
         @param scope: scope to subscribe one
         @param router: router with existing inport
         """
+        super(Listener, self).__init__(scope)
+
         from rsbspread import SpreadPort
         from eventprocessing import Router
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__scope = scope
         if router:
             self.__router = router
         else:
@@ -708,12 +743,12 @@ class Listener(object):
 
         self.__mutex = threading.Lock()
         self.__active = False
-        
+
         self.__filters = []
         self.__actions = []
 
         self.__activate()
-        self.__router.filterAdded(ScopeFilter(self.__scope))
+        self.__router.filterAdded(ScopeFilter(self.scope))
 
     def __del__(self):
         self.deactivate()
