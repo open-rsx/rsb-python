@@ -865,7 +865,7 @@ class Listener(Participant):
         self.__active = False
 
         self.__filters = []
-        self.__actions = []
+        self.__handlers = []
 
         self.__activate()
         self.__router.filterAdded(ScopeFilter(self.scope))
@@ -911,26 +911,44 @@ class Listener(Participant):
 
         return self.__filters
 
-    def addAction(self, action):
+    def addHandler(self, handler, wait = True):
         """
-        Appends an action this listener shall invoke for new events.
+        Adds @a handler to the list of handlers this listener invokes
+        for received events.
 
-        @param action: action to append. callable with one argument, the
-                       Event
+        @param handler: handler to add. callable with one argument, the event.
+        @param wait: if set to @c true, this method will return only
+        after the handler has completely been installed and will
+        receive the next available message. Otherwise it may return
+        earlier.
         """
 
-        if not action in self.__actions:
-            self.__actions.append(action)
-            self.__router.actionAdded(action)
+        if not handler in self.__handlers:
+            self.__handlers.append(handler)
+            self.__router.handlerAdded(handler, wait)
 
-    def getActions(self):
+    def removeHandler(self, handler, wait = True):
         """
-        Returns the list of all registered actions.
+        Removes @a handler from the list of handlers this listener
+        invokes for received events.
 
-        @return: list of actions to execute on matches
+        @param handler: handler to remove.
+        @param wait: if set to @c true, this method will return only
+        after the handler has been completely removed from the event
+        processing and will not be called anymore from this listener.
+        """
+        if handler in self.__handlers:
+            self.__router.handlerRemoved(handler, wait)
+            self.__handlers.remove(handler)
+
+    def getHandlers(self):
+        """
+        Returns the list of all registered handlers.
+
+        @return: list of handlers to execute on matches
         @rtype: list of callables accepting an Event
         """
-        return self.__actions
+        return self.__handlers
 
 __defaultParticipantConfig = ParticipantConfig.fromDefaultSources()
 

@@ -25,7 +25,7 @@ import rsb
 class EventProcessorTest(unittest.TestCase):
 
     def testMatchingProcess(self):
-        
+
 
         ep = EventProcessor(5)
 
@@ -47,8 +47,8 @@ class EventProcessorTest(unittest.TestCase):
         matchingRecordingFilter2 = RecordingTrueFilter()
         ep.addFilter(matchingRecordingFilter1)
         ep.addFilter(matchingRecordingFilter2)
-        ep.addAction(matchingAction1)
-        ep.addAction(matchingAction2)
+        ep.addHandler(matchingAction1, wait = True)
+        ep.addHandler(matchingAction2, wait = True)
 
         event1 = Event()
         event2 = Event()
@@ -99,7 +99,7 @@ class EventProcessorTest(unittest.TestCase):
 
         noMatchRecordingFilter = RecordingFalseFilter()
         ep.addFilter(noMatchRecordingFilter)
-        ep.addAction(noMatchingAction)
+        ep.addHandler(noMatchingAction, wait = True)
 
         event1 = Event()
         event2 = Event()
@@ -109,7 +109,7 @@ class EventProcessorTest(unittest.TestCase):
         ep.process(event2)
         ep.process(event3)
 
-        # noMatch listener must not have been called
+        # no Match listener must not have been called
         with noMatchRecordingFilter.condition:
             while len(noMatchRecordingFilter.events) < 3:
                 noMatchRecordingFilter.condition.wait()
@@ -119,6 +119,24 @@ class EventProcessorTest(unittest.TestCase):
             self.assertTrue(event3 in noMatchRecordingFilter.events)
 
         self.assertEqual(0, len(noMatchingCalls))
+
+    def testAddRemove(self):
+        for size in xrange(2, 10):
+            ep = EventProcessor(size)
+
+            h1 = lambda e: e
+            h2 = lambda e: e
+            ep.addHandler(h1, wait = True)
+            ep.addHandler(h2, wait = True)
+            ep.addHandler(h1, wait = True)
+
+            ep.process(Event())
+            ep.process(Event())
+            ep.process(Event())
+
+            ep.removeHandler(h1, wait = True)
+            ep.removeHandler(h2, wait = True)
+            ep.removeHandler(h1, wait = True)
 
 class RouterTest(unittest.TestCase):
 

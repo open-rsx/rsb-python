@@ -200,7 +200,7 @@ class SpreadPortTest(unittest.TestCase):
 
         receiver = SettingReceiver(scope)
 
-        listener.addAction(receiver)
+        listener.addHandler(receiver)
 
         data1 = "a string to test"
         publisher.publishData(data1)
@@ -233,7 +233,7 @@ class SpreadPortTest(unittest.TestCase):
 
             receiver = SettingReceiver(scope)
 
-            listener.addAction(receiver)
+            listener.addHandler(receiver)
 
             receivers.append(receiver)
 

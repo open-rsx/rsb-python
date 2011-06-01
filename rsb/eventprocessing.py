@@ -48,7 +48,7 @@ class EventProcessor(object):
     def __filter(self, action, event):
         with self.__filtersMutex:
             filterCopy = list(self.__filters)
-            
+
         for filter in filterCopy:
             if not filter.match(event):
                 return False
@@ -64,9 +64,16 @@ class EventProcessor(object):
         self.__logger.debug("Processing event %s" % event)
         self.__pool.push(event)
 
-    def addAction(self, action):
-        self.__pool.registerReceiver(action)
-    
+    def addHandler(self, handler, wait):
+        # We can ignore wait since the pool implements the desired
+        # behavior.
+        self.__pool.registerReceiver(handler)
+
+    def removeHandler(self, handler, wait):
+        # We can ignore wait since the pool implements the desired
+        # behavior.
+        self.__pool.unregisterReceiver(handler)
+
     def addFilter(self, filter):
         with self.__filtersMutex:
             self.__filters.append(filter)
@@ -149,8 +156,11 @@ class Router(object):
         else:
             self.__logger.warning("Router is not active or has no outgoing port. Cannot publish.")
 
-    def actionAdded(self, action):
-        self.__eventProcessor.addAction(action)
+    def handlerAdded(self, handler, wait):
+        self.__eventProcessor.addHandler(handler, wait)
+
+    def handlerRemoved(self, handler, wait):
+        self.__eventProcessor.removeHandler(handler, wait)
 
     def filterAdded(self, filter):
         self.__eventProcessor.addFilter(filter)
