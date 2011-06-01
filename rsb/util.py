@@ -347,3 +347,9 @@ class OrderedQueueDispatcherPool(object):
 
 def getLoggerByClass(klass):
     return logging.getLogger(klass.__module__ + "." + klass.__name__)
+
+def timeToUnixMicroseconds(time):
+    return int(time * 1000000)
+
+def unixMicrosecondsToTime(value):
+    return time.gmtime(value / 1000000.0)

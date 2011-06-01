@@ -799,6 +799,7 @@ class Informer(Participant):
         # TODO check activation
         # TODO check that type is available and suitable
         event.setScope(self.scope)
+        event.metaData.senderId = self.id
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
 

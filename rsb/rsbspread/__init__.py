@@ -22,7 +22,7 @@ import spread
 
 import rsb.filter
 import rsb.transport
-from Notification_pb2 import Notification
+from Protocol_pb2 import Notification, MetaData
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass
 from rsb import Event, Scope, QualityOfServiceSpec
@@ -30,6 +30,7 @@ from rsb.transport.converter import UnknownConverterError
 import hashlib
 import math
 import logging
+import time
 
 class Assembly(object):
     """
@@ -63,7 +64,7 @@ class Assembly(object):
         keys.sort()
         finalData = ""
         for key in keys:
-            finalData += self.__parts[key].data.binary
+            finalData += self.__parts[key].data
         return finalData
 
 class AssemblyPool(object):
@@ -79,7 +80,7 @@ class AssemblyPool(object):
 
     def add(self, notification):
         if notification.num_data_parts == 1:
-            return notification.data.binary
+            return notification.data
         if not notification.id in self.__assemblies:
             self.__assemblies[notification.id] = Assembly(notification)
             return None
@@ -146,6 +147,7 @@ class SpreadReceiverTask(object):
             message = self.__mailbox.receive()
             self.__logger.debug("received message %s" % message)
             try:
+
                 # Process regular message
                 if isinstance(message, spread.RegularMsgType):
                     # ignore the deactivate wakeup message
@@ -167,7 +169,7 @@ class SpreadReceiverTask(object):
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
                         event = Event()
-                        event.id = uuid.UUID(notification.id)
+                        event.id = uuid.UUID(bytes = notification.id)
                         event.scope = Scope(notification.scope)
                         event.type = converter.getDataType()
                         event.data = converter.deserialize(joinedData)
@@ -180,8 +182,6 @@ class SpreadReceiverTask(object):
                 elif isinstance(message, spread.MembershipMsgType):
                     self.__logger.info("Received membership message for group `%s'" % message.group)
 
-            except (AttributeError, TypeError), e:
-                self.__logger.info("Attribute or TypeError receiving message: %s" % e)
             except UnknownConverterError, e:
                 self.__logger.error("Unable to deserialize message: %s", e)
             except DecodeError, e:
@@ -189,7 +189,6 @@ class SpreadReceiverTask(object):
             except Exception, e:
                 self.__logger.error("Error decoding notification: %s", e)
                 raise e
-
 
         # leave task id group to clean up
         self.__mailbox.leave(self.__wakeupGroup)
@@ -296,14 +295,21 @@ class SpreadPort(rsb.transport.Port):
 
             # create message
             n = Notification()
-            n.id = str(event.id)
+            n.id = event.id.bytes
             n.scope = event.scope.toString()
             n.wire_schema = wireSchema
             dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
-            n.data.binary = dataPart
-            n.data.length = len(dataPart)
+            n.data = dataPart
             n.num_data_parts = requiredParts
             n.data_part = i
+            # add meta-data
+            md = n.meta_data
+            md.sender_id = event.metaData.senderId.bytes
+            md.create_time = rsb.util.timeToUnixMicroseconds(event.metaData.createTime)
+            if event.metaData.sendTime is None:
+                md.send_time = rsb.util.timeToUnixMicroseconds(time.time())
+            else:
+                md.send_time = rsb.util.timeToUnixMicroseconds(event.metaData.sendTime)
 
             serialized = n.SerializeToString()
 

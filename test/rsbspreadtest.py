@@ -27,6 +27,7 @@ import hashlib
 import sys
 import random
 import string
+import uuid
 from rsb.eventprocessing import Router
 
 class SettingReceiver(object):
@@ -175,6 +176,7 @@ class SpreadPortTest(unittest.TestCase):
         event.scope = Scope("/notGood")
         event.data = "dummy data"
         event.type = str
+        event.metaData.senderId = uuid.uuid4()
         port.push(event)
 
         # and then a desired event
@@ -262,6 +264,7 @@ class SpreadPortTest(unittest.TestCase):
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
+        event.metaData.senderId = uuid.uuid4()
         port.push(event)
 
         # and then a desired event
