@@ -592,7 +592,7 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, metaData = None):
+    def __init__(self, metaData = None, userInfos = None, userTimes = None):
         """
         Constructs a new event with undefined type, root scope and no data.
         The id is randomly generated.
@@ -606,6 +606,12 @@ class Event(object):
             self.__metaData = MetaData()
         else:
             self.__metaData = metaData
+        if not userInfos is None:
+            for (key, value) in userInfos.items():
+                self.__metaData.getUserInfos()[key] = value
+        if not userTimes is None:
+            for (key, value) in userTimes.items():
+                self.__metaData.getUsertimes()[key] = value
 
     def getId(self):
         """
@@ -794,10 +800,10 @@ class Informer(Participant):
         self.__logger.debug("Destructing Informer")
         self.deactivate()
 
-    def publishData(self, data):
+    def publishData(self, data, userInfos = None, userTimes = None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
-        event = Event()
+        event = Event(userInfos = userInfos, userTimes = userTimes)
         event.setData(data)
         event.setType(self.__type)
         self.publishEvent(event)
