@@ -632,7 +632,7 @@ class Event(object):
                 self.__metaData.getUserInfos()[key] = value
         if not userTimes is None:
             for (key, value) in userTimes.items():
-                self.__metaData.getUsertimes()[key] = value
+                self.__metaData.getUserTimes()[key] = value
 
     def getId(self):
         """
