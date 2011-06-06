@@ -21,11 +21,13 @@ import uuid
 import unittest
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData
+import time
 
 class ParticipantConfigTest (unittest.TestCase):
+
     def testConstruction(self):
-        config = ParticipantConfig()
+        ParticipantConfig()
 
     def testFromFile(self):
         config = ParticipantConfig.fromFile('test/smoke-test.conf')
@@ -37,7 +39,7 @@ class ParticipantConfigTest (unittest.TestCase):
                          QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.getTransports()), 1)
-        self.assertEqual(len(config.getTransports(includeDisabled = True)), 1)
+        self.assertEqual(len(config.getTransports(includeDisabled=True)), 1)
 
         # Check spread transport
         transport = config.getTransport('spread')
@@ -66,7 +68,7 @@ class ParticipantConfigTest (unittest.TestCase):
                          QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.getTransports()), 1)
-        self.assertEqual(len(config.getTransports(includeDisabled = True)), 1)
+        self.assertEqual(len(config.getTransports(includeDisabled=True)), 1)
 
         # Check spread transport
         transport = config.getTransport('spread')
@@ -251,10 +253,67 @@ class EventTest(unittest.TestCase):
         self.e.type = t
         self.assertEqual(t, self.e.type)
 
+class MetaDataTest(unittest.TestCase):
+
+    def testConstruction(self):
+
+        before = time.time();
+        meta = MetaData()
+        after = time.time()
+
+        self.assertTrue(meta.getCreateTime() != None)
+        self.assertTrue(meta.getSendTime() == None)
+        self.assertTrue(meta.getReceiveTime() == None)
+        self.assertTrue(meta.getDeliverTime() == None)
+
+        self.assertTrue(meta.getCreateTime() >= before)
+        self.assertTrue(meta.getCreateTime() <= after)
+
+    def testTimesAuto(self):
+
+        meta = MetaData()
+
+        before = time.time();
+
+        meta.setCreateTime(None)
+        meta.setSendTime(None)
+        meta.setReceiveTime(None)
+        meta.setDeliverTime(None)
+
+        after = time.time();
+
+        self.assertNotEquals(None, meta.getCreateTime())
+        self.assertNotEquals(None, meta.getSendTime())
+        self.assertNotEquals(None, meta.getReceiveTime())
+        self.assertNotEquals(None, meta.getDeliverTime())
+
+        self.assertTrue(before <= meta.getCreateTime())
+        self.assertTrue(before <= meta.getSendTime())
+        self.assertTrue(before <= meta.getReceiveTime())
+        self.assertTrue(before <= meta.getDeliverTime())
+
+        self.assertTrue(after >= meta.getCreateTime())
+        self.assertTrue(after >= meta.getSendTime())
+        self.assertTrue(after >= meta.getReceiveTime())
+        self.assertTrue(after >= meta.getDeliverTime())
+
+    def testUserTimes(self):
+
+        meta = MetaData()
+
+        before = time.time();
+        meta.setUserTime("foo")
+        after = time.time();
+        
+        self.assertNotEquals(None, meta.userTimes["foo"])
+        self.assertTrue(meta.userTimes["foo"] >= before)
+        self.assertTrue(meta.userTimes["foo"] <= after)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     return suite

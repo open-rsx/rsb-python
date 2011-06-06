@@ -492,12 +492,12 @@ class MetaData (object):
     Objects of this class store RSB-specific and user-supplied
     meta-data items such as timing information.
 
-    @author jmoringe
+    @author: jmoringe
     """
     def __init__(self,
-                 senderId = None,
-                 createTime = None, sendTime = None, receiveTime = None, deliverTime = None,
-                 userTimes = {}, userInfos = {}):
+                 senderId=None,
+                 createTime=None, sendTime=None, receiveTime=None, deliverTime=None,
+                 userTimes={}, userInfos={}):
         """
         Constructs a new MetaData object.
 
@@ -509,16 +509,16 @@ class MetaData (object):
         @param userTimes: A dictionary of user-supplied timestamps.
         @param userInfos: A dictionary of user-supplied meta-data items.
         """
-        self.__senderId    = senderId
+        self.__senderId = senderId
         if createTime is None:
             self.__createTime = time.time()
         else:
             self.__createTime = createTime
-        self.__sendTime    = sendTime
+        self.__sendTime = sendTime
         self.__receiveTime = receiveTime
         self.__deliverTime = deliverTime
-        self.__userTimes   = userTimes
-        self.__userInfos   = userInfos
+        self.__userTimes = userTimes
+        self.__userInfos = userInfos
 
     def getSenderId(self):
         return self.__senderId
@@ -531,32 +531,44 @@ class MetaData (object):
     def getCreateTime(self):
         return self.__createTime
 
-    def setCreateTime(self, createTime):
-        self.__createTime = createTime
+    def setCreateTime(self, createTime=None):
+        if createTime == None:
+            self.__createTime = time.time()
+        else:
+            self.__createTime = createTime
 
     createTime = property(getCreateTime, setCreateTime)
 
     def getSendTime(self):
         return self.__sendTime
 
-    def setSendTime(self, sendTime):
-        self.__sendTime = sendTime
+    def setSendTime(self, sendTime=None):
+        if sendTime == None:
+            self.__sendTime = time.time()
+        else:
+            self.__sendTime = sendTime
 
     sendTime = property(getSendTime, setSendTime)
 
     def getReceiveTime(self):
         return self.__receiveTime
 
-    def setReceiveTime(self, receiveTime):
-        self.__receiveTime = receiveTime
+    def setReceiveTime(self, receiveTime=None):
+        if receiveTime == None:
+            self.__receiveTime = time.time()
+        else:
+            self.__receiveTime = receiveTime
 
     receiveTime = property(getReceiveTime, setReceiveTime)
 
     def getDeliverTime(self):
         return self.__deliverTime
 
-    def setDeliverTime(self, deliverTime):
-        self.__deliverTime = deliverTime
+    def setDeliverTime(self, deliverTime=None):
+        if deliverTime == None:
+            self.__deliverTime = time.time()
+        else:
+            self.__deliverTime = deliverTime
 
     deliverTime = property(getDeliverTime, setDeliverTime)
 
@@ -566,6 +578,12 @@ class MetaData (object):
     def setUserTimes(self, userTimes):
         self.__userTimes = userTimes
 
+    def setUserTime(self, key, timestamp=None):
+        if timestamp == None:
+            self.__userTimes[key] = time.time()
+        else:
+            self.__userTimes[key] = timestamp
+
     userTimes = property(getUserTimes, setUserTimes)
 
     def getUserInfos(self):
@@ -573,6 +591,9 @@ class MetaData (object):
 
     def setUserInfos(self, userInfos):
         self.__userInfos = userInfos
+
+    def setUserInfo(self, key, value):
+        self.__userInfos[key] = value
 
     userInfos = property(getUserInfos, setUserInfos)
 
@@ -592,7 +613,7 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, metaData = None, userInfos = None, userTimes = None):
+    def __init__(self, metaData=None, userInfos=None, userTimes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
         The id is randomly generated.
@@ -800,10 +821,10 @@ class Informer(Participant):
         self.__logger.debug("Destructing Informer")
         self.deactivate()
 
-    def publishData(self, data, userInfos = None, userTimes = None):
+    def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
-        event = Event(userInfos = userInfos, userTimes = userTimes)
+        event = Event(userInfos=userInfos, userTimes=userTimes)
         event.setData(data)
         event.setType(self.__type)
         self.publishEvent(event)
@@ -917,7 +938,7 @@ class Listener(Participant):
 
         return self.__filters
 
-    def addHandler(self, handler, wait = True):
+    def addHandler(self, handler, wait=True):
         """
         Adds @a handler to the list of handlers this listener invokes
         for received events.
@@ -933,7 +954,7 @@ class Listener(Participant):
             self.__handlers.append(handler)
             self.__router.handlerAdded(handler, wait)
 
-    def removeHandler(self, handler, wait = True):
+    def removeHandler(self, handler, wait=True):
         """
         Removes @a handler from the list of handlers this listener
         invokes for received events.
@@ -972,7 +993,7 @@ def setDefaultParticipantConfig(config):
     """
     __defaultParticipantConfig = config
 
-def createListener(scope, config = None):
+def createListener(scope, config=None):
     """
     Creates a new Listener for the specified scope.
 
@@ -983,7 +1004,7 @@ def createListener(scope, config = None):
         config = __defaultParticipantConfig
     return Listener(Scope.ensureScope(scope), config)
 
-def createInformer(scope, config = None, dataType = object):
+def createInformer(scope, config=None, dataType=object):
     """
     Creates a new Informer in the specified scope.
 
