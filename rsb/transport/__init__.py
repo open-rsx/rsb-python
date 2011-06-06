@@ -92,6 +92,12 @@ class Port(object):
     def deactivate(self):
         raise NotImplementedError()
     def publish(self, event):
+        """
+        Sends the specified event and adapts its meta data instance with the
+        actual send time.
+        
+        @param event: event to send
+        """
         raise NotImplementedError()
     def filterNotify(self, filter, action):
         raise NotImplementedError()

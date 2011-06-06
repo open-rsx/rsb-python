@@ -24,13 +24,14 @@ import rsb.filter
 import rsb.transport
 from Protocol_pb2 import Notification, MetaData
 from google.protobuf.message import DecodeError
-from rsb.util import getLoggerByClass
+from rsb.util import getLoggerByClass, unixMicrosecondsToTime
 from rsb import Event, Scope, QualityOfServiceSpec
 from rsb.transport.converter import UnknownConverterError
 import hashlib
 import math
 import logging
 import time
+from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
 
 class Assembly(object):
     """
@@ -169,10 +170,21 @@ class SpreadReceiverTask(object):
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
                         event = Event()
-                        event.id = uuid.UUID(bytes = notification.id)
+                        event.id = uuid.UUID(bytes=notification.id)
                         event.scope = Scope(notification.scope)
                         event.type = converter.getDataType()
                         event.data = converter.deserialize(joinedData)
+
+                        # meta data
+                        event.metaData.senderId = uuid.UUID(bytes=notification.meta_data.sender_id)
+                        event.metaData.createTime = unixMicrosecondsToTime(notification.meta_data.create_time)
+                        event.metaData.sendTime = unixMicrosecondsToTime(notification.meta_data.send_time)
+                        event.metaData.setReceiveTime()
+                        for info in notification.meta_data.user_infos:
+                            event.metaData.setUserInfo(info.key, info.value)
+                        for time in notification.meta_data.user_times:
+                            event.metaData.setUserTime(time.key, unixMicrosecondsToTime(time.timestamp))
+
                         self.__logger.debug("Sending event to dispatch task: %s" % event)
 
                         if self.__observerAction:
@@ -183,11 +195,11 @@ class SpreadReceiverTask(object):
                     self.__logger.info("Received membership message for group `%s'" % message.group)
 
             except UnknownConverterError, e:
-                self.__logger.error("Unable to deserialize message: %s", e)
+                self.__logger.exception("Unable to deserialize message: %s", e)
             except DecodeError, e:
-                self.__logger.error("Error decoding notification: %s", e)
+                self.__logger.exception("Error decoding notification: %s", e)
             except Exception, e:
-                self.__logger.error("Error decoding notification: %s", e)
+                self.__logger.exception("Error decoding notification: %s", e)
                 raise e
 
         # leave task id group to clean up
@@ -214,7 +226,7 @@ class SpreadPort(rsb.transport.Port):
 
     __MAX_MSG_LENGTH = 100000
 
-    def __init__(self, converterMap, options = {}, spreadModule=spread):
+    def __init__(self, converterMap, options={}, spreadModule=spread):
         super(SpreadPort, self).__init__(str, converterMap)
         host = options.get('host', None)
         port = options.get('port', '4803')
@@ -289,6 +301,8 @@ class SpreadPort(rsb.transport.Port):
         else:
             requiredParts = 1
 
+        event.getMetaData().setSendTime()
+
         # build partial messages and send them
         self.__logger.debug("Sending %u messages" % requiredParts)
         for i in range(requiredParts):
@@ -306,10 +320,15 @@ class SpreadPort(rsb.transport.Port):
             md = n.meta_data
             md.sender_id = event.metaData.senderId.bytes
             md.create_time = rsb.util.timeToUnixMicroseconds(event.metaData.createTime)
-            if event.metaData.sendTime is None:
-                md.send_time = rsb.util.timeToUnixMicroseconds(time.time())
-            else:
-                md.send_time = rsb.util.timeToUnixMicroseconds(event.metaData.sendTime)
+            md.send_time = rsb.util.timeToUnixMicroseconds(event.metaData.sendTime)
+            for (k, v) in event.metaData.userInfos.items():
+                info = md.user_infos.add()
+                info.key = k
+                info.value = v
+            for (k, v) in event.metaData.userTimes.items():
+                time = md.user_times.add()
+                time.key = k
+                time.timestamp = rsb.util.timeToUnixMicroseconds(v)
 
             serialized = n.SerializeToString()
 

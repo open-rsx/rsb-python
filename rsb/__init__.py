@@ -497,7 +497,7 @@ class MetaData (object):
     def __init__(self,
                  senderId=None,
                  createTime=None, sendTime=None, receiveTime=None, deliverTime=None,
-                 userTimes={}, userInfos={}):
+                 userTimes=None, userInfos=None):
         """
         Constructs a new MetaData object.
 
@@ -517,8 +517,14 @@ class MetaData (object):
         self.__sendTime = sendTime
         self.__receiveTime = receiveTime
         self.__deliverTime = deliverTime
-        self.__userTimes = userTimes
-        self.__userInfos = userInfos
+        if userTimes == None:
+            self.__userTimes = {}
+        else:
+            self.__userTimes = userTimes
+        if userInfos == None:
+            self.__userInfos = {}
+        else:
+            self.__userInfos = userInfos
 
     def getSenderId(self):
         return self.__senderId
@@ -596,6 +602,15 @@ class MetaData (object):
         self.__userInfos[key] = value
 
     userInfos = property(getUserInfos, setUserInfos)
+
+    def __eq__(self, other):
+        try:
+            return (self.__senderId == other.__senderId) and (self.__createTime == other.__createTime) and (self.__sendTime == other.__sendTime) and (self.__receiveTime == other.__receiveTime) and (self.__deliverTime == other.__deliverTime) and (self.__userInfos == other.__userInfos) and (self.__userTimes == other.__userTimes)
+        except (TypeError, AttributeError):
+            return False
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
 
     def __str__(self):
         return '%s[sender = %s, create = %s, send = %s, receive = %s, deliver = %s, userTimes = %s, userInfos = %s]' \
@@ -734,7 +749,7 @@ class Event(object):
 
     def __eq__(self, other):
         try:
-            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data)
+            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
         except (TypeError, AttributeError):
             return False
 
@@ -827,7 +842,7 @@ class Informer(Participant):
         event = Event(userInfos=userInfos, userTimes=userTimes)
         event.setData(data)
         event.setType(self.__type)
-        self.publishEvent(event)
+        return self.publishEvent(event)
 
     def publishEvent(self, event):
         # TODO check activation
@@ -836,6 +851,7 @@ class Informer(Participant):
         event.metaData.senderId = self.id
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
+        return event
 
     def __activate(self):
         with self.__mutex:

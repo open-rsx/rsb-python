@@ -18,6 +18,7 @@
 from threading import Lock, Condition, Thread
 from Queue import Queue
 import logging
+import time
 
 class Enum(object):
     """
@@ -365,4 +366,4 @@ def timeToUnixMicroseconds(time):
     return int(time * 1000000)
 
 def unixMicrosecondsToTime(value):
-    return time.gmtime(value / 1000000.0)
+    return float(value) / 1000000.0

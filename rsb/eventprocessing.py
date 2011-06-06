@@ -62,6 +62,7 @@ class EventProcessor(object):
         @param event: event to dispatch
         """
         self.__logger.debug("Processing event %s" % event)
+        event.metaData.setDeliverTime()
         self.__pool.push(event)
 
     def addHandler(self, handler, wait):

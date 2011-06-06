@@ -24,11 +24,11 @@ from rsb.filter import ScopeFilter, FilterAction
 from rsb import Event, Informer, Listener, Scope
 from rsb.transport.converter import getGlobalConverterMap
 import hashlib
-import sys
 import random
 import string
 import uuid
 from rsb.eventprocessing import Router
+import time
 
 class SettingReceiver(object):
 
@@ -185,6 +185,9 @@ class SpreadPortTest(unittest.TestCase):
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
+            # ignore meta data here
+            event.setMetaData(None)
+            receiver.resultEvent.setMetaData(None)
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
@@ -203,13 +206,26 @@ class SpreadPortTest(unittest.TestCase):
         listener.addHandler(receiver)
 
         data1 = "a string to test"
-        publisher.publishData(data1)
+        sentEvent = Event()
+        sentEvent.setData(data1)
+        sentEvent.setType(str)
+        sentEvent.getMetaData().setUserInfo("test", "it")
+        sentEvent.getMetaData().setUserInfo("test again", "it works?")
+        sentEvent.getMetaData().setUserTime("blubb", 234234)
+        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
+        
+        before = time.time()
+        publisher.publishEvent(sentEvent)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
             if receiver.resultEvent == None:
                 self.fail("Listener did not receive an event")
-            self.assertEqual(receiver.resultEvent.data, data1)
+            receiveTime = time.time()
+            self.assertTrue(receiver.resultEvent.metaData.createTime <= receiver.resultEvent.metaData.sendTime <= receiver.resultEvent.metaData.receiveTime <= receiver.resultEvent.metaData.deliverTime)
+            sentEvent.metaData.receiveTime = receiver.resultEvent.metaData.receiveTime
+            sentEvent.metaData.deliverTime = receiver.resultEvent.metaData.deliverTime
+            self.assertEqual(sentEvent, receiver.resultEvent)
 
     def testHierarchySending(self):
 
@@ -276,6 +292,24 @@ class SpreadPortTest(unittest.TestCase):
             if receiver.resultEvent == None:
                 self.fail("Did not receive an event")
             #self.assertEqual(receiver.resultEvent, event)
+
+    def testSendTimeAdaption(self):
+
+        port = SpreadPort(converterMap=getGlobalConverterMap(str))
+        port.activate()
+        
+        event = Event()
+        event.scope = Scope("/notGood")
+        event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
+        event.type = str
+        event.metaData.senderId = uuid.uuid4()
+        
+        before = time.time()
+        port.push(event)
+        after = time.time()
+        
+        self.assertTrue(event.getMetaData().getSendTime() >= before)
+        self.assertTrue(event.getMetaData().getSendTime() <= after)
 
 def suite():
     suite = unittest.TestSuite()
