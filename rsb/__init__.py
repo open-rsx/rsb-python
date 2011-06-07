@@ -942,8 +942,9 @@ class Listener(Participant):
         @param filter: filter to add
         """
 
-        self.__filters.append(filter)
-        self.__router.filterAdded(filter)
+        with self.__mutex:
+            self.__filters.append(filter)
+            self.__router.filterAdded(filter)
 
     def getFilters(self):
         """
@@ -952,7 +953,8 @@ class Listener(Participant):
         @return: list of filters
         """
 
-        return self.__filters
+        with self.__mutex:
+            return list(self.__filters)
 
     def addHandler(self, handler, wait=True):
         """
@@ -966,9 +968,10 @@ class Listener(Participant):
         earlier.
         """
 
-        if not handler in self.__handlers:
-            self.__handlers.append(handler)
-            self.__router.handlerAdded(handler, wait)
+        with self.__mutex:
+            if not handler in self.__handlers:
+                self.__handlers.append(handler)
+                self.__router.handlerAdded(handler, wait)
 
     def removeHandler(self, handler, wait=True):
         """
@@ -980,9 +983,11 @@ class Listener(Participant):
         after the handler has been completely removed from the event
         processing and will not be called anymore from this listener.
         """
-        if handler in self.__handlers:
-            self.__router.handlerRemoved(handler, wait)
-            self.__handlers.remove(handler)
+        
+        with self.__mutex:
+            if handler in self.__handlers:
+                self.__router.handlerRemoved(handler, wait)
+                self.__handlers.remove(handler)
 
     def getHandlers(self):
         """
@@ -991,7 +996,8 @@ class Listener(Participant):
         @return: list of handlers to execute on matches
         @rtype: list of callables accepting an Event
         """
-        return self.__handlers
+        with self.__mutex:
+            return list(self.__handlers)
 
 __defaultParticipantConfig = ParticipantConfig.fromDefaultSources()
 

@@ -32,6 +32,7 @@ import math
 import logging
 import time
 from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
+from multiprocessing import RLock
 
 class Assembly(object):
     """
@@ -96,7 +97,6 @@ class SpreadReceiverTask(object):
     Thread used to receive messages from a spread connection.
 
     @author: jwienke
-    @todo: check that the observerAction can be changed without locking
     """
 
     def __init__(self, mailbox, observerAction, converterMap):
@@ -115,6 +115,7 @@ class SpreadReceiverTask(object):
 
         self.__mailbox = mailbox
         self.__observerAction = observerAction
+        self.__observerActionLock = RLock()
 
         self.__converterMap = converterMap
         assert(converterMap.getWireType() == str)
@@ -187,8 +188,9 @@ class SpreadReceiverTask(object):
 
                         self.__logger.debug("Sending event to dispatch task: %s" % event)
 
-                        if self.__observerAction:
-                            self.__observerAction(event)
+                        with self.__observerActionLock:
+                            if self.__observerAction:
+                                self.__observerAction(event)
 
                 # Process membership message
                 elif isinstance(message, spread.MembershipMsgType):
@@ -214,8 +216,8 @@ class SpreadReceiverTask(object):
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
 
     def setObserverAction(self, action):
-        # TODO does this need locking?
-        self.__observerAction = action
+        with self.__observerActionLock:
+            self.__observerAction = action
 
 class SpreadPort(rsb.transport.Port):
     """
