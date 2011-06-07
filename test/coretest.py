@@ -268,6 +268,16 @@ class EventTest(unittest.TestCase):
         e2.metaData.setUserTime("foo", e1.getMetaData().getUserTimes()["foo"])
         self.assertEquals(e1, e2)
 
+class FactoryTest(unittest.TestCase):
+    def testDefaultParticipantConfig(self):
+        self.assert_(rsb.getDefaultParticipantConfig())
+
+    def testCreateListener(self):
+        self.assert_(rsb.createListener("/"))
+
+    def testCreateInformer(self):
+        self.assert_(rsb.createInformer("/"))
+
 class MetaDataTest(unittest.TestCase):
 
     def testConstruction(self):
@@ -319,7 +329,7 @@ class MetaDataTest(unittest.TestCase):
         before = time.time();
         meta.setUserTime("foo")
         after = time.time();
-        
+
         self.assertNotEquals(None, meta.userTimes["foo"])
         self.assertTrue(meta.userTimes["foo"] >= before)
         self.assertTrue(meta.userTimes["foo"] <= after)
@@ -367,5 +377,6 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     return suite
