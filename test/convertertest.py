@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses>.
 
 import unittest
+import re
 
 from rsb.transport.converter import Converter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
@@ -45,6 +46,9 @@ class UnambiguousConverterMapTest(unittest.TestCase):
 
 
 class PredicateConverterListTest(unittest.TestCase):
+    def assertIs(self, a, b):
+        self.assertTrue(a is b)
+
     def testAddConverter(self):
         list = PredicateConverterList(str)
         list.addConverter(StringConverter())
@@ -54,7 +58,45 @@ class PredicateConverterListTest(unittest.TestCase):
                           dataTypePredicate = lambda dataType: True)
 
     def testGetConverter(self):
-        pass
+        v1 = StringConverter()
+        v2 = StringConverter()
+
+        alwaysTrue = PredicateConverterList(str)
+        alwaysTrue.addConverter(v1,
+                                wireSchemaPredicate = lambda wireSchema: True,
+                                dataTypePredicate   = lambda dataType: True)
+        self.assertIs(alwaysTrue.getConverterForWireSchema(""), v1)
+        self.assertIs(alwaysTrue.getConverterForWireSchema("bla"), v1)
+
+        regex = PredicateConverterList(str)
+        regex.addConverter(v1,
+                           wireSchemaPredicate = lambda wireSchema: re.match(".*foo.*", wireSchema),
+                           dataTypePredicate   = lambda dataType:   re.match(".*foo.*", dataType))
+        self.assertRaises(KeyError, regex.getConverterForWireSchema, "")
+        self.assertRaises(KeyError, regex.getConverterForWireSchema, "bla")
+        self.assertIs(regex.getConverterForWireSchema("foo"),    v1)
+        self.assertIs(regex.getConverterForWireSchema("foobar"), v1)
+        self.assertRaises(KeyError, regex.getConverterForDataType, "")
+        self.assertRaises(KeyError, regex.getConverterForDataType, "bla")
+        self.assertIs(regex.getConverterForDataType("foo"),    v1)
+        self.assertIs(regex.getConverterForDataType("foobar"), v1)
+
+        mixed = PredicateConverterList(str)
+        mixed.addConverter(v1,
+                           wireSchemaPredicate = lambda wireSchema: re.match(".*foo.*", wireSchema),
+                           dataTypePredicate   = lambda dataType:   re.match(".*foo.*", dataType))
+        mixed.addConverter(v2,
+                           wireSchemaPredicate = lambda wireSchema: True,
+                           dataTypePredicate   = lambda dataType:   True)
+        self.assertIs(mixed.getConverterForWireSchema(""),       v2)
+        self.assertIs(mixed.getConverterForWireSchema("bla"),    v2)
+        self.assertIs(mixed.getConverterForWireSchema("foo"),    v1)
+        self.assertIs(mixed.getConverterForWireSchema("foobar"), v1)
+        self.assertIs(mixed.getConverterForDataType(""),       v2)
+        self.assertIs(mixed.getConverterForDataType("bla"),    v2)
+        self.assertIs(mixed.getConverterForDataType("foo"),    v1)
+        self.assertIs(mixed.getConverterForDataType("foobar"), v1)
+
 
 def suite():
     suite = unittest.TestSuite()

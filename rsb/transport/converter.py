@@ -98,7 +98,7 @@ class ConverterSelectionStrategy(object):
         converter = self._getConverterForWireSchema(wireSchema)
         if converter:
             return converter
-        raise KeyError, wireScheam
+        raise KeyError, wireSchema
 
     def hasConverterForDataType(self, dataType):
         if self._getConverterForDataType(dataType):
@@ -165,6 +165,7 @@ class PredicateConverterList (ConverterMap):
     """
     def __init__(self, wireType) :
         super(PredicateConverterList, self).__init__(wireType)
+        self._list = []
 
     def addConverter(self, converter,
                      wireSchemaPredicate = None,
@@ -176,15 +177,16 @@ class PredicateConverterList (ConverterMap):
             dataTypePredicate = lambda dataType: dataType == converter.getDataType()
         key = (wireSchemaPredicate, dataTypePredicate)
         self._converters[key] = converter
+        self._list.append((key, converter))
 
     def _getConverterForWireSchema(self, wireSchema):
-        for ((predicate, ignored), connector) in self._converters.items():
+        for ((predicate, ignored), converter) in self._list:
             if predicate(wireSchema):
                 return converter
 
     def _getConverterForDataType(self, dataType):
-        for ((ignored, predicate), connector) in self._converters.items():
-            if predicate(wireSchema):
+        for ((ignored, predicate), converter) in self._list:
+            if predicate(dataType):
                 return converter
 
 class UnambiguousConverterMap (ConverterMap):
