@@ -15,7 +15,7 @@
 
 import unittest
 
-from rsb.transport.converter import Converter, StringConverter, ConverterMap, UnambiguousConverterMap
+from rsb.transport.converter import Converter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
@@ -27,7 +27,7 @@ class ConflictingStringConverter(Converter):
     def deserialize(self, input):
         return str(input)
 
-class ConverterMapTest (unittest.TestCase):
+class ConverterMapTest(unittest.TestCase):
     def testAddConverter(self):
         map = ConverterMap(str)
         map.addConverter(StringConverter())
@@ -35,7 +35,7 @@ class ConverterMapTest (unittest.TestCase):
         self.assertRaises(Exception, map.addConverter, StringConverter())
         map.addConverter(StringConverter(), override = True)
 
-class UnambiguousConverterMapTest (unittest.TestCase):
+class UnambiguousConverterMapTest(unittest.TestCase):
     def testAddConverter(self):
         map = UnambiguousConverterMap(str)
         map.addConverter(StringConverter())
@@ -43,8 +43,22 @@ class UnambiguousConverterMapTest (unittest.TestCase):
         self.assertRaises(Exception, map.addConverter, ConflictingStringConverter(), True)
         map.addConverter(StringConverter(), override = True)
 
+
+class PredicateConverterListTest(unittest.TestCase):
+    def testAddConverter(self):
+        list = PredicateConverterList(str)
+        list.addConverter(StringConverter())
+        list.addConverter(StringConverter(),
+                          wireSchemaPredicate = lambda wireSchema: True)
+        list.addConverter(StringConverter(),
+                          dataTypePredicate = lambda dataType: True)
+
+    def testGetConverter(self):
+        pass
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ConverterMapTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(UnambiguousConverterMapTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PredicateConverterListTest))
     return suite

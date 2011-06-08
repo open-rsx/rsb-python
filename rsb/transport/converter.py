@@ -81,7 +81,38 @@ class UnknownConverterError(KeyError):
     def __init__(self, sourceType, wireSchema):
         KeyError.__init__(self, "No converter from type %s to type %s available" % (sourceType, wireSchema))
 
-class ConverterMap(object):
+class ConverterSelectionStrategy(object):
+    """
+    This class defines the interface for converter selection strategy
+    classes.
+
+    @author: jmoringe
+    """
+    def hasConverterForWireSchema(self, wireSchema):
+        if self._getConverterForWireSchema(wireSchema):
+            return True
+        else:
+            return False
+
+    def getConverterForWireSchema(self, wireSchema):
+        converter = self._getConverterForWireSchema(wireSchema)
+        if converter:
+            return converter
+        raise KeyError, wireScheam
+
+    def hasConverterForDataType(self, dataType):
+        if self._getConverterForDataType(dataType):
+            return True
+        else:
+            return False
+
+    def getConverterForDataType(self, dataType):
+        converter = self._getConverterForDataType(dataType)
+        if converter:
+            return converter
+        raise KeyError, dataType
+
+class ConverterMap(ConverterSelectionStrategy):
     """
     A class managing converters for for a certain target type.
 
@@ -89,61 +120,72 @@ class ConverterMap(object):
     """
 
     def __init__(self, wireType):
-        self.__wireType = wireType
-        self.__converters = {}
+        self._wireType = wireType
+        self._converters = {}
 
     def getWireType(self):
-        return self.__wireType
+        return self._wireType
 
     def addConverter(self, converter, override=False):
         key = (converter.getWireSchema(), converter.getDataType())
-        if key in self.__converters and not override:
+        if key in self._converters and not override:
             raise RuntimeError("There already is a converter with wire-schema `%s' and data-type `%s'"
                                % key)
-        self.__converters[key] = converter
+        self._converters[key] = converter
 
-    def __getConverterForWireSchema(self, wireSchema):
-        for ((converterWireSchema, ignored), converter) in self.__converters.items():
+    def _getConverterForWireSchema(self, wireSchema):
+        for ((converterWireSchema, ignored), converter) in self._converters.items():
             if converterWireSchema == wireSchema:
                 return converter
 
-    def hasConverterForWireSchema(self, wireSchema):
-        if self.__getConverterForWireSchema(wireSchema):
-            return True
-        else:
-            return False
-
-    def getConverterForWireSchema(self, wireSchema):
-        converter = self.__getConverterForWireSchema(wireSchema)
-        if converter:
-            return converter
-        raise KeyError, wireScheam
-
-    def __getConverterForDataType(self, dataType):
-        for ((ignored, converterDataType), converter) in self.__converters.items():
+    def _getConverterForDataType(self, dataType):
+        for ((ignored, converterDataType), converter) in self._converters.items():
             if dataType is converterDataType:
                 return converter
 
-    def hasConverterForDataType(self, dataType):
-        if self.__getConverterForDataType(dataType):
-            return True
-        else:
-            return False
-
-    def getConverterForDataType(self, dataType):
-        converter = self.__getConverterForDataType(dataType)
-        if converter:
-            return converter
-        raise KeyError, dataType
-
     def getConverters(self):
-          return self.__converters
+          return self._converters
 
     def __str__(self):
-        s = "ConverterMap(wireType = %s):\n" % self.__wireType
-        for converter in self.__converters.values():
+        s = "ConverterMap(wireType = %s):\n" % self._wireType
+        for converter in self._converters.values():
             s = s + ("\t%s <-> %s\n" % (converter.getWireSchema(), converter.getDataType()))
         return s[:-1]
+
+class PredicateConverterList (ConverterMap):
+    """
+    Objects of this class are used to perform converter selection via
+    a chain-of-responsibility strategy. A list of predicates and
+    associated converters is maintained. Converter selection queries
+    are processed by traversing the list and selected the first
+    converter the associated predicate of which matches the query
+    wire-schema or data-type.
+
+    @author: jmoringe
+    """
+    def __init__(self, wireType) :
+        super(PredicateConverterList, self).__init__(wireType)
+
+    def addConverter(self, converter,
+                     wireSchemaPredicate = None,
+                     dataTypePredicate = None,
+                     override = True):
+        if wireSchemaPredicate is None:
+            wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
+        if dataTypePredicate is None:
+            dataTypePredicate = lambda dataType: dataType == converter.getDataType()
+        key = (wireSchemaPredicate, dataTypePredicate)
+        self._converters[key] = converter
+
+    def _getConverterForWireSchema(self, wireSchema):
+        for ((predicate, ignored), connector) in self._converters.items():
+            if predicate(wireSchema):
+                return converter
+
+    def _getConverterForDataType(self, dataType):
+        for ((ignored, predicate), connector) in self._converters.items():
+            if predicate(wireSchema):
+                return converter
 
 class UnambiguousConverterMap (ConverterMap):
     def __init__(self, wireType):
