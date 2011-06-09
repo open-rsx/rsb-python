@@ -20,6 +20,7 @@ from setuptools import find_packages
 from setuptools import Command
 
 from distutils.command.build import build
+from distutils.command.sdist import sdist
 from distutils.spawn import find_executable
 
 from unittest import TestResult
@@ -202,6 +203,18 @@ class Build(build):
         self.run_command('proto')
         build.run(self)
 
+class Sdist(sdist):
+    """
+    Simple wrapper around the normal sdist command to require protobuf build
+    before generating the source distribution..
+    
+    @author: jwienke
+    """
+
+    def run(self):
+        self.run_command('proto')
+        sdist.run(self)
+
 class Test(setuptools.command.test.test):
     """
     Wrapper for test command to execute build before testing use a custom test
@@ -269,6 +282,7 @@ setup(name='rsb-python',
 
       cmdclass={'doc' : ApiDocCommand,
                 'proto': BuildProtobufs,
+                'sdist' : Sdist,
                 'build' : Build,
                 'test' : Test,
                 'coverage' : Coverage},
