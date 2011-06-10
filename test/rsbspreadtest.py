@@ -209,6 +209,7 @@ class SpreadPortTest(unittest.TestCase):
         sentEvent = Event()
         sentEvent.setData(data1)
         sentEvent.setType(str)
+        sentEvent.setScope(scope)
         sentEvent.getMetaData().setUserInfo("test", "it")
         sentEvent.getMetaData().setUserInfo("test again", "it works?")
         sentEvent.getMetaData().setUserTime("blubb", 234234)

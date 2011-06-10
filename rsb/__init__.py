@@ -836,18 +836,38 @@ class Informer(Participant):
         self.__logger.debug("Destructing Informer")
         self.deactivate()
 
+    def getType(self):
+        """
+        Returns the type of data sent by this informer.
+        
+        @return: type of sent data
+        """
+        return self.__type
+
     def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
         event = Event(userInfos=userInfos, userTimes=userTimes)
         event.setData(data)
+        event.setScope(self.getScope())
         event.setType(self.__type)
         return self.publishEvent(event)
 
     def publishEvent(self, event):
+        """
+        Publishes a predefined event. The caller must ensure that the event has
+        the appropriate scope and type according to the Informer's settings.
+        
+        @param event: the event to send
+        @type event: Event
+        """
         # TODO check activation
-        # TODO check that type is available and suitable
-        event.setScope(self.scope)
+        
+        if not event.scope == self.getScope():
+            raise ValueError("Scope %s of the event does not match this informer's scope %s." % (event.scope, self.getScope()))
+        if not event.type == self.__type:
+            raise ValueError("Type %s of the event does not match this informer's type %s." % (event.type, self.__type))
+        
         event.metaData.senderId = self.id
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)

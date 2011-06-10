@@ -21,7 +21,8 @@ import uuid
 import unittest
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
+    Informer
 import time
 
 class ParticipantConfigTest (unittest.TestCase):
@@ -371,6 +372,29 @@ class MetaDataTest(unittest.TestCase):
         meta2.setUserInfo("foox", meta1.getUserInfos()["foox"])
         self.assertEquals(meta1, meta2)
 
+class InformerTest(unittest.TestCase):
+    
+    def setUp(self):
+        self.defaultScope = Scope("/a/test")
+        self.informer = Informer(self.defaultScope, str)
+
+    def tearDown(self):
+        self.informer.deactivate()
+
+    def testSendEventWrongScope(self):
+        e = Event()
+        e.setType(self.informer.getType())
+        e.setScope(self.defaultScope.concat(Scope("/blubb")))
+        e.setData("foo")
+        self.assertRaises(ValueError, self.informer.publishEvent, e)
+    
+    def testSendEventWrongType(self):
+        e = Event()
+        e.setType("wrong")
+        e.setScope(self.defaultScope)
+        e.setData("foo")
+        self.assertRaises(ValueError, self.informer.publishEvent, e)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
@@ -379,4 +403,5 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
     return suite
