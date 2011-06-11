@@ -102,7 +102,7 @@ class SpreadPortTest(unittest.TestCase):
 
     def testActivate(self):
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(str),
+        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
@@ -114,7 +114,7 @@ class SpreadPortTest(unittest.TestCase):
 
     def testDeactivate(self):
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(str),
+        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
@@ -129,7 +129,7 @@ class SpreadPortTest(unittest.TestCase):
 
     def testSpreadSubscription(self):
         dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(str),
+        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
         port.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
@@ -160,7 +160,7 @@ class SpreadPortTest(unittest.TestCase):
         port.deactivate()
 
     def testRoundtrip(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(str))
+        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         port.activate()
 
         goodScope = Scope("/good")
@@ -191,8 +191,8 @@ class SpreadPortTest(unittest.TestCase):
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inport = SpreadPort(converterMap=getGlobalConverterMap(str))
-        outport = SpreadPort(converterMap=getGlobalConverterMap(str))
+        inport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
 
         outRouter = Router(outPort=outport)
         inRouter = Router(inPort=inport)
@@ -233,7 +233,7 @@ class SpreadPortTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outport = SpreadPort(converterMap=getGlobalConverterMap(str))
+        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         outRouter = Router(outPort=outport)
         informer = Informer(sendScope, str, router=outRouter)
 
@@ -242,7 +242,7 @@ class SpreadPortTest(unittest.TestCase):
         receivers = []
         for scope in superScopes:
 
-            inport = SpreadPort(converterMap=getGlobalConverterMap(str))
+            inport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
             inRouter = Router(inPort=inport)
 
             listener = Listener(scope, router=inRouter)
@@ -265,7 +265,7 @@ class SpreadPortTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(str))
+        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         port.activate()
 
         goodScope = Scope("/good")
@@ -296,7 +296,7 @@ class SpreadPortTest(unittest.TestCase):
 
     def testSendTimeAdaption(self):
 
-        port = SpreadPort(converterMap=getGlobalConverterMap(str))
+        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         port.activate()
         
         event = Event()

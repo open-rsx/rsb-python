@@ -144,7 +144,7 @@ class ConverterMap(ConverterSelectionStrategy):
                 return converter
 
     def getConverters(self):
-          return self._converters
+        return self._converters
 
     def __str__(self):
         s = "ConverterMap(wireType = %s):\n" % self._wireType
@@ -168,9 +168,9 @@ class PredicateConverterList (ConverterMap):
         self._list = []
 
     def addConverter(self, converter,
-                     wireSchemaPredicate = None,
-                     dataTypePredicate = None,
-                     override = True):
+                     wireSchemaPredicate=None,
+                     dataTypePredicate=None,
+                     override=True):
         if wireSchemaPredicate is None:
             wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
         if dataTypePredicate is None:
@@ -228,22 +228,30 @@ def getGlobalConverterMap(wireType):
         __globalConverterMaps[wireType] = ConverterMap(wireType)
     return __globalConverterMaps[wireType]
 
-# --- converters with str as serialization type ---
+# --- converters with bytearray as serialization type ---
 
 class StringConverter(Converter):
     """
-    An adapter to serialize strings to strings. ;)
+    An adapter to serialize strings to bytearrays with a specified encoding
 
     @author: jwienke
     """
 
-    def __init__(self):
-        Converter.__init__(self, wireType = str, wireSchema = "string", dataType = str)
+    def __init__(self, wireSchema="utf-8-string", dataType=unicode, encoding="utf_8"):
+        Converter.__init__(self, bytearray, dataType, wireSchema)
+        self.__encoding = encoding
 
     def serialize(self, input):
-        return str(input)
+        return bytearray(input.encode(self.__encoding))
 
     def deserialize(self, input):
-        return str(input)
+        type = self.getDataType()
+        if type == unicode:
+            return type(str(input), self.__encoding)
+        elif type == str:
+            return str(input)
+        else:
+            raise ValueError("Inacceptible dataType %s" % type)
 
 registerGlobalConverter(StringConverter())
+registerGlobalConverter(StringConverter(wireSchema="ascii-string", dataType=str, encoding="ascii"))

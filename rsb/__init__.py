@@ -140,7 +140,7 @@ class ParticipantConfig (object):
             # 3. Add converters from the global map to the unambiguous
             #    map of the transport, resolving conflicts based on
             #    configuration options when necessary
-            wireType = str
+            wireType = bytearray
             self.__converters = rsb.transport.converter.UnambiguousConverterMap(wireType)
             # Find and transform configuration options
             converterOptions = dict([ (key[17:], value) for (key, value) in options.items()

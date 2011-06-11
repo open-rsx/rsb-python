@@ -67,7 +67,7 @@ class Assembly(object):
         finalData = ""
         for key in keys:
             finalData += self.__parts[key].data
-        return finalData
+        return bytearray(finalData)
 
 class AssemblyPool(object):
     """
@@ -118,7 +118,7 @@ class SpreadReceiverTask(object):
         self.__observerActionLock = RLock()
 
         self.__converterMap = converterMap
-        assert(converterMap.getWireType() == str)
+        assert(converterMap.getWireType() == bytearray)
 
         self.__taskId = uuid.uuid1()
         # narf, spread groups are 32 chars long but 0-terminated... truncate id
@@ -229,7 +229,7 @@ class SpreadPort(rsb.transport.Port):
     __MAX_MSG_LENGTH = 100000
 
     def __init__(self, converterMap, options={}, spreadModule=spread):
-        super(SpreadPort, self).__init__(str, converterMap)
+        super(SpreadPort, self).__init__(bytearray, converterMap)
         host = options.get('host', None)
         port = options.get('port', '4803')
         if host:
@@ -315,7 +315,7 @@ class SpreadPort(rsb.transport.Port):
             n.scope = event.scope.toString()
             n.wire_schema = wireSchema
             dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
-            n.data = dataPart
+            n.data = str(dataPart)
             n.num_data_parts = requiredParts
             n.data_part = i
             # add meta-data

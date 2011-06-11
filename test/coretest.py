@@ -49,8 +49,8 @@ class ParticipantConfigTest (unittest.TestCase):
 
         # Check converters of spread transport
         converters = transport.getConverters()
-        self.assertTrue(converters.getConverterForWireSchema('string'))
-        self.assertTrue(converters.getConverterForDataType(str))
+        self.assertTrue(converters.getConverterForWireSchema('utf-8-string'))
+        self.assertTrue(converters.getConverterForDataType(unicode))
         # not yet
         #self.assertTrue(converters.getConverterForWireSchema('bool'))
         #self.assertTrue(converters.getConverterForDataType(bool))
@@ -78,8 +78,8 @@ class ParticipantConfigTest (unittest.TestCase):
 
         # Check converters of spread transport
         converters = transport.getConverters()
-        self.assertTrue(converters.getConverterForWireSchema('string'))
-        self.assertTrue(converters.getConverterForDataType(str))
+        self.assertTrue(converters.getConverterForWireSchema('utf-8-string'))
+        self.assertTrue(converters.getConverterForDataType(unicode))
         # not yet
         #self.assertTrue(converters.getConverterForWireSchema('bool'))
         #self.assertTrue(converters.getConverterForDataType(bool))
