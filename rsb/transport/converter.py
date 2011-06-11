@@ -253,5 +253,5 @@ class StringConverter(Converter):
         else:
             raise ValueError("Inacceptible dataType %s" % type)
 
-registerGlobalConverter(StringConverter())
-registerGlobalConverter(StringConverter(wireSchema="ascii-string", dataType=str, encoding="ascii"))
+#registerGlobalConverter(StringConverter())
+registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
