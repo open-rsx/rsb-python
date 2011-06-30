@@ -390,14 +390,19 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.debug("Ignoring filter %s with action %s" % (filter, action))
 
     def setQualityOfServiceSpec(self, qos):
+        self.__logger.debug("Adapting service type for QoS %s" % qos)
         if qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.UNRELIABLE_MESS
+            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s" % self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s" % self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.RELIABLE_MESS
+            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s" % self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s" % self.__msgType)
         else:
             assert(False)
 

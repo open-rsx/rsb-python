@@ -209,8 +209,8 @@ class ParticipantConfig (object):
 
         # Quality of service
         qosOptions = dict(sectionOptions('qualityofservice'))
-        result.__qos.setReliability(QualityOfServiceSpec.Reliability.fromString(qosOptions.get('reliability', 'UNRELIABLE')))
-        result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', 'UNORDERED')))
+        result.__qos.setReliability(QualityOfServiceSpec.Reliability.fromString(qosOptions.get('reliability', QualityOfServiceSpec().getReliability().__str__())))
+        result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', QualityOfServiceSpec().getOrdering().__str__())))
 
         # Transport options
         for transport in [ 'spread' ]:
