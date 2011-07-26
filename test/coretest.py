@@ -229,7 +229,6 @@ class EventTest(unittest.TestCase):
 
         self.assertEqual(None, self.e.getData())
         self.assertEqual(Scope("/"), self.e.getScope())
-        self.assertEqual(type(self.e.getId()), uuid.UUID)
 
     def testData(self):
 
@@ -243,27 +242,18 @@ class EventTest(unittest.TestCase):
         self.e.scope = scope
         self.assertEqual(scope, self.e.scope)
 
-    def testId(self):
-
-        id = uuid.uuid4()
-        self.e.id = id
-        self.assertEqual(id, self.e.id)
-
     def testType(self):
         t = "asdasd"
         self.e.type = t
         self.assertEqual(t, self.e.type)
-        
+
     def testComparison(self):
-        
-        e1 = Event()
-        e2 = Event()
+
+        sid = uuid.uuid4()
+        e1 = Event(sequenceNumber = 0, senderId = sid)
+        e2 = Event(sequenceNumber = 0, senderId = sid)
         e2.getMetaData().setCreateTime(e1.getMetaData().getCreateTime())
-        # still distinct id
-        self.assertNotEquals(e1, e2)
-        e2.setId(e1.getId())
-        self.assertEquals(e1, e2)
-        
+
         e1.metaData.setUserTime("foo")
         self.assertNotEquals(e1, e2)
         e2.metaData.setUserTime("foo", e1.getMetaData().getUserTimes()["foo"])
@@ -334,46 +324,46 @@ class MetaDataTest(unittest.TestCase):
         self.assertNotEquals(None, meta.userTimes["foo"])
         self.assertTrue(meta.userTimes["foo"] >= before)
         self.assertTrue(meta.userTimes["foo"] <= after)
-        
+
     def testComparison(self):
-        
+
         meta1 = MetaData()
         meta2 = MetaData()
         meta2.setCreateTime(meta1.getCreateTime())
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setCreateTime(213123)
         self.assertNotEquals(meta1, meta2)
         meta2.setCreateTime(meta1.getCreateTime())
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setSendTime()
         self.assertNotEquals(meta1, meta2)
         meta2.setSendTime(meta1.getSendTime())
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setReceiveTime()
         self.assertNotEquals(meta1, meta2)
         meta2.setReceiveTime(meta1.getReceiveTime())
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setDeliverTime()
         self.assertNotEquals(meta1, meta2)
         meta2.setDeliverTime(meta1.getDeliverTime())
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setUserTime("foo")
         self.assertNotEquals(meta1, meta2)
         meta2.setUserTime("foo", meta1.getUserTimes()["foo"])
         self.assertEquals(meta1, meta2)
-        
+
         meta1.setUserInfo("foox", "bla")
         self.assertNotEquals(meta1, meta2)
         meta2.setUserInfo("foox", meta1.getUserInfos()["foox"])
         self.assertEquals(meta1, meta2)
 
 class InformerTest(unittest.TestCase):
-    
+
     def setUp(self):
         self.defaultScope = Scope("/a/test")
         self.informer = Informer(self.defaultScope, str)
@@ -387,7 +377,7 @@ class InformerTest(unittest.TestCase):
         e.setScope(self.defaultScope.concat(Scope("/blubb")))
         e.setData("foo")
         self.assertRaises(ValueError, self.informer.publishEvent, e)
-    
+
     def testSendEventWrongType(self):
         e = Event()
         e.setType("wrong")

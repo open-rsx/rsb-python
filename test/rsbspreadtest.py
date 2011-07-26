@@ -16,6 +16,7 @@
 # ============================================================
 
 import unittest
+
 import rsb.rsbspread
 import rsb.filter
 from threading import Condition
@@ -172,7 +173,7 @@ class SpreadPortTest(unittest.TestCase):
         port.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
-        event = Event()
+        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
         event.scope = Scope("/notGood")
         event.data = "dummy data"
         event.type = str
@@ -206,7 +207,7 @@ class SpreadPortTest(unittest.TestCase):
         listener.addHandler(receiver)
 
         data1 = "a string to test"
-        sentEvent = Event()
+        sentEvent = Event(sequenceNumber = 0, senderId = uuid.uuid4())
         sentEvent.setData(data1)
         sentEvent.setType(str)
         sentEvent.setScope(scope)
@@ -214,7 +215,7 @@ class SpreadPortTest(unittest.TestCase):
         sentEvent.getMetaData().setUserInfo("test again", "it works?")
         sentEvent.getMetaData().setUserTime("blubb", 234234)
         sentEvent.getMetaData().setUserTime("bla", 3434343.45)
-        
+
         before = time.time()
         publisher.publishEvent(sentEvent)
 
@@ -277,7 +278,7 @@ class SpreadPortTest(unittest.TestCase):
         port.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
-        event = Event()
+        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
@@ -298,17 +299,17 @@ class SpreadPortTest(unittest.TestCase):
 
         port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         port.activate()
-        
-        event = Event()
+
+        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        
+
         before = time.time()
         port.push(event)
         after = time.time()
-        
+
         self.assertTrue(event.getMetaData().getSendTime() >= before)
         self.assertTrue(event.getMetaData().getSendTime() <= after)
 

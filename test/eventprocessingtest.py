@@ -15,7 +15,9 @@
 #
 # ============================================================
 
+import uuid
 import unittest
+
 from rsb.eventprocessing import EventProcessor, Router
 from threading import Condition
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
@@ -50,8 +52,8 @@ class EventProcessorTest(unittest.TestCase):
         ep.addHandler(matchingAction1, wait = True)
         ep.addHandler(matchingAction2, wait = True)
 
-        event1 = Event()
-        event2 = Event()
+        event1 = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        event2 = Event(sequenceNumber = 1, senderId = uuid.uuid4())
 
         ep.process(event1)
         ep.process(event2)
@@ -101,9 +103,9 @@ class EventProcessorTest(unittest.TestCase):
         ep.addFilter(noMatchRecordingFilter)
         ep.addHandler(noMatchingAction, wait = True)
 
-        event1 = Event()
-        event2 = Event()
-        event3 = Event()
+        event1 = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        event2 = Event(sequenceNumber = 1, senderId = uuid.uuid4())
+        event3 = Event(sequenceNumber = 2, senderId = uuid.uuid4())
 
         ep.process(event1)
         ep.process(event2)
@@ -130,9 +132,9 @@ class EventProcessorTest(unittest.TestCase):
             ep.addHandler(h2, wait = True)
             ep.addHandler(h1, wait = True)
 
-            ep.process(Event())
-            ep.process(Event())
-            ep.process(Event())
+            ep.process(Event(sequenceNumber = 0, senderId = uuid.uuid4()))
+            ep.process(Event(sequenceNumber = 1, senderId = uuid.uuid4()))
+            ep.process(Event(sequenceNumber = 2, senderId = uuid.uuid4()))
 
             ep.removeHandler(h1, wait = True)
             ep.removeHandler(h2, wait = True)

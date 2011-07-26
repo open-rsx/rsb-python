@@ -34,6 +34,10 @@ import time
 from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
 from multiprocessing import RLock
 
+def makeKey(notification):
+    key = notification.sender_id + '%08x' % notification.sequence_number
+    return key
+
 class Assembly(object):
     """
     A class that maintains a collection of fragments of one fragmented
@@ -43,16 +47,16 @@ class Assembly(object):
     """
 
     def __init__(self, notification):
-
         self.__requiredParts = notification.num_data_parts
         assert(self.__requiredParts > 1)
-        self.__id = notification.id
+        self.__id = makeKey(notification)
         self.__parts = {notification.data_part : notification}
 
     def add(self, notification):
-        assert(notification.id == self.__id)
+        key = makeKey(notification)
+        assert(key == self.__id)
         if notification.data_part in self.__parts:
-            raise ValueError("Received part %u for notification with id %s again." % (notification.data_part, notification.id))
+            raise ValueError("Received part %u for notification with id %s again." % (notification.data_part, key))
 
         self.__parts[notification.data_part] = notification
 
@@ -83,13 +87,14 @@ class AssemblyPool(object):
     def add(self, notification):
         if notification.num_data_parts == 1:
             return notification.data
-        if not notification.id in self.__assemblies:
-            self.__assemblies[notification.id] = Assembly(notification)
+        key = makeKey(notification)
+        if not key in self.__assemblies:
+            self.__assemblies[key] = Assembly(notification)
             return None
         else:
-            result = self.__assemblies[notification.id].add(notification)
+            result = self.__assemblies[key].add(notification)
             if result != None:
-                del self.__assemblies[notification.id]
+                del self.__assemblies[key]
             return result
 
 class SpreadReceiverTask(object):
@@ -171,13 +176,13 @@ class SpreadReceiverTask(object):
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
                         event = Event()
-                        event.id = uuid.UUID(bytes=notification.id)
+                        event.sequenceNumber = notification.sequence_number
                         event.scope = Scope(notification.scope)
+                        event.senderId = uuid.UUID(bytes=notification.sender_id)
                         event.type = converter.getDataType()
                         event.data = converter.deserialize(joinedData)
 
                         # meta data
-                        event.metaData.senderId = uuid.UUID(bytes=notification.meta_data.sender_id)
                         event.metaData.createTime = unixMicrosecondsToTime(notification.meta_data.create_time)
                         event.metaData.sendTime = unixMicrosecondsToTime(notification.meta_data.send_time)
                         event.metaData.setReceiveTime()
@@ -311,8 +316,9 @@ class SpreadPort(rsb.transport.Port):
 
             # create message
             n = Notification()
-            n.id = event.id.bytes
+            n.sequence_number = event.sequenceNumber
             n.scope = event.scope.toString()
+            n.sender_id = event.senderId.bytes
             n.wire_schema = wireSchema
             dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
             n.data = str(dataPart)
@@ -320,7 +326,6 @@ class SpreadPort(rsb.transport.Port):
             n.data_part = i
             # add meta-data
             md = n.meta_data
-            md.sender_id = event.metaData.senderId.bytes
             md.create_time = rsb.util.timeToUnixMicroseconds(event.metaData.createTime)
             md.send_time = rsb.util.timeToUnixMicroseconds(event.metaData.sendTime)
             for (k, v) in event.metaData.userInfos.items():

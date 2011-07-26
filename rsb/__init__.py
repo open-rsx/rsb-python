@@ -501,7 +501,6 @@ class MetaData (object):
         """
         Constructs a new MetaData object.
 
-        @param senderId: The id of the participant at which the associated event originated.
         @param createTime: A timestamp designating the time at which the associated event was created.
         @param sendTime: A timestamp designating the time at which the associated event was sent onto the bus.
         @param receiveTime: A timestamp designating the time at which the associated event was received from the bus.
@@ -509,7 +508,6 @@ class MetaData (object):
         @param userTimes: A dictionary of user-supplied timestamps.
         @param userInfos: A dictionary of user-supplied meta-data items.
         """
-        self.__senderId = senderId
         if createTime is None:
             self.__createTime = time.time()
         else:
@@ -525,14 +523,6 @@ class MetaData (object):
             self.__userInfos = {}
         else:
             self.__userInfos = userInfos
-
-    def getSenderId(self):
-        return self.__senderId
-
-    def setSenderId(self, senderId):
-        self.__senderId = senderId
-
-    senderId = property(getSenderId, setSenderId)
 
     def getCreateTime(self):
         return self.__createTime
@@ -605,7 +595,7 @@ class MetaData (object):
 
     def __eq__(self, other):
         try:
-            return (self.__senderId == other.__senderId) and (self.__createTime == other.__createTime) and (self.__sendTime == other.__sendTime) and (self.__receiveTime == other.__receiveTime) and (self.__deliverTime == other.__deliverTime) and (self.__userInfos == other.__userInfos) and (self.__userTimes == other.__userTimes)
+            return (self.__createTime == other.__createTime) and (self.__sendTime == other.__sendTime) and (self.__receiveTime == other.__receiveTime) and (self.__deliverTime == other.__deliverTime) and (self.__userInfos == other.__userInfos) and (self.__userTimes == other.__userTimes)
         except (TypeError, AttributeError):
             return False
 
@@ -613,8 +603,8 @@ class MetaData (object):
         return not self.__eq__(other)
 
     def __str__(self):
-        return '%s[sender = %s, create = %s, send = %s, receive = %s, deliver = %s, userTimes = %s, userInfos = %s]' \
-            % ('MetaData', self.__senderId,
+        return '%s[create = %s, send = %s, receive = %s, deliver = %s, userTimes = %s, userInfos = %s]' \
+            % ('MetaData',
                self.__createTime, self.__sendTime, self.__receiveTime, self.__deliverTime,
                self.__userTimes, self.__userInfos)
 
@@ -628,14 +618,18 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, metaData=None, userInfos=None, userTimes=None):
+    def __init__(self, sequenceNumber = None, senderId = None,
+                 metaData=None, userInfos=None, userTimes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
-        The id is randomly generated.
+
+        @param senderId: The id of the participant at which the associated event originated.
         """
 
-        self.__id = uuid.uuid4()
+        self.__id = None # computed lazily
+        self.__sequenceNumber = sequenceNumber
         self.__scope = Scope("/")
+        self.__senderId = senderId
         self.__data = None
         self.__type = None
         if metaData is None:
@@ -649,6 +643,24 @@ class Event(object):
             for (key, value) in userTimes.items():
                 self.__metaData.getUserTimes()[key] = value
 
+    def getSequenceNumber(self):
+        """
+        Return the sequence number of this event.
+
+        @return: sequence number of the event.
+        """
+        return self.__sequenceNumber
+
+    def setSequenceNumber(self, sequenceNumber):
+        """
+        Sets the sequence number of this event.
+
+        @param sequenceNumber: new sequence number of the event.
+        """
+        self.__sequenceNumber = sequenceNumber
+
+    sequenceNumber = property(getSequenceNumber, setSequenceNumber)
+
     def getId(self):
         """
         Returns the id of this event.
@@ -656,18 +668,12 @@ class Event(object):
         @return: id of the event
         """
 
+        if self.__id is None:
+            self.__id = uuid.uuid5(self.__senderId,
+                                   '%08x' % self.__sequenceNumber)
         return self.__id
 
-    def setId(self, id):
-        """
-        Sets the id of the event.
-
-        @param id: id to set
-        """
-
-        self.__id = id
-
-    id = property(getId, setId)
+    id = property(getId)
 
     def getScope(self):
         """
@@ -688,6 +694,25 @@ class Event(object):
         self.__scope = scope
 
     scope = property(getScope, setScope)
+
+    def getSenderId(self):
+        """
+        Return the sender id of this event.
+
+        @return: sender id
+        """
+        return self.__senderId
+
+    def setSenderId(self, senderId):
+        """
+        Sets the sender id of this event.
+
+        @param senderId: sender id to set.
+        """
+        self.__senderId = senderId
+
+    senderId = property(getSenderId, setSenderId)
+
 
     def getData(self):
         """
@@ -741,15 +766,18 @@ class Event(object):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s]" \
-            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData)
+        maybeId = 'N/A'
+        if not self.__sequenceNumber is None and not self.__senderId is None:
+            maybeId = self.getId()
+        return "%s[id = %s, sequenceNumber = %s, scope = '%s', sender = %s, data = '%s', type = '%s', metaData = %s]" \
+            % ("Event", maybeId, self.__sequenceNumber, self.__scope, self.__senderId, printData, self.__type, self.__metaData)
 
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
         try:
-            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
+            return (self.__sequenceNumber == other.__sequenceNumber) and (self.__scope == other.__scope) and (self.__senderId == other.__senderId) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
         except (TypeError, AttributeError):
             return False
 
@@ -827,6 +855,8 @@ class Informer(Participant):
         # TODO check that type can be converted
         self.__type = type
 
+        self.__sequenceNumber = 0
+
         self.__active = False
         self.__mutex = threading.Lock()
 
@@ -839,7 +869,7 @@ class Informer(Participant):
     def getType(self):
         """
         Returns the type of data sent by this informer.
-        
+
         @return: type of sent data
         """
         return self.__type
@@ -857,18 +887,21 @@ class Informer(Participant):
         """
         Publishes a predefined event. The caller must ensure that the event has
         the appropriate scope and type according to the Informer's settings.
-        
+
         @param event: the event to send
         @type event: Event
         """
         # TODO check activation
-        
+
         if not event.scope == self.getScope():
             raise ValueError("Scope %s of the event does not match this informer's scope %s." % (event.scope, self.getScope()))
         if not event.type == self.__type:
             raise ValueError("Type %s of the event does not match this informer's type %s." % (event.type, self.__type))
-        
-        event.metaData.senderId = self.id
+
+        with self.__mutex:
+            event.sequenceNumber = self.__sequenceNumber
+            self.__sequenceNumber += 1
+        event.senderId = self.id
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
         return event
@@ -1003,7 +1036,7 @@ class Listener(Participant):
         after the handler has been completely removed from the event
         processing and will not be called anymore from this listener.
         """
-        
+
         with self.__mutex:
             if handler in self.__handlers:
                 self.__router.handlerRemoved(handler, wait)
