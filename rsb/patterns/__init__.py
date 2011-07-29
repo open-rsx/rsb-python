@@ -43,8 +43,15 @@ class Method (object):
 
     informer = property(getInformer)
 
+    def deactivate(self):
+        if not self._informer is None:
+            self._informer.deactivate()
+        if not self._listener is None:
+            self._listener.deactivate()
+
 class Server (rsb.Participant):
-    def __init__(self):
+    def __init__(self, scope):
+        super(Server, self).__init__(scope)
         self._methods = {}
 
     def addMethod(self, method):
@@ -53,11 +60,19 @@ class Server (rsb.Participant):
     def removeMethod(self, method):
         del self._methods[method.name]
 
+    def deactivate(self):
+        map(lambda x: x.deactivate, self._methods.values())
+
 ######################################################################
 #
 # Local Server
 #
 ######################################################################
+
+class LocalServer (Server):
+    def __init__(self, scope):
+        super(LocalServer, self).__init__(scope)
+
 
 ######################################################################
 #
@@ -126,8 +141,8 @@ class RemoteMethod (Method):
         return call.result
 
 class RemoteServer (Server):
-    def __init__(self):
-        super(RemoteServer, self).__init__()
+    def __init__(self, scope):
+        super(RemoteServer, self).__init__(scope)
 
     def addMethod(self, method):
         super(RemoteServer, self).addMethod(method)
