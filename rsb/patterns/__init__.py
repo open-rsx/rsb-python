@@ -71,6 +71,12 @@ class RemoteExecutionError (RemoteCallError):
     def __init__(self, scope, method, message):
         super(RemoteExecutionError, self).__init__(scope, method, message = message)
 
+######################################################################
+#
+# Method and Server base classes
+#
+######################################################################
+
 class Method (object):
     """
     Objects of this class are methods which are associated to a local
@@ -81,11 +87,13 @@ class Method (object):
 
     @author: jmoringe
     """
-    def __init__(self, server, name):
-        self._server   = server
-        self._name     = name
-        self._listener = None
-        self._informer = None
+    def __init__(self, server, name, requestType, replyType):
+        self._server      = server
+        self._name        = name
+        self._listener    = None
+        self._informer    = None
+        self._requestType = requestType
+        self._replyType   = replyType
 
     def getServer(self):
         return self._server
@@ -110,6 +118,16 @@ class Method (object):
         return self._informer
 
     informer = property(getInformer)
+
+    def getRequestType(self):
+        return self._requestType
+
+    requestType = property(getRequestType)
+
+    def getReplyType(self):
+        return self._replyType
+
+    replyType = property(getReplyType)
 
     def deactivate(self):
         if not self._informer is None:
@@ -169,23 +187,52 @@ class Server (rsb.Participant):
 #
 ######################################################################
 
+class LocalMethod (Method):
+    def __init__(self, server, name, func, requestType, replyType):
+        super(LocalMethod, self).__init__(server, name, requestType, replyType)
+        self._func = func
+
+    def makeListener(self):
+        listener = rsb.Listener(self.server.scope
+                                .concat(rsb.Scope("/request"))
+                                .concat(rsb.Scope('/' + self.name)))
+        listener.addHandler(self._handleRequest)
+
+    def makeInformer(self):
+        return rsb.Informer(self.server.scope
+                            .concat(rsb.Scope("/reply"))
+                            .concat(rsb.Scope('/' + self.name)),
+                            self.replyType)
+
+    def _handleRequest(self, arg):
+        self.informer.publishData(self._func(arg))
+
 class LocalServer (Server):
     """
     @author: jmoringe
     """
     def __init__(self, scope):
+        """
+
+        @param scope: The scope under which the methods of the newly
+        created server should be provided.
+        """
         super(LocalServer, self).__init__(scope)
 
-    def addMethod(self, name, func):
+    def addMethod(self, name, func, requestType, replyType):
         """
         Add a method named name that is implemented by function.
         @param name: The name of of the new method.
         @param func: A callable object or a single argument that
                      implements the desired behavior of the new
                      method.
-        @return: The new created method
+        @param requestType: A type object indicating the type of
+                            request data passed to the method.
+        @param replyType: A type object indicating the type of reply
+                          data of the method.
+        @return: The newly created method
         """
-        method = LocalMethod(self, name, func)
+        method = LocalMethod(self, name, func, requestType, replyType)
         super(LocalServer, self).addMethod(method)
         return method
 
@@ -193,26 +240,6 @@ class LocalServer (Server):
         if isinstance(method, str):
             method = self.getMethod(method)
         super(LocalServer, self).removeMethod(method)
-
-class LocalMethod (Method):
-    def __init__(self, server, name, func):
-        super(LocalMethod, self).__init__(server, name)
-        self._func = func
-
-    def makeListener(self):
-        listener = rsb.Listener(self.server.scope
-                                    .concat(rsb.Scope("/request"))
-                                    .concat(rsb.Scope('/' + self.name)))
-        listener.addHandler(self._handleRequest)
-
-    def makeInformer(self):
-        return rsb.Informer(self.server.scope
-                            .concat(rsb.Scope("/reply"))
-                            .concat(rsb.Scope('/' + self.name)),
-                            'TODO type')
-
-    def _handleRequest(self, arg):
-        self.informer.publishData(self._func(arg))
 
 ######################################################################
 #
@@ -255,8 +282,8 @@ class RemoteMethod (Method):
     """
     @author: jmoringe
     """
-    def __init__(self, server, name):
-        super(RemoteMethod, self).__init__(server, name)
+    def __init__(self, server, name, requestType, replyType):
+        super(RemoteMethod, self).__init__(server, name, requestType, replyType)
         self._calls = {}
         self._lock  = threading.RLock()
 
@@ -271,16 +298,14 @@ class RemoteMethod (Method):
         return rsb.Informer(self.server.scope
                             .concat(rsb.Scope("/request"))
                             .concat(rsb.Scope('/' + self.name)),
-                            str)
+                            self.requestType)
 
     def _handleReply(self, event):
         key  = uuid.UUID(event.metaData.userInfos['ServerRequestId'])
-        print '%s, %s: received reply for %s' % (self, self._calls, key)
         with self._lock:
             # We can receive reply events which aren't actually
             # intended for us. We ignore these
             if key in self._calls:
-                print '%s: we have a call for %s' % (self, key)
                 self._calls[key].result = event
 
     def __call__(self, arg):
@@ -326,6 +351,15 @@ class RemoteServer (Server):
     @author: jmoringe
     """
     def __init__(self, scope, timeout = 25):
+        """
+        Create a new RemoteServer object that provides its methods
+        under the scope @a scope.
+
+        @param scope: The common super-scope under which the methods
+        of the remote created server are provided.
+        @param timeout: The amount of seconds methods calls should
+        wait for their replies to arrive before failing.
+        """
         super(RemoteServer, self).__init__(scope)
         self._timeout = timeout
 
