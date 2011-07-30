@@ -618,7 +618,8 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, sequenceNumber = None, senderId = None,
+    def __init__(self, sequenceNumber = None, scope = Scope("/"), senderId = None,
+                 data = None, type = None,
                  metaData=None, userInfos=None, userTimes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
@@ -628,10 +629,10 @@ class Event(object):
 
         self.__id = None # computed lazily
         self.__sequenceNumber = sequenceNumber
-        self.__scope = Scope("/")
+        self.__scope = scope
         self.__senderId = senderId
-        self.__data = None
-        self.__type = None
+        self.__data = data
+        self.__type = type
         if metaData is None:
             self.__metaData = MetaData()
         else:
