@@ -243,9 +243,14 @@ class LocalMethod (Method):
                             self.replyType)
 
     def _handleRequest(self, arg):
-        id = arg.metaData.userInfos['ServerRequestId']
-        self.informer.publishData(self._func(arg.data),
-                                  userInfos = { 'ServerRequestId': id })
+        id        = arg.metaData.userInfos['ServerRequestId']
+        userInfos = { 'ServerRequestId': id }
+        try:
+            result = self._func(arg.data)
+        except Exception, e:
+            userInfos['isException'] = '1'
+            result = str(e)
+        self.informer.publishData(result, userInfos)
 
 class LocalServer (Server):
     """
