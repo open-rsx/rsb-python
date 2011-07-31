@@ -184,6 +184,11 @@ class Server (rsb.Participant):
     def __del__(self):
         self.deactivate
 
+    def getMethods(self):
+        return self._methods.values()
+
+    methods = property(getMethods)
+
     def getMethod(self, name):
         if name in self._methods:
             return self._methods[name]
