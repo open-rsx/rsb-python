@@ -191,12 +191,14 @@ class LocalMethod (Method):
     def __init__(self, server, name, func, requestType, replyType):
         super(LocalMethod, self).__init__(server, name, requestType, replyType)
         self._func = func
+        self.listener # force listener creation
 
     def makeListener(self):
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/request"))
                                 .concat(rsb.Scope('/' + self.name)))
         listener.addHandler(self._handleRequest)
+        return listener
 
     def makeInformer(self):
         return rsb.Informer(self.server.scope
@@ -205,14 +207,22 @@ class LocalMethod (Method):
                             self.replyType)
 
     def _handleRequest(self, arg):
-        self.informer.publishData(self._func(arg))
+        id = arg.metaData.userInfos['ServerRequestId']
+        self.informer.publishData(self._func(arg.data),
+                                  userInfos = { 'ServerRequestId': id })
 
 class LocalServer (Server):
     """
+    Objects of this class associate a collection of method objects
+    which are implemented by callback functions with a scope under
+    which these methods are exposed for remote clients.
+
     @author: jmoringe
     """
     def __init__(self, scope):
         """
+        Creates a new LocalServer object that exposes methods under a
+        given scope.
 
         @param scope: The scope under which the methods of the newly
         created server should be provided.
@@ -249,6 +259,9 @@ class LocalServer (Server):
 
 class Call (object):
     """
+    Objects of this class represent in-progress calls to methods of
+    remote servers.
+
     @author: jmoringe
     """
     def __init__(self, id, lock):
@@ -280,6 +293,10 @@ class Call (object):
 
 class RemoteMethod (Method):
     """
+    Objects of this class represent methods provided by a remote
+    server. Method objects are callable like regular bound method
+    objects.
+
     @author: jmoringe
     """
     def __init__(self, server, name, requestType, replyType):
@@ -374,6 +391,6 @@ class RemoteServer (Server):
         except AttributeError:
             method = self.getMethod(name)
             if method is None:
-                method = RemoteMethod(self, name)
+                method = RemoteMethod(self, name, str, str) # TODO types
                 self.addMethod(method)
             return method
