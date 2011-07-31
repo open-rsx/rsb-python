@@ -1101,17 +1101,48 @@ def createService(scope):
     """
     raise RuntimeError, "not implemented"
 
-def createServer(scope):
+def createServer(scope, object = None, expose = None, methods = None):
     """
     Create a new LocalServer object that exposes its methods under @a
     scope.
 
+    The keyword parameters object, expose and methods can be used to
+    associate an initial set of methods with the newly created server
+    object.
+
     @param scope: The scope under which the newly created server
                   should expose its methods.
+    @param object: An object the methods of which should be exposed
+                   via the newly created server. Has to be supplied in
+                   combination with the expose keyword parameter.
+    @param expose: A list of names of attributes of object that should
+                   be expose as methods of the newly created
+                   server. Has to be supplied in combination with the
+                   object keyword parameter.
+    @param methods: A list or tuple of lists or tuples of the length four:
+                    a method name,
+                    a callable implementing the method,
+                    a type designating the request type of the method and
+                    a type designating the reply type of the method.
     @return: A newly created LocalServer object.
     """
+    # Check arguments
+    if not object is None and not expose is None and not methods is None:
+        raise ValueError, 'Supply either object and expose or methods'
+    if object is None and not expose is None \
+            or not object is None and expose is None:
+        raise ValueError, 'object and expose have to supplied together'
+
+    # Create the server object and potentially add methods.
     import rsb.patterns
-    return rsb.patterns.LocalServer(scope)
+    server = rsb.patterns.LocalServer(scope)
+    if object and expose:
+        methods = [ (name, getattr(object, name), requestType, replyType)
+                    for (name, requestType, replyType) in expose ]
+    if methods:
+        for (name, func, requestType, replyType) in methods:
+            server.addMethod(name, func, requestType, replyType)
+    return server
 
 def createRemoteServer(scope, timeout = 5):
     """
