@@ -1102,7 +1102,27 @@ def createService(scope):
     raise RuntimeError, "not implemented"
 
 def createServer(scope):
-    raise RuntimeError, "not implemented"
+    """
+    Create a new LocalServer object that exposes its methods under @a
+    scope.
 
-def createRemoteServer(scope):
-    raise RuntimeError, "not implemented"
+    @param scope: The scope under which the newly created server
+                  should expose its methods.
+    @return: A newly created LocalServer object.
+    """
+    import rsb.patterns
+    return rsb.patterns.LocalServer(scope)
+
+def createRemoteServer(scope, timeout = 5):
+    """
+    Create a new RemoteServer object for a remote server that provides
+    its methods under @a scope.
+
+    @param scope: The scope under which the remote server provides its
+                  methods.
+    @param timeout: The amount of seconds to wait for calls to remote
+                    methods to complete.
+    @return: A newly created RemoteServer object.
+    """
+    import rsb.patterns
+    return rsb.patterns.RemoteServer(scope, timeout = timeout)
