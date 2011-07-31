@@ -46,6 +46,7 @@ class RemoteCallError (RuntimeError):
     def __str__(self):
         s = 'failed to call method "%s" on remote server with scope %s' \
             % (self.method.name, self.scope)
+        # TODO(jmoringe): .message seems to be deprecated
         if self.message:
             s += ': %s' % self.message
         return s
@@ -88,6 +89,20 @@ class Method (object):
     @author: jmoringe
     """
     def __init__(self, server, name, requestType, replyType):
+        """
+        Create a new Method object for the method named @a name
+        provided by @a server.
+
+        @param server: The remote or local server to which the method
+                       is associated.
+        @param name: The name of the method. Unique within a server.
+        @param requestType: The type of the request argument accepted
+                            by the method.
+        @type  requestType: type
+        @param replyType: The type of the replies produced by the
+                          method.
+        @type  replyType: type
+        """
         self._server      = server
         self._name        = name
         self._listener    = None
@@ -156,6 +171,13 @@ class Server (rsb.Participant):
     """
 
     def __init__(self, scope):
+        """
+        Create a new Server object that provides its methods under the
+        scope @a scope.
+
+        @param scope: The under which methods of the server are
+                      provided.
+        """
         super(Server, self).__init__(scope)
         self._methods = {}
 
@@ -188,6 +210,15 @@ class Server (rsb.Participant):
 ######################################################################
 
 class LocalMethod (Method):
+    """
+    Objects of this class implement and make available methods of a
+    local server.
+
+    The actual behavior of methods is implemented by invoking
+    arbitrary user-supplied callables.
+
+    @author: jmoringe
+    """
     def __init__(self, server, name, func, requestType, replyType):
         super(LocalMethod, self).__init__(server, name, requestType, replyType)
         self._func = func
