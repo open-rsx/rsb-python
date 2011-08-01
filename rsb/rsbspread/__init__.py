@@ -171,7 +171,7 @@ class SpreadReceiverTask(object):
 
                     joinedData = self.__assemblyPool.add(notification)
 
-                    if joinedData:
+                    if not joinedData is None:
                         # find a suitable converter
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
