@@ -235,23 +235,23 @@ class ParticipantConfig (object):
     @classmethod
     def fromFile(clazz, path, defaults={}):
         '''
-        Obtain configuration options from the configuration file @a
-        path, store them in a @ref ParticipantConfig object and return
-        it.
+        Obtain configuration options from the configuration file
+        B{path}, store them in a L{ParticipantConfig} object and
+        return it.
 
-        A simple configuration file may look like this:
-        @verbatim
+        A simple configuration file may look like this::
+
         [transport.spread]
         host = azurit # default type is string
         port = 5301 # types can be specified in angle brackets
         # A comment
-        @endverbatim
 
-        @param path File of path
-        @param defaults  defaults
-        @return
+        @param path: File of path
+        @param defaults:  defaults
+        @return: A new ParticipantConfig object containing the options
+                 read from B{path}.
 
-        @see fromEnvironment, fromDefaultSources
+        See also L{fromEnvironment}, L{fromDefaultSources}
         '''
         return clazz.__fromDict(clazz.__fromFile(path, defaults))
 
@@ -267,43 +267,39 @@ class ParticipantConfig (object):
     def fromEnvironment(clazz, defaults={}):
         '''
         Obtain configuration options from environment variables, store
-        them in a @ref ParticipantConfig object and return
+        them in a B{ParticipantConfig} object and return
         it. Environment variable names are mapped to RSB option names
-        as illustrated in the following example:
+        as illustrated in the following example::
 
-        @verbatim
         RSB_TRANSPORT_SPREAD_PORT -> transport spread port
-        @endverbatim
 
-        @param defaults A @ref ParticipantConfig object that supplies
-        values for configuration options for which no environment
-        variables are found.
-        @return A @ref ParticipantConfig object that contains the
-        merged configuration options from @a defaults and relevant
-        environment variables.
+        @param defaults: A L{ParticipantConfig} object that supplies
+                         values for configuration options for which no
+                         environment variables are found.
+        @return: L{ParticipantConfig} object that contains the merged
+                 configuration options from B{defaults} and relevant
+                 environment variables.
 
-        @see fromFile, fromDefaultSources
+        See also: L{fromFile}, L{fromDefaultSources}
         '''
         return clazz.__fromDict(clazz.__fromEnvironment(defaults))
 
     @classmethod
     def fromDefaultSources(clazz, defaults={}):
         '''
-        Obtain configuration options from multiple sources, store
-        them in a @ref ParticipantConfig object and return it. The
-        following sources of configuration information will be
-        consulted:
+        Obtain configuration options from multiple sources, store them
+        in a L{ParticipantConfig} object and return it. The following
+        sources of configuration information will be consulted:
 
-        -# ~/.config/rsb.conf
-        -# \$(PWD)/rsb.conf
-        -# Environment Variables
+        1. ~/.config/rsb.conf
+        2. \$(PWD)/rsb.conf
+        3. Environment Variables
 
-        @param defaults A @ref ParticipantConfig object the options
-        of which should be used as defaults.
-
-        @return A @ref ParticipantConfig object that contains the
-        merged configuration options from the sources mentioned
-        above.
+        @param defaults: A L{ParticipantConfig} object the options of
+                         which should be used as defaults.
+        @return: A L{ParticipantConfig} object that contains the
+                 merged configuration options from the sources
+                 mentioned above.
 
         @see fromFile, fromEnvironment
         '''
@@ -335,7 +331,8 @@ class Scope(object):
         Parses a scope from a string representation.
 
         @param stringRep: string representation of the scope
-        @raise ValueError: if the given string does not have the right syntax
+        @raise ValueError: if B{stringRep} does not have the right
+                           syntax
         '''
 
         if len(stringRep) == 0:
@@ -412,8 +409,8 @@ class Scope(object):
 
         @param other: other scope to test
         @type other: Scope
-        @return: @c true if this is a sub-scope of the other scope, equality gives
-                @c false, too
+        @return: C{True} if this is a sub-scope of the other scope, equality gives
+                 C{False}, too
         @rtype: Bool
         '''
 
@@ -428,8 +425,8 @@ class Scope(object):
 
         @param other: other scope to test
         @type other: Scope
-        @return: @c true if this scope is a strict super scope of the other scope.
-                 equality also gives @c false.
+        @return: C{True} if this scope is a strict super scope of the other scope.
+                 equality also gives C{False}.
         @rtype: Bool
         '''
 
@@ -444,7 +441,7 @@ class Scope(object):
         The returned list of scopes is ordered by hierarchy with "/" being the
         first entry.
 
-        @param includeSelf: if set to @c true, this scope is also included as last
+        @param includeSelf: if set to C{true}, this scope is also included as last
                             element of the returned list
         @type includeSelf: Bool
         @return: list of all super scopes ordered by hierarchy, "/" being first
@@ -499,14 +496,21 @@ class MetaData (object):
                  createTime=None, sendTime=None, receiveTime=None, deliverTime=None,
                  userTimes=None, userInfos=None):
         """
-        Constructs a new MetaData object.
+        Constructs a new L{MetaData} object.
 
-        @param createTime: A timestamp designating the time at which the associated event was created.
-        @param sendTime: A timestamp designating the time at which the associated event was sent onto the bus.
-        @param receiveTime: A timestamp designating the time at which the associated event was received from the bus.
-        @param deliverTime: A timestamp designating the time at which the associated event was delivered to the user-level handler by RSB.
+        @param createTime: A timestamp designating the time at which
+                           the associated event was created.
+        @param sendTime: A timestamp designating the time at which the
+                         associated event was sent onto the bus.
+        @param receiveTime: A timestamp designating the time at which
+                            the associated event was received from the
+                            bus.
+        @param deliverTime: A timestamp designating the time at which
+                            the associated event was delivered to the
+                            user-level handler by RSB.
         @param userTimes: A dictionary of user-supplied timestamps.
-        @param userInfos: A dictionary of user-supplied meta-data items.
+        @param userInfos: A dictionary of user-supplied meta-data
+                          items.
         """
         if createTime is None:
             self.__createTime = time.time()
@@ -624,7 +628,8 @@ class Event(object):
         """
         Constructs a new event with undefined type, root scope and no data.
 
-        @param senderId: The id of the participant at which the associated event originated.
+        @param senderId: The id of the participant at which the
+                         associated event originated.
         """
 
         self.__id = None # computed lazily
@@ -790,7 +795,7 @@ class Participant(object):
     Base class for specialized bus participant classes. Has a unique
     id and a scope.
 
-    @author jmoringe
+    @author: jmoringe
     """
     def __init__(self, scope):
         """
@@ -938,7 +943,6 @@ class Listener(Participant):
         """
         Create a new listener for the specified scope.
 
-        @todo: why the duplicated scope, also passed in using the scope filter?
         @param scope: scope to subscribe one
         @param router: router with existing inport
         """
@@ -1012,14 +1016,15 @@ class Listener(Participant):
 
     def addHandler(self, handler, wait=True):
         """
-        Adds @a handler to the list of handlers this listener invokes
+        Adds B{handler} to the list of handlers this listener invokes
         for received events.
 
-        @param handler: handler to add. callable with one argument, the event.
-        @param wait: if set to @c true, this method will return only
-        after the handler has completely been installed and will
-        receive the next available message. Otherwise it may return
-        earlier.
+        @param handler: Handler to add. callable with one argument,
+                        the event.
+        @param wait: If set to C{True}, this method will return only
+                     after the handler has completely been installed
+                     and will receive the next available
+                     message. Otherwise it may return earlier.
         """
 
         with self.__mutex:
@@ -1029,13 +1034,14 @@ class Listener(Participant):
 
     def removeHandler(self, handler, wait=True):
         """
-        Removes @a handler from the list of handlers this listener
+        Removes B{handler} from the list of handlers this listener
         invokes for received events.
 
-        @param handler: handler to remove.
-        @param wait: if set to @c true, this method will return only
-        after the handler has been completely removed from the event
-        processing and will not be called anymore from this listener.
+        @param handler: Handler to remove.
+        @param wait: If set to C{True}, this method will return only
+                     after the handler has been completely removed
+                     from the event processing and will not be called
+                     anymore from this listener.
         """
 
         with self.__mutex:
@@ -1084,8 +1090,10 @@ def createInformer(scope, config=None, dataType=object):
     """
     Creates a new Informer in the specified scope.
 
-    @param scope: The scope of the new Informer. Can be a Scope object or a string.
-    @param dataType: the string representation of the data type used to select converters
+    @param scope: The scope of the new Informer. Can be a Scope object
+                  or a string.
+    @param dataType: the string representation of the data type used
+                     to select converters
     @return: a new Informer object.
     """
     if config is None:
@@ -1095,16 +1103,16 @@ def createInformer(scope, config=None, dataType=object):
 def createService(scope):
     """
     Creates a Service object operating on the given scope.
-
-    @param scope: parent-scope of the new service. Can be a Scope object or a string.
+    @param scope: parent-scope of the new service. Can be a Scope
+                  object or a string.
     @return: new Service object
     """
     raise RuntimeError, "not implemented"
 
 def createServer(scope, object = None, expose = None, methods = None):
     """
-    Create a new LocalServer object that exposes its methods under @a
-    scope.
+    Create a new L{LocalServer} object that exposes its methods under
+    B{scope}.
 
     The keyword parameters object, expose and methods can be used to
     associate an initial set of methods with the newly created server
@@ -1124,7 +1132,7 @@ def createServer(scope, object = None, expose = None, methods = None):
                     a callable implementing the method,
                     a type designating the request type of the method and
                     a type designating the reply type of the method.
-    @return: A newly created LocalServer object.
+    @return: A newly created L{LocalServer} object.
     """
     # Check arguments
     if not object is None and not expose is None and not methods is None:
@@ -1146,14 +1154,14 @@ def createServer(scope, object = None, expose = None, methods = None):
 
 def createRemoteServer(scope, timeout = 5):
     """
-    Create a new RemoteServer object for a remote server that provides
-    its methods under @a scope.
+    Create a new L{RemoteServer} object for a remote server that
+    provides its methods under B{scope}.
 
     @param scope: The scope under which the remote server provides its
                   methods.
     @param timeout: The amount of seconds to wait for calls to remote
                     methods to complete.
-    @return: A newly created RemoteServer object.
+    @return: A newly created L{RemoteServer} object.
     """
     import rsb.patterns
     return rsb.patterns.RemoteServer(scope, timeout = timeout)
