@@ -243,14 +243,12 @@ class LocalMethod (Method):
                             self.replyType)
 
     def _handleRequest(self, arg):
-        id        = arg.metaData.userInfos['ServerRequestId']
-        userInfos = { 'ServerRequestId': id }
         try:
             result = self._func(arg.data)
         except Exception, e:
-            userInfos['isException'] = '1'
+            userInfos['rsb:error?'] = '1'
             result = str(e)
-        self.informer.publishData(result, userInfos)
+        self.informer.publishData(result, { 'rsb:reply': str(arg.id) })
 
 class LocalServer (Server):
     """
@@ -359,7 +357,7 @@ class RemoteMethod (Method):
                             self.requestType)
 
     def _handleReply(self, event):
-        key  = uuid.UUID(event.metaData.userInfos['ServerRequestId'])
+        key = uuid.UUID(event.metaData.userInfos['rsb:reply'])
         with self._lock:
             # We can receive reply events which aren't actually
             # intended for us. We ignore these
@@ -369,15 +367,14 @@ class RemoteMethod (Method):
     def __call__(self, arg):
         self.listener # Force listener creation
 
-        call = Call(uuid.uuid1(), self._lock)
-        event = rsb.Event(scope     = self.informer.scope,
-                          data      = arg,
-                          type      = str,
-                          userInfos = { 'ServerRequestId': str(call.id) })
-        with self._lock:
-            self._calls[call.id] = call
+        event = rsb.Event(scope = self.informer.scope,
+                          data  = arg,
+                          type  = str)
         try:
-            self.informer.publishEvent(event)
+            with self._lock:
+                event = self.informer.publishEvent(event)
+                call = Call(event.id, self._lock)
+                self._calls[call.id] = call
         except Exception, e:
             raise RemoteCallError(self.server.scope, self, message = str(e))
 
@@ -386,7 +383,7 @@ class RemoteMethod (Method):
 
             if call.result is None:
                 raise TimeoutError(self.server.scope, self)
-            elif 'isException' in call.result.metaData.userInfos:
+            elif 'rsb:error?' in call.result.metaData.userInfos:
                 raise RemoteExecutionError(self.server.scope, self, call.result.data)
             else:
                 return call.result.data
