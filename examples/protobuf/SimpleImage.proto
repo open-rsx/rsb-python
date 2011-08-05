@@ -1,0 +1,42 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project
+ *
+ * Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ *
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation;
+ * either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * ============================================================ */
+
+// This is the definition of the data that is exchanged between
+// informer and listener in this example.
+//
+// To generate the data holder classes, which are used in the listener
+// and informer programs, invoke the protocol buffer compiler as
+// follows:
+//
+//   protoc --python_out=. SimpleImage.proto
+//
+// The result produced by the protocol buffer compiler will be a file
+// called SimpleImage_pb2.py containing the data holder class
+// SimpleImage.
+//
+// Note that this code generation step would usually happen
+// automatically as part of the build process in a real project.
+
+package tutorial.protobuf_converter;
+
+message SimpleImage {
+    required uint32 width  = 1;
+    required uint32 height = 2;
+    required bytes  data   = 3;
+};
