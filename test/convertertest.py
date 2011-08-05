@@ -114,7 +114,8 @@ class StringConverterTest(unittest.TestCase):
     def testCharsetErrors(self):
         asciiConverter = StringConverter(wireSchema="ascii-string", encoding="ascii")
         self.assertRaises(UnicodeEncodeError, asciiConverter.serialize, u"test"+unichr(266))
-        self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize, bytearray(range(133)))
+        self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
+                          bytearray(range(133)), 'ascii-string')
 
 def suite():
     suite = unittest.TestSuite()
