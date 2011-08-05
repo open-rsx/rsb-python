@@ -180,7 +180,7 @@ class SpreadReceiverTask(object):
                         event.scope = Scope(notification.scope)
                         event.senderId = uuid.UUID(bytes=notification.sender_id)
                         event.type = converter.getDataType()
-                        event.data = converter.deserialize(joinedData)
+                        event.data = converter.deserialize(joinedData, notification.wire_schema)
 
                         # meta data
                         event.metaData.createTime = unixMicrosecondsToTime(notification.meta_data.create_time)
@@ -299,12 +299,11 @@ class SpreadPort(rsb.transport.Port):
 
         # convert data
         converter = self._getConverterForDataType(event.type)
-        converted = converter.serialize(event.data)
-        wireSchema = converter.getWireSchema()
+        wireData, wireSchema = converter.serialize(event.data)
 
         # find out the number of required messages
-        if len(converted) > 0:
-            requiredParts = int(math.ceil(float(len(converted)) / float(self.__MAX_MSG_LENGTH)))
+        if len(wireData) > 0:
+            requiredParts = int(math.ceil(float(len(wireData)) / float(self.__MAX_MSG_LENGTH)))
         else:
             requiredParts = 1
 
@@ -320,7 +319,7 @@ class SpreadPort(rsb.transport.Port):
             n.scope = event.scope.toString()
             n.sender_id = event.senderId.bytes
             n.wire_schema = wireSchema
-            dataPart = converted[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
+            dataPart = wireData[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
             n.data = str(dataPart)
             n.num_data_parts = requiredParts
             n.data_part = i

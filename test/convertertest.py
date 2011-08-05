@@ -25,7 +25,7 @@ class ConflictingStringConverter(Converter):
     def serialize(self, input):
         return str(input)
 
-    def deserialize(self, input):
+    def deserialize(self, input, wireSchema):
         return str(input)
 
 class ConverterMapTest(unittest.TestCase):
@@ -34,7 +34,7 @@ class ConverterMapTest(unittest.TestCase):
         map.addConverter(StringConverter())
         map.addConverter(ConflictingStringConverter())
         self.assertRaises(Exception, map.addConverter, StringConverter())
-        map.addConverter(StringConverter(), override=True)
+        map.addConverter(StringConverter(), replaceExisting=True)
 
 class UnambiguousConverterMapTest(unittest.TestCase):
     def testAddConverter(self):
@@ -42,7 +42,7 @@ class UnambiguousConverterMapTest(unittest.TestCase):
         map.addConverter(StringConverter())
         self.assertRaises(Exception, map.addConverter, ConflictingStringConverter())
         self.assertRaises(Exception, map.addConverter, ConflictingStringConverter(), True)
-        map.addConverter(StringConverter(), override=True)
+        map.addConverter(StringConverter(), replaceExisting=True)
 
 
 class PredicateConverterListTest(unittest.TestCase):
@@ -98,18 +98,18 @@ class PredicateConverterListTest(unittest.TestCase):
         self.assertIs(mixed.getConverterForDataType("foobar"), v1)
 
 class StringConverterTest(unittest.TestCase):
-    
+
     def testRoundtripUtf8(self):
         converter = StringConverter()
         orig = u"asd" + unichr(270) + unichr(40928)
-        self.assertEquals(orig, converter.deserialize(converter.serialize(orig)))
+        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
         orig = "i am a normal string"
-        self.assertEquals(orig, converter.deserialize(converter.serialize(orig)))
-    
+        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
+
     def testRoundtripAscii(self):
         converter = StringConverter(wireSchema="ascii-string", encoding="ascii", dataType=str)
         orig = "foooo"
-        self.assertEquals(orig, converter.deserialize(converter.serialize(orig)))
+        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
 
     def testCharsetErrors(self):
         asciiConverter = StringConverter(wireSchema="ascii-string", encoding="ascii")

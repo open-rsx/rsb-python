@@ -43,32 +43,38 @@ class Converter(object):
         Returns the type of the wire-type to/from this converter
         serializes/deserializes.
 
-        @return A type object.
+        @return: A type object.
         '''
         return self.__wireType
+
+    wireType = property(getWireType)
 
     def getDataType(self):
         '''
         Returns the data type this converter is applicable for.
 
-        @return A type object.
+        @return: A type object.
         '''
         return self.__dataType
+
+    dataType = property(getDataType)
 
     def getWireSchema(self):
         '''
         Returns the name of the wire schema this converter can
         (de)serialize from/to.
 
-        @return A string designating the wire schema from/to this
-                converter can (de)serialize
+        @return: A string designating the wire schema from/to this
+                 converter can (de)serialize
         '''
         return self.__wireSchema
+
+    wireSchema = property(getWireSchema)
 
     def serialize(self, input):
         raise NotImplementedError()
 
-    def deserialize(self, input):
+    def deserialize(self, input, wireSchema):
         raise NotImplementedError()
 
 class UnknownConverterError(KeyError):
@@ -126,9 +132,9 @@ class ConverterMap(ConverterSelectionStrategy):
     def getWireType(self):
         return self._wireType
 
-    def addConverter(self, converter, override=False):
+    def addConverter(self, converter, replaceExisting=False):
         key = (converter.getWireSchema(), converter.getDataType())
-        if key in self._converters and not override:
+        if key in self._converters and not replaceExisting:
             raise RuntimeError("There already is a converter with wire-schema `%s' and data-type `%s'"
                                % key)
         self._converters[key] = converter
@@ -170,7 +176,7 @@ class PredicateConverterList (ConverterMap):
     def addConverter(self, converter,
                      wireSchemaPredicate=None,
                      dataTypePredicate=None,
-                     override=True):
+                     replaceExisting=True):
         if wireSchemaPredicate is None:
             wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
         if dataTypePredicate is None:
@@ -193,27 +199,32 @@ class UnambiguousConverterMap (ConverterMap):
     def __init__(self, wireType):
         super(UnambiguousConverterMap, self).__init__(wireType)
 
-    def addConverter(self, converter, override=False):
+    def addConverter(self, converter, replaceExisting=False):
         for (wireSchema, dataType) in self.getConverters().keys():
             if wireSchema == converter.getWireSchema():
                 if dataType == converter.getDataType():
-                    super(UnambiguousConverterMap, self).addConverter(converter, override)
+                    super(UnambiguousConverterMap, self).addConverter(converter, replaceExisting)
                 else:
                     raise RuntimeError("Trying to register ambiguous converter with data type `%s' for wire-schema `%s' (present converter is for data type `%s')."
                                        % (converter.getDataType(), wireSchema, dataType))
-        super(UnambiguousConverterMap, self).addConverter(converter, override)
+        super(UnambiguousConverterMap, self).addConverter(converter, replaceExisting)
 
 __globalConverterMaps = {}
 
-def registerGlobalConverter(converter, override=False):
+def registerGlobalConverter(converter, replaceExisting=False):
     """
     Registers a new converter that s globally available to the system.
 
     @param converter: converter to register
+    @param replaceExisting: controls whether an existing converter for
+                            the same data-type and/or wire-type should
+                            be replaced by the new converter. If this
+                            is C{False} and such a converter exists,
+                            an error is raised.
     """
     if not converter.getWireType() in __globalConverterMaps:
         __globalConverterMaps[converter.getWireType()] = ConverterMap(converter.getWireType())
-    __globalConverterMaps[converter.getWireType()].addConverter(converter, override)
+    __globalConverterMaps[converter.getWireType()].addConverter(converter, replaceExisting)
 
 def getGlobalConverterMap(wireType):
     """
@@ -232,7 +243,7 @@ def getGlobalConverterMap(wireType):
 
 class StringConverter(Converter):
     """
-    An adapter to serialize strings to bytearrays with a specified encoding
+    An converter to serialize strings to bytearrays with a specified encoding
 
     @author: jwienke
     """
@@ -242,16 +253,57 @@ class StringConverter(Converter):
         self.__encoding = encoding
 
     def serialize(self, input):
-        return bytearray(input.encode(self.__encoding))
+        return bytearray(input.encode(self.__encoding)), self.wireSchema
 
-    def deserialize(self, input):
+    def deserialize(self, input, wireSchema):
         type = self.getDataType()
         if type == unicode:
             return type(str(input), self.__encoding)
         elif type == str:
             return str(input)
         else:
-            raise ValueError("Inacceptible dataType %s" % type)
+            raise ValueError("Inacceptable dataType %s" % type)
 
-#registerGlobalConverter(StringConverter())
+class ProtocolBufferConverter(Converter):
+    """
+    This converter serializes and deserializes objects of protocol
+    buffer data-holder classes.
+
+    These data-holder classes are generated by the protocol buffer
+    compiler protoc.
+
+    @author: jmoringe
+    """
+    def __init__(self, messageClass):
+        super(ProtocolBufferConverter, self).__init__(bytearray,
+                                                      messageClass,
+                                                      '.%s' % messageClass.DESCRIPTOR.full_name)
+
+        self.__messageClass = messageClass
+
+    def getMessageClass(self):
+        return self.__messageClass
+
+    messageClass = property(getMessageClass)
+
+    def getMessageClassName(self):
+        return self.messageClass.DESCRIPTOR.full_name
+
+    def serialize(self, input):
+        return bytearray(input.SerializeToString()), self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        assert wireSchema == self.wireSchema
+
+        output = self.messageClass()
+        output.ParseFromString(input)
+        return output
+
+    def __str__(self):
+        return '<%s for %s at %s>' \
+            % (type(self).__name__, self.getMessageClassName(), id(self))
+
+    def __repr__(self):
+        return str(self)
+
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
