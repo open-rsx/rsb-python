@@ -19,6 +19,7 @@ import uuid
 import threading
 
 import rsb
+from future import Future
 
 # TODO superclass for RSB Errors?
 class RemoteCallError (RuntimeError):
@@ -51,27 +52,6 @@ class RemoteCallError (RuntimeError):
             s += ': %s' % self.message
         return s
 
-class TimeoutError (RemoteCallError):
-    """
-    Errors of this class are raised when a call to a remote method
-    does not complete within a given amount of time.
-
-    @author: jmoringe
-    """
-    def __init__(self, scope, method):
-        super(TimeoutError, self).__init__(scope, method)
-
-class RemoteExecutionError (RemoteCallError):
-    """
-    Error of this class are raised when a call to a remote method
-    succeeds in calling the method on the remote side but fails in the
-    actual remote method.
-
-    @author: jmoringe
-    """
-    def __init__(self, scope, method, message):
-        super(RemoteExecutionError, self).__init__(scope, method, message = message)
-
 ######################################################################
 #
 # Method and Server base classes
@@ -90,8 +70,8 @@ class Method (object):
     """
     def __init__(self, server, name, requestType, replyType):
         """
-        Create a new Method object for the method named @a name
-        provided by @a server.
+        Create a new Method object for the method named B{name}
+        provided by B{server}.
 
         @param server: The remote or local server to which the method
                        is associated.
@@ -173,7 +153,7 @@ class Server (rsb.Participant):
     def __init__(self, scope):
         """
         Create a new Server object that provides its methods under the
-        scope @a scope.
+        scope B{scope}.
 
         @param scope: The under which methods of the server are
                       provided.
@@ -304,40 +284,6 @@ class LocalServer (Server):
 #
 ######################################################################
 
-class Call (object):
-    """
-    Objects of this class represent in-progress calls to methods of
-    remote servers.
-
-    @author: jmoringe
-    """
-    def __init__(self, id, lock):
-        self._id        = id
-        self._result    = None
-        self._lock      = lock
-        self._condition = threading.Condition(lock = self._lock)
-
-    def getId(self):
-        return self._id
-
-    id = property(getId)
-
-    def getResult(self):
-        return self._result
-
-    def setResult(self, newValue):
-        with self._lock:
-            self._result = newValue
-            self._condition.notify()
-
-    result = property(getResult, setResult)
-
-    def wait(self, timeout):
-        with self._lock:
-            while self._result is None:
-                self._condition.wait(timeout = timeout)
-                break # TODO protect against early wakeup
-
 class RemoteMethod (Method):
     """
     Objects of this class represent methods provided by a remote
@@ -370,9 +316,16 @@ class RemoteMethod (Method):
         key = uuid.UUID(event.metaData.userInfos['rsb:reply'])
         with self._lock:
             # We can receive reply events which aren't actually
-            # intended for us. We ignore these
-            if key in self._calls:
-                self._calls[key].result = event
+            # intended for us. We ignore these.
+            if not key in self._calls:
+                return
+
+            result = self._calls[key] # The result future
+            del self._calls[key]
+        if 'rsb:error?' in event.metaData.userInfos:
+            result.setError(event.data)
+        else:
+            result.set(event.data)
 
     def __call__(self, arg):
         self.listener # Force listener creation
@@ -381,26 +334,14 @@ class RemoteMethod (Method):
                           method = 'REQUEST',
                           data   = arg,
                           type   = self.informer.type)
+        result = Future()
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)
-                call = Call(event.id, self._lock)
-                self._calls[call.id] = call
+                self._calls[event.id] = result
         except Exception, e:
             raise RemoteCallError(self.server.scope, self, message = str(e))
-
-        try:
-            call.wait(timeout = self.server.timeout)
-
-            if call.result is None:
-                raise TimeoutError(self.server.scope, self)
-            elif 'rsb:error?' in call.result.metaData.userInfos:
-                raise RemoteExecutionError(self.server.scope, self, call.result.data)
-            else:
-                return call.result.data
-        finally:
-            with self._lock:
-                del self._calls[call.id]
+        return result
 
     def __str__(self):
         return '<%s "%s" with %d in-progress calls at 0x%x>' \
@@ -416,23 +357,16 @@ class RemoteServer (Server):
 
     @author: jmoringe
     """
-    def __init__(self, scope, timeout = 25):
+    def __init__(self, scope):
         """
-        Create a new RemoteServer object that provides its methods
-        under the scope @a scope.
+        Create a new L{RemoteServer} object that provides its methods
+        under the scope B{scope}.
 
         @param scope: The common super-scope under which the methods
         of the remote created server are provided.
-        @param timeout: The amount of seconds methods calls should
-        wait for their replies to arrive before failing.
+        @type scope: Scope
         """
         super(RemoteServer, self).__init__(scope)
-        self._timeout = timeout
-
-    def getTimeout(self):
-        return self._timeout
-
-    timeout = property(getTimeout)
 
     def __getattr__(self, name):
         try:

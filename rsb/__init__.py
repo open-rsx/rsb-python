@@ -28,11 +28,12 @@ from rsb.filter import ScopeFilter
 
 class QualityOfServiceSpec(object):
     '''
-    Specification of desired quality of service settings for sending and
-    receiving events. Specification given here are required "at least". This
-    means concrete port instances can implement "better" QoS specs without any
-    notification to the clients. Better is decided by the integer value of the
-    specification enums. Higher values mean better services.
+    Specification of desired quality of service settings for sending
+    and receiving events. Specification given here are required "at
+    least". This means concrete port instances can implement "better"
+    QoS specs without any notification to the clients. Better is
+    decided by the integer value of the specification enums. Higher
+    values mean better services.
 
     @author: jwienke
     '''
@@ -42,8 +43,8 @@ class QualityOfServiceSpec(object):
 
     def __init__(self, ordering=Ordering.UNORDERED, reliability=Reliability.RELIABLE):
         '''
-        Constructs a new QoS specification with desired details. Defaults are
-        unordered but reliable.
+        Constructs a new QoS specification with desired
+        details. Defaults are unordered but reliable.
 
         @param ordering: desired ordering type
         @param reliability: desired reliability type
@@ -106,7 +107,7 @@ class QualityOfServiceSpec(object):
 class ParticipantConfig (object):
     '''
     Objects of this class describe desired configurations for newly
-    created participants with respect to:
+    created L{Participant}s with respect to:
     - Quality of service settings
     - Error handling strategies (not currently used)
     - Employed transport mechanisms
@@ -248,10 +249,11 @@ class ParticipantConfig (object):
 
         @param path: File of path
         @param defaults:  defaults
-        @return: A new ParticipantConfig object containing the options
-                 read from B{path}.
+        @return: A new L{ParticipantConfig} object containing the
+                 options read from B{path}.
+        @rtype: ParticipantConfig
 
-        See also L{fromEnvironment}, L{fromDefaultSources}
+        See also: L{fromEnvironment}, L{fromDefaultSources}
         '''
         return clazz.__fromDict(clazz.__fromFile(path, defaults))
 
@@ -267,7 +269,7 @@ class ParticipantConfig (object):
     def fromEnvironment(clazz, defaults={}):
         '''
         Obtain configuration options from environment variables, store
-        them in a B{ParticipantConfig} object and return
+        them in a L{ParticipantConfig} object and return
         it. Environment variable names are mapped to RSB option names
         as illustrated in the following example::
 
@@ -276,9 +278,11 @@ class ParticipantConfig (object):
         @param defaults: A L{ParticipantConfig} object that supplies
                          values for configuration options for which no
                          environment variables are found.
+        @type defaults: ParticipantConfig
         @return: L{ParticipantConfig} object that contains the merged
                  configuration options from B{defaults} and relevant
                  environment variables.
+        @rtype: ParticipantConfig
 
         See also: L{fromFile}, L{fromDefaultSources}
         '''
@@ -291,17 +295,19 @@ class ParticipantConfig (object):
         in a L{ParticipantConfig} object and return it. The following
         sources of configuration information will be consulted:
 
-        1. ~/.config/rsb.conf
-        2. \$(PWD)/rsb.conf
+        1. C{~/.config/rsb.conf}
+        2. C{\$(PWD)/rsb.conf}
         3. Environment Variables
 
         @param defaults: A L{ParticipantConfig} object the options of
                          which should be used as defaults.
+        @type defaults: ParticipantConfig
         @return: A L{ParticipantConfig} object that contains the
                  merged configuration options from the sources
                  mentioned above.
+        @rtype: ParticipantConfig
 
-        @see fromFile, fromEnvironment
+        See also: L{fromFile}, L{fromEnvironment}
         '''
         partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"))
         partial = clazz.__fromFile("rsb.conf", partial)
@@ -311,7 +317,7 @@ class ParticipantConfig (object):
 class Scope(object):
     '''
     A scope defines a channel of the hierarchical unified bus covered by RSB.
-    It is defined by a surface syntax like "/a/deep/scope".
+    It is defined by a surface syntax like C{"/a/deep/scope"}.
 
     @author: jwienke
     '''
@@ -375,7 +381,7 @@ class Scope(object):
         leading an trailing slashes.
 
         @return: string representation of the scope
-        @rtype: string
+        @rtype: str
         '''
 
         string = self.__COMPONENT_SEPARATOR
@@ -386,9 +392,10 @@ class Scope(object):
 
     def concat(self, childScope):
         '''
-        Creates a new scope that is a sub-scope of this one with the subordinated
-        scope described by the given argument. E.g. "/this/is/".concat("/a/test/")
-        results in "/this/is/a/test".
+        Creates a new scope that is a sub-scope of this one with the
+        subordinated scope described by the given
+        argument. E.g. C{"/this/is/".concat("/a/test/")} results in
+        C{"/this/is/a/test"}.
 
         @param childScope: child to concatenate to the current scope for forming a
                            sub-scope
@@ -421,7 +428,7 @@ class Scope(object):
 
     def isSuperScopeOf(self, other):
         '''
-        Inverse operation of #isSubScopeOf.
+        Inverse operation of L{isSubScopeOf}.
 
         @param other: other scope to test
         @type other: Scope
@@ -437,14 +444,17 @@ class Scope(object):
 
     def superScopes(self, includeSelf=False):
         '''
-        Generates all super scopes of this scope including the root scope "/".
-        The returned list of scopes is ordered by hierarchy with "/" being the
-        first entry.
+        Generates all super scopes of this scope including the root
+        scope "/".  The returned list of scopes is ordered by
+        hierarchy with "/" being the first entry.
 
-        @param includeSelf: if set to C{true}, this scope is also included as last
-                            element of the returned list
+        @param includeSelf: if set to C{True}, this scope is also
+                            included as last element of the returned
+                            list
+
         @type includeSelf: Bool
-        @return: list of all super scopes ordered by hierarchy, "/" being first
+        @return: list of all super scopes ordered by hierarchy, "/"
+                 being first
         @rtype: list of Scopes
         '''
 
@@ -509,8 +519,10 @@ class MetaData (object):
                             the associated event was delivered to the
                             user-level handler by RSB.
         @param userTimes: A dictionary of user-supplied timestamps.
+        @type userTime: dict
         @param userInfos: A dictionary of user-supplied meta-data
                           items.
+        @type userInfos: dict
         """
         if createTime is None:
             self.__createTime = time.time()
@@ -628,8 +640,28 @@ class Event(object):
         """
         Constructs a new event with undefined type, root scope and no data.
 
-        @param senderId: The id of the participant at which the
+        @param sequenceNumber: The sequence number of the event.
+        @type sequenceNumber: int
+        @param scope: A L{Scope} designating the channel on which the
+                      event will be published.
+        @type scope: Scope
+        @param senderId: The id of the L{Participant} at which the
                          associated event originated.
+        @type senderId: uuid.UUID
+        @param method: A string designating the "method category"
+                       which identifies the role of the event in some
+                       communication patters. Examples are
+                       C{"REQUEST"} and C{"REPLY"}.
+        @type method: str
+        @param data:
+        @param type:
+        @type type: type
+        @param metaData:
+        @type metaData: MetaData
+        @param userInfos:
+        @type userInfos: dict
+        @param userTimes:
+        @type userTime: dict
         """
 
         self.__id = None # computed lazily
@@ -655,6 +687,7 @@ class Event(object):
         Return the sequence number of this event.
 
         @return: sequence number of the event.
+        @rtype: int
         """
         return self.__sequenceNumber
 
@@ -663,6 +696,7 @@ class Event(object):
         Sets the sequence number of this event.
 
         @param sequenceNumber: new sequence number of the event.
+        @type sequenceNumber: int
         """
         self.__sequenceNumber = sequenceNumber
 
@@ -673,6 +707,7 @@ class Event(object):
         Returns the id of this event.
 
         @return: id of the event
+        @rtype: int
         """
 
         if self.__id is None:
@@ -687,6 +722,7 @@ class Event(object):
         Returns the scope of this event.
 
         @return: scope
+        @rtype: Scope
         """
 
         return self.__scope
@@ -696,6 +732,7 @@ class Event(object):
         Sets the scope of this event.
 
         @param scope: scope to set
+        @type scope: Scope
         """
 
         self.__scope = scope
@@ -707,6 +744,7 @@ class Event(object):
         Return the sender id of this event.
 
         @return: sender id
+        @rtype: uuid.UUID
         """
         return self.__senderId
 
@@ -715,6 +753,7 @@ class Event(object):
         Sets the sender id of this event.
 
         @param senderId: sender id to set.
+        @type senderId: uuid.UUID
         """
         self.__senderId = senderId
 
@@ -822,6 +861,10 @@ class Participant(object):
         clients.
 
         @param scope: scope of the bus channel.
+        @type scope: Scope
+
+        See L{createListener}, L{createInformer}, L{createServer},
+        L{createRemoteServer}, L{createService}
         """
         self.__id = uuid.uuid4()
         self.__scope = scope
@@ -853,11 +896,11 @@ class Informer(Participant):
                  config=ParticipantConfig.fromDefaultSources(),
                  router=None):
         """
-        Constructs a new Informer.
+        Constructs a new L{Informer}.
 
         @param scope: scope of the informer
-        @param router: router object with open outgoing port for communication
         @param type: type identifier string
+        @param router: router object with open outgoing port for communication
         @todo: maybe provide an automatic type identifier deduction for default
                types?
         """
@@ -912,11 +955,13 @@ class Informer(Participant):
 
     def publishEvent(self, event):
         """
-        Publishes a predefined event. The caller must ensure that the event has
-        the appropriate scope and type according to the Informer's settings.
+        Publishes a predefined event. The caller must ensure that the
+        event has the appropriate scope and type according to the
+        L{Informer}'s settings.
 
         @param event: the event to send
         @type event: Event
+        @rtype: Event
         """
         # TODO check activation
 
@@ -962,7 +1007,7 @@ class Listener(Participant):
                  config=ParticipantConfig.fromDefaultSources(),
                  router=None):
         """
-        Create a new listener for the specified scope.
+        Create a new L{Listener} for B{scope}.
 
         @param scope: scope to subscribe one
         @param router: router with existing inport
@@ -1075,7 +1120,7 @@ class Listener(Participant):
         Returns the list of all registered handlers.
 
         @return: list of handlers to execute on matches
-        @rtype: list of callables accepting an Event
+        @rtype: list of callables accepting an L{Event}.
         """
         with self.__mutex:
             return list(self.__handlers)
@@ -1132,8 +1177,8 @@ def createService(scope):
 
 def createServer(scope, object = None, expose = None, methods = None):
     """
-    Create a new L{LocalServer} object that exposes its methods under
-    B{scope}.
+    Create and return a new L{LocalServer} object that exposes its
+    methods under B{scope}.
 
     The keyword parameters object, expose and methods can be used to
     associate an initial set of methods with the newly created server
@@ -1141,6 +1186,7 @@ def createServer(scope, object = None, expose = None, methods = None):
 
     @param scope: The scope under which the newly created server
                   should expose its methods.
+    @type scope: Scope
     @param object: An object the methods of which should be exposed
                    via the newly created server. Has to be supplied in
                    combination with the expose keyword parameter.
@@ -1154,6 +1200,7 @@ def createServer(scope, object = None, expose = None, methods = None):
                     a type designating the request type of the method and
                     a type designating the reply type of the method.
     @return: A newly created L{LocalServer} object.
+    @rtype: rsb.patterns.LocalServer
     """
     # Check arguments
     if not object is None and not expose is None and not methods is None:
@@ -1173,16 +1220,16 @@ def createServer(scope, object = None, expose = None, methods = None):
             server.addMethod(name, func, requestType, replyType)
     return server
 
-def createRemoteServer(scope, timeout = 5):
+def createRemoteServer(scope):
     """
     Create a new L{RemoteServer} object for a remote server that
     provides its methods under B{scope}.
 
     @param scope: The scope under which the remote server provides its
                   methods.
-    @param timeout: The amount of seconds to wait for calls to remote
-                    methods to complete.
+    @type scope: Scope
     @return: A newly created L{RemoteServer} object.
+    @rtype: rsb.patterns.RemoteServer
     """
     import rsb.patterns
-    return rsb.patterns.RemoteServer(scope, timeout = timeout)
+    return rsb.patterns.RemoteServer(scope)
