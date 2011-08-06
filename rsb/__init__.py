@@ -622,7 +622,7 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, sequenceNumber = None, scope = Scope("/"), senderId = None,
+    def __init__(self, sequenceNumber = None, scope = Scope("/"), senderId = None, method = None,
                  data = None, type = None,
                  metaData=None, userInfos=None, userTimes=None):
         """
@@ -636,6 +636,7 @@ class Event(object):
         self.__sequenceNumber = sequenceNumber
         self.__scope = scope
         self.__senderId = senderId
+        self.__method = method
         self.__data = data
         self.__type = type
         if metaData is None:
@@ -719,6 +720,24 @@ class Event(object):
 
     senderId = property(getSenderId, setSenderId)
 
+    def getMethod(self):
+        """
+        Return the method of this event.
+
+        @return: A string designating the method of this event of
+                 C{None} if this event does not have a method.
+        """
+        return self.__method
+
+    def setMethod(self, method):
+        """
+        Sets the method of this event.
+
+        @param method: The new method. C{None} is allowed.
+        """
+        self.__method = method
+
+    method = property(getMethod, setMethod)
 
     def getData(self):
         """
@@ -879,6 +898,8 @@ class Informer(Participant):
         @return: type of sent data
         """
         return self.__type
+
+    type = property(getType)
 
     def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation

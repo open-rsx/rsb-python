@@ -179,6 +179,8 @@ class SpreadReceiverTask(object):
                         event.sequenceNumber = notification.sequence_number
                         event.scope = Scope(notification.scope)
                         event.senderId = uuid.UUID(bytes=notification.sender_id)
+                        if notification.HasField("method"):
+                            event.method = notification.method
                         event.type = converter.getDataType()
                         event.data = converter.deserialize(joinedData, notification.wire_schema)
 
@@ -318,6 +320,8 @@ class SpreadPort(rsb.transport.Port):
             n.sequence_number = event.sequenceNumber
             n.scope = event.scope.toString()
             n.sender_id = event.senderId.bytes
+            if not event.method is None:
+                n.method = event.method
             n.wire_schema = wireSchema
             dataPart = wireData[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
             n.data = str(dataPart)

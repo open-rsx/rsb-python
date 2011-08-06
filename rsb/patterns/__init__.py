@@ -243,13 +243,20 @@ class LocalMethod (Method):
                             self.replyType)
 
     def _handleRequest(self, arg):
+        if arg.method is None or arg.method != 'REQUEST':
+            return
         userInfos = { 'rsb:reply': str(arg.id) }
         try:
             result = self._func(arg.data)
         except Exception, e:
             userInfos['rsb:error?'] = '1'
             result = str(e)
-        self.informer.publishData(result, userInfos)
+        reply = rsb.Event(scope     = self.informer.scope,
+                          method    = 'REPLY',
+                          data      = result,
+                          type      = self.informer.type,
+                          userInfos = userInfos)
+        self.informer.publishEvent(reply)
 
 class LocalServer (Server):
     """
@@ -358,6 +365,8 @@ class RemoteMethod (Method):
                             self.requestType)
 
     def _handleReply(self, event):
+        if event.method is None or event.method != 'REPLY':
+            return
         key = uuid.UUID(event.metaData.userInfos['rsb:reply'])
         with self._lock:
             # We can receive reply events which aren't actually
@@ -368,9 +377,10 @@ class RemoteMethod (Method):
     def __call__(self, arg):
         self.listener # Force listener creation
 
-        event = rsb.Event(scope = self.informer.scope,
-                          data  = arg,
-                          type  = str)
+        event = rsb.Event(scope  = self.informer.scope,
+                          method = 'REQUEST',
+                          data   = arg,
+                          type   = self.informer.type)
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)
