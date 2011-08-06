@@ -39,14 +39,14 @@ class Future (object):
     result of the operation.
 
     @todo: Support Python's native future protocol?
-    See L{http://docs.python.org/dev/library/concurrent.futures.html}
+    See U{http://docs.python.org/dev/library/concurrent.futures.html}
 
     @author: jmoringe
     """
 
     def __init__(self):
         """
-        Create a new Future object that represents an in-progress
+        Create a new L{Future} object that represents an in-progress
         operation for which a result is not yet available.
         """
         self.__error     = False
@@ -68,22 +68,7 @@ class Future (object):
 
     done = property(isDone)
 
-    def get(self):
-        """
-        Try to obtain and then return the result of the represented
-        operation.
-
-        If necessary, wait for the operation to complete, and then
-        retrieve its result.
-
-        @return: The result of the operation if it did complete
-                 successfully.
-        @raise FutureExecutionException: If the operation represented
-                                         by the Future object failed.
-        """
-        return self.getTimeout(0)
-
-    def getTimeout(self, timeout):
+    def get(self, timeout = 0):
         """
         Try to obtain and then return the result of the represented
         operation.
@@ -119,10 +104,10 @@ class Future (object):
 
     def set(self, result):
         """
-        Set the result of the Future to B{result} and wake all threads
-        waiting for the result.
+        Set the result of the L{Future} to B{result} and wake all
+        threads waiting for the result.
 
-        @param result: The result of the Future.
+        @param result: The result of the L{Future} object.
         """
         with self.__lock:
             self.__result = result
@@ -130,9 +115,9 @@ class Future (object):
 
     def setError(self, message):
         """
-        Mark the operation represented by the Future as failed, set
-        B{message} the error message and notify all threads waiting
-        for the result.
+        Mark the operation represented by the L{Future} object as
+        failed, set B{message} as the error message and notify all
+        threads waiting for the result.
 
         @param message: An error message that explains why/how the
                         operation failed.
