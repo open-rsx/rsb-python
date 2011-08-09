@@ -898,10 +898,15 @@ class Informer(Participant):
                  config=ParticipantConfig.fromDefaultSources(),
                  router=None):
         """
-        Constructs a new L{Informer}.
+        Constructs a new L{Informer} that publishes L{Event}s carrying
+        payloads of type B{type} on B{scope}.
 
         @param scope: scope of the informer
-        @param type: type identifier string
+        @type scope: Scope
+        @param type: A Python object designating the type of objects
+                     that will be sent via the new informer. Instances
+                     of subtypes are permitted as well.
+        @type type: type
         @param router: router object with open outgoing port for communication
         @todo: maybe provide an automatic type identifier deduction for default
                types?
@@ -950,7 +955,7 @@ class Informer(Participant):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
         event = Event(scope = self.scope,
-                      data = data, type = self.type,
+                      data = data, type = type(data),
                       userInfos = userInfos, userTimes = userTimes)
         return self.publishEvent(event)
 

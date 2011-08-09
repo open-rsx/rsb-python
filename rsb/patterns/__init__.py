@@ -404,7 +404,7 @@ class RemoteMethod (Method):
             event = rsb.Event(scope  = self.informer.scope,
                               method = 'REQUEST',
                               data   = arg,
-                              type   = self.informer.type)
+                              type   = type(arg))
             result = DataFuture()
 
         try:
@@ -412,7 +412,7 @@ class RemoteMethod (Method):
                 event = self.informer.publishEvent(event)
                 self._calls[event.id] = result
         except Exception, e:
-            raise RemoteCallError(self.server.scope, self, message = str(e))
+            raise RemoteCallError(self.server.scope, self, message = repr(e))
         return result
 
     def __str__(self):
@@ -446,6 +446,6 @@ class RemoteServer (Server):
         except AttributeError:
             method = self.getMethod(name)
             if method is None:
-                method = RemoteMethod(self, name, str, str) # TODO types
+                method = RemoteMethod(self, name, object, object)
                 self.addMethod(method)
             return method
