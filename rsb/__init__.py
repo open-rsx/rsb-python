@@ -699,6 +699,7 @@ class Event(object):
         @type sequenceNumber: int
         """
         self.__sequenceNumber = sequenceNumber
+        self.__id = None # clear cached id
 
     sequenceNumber = property(getSequenceNumber, setSequenceNumber)
 
@@ -756,6 +757,7 @@ class Event(object):
         @type senderId: uuid.UUID
         """
         self.__senderId = senderId
+        self.__id = None # clear cached id
 
     senderId = property(getSenderId, setSenderId)
 
@@ -966,9 +968,13 @@ class Informer(Participant):
         # TODO check activation
 
         if not event.scope == self.getScope():
-            raise ValueError("Scope %s of the event does not match this informer's scope %s." % (event.scope, self.getScope()))
+            raise ValueError("Scope %s of event %s does not match this informer's scope %s."
+                             % (event.scope, event, self.getScope()))
+        if event.data is None:
+            raise ValueError("Event %s does not have a payload." % event)
         if not event.type == self.__type:
-            raise ValueError("Type %s of the event does not match this informer's type %s." % (event.type, self.__type))
+            raise ValueError("Type %s of event %s does not match this informer's type %s."
+                             % (event.type, event, self.__type))
 
         with self.__mutex:
             event.sequenceNumber = self.__sequenceNumber
