@@ -19,7 +19,7 @@ import uuid
 import threading
 
 import rsb
-from future import Future
+from future import Future, DataFuture
 
 # TODO superclass for RSB Errors?
 class RemoteCallError (RuntimeError):
@@ -325,16 +325,26 @@ class RemoteMethod (Method):
         if 'rsb:error?' in event.metaData.userInfos:
             result.setError(event.data)
         else:
-            result.set(event.data)
+            result.set(event)
 
     def __call__(self, arg):
+        return self.async(arg).get()
+
+    def async(self, arg):
         self.listener # Force listener creation
 
-        event = rsb.Event(scope  = self.informer.scope,
-                          method = 'REQUEST',
-                          data   = arg,
-                          type   = self.informer.type)
-        result = Future()
+        if isinstance(arg, rsb.Event):
+            event        = arg
+            event.scope  = self.informer.scope
+            event.method = 'REQUEST'
+            result       = Future()
+        else:
+            event = rsb.Event(scope  = self.informer.scope,
+                              method = 'REQUEST',
+                              data   = arg,
+                              type   = self.informer.type)
+            result = DataFuture()
+
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)

@@ -140,3 +140,14 @@ class Future (object):
 
     def __repr__(self):
         return str(self)
+
+class DataFuture (Future):
+    """
+    Instances of this class are like ordinary L{Future}s, the only
+    difference being that the L{get} method returns the payload of an
+    L{Event} object.
+
+    @author: jmoringe
+    """
+    def get(self):
+        return super(DataFuture, self).get().data
