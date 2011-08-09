@@ -372,18 +372,31 @@ class InformerTest(unittest.TestCase):
         self.informer.deactivate()
 
     def testSendEventWrongScope(self):
-        e = Event()
-        e.setType(self.informer.getType())
-        e.setScope(self.defaultScope.concat(Scope("/blubb")))
-        e.setData("foo")
+        # Error: unrelated scope
+        e = Event(scope = Scope("/blubb"), data = 'foo', type = self.informer.type)
         self.assertRaises(ValueError, self.informer.publishEvent, e)
 
+        # OK: identical scope
+        e = Event(scope = self.defaultScope, data = 'foo', type = self.informer.type)
+        self.informer.publishEvent(e)
+
+        # OK: sub-scope
+        e = Event(scope = self.defaultScope.concat(Scope('/sub')),
+                  data  = 'foo',
+                  type  = self.informer.type)
+        self.informer.publishEvent(e)
+
     def testSendEventWrongType(self):
-        e = Event()
-        e.setType("wrong")
-        e.setScope(self.defaultScope)
-        e.setData("foo")
+        # Wrong type
+        e = Event(scope = self.defaultScope, data = 5)
         self.assertRaises(ValueError, self.informer.publishEvent, e)
+
+        # Wrong type
+        self.assertRaises(ValueError, self.informer.publishData, 5.0)
+
+        # OK
+        self.informer.publishData('bla')
+
 
 def suite():
     suite = unittest.TestSuite()

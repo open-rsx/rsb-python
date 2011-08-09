@@ -949,10 +949,9 @@ class Informer(Participant):
     def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'" % data)
-        event = Event(userInfos=userInfos, userTimes=userTimes)
-        event.setData(data)
-        event.setScope(self.getScope())
-        event.setType(self.__type)
+        event = Event(scope = self.scope,
+                      data = data, type = self.type,
+                      userInfos = userInfos, userTimes = userTimes)
         return self.publishEvent(event)
 
     def publishEvent(self, event):
@@ -967,14 +966,15 @@ class Informer(Participant):
         """
         # TODO check activation
 
-        if not event.scope == self.getScope():
-            raise ValueError("Scope %s of event %s does not match this informer's scope %s."
-                             % (event.scope, event, self.getScope()))
+        if not event.scope == self.scope \
+                and not event.scope.isSubScopeOf(self.scope):
+            raise ValueError("Scope %s of event %s is not a sub-scope of this informer's scope %s."
+                             % (event.scope, event, self.scope))
         if event.data is None:
             raise ValueError("Event %s does not have a payload." % event)
-        if not event.type == self.__type:
-            raise ValueError("Type %s of event %s does not match this informer's type %s."
-                             % (event.type, event, self.__type))
+        if not isinstance(event.data, self.type):
+            raise ValueError("The payload %s of event %s does not match this informer's type %s."
+                             % (event.data, event, self.type))
 
         with self.__mutex:
             event.sequenceNumber = self.__sequenceNumber
