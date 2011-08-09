@@ -234,7 +234,7 @@ class LocalMethod (Method):
         reply = rsb.Event(scope     = self.informer.scope,
                           method    = 'REPLY',
                           data      = result,
-                          type      = self.informer.type,
+                          type      = type(result),
                           userInfos = userInfos)
         self.informer.publishEvent(reply)
 
@@ -248,26 +248,34 @@ class LocalServer (Server):
     """
     def __init__(self, scope):
         """
-        Creates a new LocalServer object that exposes methods under a
-        given scope.
+        Creates a new L{LocalServer} object that exposes methods under
+        a the scope B{scope}.
 
         @param scope: The scope under which the methods of the newly
-        created server should be provided.
+                      created server should be provided.
+        @type scope: Scope
+
+        See also: L{createServer}
         """
         super(LocalServer, self).__init__(scope)
 
-    def addMethod(self, name, func, requestType, replyType):
+    def addMethod(self, name, func, requestType = object, replyType = object):
         """
-        Add a method named name that is implemented by function.
+        Add a method named B{name} that is implemented by B{func}.
+
         @param name: The name of of the new method.
+        @type name: str
         @param func: A callable object or a single argument that
                      implements the desired behavior of the new
                      method.
         @param requestType: A type object indicating the type of
                             request data passed to the method.
+        @type requestType: type
         @param replyType: A type object indicating the type of reply
                           data of the method.
-        @return: The newly created method
+        @type replyType: type
+        @return: The newly created method.
+        @rtype: LocalMethod
         """
         method = LocalMethod(self, name, func, requestType, replyType)
         super(LocalServer, self).addMethod(method)
@@ -437,6 +445,8 @@ class RemoteServer (Server):
         @param scope: The common super-scope under which the methods
         of the remote created server are provided.
         @type scope: Scope
+
+        See also: L{createRemoteServer}
         """
         super(RemoteServer, self).__init__(scope)
 
