@@ -328,9 +328,71 @@ class RemoteMethod (Method):
             result.set(event)
 
     def __call__(self, arg):
+        """
+        Call the method synchronously with argument B{arg}, returning
+        the value returned by the remote method.
+
+        If B{arg} is an instance of L{Event}, an L{Event} containing
+        the object returned by the remote method as payload is
+        returned. If B{arg} is of any other type, return the object
+        that was returned by the remote method.
+
+        The call to this method blocks until a result is available or
+        an error occurs.
+
+        Examples:
+        >>> myServer.echo('bla')
+        'bla'
+        >>> myServer.echo(Event(scope = myServer.scope, data = 'bla', type = str))
+        Event[id = ..., data = 'bla', ...]
+
+        @param arg: The argument object that should be passed to the
+                    remote method. A converter has to be available for
+                    the type of B{arg}.
+        @return: The object that was returned by the remote method.
+        @raise RemoteCallError: If invoking the remote method fails or
+                                the remote method itself produces an
+                                error.
+
+        See also: L{async}
+        """
         return self.async(arg).get()
 
     def async(self, arg):
+        """
+        Call the method asynchronously with argument B{arg}, returning
+        a L{Future} instance that can be used to retrieve the result.
+
+        If B{arg} is an instance of L{Event}, the result of the method
+        call is an L{Event} containing the object returned by the
+        remote method as payload. If B{arg} is of any other type, the
+        result is the payload of the method call is the object that
+        was returned by the remote method.
+
+        The call to this method returns immediately, even if the
+        remote method did produce a result yet. The returned L{Future}
+        instance has to be used to retrieve the result.
+
+        Examples:
+        >>> myServer.echo.async('bla')
+        <Future running at 3054cd0>
+        >>> myServer.echo.async('bla').get()
+        'bla'
+        >>> myServer.echo.async(Event(scope = myServer.scope, data = 'bla', type = str)).get()
+        Event[id = ..., data = 'bla', ...]
+
+        @param arg: The argument object that should be passed to the
+                    remote method. A converter has to be available for
+                    the type of B{arg}.
+        @return: A L{Future} or L{DataFuture} instance that can be
+                 used to check the success of the method call, wait
+                 for the result and retrieve the result.
+        @rtype: L{Future} or L{DataFuture}
+        @raise RemoteCallError: If an error occurs before the remote
+                                was invoked.
+
+        See also: L{__call__}
+        """
         self.listener # Force listener creation
 
         if isinstance(arg, rsb.Event):
