@@ -26,13 +26,17 @@ class Converter(object):
         """
         Constructor.
 
-        @param wireType: Python type to/from which the converter serializes/deserializes
+        @param wireType: Python type to/from which the converter
+                         serializes/deserializes
+        @type wireType: type
         @param dataType: Python type of data accepted by the converter
                          for serialization (also Python type of
                          deserialized data)
+        @type dataType: type
         @param wireSchema: Wire-schema understood by the converter
                            when deserializing (also wire-schema of
                            data serialized with the converter)
+        @type wireSchema: str
         """
         self.__wireType = wireType
         self.__dataType = dataType
@@ -44,6 +48,7 @@ class Converter(object):
         serializes/deserializes.
 
         @return: A type object.
+        @rtype: type
         '''
         return self.__wireType
 
@@ -54,6 +59,7 @@ class Converter(object):
         Returns the data type this converter is applicable for.
 
         @return: A type object.
+        @rtype: type
         '''
         return self.__dataType
 
@@ -66,6 +72,7 @@ class Converter(object):
 
         @return: A string designating the wire schema from/to this
                  converter can (de)serialize
+        @rtype: str
         '''
         return self.__wireSchema
 
@@ -161,11 +168,13 @@ class ConverterMap(ConverterSelectionStrategy):
 class PredicateConverterList (ConverterMap):
     """
     Objects of this class are used to perform converter selection via
-    a chain-of-responsibility strategy. A list of predicates and
-    associated converters is maintained. Converter selection queries
-    are processed by traversing the list and selected the first
-    converter the associated predicate of which matches the query
-    wire-schema or data-type.
+    a chain-of-responsibility strategy.
+
+    A list of predicates and associated converters is
+    maintained. Converter selection queries are processed by
+    traversing the list and selected the first converter the
+    associated predicate of which matches the query wire-schema or
+    data-type.
 
     @author: jmoringe
     """
@@ -213,7 +222,7 @@ __globalConverterMaps = {}
 
 def registerGlobalConverter(converter, replaceExisting=False):
     """
-    Registers a new converter that s globally available to the system.
+    Register B{converter} as a globally available converter.
 
     @param converter: converter to register
     @param replaceExisting: controls whether an existing converter for
