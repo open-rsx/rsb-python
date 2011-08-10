@@ -337,12 +337,20 @@ class Scope(object):
         Parses a scope from a string representation.
 
         @param stringRep: string representation of the scope
+        @type stringRep: str or unicode
         @raise ValueError: if B{stringRep} does not have the right
                            syntax
         '''
 
         if len(stringRep) == 0:
-            raise ValueError("Empty scope is invalid.")
+            raise ValueError("The empty string does not designate a scope; Use '/' to designate the root scope.")
+
+        if isinstance(stringRep, unicode):
+            try:
+                stringRep = stringRep.encode('ASCII')
+            except UnicodeEncodeError, e:
+                raise ValueError('Scope strings have be encodable as ASCII-strings, but the supplied scope string cannot be encoded as ASCII-string: %s'
+                                 % e)
 
         # append missing trailing slash
         if stringRep[-1] != self.__COMPONENT_SEPARATOR:

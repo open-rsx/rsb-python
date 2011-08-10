@@ -143,6 +143,12 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual("this", shortcut.getComponents()[0])
         self.assertEqual("is", shortcut.getComponents()[1])
 
+        # Non-ASCII characters are not allowed. However, unicode
+        # object consisting of acceptable characters are OK.
+        Scope(u'/')
+        Scope(u'/test')
+        self.assertRaises(ValueError, Scope, u'/br\xc3\xb6tchen')
+
     def testParsingError(self):
 
         self.assertRaises(ValueError, rsb.Scope, "")
