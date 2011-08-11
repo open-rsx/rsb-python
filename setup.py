@@ -45,7 +45,7 @@ class CommandStarter(object):
 class ApiDocCommand(Command):
     '''
     Distutils command used to build the api documentation with epydoc.
-    
+
     @author: jwienke
     '''
 
@@ -99,7 +99,7 @@ class ApiDocCommand(Command):
 class BuildProtobufs(Command):
     '''
     Distutils command to build the protocol buffers.
-    
+
     @author: jwienke
     '''
 
@@ -154,7 +154,7 @@ class BuildProtobufs(Command):
 class Coverage(Command):
     """
     A command to generate a coverage report using coverage.py.
-    
+
     @author: jwienke
     """
 
@@ -195,7 +195,7 @@ class Build(build):
     """
     Simple wrapper around the normal build command to require protobuf build
     before normal build.
-    
+
     @author: jwienke
     """
 
@@ -207,7 +207,7 @@ class Sdist(sdist):
     """
     Simple wrapper around the normal sdist command to require protobuf build
     before generating the source distribution..
-    
+
     @author: jwienke
     """
 
@@ -219,7 +219,7 @@ class Test(setuptools.command.test.test):
     """
     Wrapper for test command to execute build before testing use a custom test
     runner. It also starts a spread daemon.
-    
+
     @author: jwienke
     """
 
@@ -265,7 +265,7 @@ class Test(setuptools.command.test.test):
 
 
 setup(name='rsb-python',
-      version='0.4.0',
+      version='0.5.0',
       description='''
                   Fully event-driven Robotics Service Bus
                   ''',
