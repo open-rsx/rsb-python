@@ -94,8 +94,9 @@ class Future (object):
                 else:
                     # TODO(jmoringe): this is probably wrong since there may be spurious wakeups
                     self.__condition.wait(timeout = timeout)
-                    raise FutureTimeout, 'Timeout while waiting for result; Waited %s seconds.' \
-                        % timeout
+                    if self.__result is None:
+                        raise FutureTimeout, 'Timeout while waiting for result; Waited %s seconds.' \
+                            % timeout
 
         if self.__error:
             raise FutureExecutionError, 'Failed to execute operation: %s' % self.__result
@@ -149,5 +150,5 @@ class DataFuture (Future):
 
     @author: jmoringe
     """
-    def get(self):
-        return super(DataFuture, self).get().data
+    def get(self, timeout = 0):
+        return super(DataFuture, self).get(timeout = timeout).data
