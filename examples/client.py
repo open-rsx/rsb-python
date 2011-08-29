@@ -22,9 +22,14 @@ if __name__ == "__main__":
     # Create a RemoteServer object for the remote server at scope
     # /example/server. Method calls should complete within five
     # seconds.
-    server = createRemoteServer(Scope('/example/server'), timeout = 5)
+    server = createRemoteServer(Scope('/example/server'))
 
     # Call the method 'methodOne' on the remote server passing it a
     # string argument. The server's reply is returned from the call as
     # for a regular function call.
-    print 'server replied: "%s"' % server.methodOne('bla')
+    print 'server replied to synchronous call: "%s"' % server.echo('bla')
+
+    # Call the method 'methodOne' again, this time asynchronously.
+    future = server.echo.async('bla')
+    # do other things
+    print 'server replied to asynchronous call: "%s"' % future.get(timeout = 10)
