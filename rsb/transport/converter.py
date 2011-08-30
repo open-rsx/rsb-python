@@ -273,13 +273,14 @@ class NoneConverter (Converter):
 
 class StringConverter(Converter):
     """
-    An converter to serialize strings to bytearrays with a specified encoding
+    A converter that serializes strings to bytearrays with a specified
+    encoding
 
     @author: jwienke
     """
 
     def __init__(self, wireSchema="utf-8-string", dataType=unicode, encoding="utf_8"):
-        Converter.__init__(self, bytearray, dataType, wireSchema)
+        super(StringConverter, self).__init__(bytearray, dataType, wireSchema)
         self.__encoding = encoding
 
     def serialize(self, input):
