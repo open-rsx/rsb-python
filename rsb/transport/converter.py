@@ -250,6 +250,27 @@ def getGlobalConverterMap(wireType):
 
 # --- converters with bytearray as serialization type ---
 
+class NoneConverter (Converter):
+    """
+    This converter produces a serialized value that represents
+    instances of C{NoneType}.
+
+    Such a converter is required for serializing "results" of RPC
+    calls that do not return a value.
+
+    @author: jmoringe
+    """
+    def __init__(self):
+        super(NoneConverter, self).__init__(bytearray, type(None), 'void')
+
+    def serialize(self, input):
+        return bytearray(), self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        assert wireSchema == self.wireSchema
+
+        pass
+
 class StringConverter(Converter):
     """
     An converter to serialize strings to bytearrays with a specified encoding
@@ -316,3 +337,4 @@ class ProtocolBufferConverter(Converter):
         return str(self)
 
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
+registerGlobalConverter(NoneConverter())

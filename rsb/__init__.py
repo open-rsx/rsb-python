@@ -983,8 +983,6 @@ class Informer(Participant):
                 and not event.scope.isSubScopeOf(self.scope):
             raise ValueError("Scope %s of event %s is not a sub-scope of this informer's scope %s."
                              % (event.scope, event, self.scope))
-        if event.data is None:
-            raise ValueError("Event %s does not have a payload." % event)
         if not isinstance(event.data, self.type):
             raise ValueError("The payload %s of event %s does not match this informer's type %s."
                              % (event.data, event, self.type))
