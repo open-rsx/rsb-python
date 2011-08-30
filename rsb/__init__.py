@@ -871,13 +871,13 @@ class Participant(object):
         clients.
 
         @param scope: scope of the bus channel.
-        @type scope: Scope
+        @type scope: Scope or accepted by Scope constructor
 
         See L{createListener}, L{createInformer}, L{createServer},
         L{createRemoteServer}, L{createService}
         """
         self.__id = uuid.uuid4()
-        self.__scope = scope
+        self.__scope = Scope.ensureScope(scope)
 
     def getId(self):
         return self.__id
