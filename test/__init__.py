@@ -23,6 +23,7 @@ import rsbspreadtest
 import transporttest
 import convertertest
 import utiltest
+import patternstest
 
 import logging
 
@@ -38,4 +39,5 @@ def suite():
     suite.addTest(transporttest.suite())
     suite.addTest(convertertest.suite())
     suite.addTest(utiltest.suite())
+    suite.addTest(patternstest.suite())
     return suite
