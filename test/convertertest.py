@@ -97,6 +97,12 @@ class PredicateConverterListTest(unittest.TestCase):
         self.assertIs(mixed.getConverterForDataType("foo"), v1)
         self.assertIs(mixed.getConverterForDataType("foobar"), v1)
 
+
+class NoneConverterTest(unittest.TestCase):
+    def testRoundtrip(self):
+        converter = NoneConverter()
+        self.assertEquals(None, converter.deserialize(*converter.serialize(None)))
+
 class StringConverterTest(unittest.TestCase):
 
     def testRoundtripUtf8(self):
