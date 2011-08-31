@@ -32,7 +32,7 @@ import math
 import logging
 import time
 from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
-from multiprocessing import RLock
+from threading import RLock
 
 def makeKey(notification):
     key = notification.sender_id + '%08x' % notification.sequence_number
