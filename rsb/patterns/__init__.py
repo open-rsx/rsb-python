@@ -220,7 +220,7 @@ class LocalMethod (Method):
         return rsb.Informer(self.server.scope
                             .concat(rsb.Scope("/reply"))
                             .concat(rsb.Scope('/' + self.name)),
-                            self.replyType)
+                            object)
 
     def _handleRequest(self, arg):
         if arg.method is None or arg.method != 'REQUEST':
@@ -228,6 +228,11 @@ class LocalMethod (Method):
         userInfos = { 'rsb:reply': str(arg.id) }
         try:
             result = self._func(arg.data)
+            # this check is required because the reply informer is created with
+            # type 'object' to enable throwing exceptions
+            if not isinstance(result, self.replyType):
+                raise ValueError("The result '%s' of method %s does not match the method's declared return type %s."
+                             % (result, self.name, self.replyType))
         except Exception, e:
             userInfos['rsb:error?'] = '1'
             result = str(e)
