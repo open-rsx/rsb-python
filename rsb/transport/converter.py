@@ -305,7 +305,9 @@ class ProtocolBufferConverter(Converter):
         assert wireSchema == self.wireSchema
 
         output = self.messageClass()
-        output.ParseFromString(input)
+        # we need to convert back to string because bytearrays do not work with
+        # protobuf
+        output.ParseFromString(str(input))
         return output
 
     def __str__(self):
