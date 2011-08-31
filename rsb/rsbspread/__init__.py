@@ -68,10 +68,10 @@ class Assembly(object):
     def __join(self):
         keys = self.__parts.keys()
         keys.sort()
-        finalData = ""
+        finalData = bytearray()
         for key in keys:
-            finalData += self.__parts[key].data
-        return bytearray(finalData)
+            finalData += bytearray(self.__parts[key].data)
+        return finalData
 
 class AssemblyPool(object):
     """
@@ -86,7 +86,7 @@ class AssemblyPool(object):
 
     def add(self, notification):
         if notification.num_data_parts == 1:
-            return notification.data
+            return bytearray(notification.data)
         key = makeKey(notification)
         if not key in self.__assemblies:
             self.__assemblies[key] = Assembly(notification)
