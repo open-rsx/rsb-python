@@ -79,7 +79,9 @@ class ApiDocCommand(Command):
             pass
 
         # build the argument string
-        cmdline = ["epydoc"]
+        cmdline = [sys.executable]
+        cmdline.append("-c")
+        cmdline.append("from epydoc import cli; cli.cli()")
         cmdline.append("--" + self.format)
         cmdline.append("-o")
         cmdline.append(outdir)
