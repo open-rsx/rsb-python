@@ -35,7 +35,7 @@ from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
 from threading import RLock
 
 def makeKey(notification):
-    key = notification.sender_id + '%08x' % notification.sequence_number
+    key = notification.event_id.sender_id + '%08x' % notification.event_id.sequence_number
     return key
 
 class Assembly(object):
@@ -176,9 +176,9 @@ class SpreadReceiverTask(object):
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
                         event = Event()
-                        event.sequenceNumber = notification.sequence_number
+                        event.sequenceNumber = notification.event_id.sequence_number
                         event.scope = Scope(notification.scope)
-                        event.senderId = uuid.UUID(bytes=notification.sender_id)
+                        event.senderId = uuid.UUID(bytes=notification.event_id.sender_id)
                         if notification.HasField("method"):
                             event.method = notification.method
                         event.type = converter.getDataType()
@@ -317,9 +317,9 @@ class SpreadPort(rsb.transport.Port):
 
             # create message
             n = Notification()
-            n.sequence_number = event.sequenceNumber
+            n.event_id.sequence_number = event.sequenceNumber
             n.scope = event.scope.toString()
-            n.sender_id = event.senderId.bytes
+            n.event_id.sender_id = event.senderId.bytes
             if not event.method is None:
                 n.method = event.method
             n.wire_schema = wireSchema
