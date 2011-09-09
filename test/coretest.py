@@ -22,7 +22,7 @@ import unittest
 
 import rsb
 from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
-    Informer
+    Informer, EventId
 import time
 
 class ParticipantConfigTest (unittest.TestCase):
@@ -256,8 +256,8 @@ class EventTest(unittest.TestCase):
     def testComparison(self):
 
         sid = uuid.uuid4()
-        e1 = Event(sequenceNumber = 0, senderId = sid)
-        e2 = Event(sequenceNumber = 0, senderId = sid)
+        e1 = Event(EventId(sid, 0))
+        e2 = Event(EventId(sid, 0))
         e2.getMetaData().setCreateTime(e1.getMetaData().getCreateTime())
 
         e1.metaData.setUserTime("foo")

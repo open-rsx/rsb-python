@@ -635,6 +635,70 @@ class MetaData (object):
     def __repr__(self):
         return self.__str__()
 
+class EventId(object):
+    '''
+    Uniquely identifies an Event by the sending participants ID and a sequence
+    number within this participant. Optional conversion to uuid is possible.
+    
+    @author: jwienke
+    '''
+    
+    def __init__(self, participantId, sequenceNumber):
+        self.__participantId = participantId
+        self.__sequenceNumber = sequenceNumber
+        
+    def getParticipantId(self):
+        """
+        Return the sender id of this id.
+
+        @return: sender id
+        @rtype: uuid.UUID
+        """
+        return self.__participantId
+
+    def setParticipantId(self, participantId):
+        """
+        Sets the participant id of this event.
+
+        @param participantId: sender id to set.
+        @type participantId: uuid.UUID
+        """
+        self.__participantId = participantId
+
+    participantId = property(getParticipantId, setParticipantId)
+        
+    def getSequenceNumber(self):
+        """
+        Return the sequence number of this id.
+
+        @return: sequence number of the id.
+        @rtype: int
+        """
+        return self.__sequenceNumber
+
+    def setSequenceNumber(self, sequenceNumber):
+        """
+        Sets the sequence number of this id.
+
+        @param sequenceNumber: new sequence number of the id.
+        @type sequenceNumber: int
+        """
+        self.__sequenceNumber = sequenceNumber
+
+    sequenceNumber = property(getSequenceNumber, setSequenceNumber)
+    
+    def __eq__(self, other):
+        try:
+            return (self.__sequenceNumber == other.__sequenceNumber) and (self.__participantId == other.__participantId)
+        except (TypeError, AttributeError):
+            return False
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return "EventId(%s, %s)" % (self.__participantId, self.__sequenceNumber)
+
 class Event(object):
     '''
     Basic event class.
@@ -642,20 +706,17 @@ class Event(object):
     @author: jwienke
     '''
 
-    def __init__(self, sequenceNumber = None, scope = Scope("/"), senderId = None, method = None,
+    def __init__(self, id = None, scope = Scope("/"), method = None,
                  data = None, type = None,
                  metaData=None, userInfos=None, userTimes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
 
-        @param sequenceNumber: The sequence number of the event.
-        @type sequenceNumber: int
+        @param id: The id of this event
+        @type id: EventId
         @param scope: A L{Scope} designating the channel on which the
                       event will be published.
         @type scope: Scope
-        @param senderId: The id of the L{Participant} at which the
-                         associated event originated.
-        @type senderId: uuid.UUID
         @param method: A string designating the "method category"
                        which identifies the role of the event in some
                        communication patters. Examples are
@@ -672,10 +733,8 @@ class Event(object):
         @type userTime: dict
         """
 
-        self.__id = None # computed lazily
-        self.__sequenceNumber = sequenceNumber
+        self.__id = id
         self.__scope = scope
-        self.__senderId = senderId
         self.__method = method
         self.__data = data
         self.__type = type
@@ -696,20 +755,11 @@ class Event(object):
 
         @return: sequence number of the event.
         @rtype: int
+        @deprecated: use #getId instead
         """
-        return self.__sequenceNumber
+        return self.getId().getSequenceNumber()
 
-    def setSequenceNumber(self, sequenceNumber):
-        """
-        Sets the sequence number of this event.
-
-        @param sequenceNumber: new sequence number of the event.
-        @type sequenceNumber: int
-        """
-        self.__sequenceNumber = sequenceNumber
-        self.__id = None # clear cached id
-
-    sequenceNumber = property(getSequenceNumber, setSequenceNumber)
+    sequenceNumber = property(getSequenceNumber)
 
     def getId(self):
         """
@@ -717,14 +767,17 @@ class Event(object):
 
         @return: id of the event
         @rtype: int
+        @raise RuntimeError: if the event does not have an id so far
         """
 
         if self.__id is None:
-            self.__id = uuid.uuid5(self.__senderId,
-                                   '%08x' % self.__sequenceNumber)
+            raise RuntimeError("The event does not have an ID so far.")
         return self.__id
+    
+    def setId(self, id):
+        self.__id = id
 
-    id = property(getId)
+    id = property(getId, setId)
 
     def getScope(self):
         """
@@ -754,20 +807,11 @@ class Event(object):
 
         @return: sender id
         @rtype: uuid.UUID
+        @deprecated: use #getId instead
         """
-        return self.__senderId
+        return self.getId().getParticipantId()
 
-    def setSenderId(self, senderId):
-        """
-        Sets the sender id of this event.
-
-        @param senderId: sender id to set.
-        @type senderId: uuid.UUID
-        """
-        self.__senderId = senderId
-        self.__id = None # clear cached id
-
-    senderId = property(getSenderId, setSenderId)
+    senderId = property(getSenderId)
 
     def getMethod(self):
         """
@@ -840,18 +884,15 @@ class Event(object):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        maybeId = 'N/A'
-        if not self.__sequenceNumber is None and not self.__senderId is None:
-            maybeId = self.getId()
-        return "%s[id = %s, sequenceNumber = %s, scope = '%s', sender = %s, data = '%s', type = '%s', metaData = %s]" \
-            % ("Event", maybeId, self.__sequenceNumber, self.__scope, self.__senderId, printData, self.__type, self.__metaData)
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s]" \
+            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData)
 
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
         try:
-            return (self.__sequenceNumber == other.__sequenceNumber) and (self.__scope == other.__scope) and (self.__senderId == other.__senderId) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
+            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
         except (TypeError, AttributeError):
             return False
 
@@ -988,9 +1029,7 @@ class Informer(Participant):
                              % (event.data, event, self.type))
 
         with self.__mutex:
-            event.sequenceNumber = self.__sequenceNumber
-            self.__sequenceNumber += 1
-        event.senderId = self.id
+            event.id = EventId(self.id, self.__sequenceNumber)
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
         return event

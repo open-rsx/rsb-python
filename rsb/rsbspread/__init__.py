@@ -25,7 +25,7 @@ import rsb.transport
 from Protocol_pb2 import Notification, MetaData
 from google.protobuf.message import DecodeError
 from rsb.util import getLoggerByClass, unixMicrosecondsToTime
-from rsb import Event, Scope, QualityOfServiceSpec
+from rsb import Event, Scope, QualityOfServiceSpec, EventId
 from rsb.transport.converter import UnknownConverterError
 import hashlib
 import math
@@ -175,10 +175,8 @@ class SpreadReceiverTask(object):
                         # find a suitable converter
                         converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
                         # build rsbevent from notification
-                        event = Event()
-                        event.sequenceNumber = notification.event_id.sequence_number
+                        event = Event(EventId(uuid.UUID(bytes=notification.event_id.sender_id), notification.event_id.sequence_number))
                         event.scope = Scope(notification.scope)
-                        event.senderId = uuid.UUID(bytes=notification.event_id.sender_id)
                         if notification.HasField("method"):
                             event.method = notification.method
                         event.type = converter.getDataType()

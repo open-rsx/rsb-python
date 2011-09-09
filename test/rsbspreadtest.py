@@ -22,7 +22,7 @@ import rsb.filter
 from threading import Condition
 from rsb.rsbspread import SpreadPort
 from rsb.filter import ScopeFilter, FilterAction
-from rsb import Event, Informer, Listener, Scope
+from rsb import Event, Informer, Listener, Scope, EventId
 from rsb.transport.converter import getGlobalConverterMap
 import hashlib
 import random
@@ -173,7 +173,7 @@ class SpreadPortTest(unittest.TestCase):
         port.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
-        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "dummy data"
         event.type = str
@@ -207,7 +207,7 @@ class SpreadPortTest(unittest.TestCase):
         listener.addHandler(receiver)
 
         data1 = "a string to test"
-        sentEvent = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        sentEvent = Event(EventId(uuid.uuid4(), 0))
         sentEvent.setData(data1)
         sentEvent.setType(str)
         sentEvent.setScope(scope)
@@ -278,7 +278,7 @@ class SpreadPortTest(unittest.TestCase):
         port.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
-        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
@@ -300,7 +300,7 @@ class SpreadPortTest(unittest.TestCase):
         port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
         port.activate()
 
-        event = Event(sequenceNumber = 0, senderId = uuid.uuid4())
+        event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
