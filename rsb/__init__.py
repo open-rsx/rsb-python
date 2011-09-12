@@ -697,7 +697,7 @@ class EventId(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "EventId(%s, %s)" % (self.__participantId, self.__sequenceNumber)
+        return "EventId(%r, %r)" % (self.__participantId, self.__sequenceNumber)
     
     def __hash__(self):
         prime = 31;
@@ -709,6 +709,16 @@ class EventId(object):
 class Event(object):
     '''
     Basic event class.
+    
+    Events are often caused by other events, which e.g. means that their
+    contained payload was calculated on the payload of one or more other events.
+    
+    To express these relations each event contains a set of EventIds that express
+    the direct causes of the event. This means, transitive event causes are not
+    modeled.
+    
+    Cause handling is inspired by the ideas proposed in: David Luckham, The Power
+    of Events, Addison-Wessley, 2007
 
     @author: jwienke
     '''
@@ -755,6 +765,7 @@ class Event(object):
         if not userTimes is None:
             for (key, value) in userTimes.items():
                 self.__metaData.getUserTimes()[key] = value
+        self.__causes = []
 
     def getSequenceNumber(self):
         """
@@ -887,19 +898,81 @@ class Event(object):
 
     metaData = property(getMetaData, setMetaData)
 
+    def addCause(self, id):
+        '''
+        Adds a causing EventId to the causes of this event.
+        
+        @param id: id to add
+        @type id: EventId
+        @return: true if the id was newly added, else false
+        @rtype: bool
+        '''
+        if id in self.__causes:
+            return False
+        else:
+            self.__causes.append(id)
+            return True
+        
+    def removeCause(self, id):
+        '''
+        Removes a causing EventId from the causes of this event.
+        
+        @param id: id to remove
+        @type id: EventId
+        @return: true if the id was remove, else false (because it did not exist)
+        @rtype: bool
+        '''
+        if id in self.__causes:
+            self.__causes.remove(id)
+            return True
+        else:
+            return False
+        
+    def isCause(self, id):
+        '''
+        Checks whether a given id of an event is marked as a cause for this
+        event.
+        
+        @param id: id to check
+        @type id: EventId
+        @return: true if the id is a cause of this event, else false
+        @rtype: bool
+        '''
+        return id in self.__causes
+    
+    def getCauses(self):
+        '''
+        Returns all causes of this event.
+        
+        @return: causing event ids
+        @rtype: list of EventIds
+        '''
+        return self.__causes
+    
+    def setCauses(self, causes):
+        '''
+        Overwrites the cause vector of this event with the given one.
+        
+        @param causes: new cause vector
+        @type causes: list of EventId
+        '''
+        self.__causes = causes
+        
+    causes = property(getCauses, setCauses)
+
     def __str__(self):
         printData = self.__data
         if isinstance(self.__data, str) and len(self.__data) > 10000:
             printData = "string with length %u" % len(self.__data)
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s]" \
-            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData)
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s, causes = %s]" \
+            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData, self.__causes)
 
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
         try:
-            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData)
+            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData) and (self.__causes == other.__causes)
         except (TypeError, AttributeError):
             return False
 

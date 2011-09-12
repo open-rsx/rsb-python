@@ -190,6 +190,11 @@ class SpreadReceiverTask(object):
                             event.metaData.setUserInfo(info.key, info.value)
                         for time in notification.meta_data.user_times:
                             event.metaData.setUserTime(time.key, unixMicrosecondsToTime(time.timestamp))
+                        
+                        # causes
+                        for cause in notification.causes:
+                            id = EventId(uuid.UUID(bytes=cause.sender_id), cause.sequence_number)
+                            event.addCause(id)
 
                         self.__logger.debug("Sending event to dispatch task: %s" % event)
 
@@ -337,6 +342,11 @@ class SpreadPort(rsb.transport.Port):
                 time = md.user_times.add()
                 time.key = k
                 time.timestamp = rsb.util.timeToUnixMicroseconds(v)
+            # causes
+            for cause in event.causes:
+                id = n.causes.add()
+                id.sender_id = cause.participantId.bytes
+                id.sequence_number = cause.sequenceNumber
 
             serialized = n.SerializeToString()
 

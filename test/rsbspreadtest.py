@@ -30,6 +30,7 @@ import string
 import uuid
 from rsb.eventprocessing import Router
 import time
+from uuid import uuid4
 
 class SettingReceiver(object):
 
@@ -215,6 +216,8 @@ class SpreadPortTest(unittest.TestCase):
         sentEvent.getMetaData().setUserInfo("test again", "it works?")
         sentEvent.getMetaData().setUserTime("blubb", 234234)
         sentEvent.getMetaData().setUserTime("bla", 3434343.45)
+        sentEvent.addCause(EventId(uuid4(), 1323))
+        sentEvent.addCause(EventId(uuid4(), 42))
 
         before = time.time()
         publisher.publishEvent(sentEvent)

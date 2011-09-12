@@ -268,6 +268,20 @@ class EventTest(unittest.TestCase):
         self.e.type = t
         self.assertEqual(t, self.e.type)
 
+    def testCauses(self):
+        
+        sid = uuid.uuid4()
+        e = Event(EventId(sid, 32))
+        self.assertEqual(0, len(e.causes))
+        cause = EventId(uuid4(), 546345)
+        e.addCause(cause)
+        self.assertEqual(1, len(e.causes))
+        self.assertTrue(e.isCause(cause))
+        self.assertTrue(cause in e.causes)
+        e.removeCause(cause)
+        self.assertFalse(e.isCause(cause))
+        self.assertEqual(0, len(e.causes))
+
     def testComparison(self):
 
         sid = uuid.uuid4()
@@ -279,6 +293,12 @@ class EventTest(unittest.TestCase):
         self.assertNotEquals(e1, e2)
         e2.metaData.setUserTime("foo", e1.getMetaData().getUserTimes()["foo"])
         self.assertEquals(e1, e2)
+        
+        cause = EventId(uuid4(), 42)
+        e1.addCause(cause)
+        self.assertNotEqual(e1, e2)
+        e2.addCause(cause)
+        self.assertEqual(e1, e2)
 
 class FactoryTest(unittest.TestCase):
     def testDefaultParticipantConfig(self):
