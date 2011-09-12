@@ -24,6 +24,7 @@ import rsb
 from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
     Informer, EventId
 import time
+from uuid import uuid4
 
 class ParticipantConfigTest (unittest.TestCase):
 
@@ -226,6 +227,20 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
         self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
 
+class EventIdTest(unittest.TestCase):
+    
+    def testHashing(self):
+        
+        id1 = EventId(uuid.uuid4(), 23)
+        id2 = EventId(id1.getParticipantId(), 23)
+        id3 = EventId(uuid.uuid4(), 32)
+        id4 = EventId(id3.getParticipantId(), 33)
+        
+        self.assertEqual(hash(id1), hash(id2))
+        self.assertNotEqual(hash(id1), hash(id3))
+        self.assertNotEqual(hash(id1), hash(id4))
+        self.assertNotEqual(hash(id3), hash(id4))
+
 class EventTest(unittest.TestCase):
 
     def setUp(self):
@@ -409,6 +424,7 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventIdTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))

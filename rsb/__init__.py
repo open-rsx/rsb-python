@@ -698,6 +698,13 @@ class EventId(object):
 
     def __repr__(self):
         return "EventId(%s, %s)" % (self.__participantId, self.__sequenceNumber)
+    
+    def __hash__(self):
+        prime = 31;
+        result = 1;
+        result = prime * result + hash(self.__participantId)
+        result = prime * result +  (self.__sequenceNumber ^ (self.__sequenceNumber >> 32))
+        return result;
 
 class Event(object):
     '''
