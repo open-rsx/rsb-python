@@ -225,7 +225,7 @@ class LocalMethod (Method):
     def _handleRequest(self, arg):
         if arg.method is None or arg.method != 'REQUEST':
             return
-        userInfos = { 'rsb:reply': str(arg.id) }
+        userInfos = { 'rsb:reply': str(arg.id.getAsUUID()) }
         try:
             result = self._func(arg.data)
             # this check is required because the reply informer is created with
