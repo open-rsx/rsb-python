@@ -240,6 +240,18 @@ class EventIdTest(unittest.TestCase):
         self.assertNotEqual(hash(id1), hash(id3))
         self.assertNotEqual(hash(id1), hash(id4))
         self.assertNotEqual(hash(id3), hash(id4))
+        
+    def testGetAsUUID(self):
+        
+        id1 = EventId(uuid.uuid4(), 23)
+        id2 = EventId(id1.participantId, 23)
+        id3 = EventId(id1.participantId, 24)
+        id4 = EventId(uuid.uuid4(), 24)
+        
+        self.assertEqual(id1.getAsUUID(), id2.getAsUUID())
+        self.assertNotEqual(id1.getAsUUID(), id3.getAsUUID())
+        self.assertNotEqual(id1.getAsUUID(), id4.getAsUUID())
+        self.assertNotEqual(id3.getAsUUID(), id4.getAsUUID())
 
 class EventTest(unittest.TestCase):
 

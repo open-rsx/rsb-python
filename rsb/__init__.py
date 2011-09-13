@@ -646,6 +646,7 @@ class EventId(object):
     def __init__(self, participantId, sequenceNumber):
         self.__participantId = participantId
         self.__sequenceNumber = sequenceNumber
+        self.__id = None
         
     def getParticipantId(self):
         """
@@ -687,6 +688,19 @@ class EventId(object):
 
     sequenceNumber = property(getSequenceNumber, setSequenceNumber)
     
+    def getAsUUID(self):
+        """
+        Returns a UUID encoded version of this id.
+        
+        @return: id of the event as UUID
+        @rtype: uuid.uuid
+        """
+        
+        if self.__id is None:
+            self.__id = uuid.uuid5(self.__participantId,
+                                   '%08x' % self.__sequenceNumber)
+        return self.__id
+        
     def __eq__(self, other):
         try:
             return (self.__sequenceNumber == other.__sequenceNumber) and (self.__participantId == other.__participantId)
