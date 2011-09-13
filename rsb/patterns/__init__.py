@@ -423,7 +423,7 @@ class RemoteMethod (Method):
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)
-                self._calls[event.id] = result
+                self._calls[event.id.getAsUUID()] = result
         except Exception, e:
             raise RemoteCallError(self.server.scope, self, message = repr(e))
         return result
