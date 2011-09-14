@@ -316,9 +316,9 @@ class Uint64Converter(Converter):
         return output, self.wireSchema
 
     def deserialize(self, input, wireSchema):
-        output = 0
-        for i in range(8):
-            output |= (long(input[i]) << (i * 8))
+        output = 0L
+        for i in range(8L):
+            output |= (long(input[i]) << (i * 8L))
         return output
 
 class ProtocolBufferConverter(Converter):
