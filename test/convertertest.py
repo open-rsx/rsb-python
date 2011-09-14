@@ -16,7 +16,7 @@
 import unittest
 import re
 
-from rsb.transport.converter import Converter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
+from rsb.transport.converter import Converter, NoneConverter, StringConverter, Uint64Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
@@ -123,10 +123,20 @@ class StringConverterTest(unittest.TestCase):
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
                           bytearray(range(133)), 'ascii-string')
 
+class Uint64ConverterTest(unittest.TestCase):
+    def testRoundtrip(self):
+        converter = Uint64Converter()
+        for value in [ 0L, 1L, 24378L, ((1L << 64L) - 1L) ]:
+            self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ConverterMapTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(UnambiguousConverterMapTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PredicateConverterListTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Uint64ConverterTest))
+
     return suite

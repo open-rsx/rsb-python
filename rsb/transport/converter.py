@@ -240,7 +240,8 @@ def getGlobalConverterMap(wireType):
     Get a map with all globally known converters for the desired target
     serialization type.
 
-    @param wireType: python type for target serialization
+    @param wireType: Python type for target serialization
+    @type wireType: type
     @return: converter map constantly updated
     """
 
@@ -295,6 +296,31 @@ class StringConverter(Converter):
         else:
             raise ValueError("Inacceptable dataType %s" % type)
 
+class Uint64Converter(Converter):
+    """
+    A converter that serializes unsigned integers that fit in 64 bits.
+
+    @author: jmoringe
+    """
+
+    def __init__(self):
+        super(Uint64Converter, self).__init__(bytearray, long, 'uint64')
+
+    def serialize(self, input):
+        if input < 0 or input > ((1 << 64) - 1):
+            raise ValueError, '%s is invalid as uint64 value' % input
+
+        output = bytearray('12345678')
+        for i in range(8):
+            output[i] = (input & (0xff << (i * 8))) >> (i * 8)
+        return output, self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        output = 0
+        for i in range(8):
+            output |= (long(input[i]) << (i * 8))
+        return output
+
 class ProtocolBufferConverter(Converter):
     """
     This converter serializes and deserializes objects of protocol
@@ -333,11 +359,12 @@ class ProtocolBufferConverter(Converter):
         return output
 
     def __str__(self):
-        return '<%s for %s at %s>' \
+        return '<%s for %s at 0x%x>' \
             % (type(self).__name__, self.getMessageClassName(), id(self))
 
     def __repr__(self):
         return str(self)
 
-registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
 registerGlobalConverter(NoneConverter())
+registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
+registerGlobalConverter(Uint64Converter())
