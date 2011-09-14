@@ -58,7 +58,27 @@ class LocalServerTest (unittest.TestCase):
                           expose  = [ ('bar', str, None) ],
                           methods = [ ('foo', lambda x: x, str, str) ])
 
+class RoundTripTest (unittest.TestCase):
+    def testRoundTrip(self):
+        localServer = rsb.createServer(
+            '/roundtrip',
+            methods = [ ('addone', lambda x: x + 1, long, long) ])
+
+        remoteServer = rsb.createRemoteServer('/roundtrip')
+
+        # Call synchronously
+        self.assertEqual(map(remoteServer.addone,
+                             map(long, range(100L))),
+                         range(1, 101))
+
+        # Call asynchronously
+        self.assertEqual(map(lambda x: x.get(),
+                             map(remoteServer.addone.async,
+                                 map(long, range(100)))),
+                         range(1, 101))
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(LocalServerTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RoundTripTest))
     return suite

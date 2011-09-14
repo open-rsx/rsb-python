@@ -639,15 +639,15 @@ class EventId(object):
     '''
     Uniquely identifies an Event by the sending participants ID and a sequence
     number within this participant. Optional conversion to uuid is possible.
-    
+
     @author: jwienke
     '''
-    
+
     def __init__(self, participantId, sequenceNumber):
         self.__participantId = participantId
         self.__sequenceNumber = sequenceNumber
         self.__id = None
-        
+
     def getParticipantId(self):
         """
         Return the sender id of this id.
@@ -667,7 +667,7 @@ class EventId(object):
         self.__participantId = participantId
 
     participantId = property(getParticipantId, setParticipantId)
-        
+
     def getSequenceNumber(self):
         """
         Return the sequence number of this id.
@@ -687,20 +687,20 @@ class EventId(object):
         self.__sequenceNumber = sequenceNumber
 
     sequenceNumber = property(getSequenceNumber, setSequenceNumber)
-    
+
     def getAsUUID(self):
         """
         Returns a UUID encoded version of this id.
-        
+
         @return: id of the event as UUID
         @rtype: uuid.uuid
         """
-        
+
         if self.__id is None:
             self.__id = uuid.uuid5(self.__participantId,
                                    '%08x' % self.__sequenceNumber)
         return self.__id
-        
+
     def __eq__(self, other):
         try:
             return (self.__sequenceNumber == other.__sequenceNumber) and (self.__participantId == other.__participantId)
@@ -712,7 +712,7 @@ class EventId(object):
 
     def __repr__(self):
         return "EventId(%r, %r)" % (self.__participantId, self.__sequenceNumber)
-    
+
     def __hash__(self):
         prime = 31;
         result = 1;
@@ -723,14 +723,14 @@ class EventId(object):
 class Event(object):
     '''
     Basic event class.
-    
+
     Events are often caused by other events, which e.g. means that their
     contained payload was calculated on the payload of one or more other events.
-    
+
     To express these relations each event contains a set of EventIds that express
     the direct causes of the event. This means, transitive event causes are not
     modeled.
-    
+
     Cause handling is inspired by the ideas proposed in: David Luckham, The Power
     of Events, Addison-Wessley, 2007
 
@@ -805,7 +805,7 @@ class Event(object):
         if self.__id is None:
             raise RuntimeError("The event does not have an ID so far.")
         return self.__id
-    
+
     def setId(self, id):
         self.__id = id
 
@@ -915,7 +915,7 @@ class Event(object):
     def addCause(self, id):
         '''
         Adds a causing EventId to the causes of this event.
-        
+
         @param id: id to add
         @type id: EventId
         @return: true if the id was newly added, else false
@@ -926,11 +926,11 @@ class Event(object):
         else:
             self.__causes.append(id)
             return True
-        
+
     def removeCause(self, id):
         '''
         Removes a causing EventId from the causes of this event.
-        
+
         @param id: id to remove
         @type id: EventId
         @return: true if the id was remove, else false (because it did not exist)
@@ -941,37 +941,37 @@ class Event(object):
             return True
         else:
             return False
-        
+
     def isCause(self, id):
         '''
         Checks whether a given id of an event is marked as a cause for this
         event.
-        
+
         @param id: id to check
         @type id: EventId
         @return: true if the id is a cause of this event, else false
         @rtype: bool
         '''
         return id in self.__causes
-    
+
     def getCauses(self):
         '''
         Returns all causes of this event.
-        
+
         @return: causing event ids
         @rtype: list of EventIds
         '''
         return self.__causes
-    
+
     def setCauses(self, causes):
         '''
         Overwrites the cause vector of this event with the given one.
-        
+
         @param causes: new cause vector
         @type causes: list of EventId
         '''
         self.__causes = causes
-        
+
     causes = property(getCauses, setCauses)
 
     def __str__(self):
@@ -1124,6 +1124,7 @@ class Informer(Participant):
 
         with self.__mutex:
             event.id = EventId(self.id, self.__sequenceNumber)
+            self.__sequenceNumber += 1
         self.__logger.debug("Publishing event '%s'" % event)
         self.__router.publish(event)
         return event
