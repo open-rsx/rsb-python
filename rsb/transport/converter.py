@@ -15,6 +15,8 @@
 #
 # ============================================================
 
+from numbers import Integral
+
 class Converter(object):
     """
     Base class for converters to a certain target type.
@@ -153,7 +155,7 @@ class ConverterMap(ConverterSelectionStrategy):
 
     def _getConverterForDataType(self, dataType):
         for ((ignored, converterDataType), converter) in self._converters.items():
-            if dataType is converterDataType:
+            if issubclass(dataType, converterDataType):
                 return converter
 
     def getConverters(self):
@@ -304,7 +306,7 @@ class Uint64Converter(Converter):
     """
 
     def __init__(self):
-        super(Uint64Converter, self).__init__(bytearray, long, 'uint64')
+        super(Uint64Converter, self).__init__(bytearray, Integral, 'uint64')
 
     def serialize(self, input):
         if input < 0 or input > ((1 << 64) - 1):

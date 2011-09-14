@@ -67,14 +67,12 @@ class RoundTripTest (unittest.TestCase):
         remoteServer = rsb.createRemoteServer('/roundtrip')
 
         # Call synchronously
-        self.assertEqual(map(remoteServer.addone,
-                             map(long, range(100L))),
+        self.assertEqual(map(remoteServer.addone, range(100)),
                          range(1, 101))
 
         # Call asynchronously
         self.assertEqual(map(lambda x: x.get(),
-                             map(remoteServer.addone.async,
-                                 map(long, range(100)))),
+                             map(remoteServer.addone.async, range(100))),
                          range(1, 101))
 
 def suite():
