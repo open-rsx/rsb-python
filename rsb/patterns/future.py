@@ -137,7 +137,7 @@ class Future (object):
                 state = 'failed'
             else:
                 state = 'completed'
-        return '<%s %s at %x>' % (type(self).__name__, state, id(self))
+        return '<%s %s at 0x%x>' % (type(self).__name__, state, id(self))
 
     def __repr__(self):
         return str(self)
