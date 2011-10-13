@@ -138,7 +138,7 @@ class SpreadReceiverTask(object):
         # messages on interruption even if no one else sends messages.
         # Otherwise deactivate blocks until another message is received.
         self.__mailbox.join(self.__wakeupGroup)
-        self.__logger.debug("joined wakup group %s" % self.__wakeupGroup)
+        self.__logger.debug("joined wakup group %s", self.__wakeupGroup)
 
         while True:
 
@@ -152,7 +152,7 @@ class SpreadReceiverTask(object):
 
             self.__logger.debug("waiting for new messages")
             message = self.__mailbox.receive()
-            self.__logger.debug("received message %s" % message)
+            self.__logger.debug("received message %s", message)
             try:
 
                 # Process regular message
@@ -167,7 +167,7 @@ class SpreadReceiverTask(object):
                         data = str(notification)
                         if len(data) > 5000:
                             data = data[:5000] + " [... truncated for printing]"
-                        self.__logger.debug("Received notification from bus: %s" % data)
+                        self.__logger.debug("Received notification from bus: %s", data)
 
                     joinedData = self.__assemblyPool.add(notification)
 
@@ -196,7 +196,7 @@ class SpreadReceiverTask(object):
                             id = EventId(uuid.UUID(bytes=cause.sender_id), cause.sequence_number)
                             event.addCause(id)
 
-                        self.__logger.debug("Sending event to dispatch task: %s" % event)
+                        self.__logger.debug("Sending event to dispatch task: %s", event)
 
                         with self.__observerActionLock:
                             if self.__observerAction:
@@ -204,7 +204,7 @@ class SpreadReceiverTask(object):
 
                 # Process membership message
                 elif isinstance(message, spread.MembershipMsgType):
-                    self.__logger.info("Received membership message for group `%s'" % message.group)
+                    self.__logger.info("Received membership message for group `%s'", message.group)
 
             except UnknownConverterError, e:
                 self.__logger.exception("Unable to deserialize message: %s", e)
@@ -264,7 +264,7 @@ class SpreadPort(rsb.transport.Port):
 
     def activate(self):
         if self.__connection == None:
-            self.__logger.info("Activating spread port with daemon name %s" % self.__daemonName)
+            self.__logger.info("Activating spread port with daemon name %s", self.__daemonName)
 
             self.__connection = self.__spreadModule.connect(self.__daemonName)
 
@@ -296,7 +296,7 @@ class SpreadPort(rsb.transport.Port):
 
     def push(self, event):
 
-        self.__logger.debug("Sending event: %s" % event)
+        self.__logger.debug("Sending event: %s", event)
 
         if self.__connection == None:
             self.__logger.warning("Port not activated")
@@ -315,7 +315,7 @@ class SpreadPort(rsb.transport.Port):
         event.getMetaData().setSendTime()
 
         # build partial messages and send them
-        self.__logger.debug("Sending %u messages" % requiredParts)
+        self.__logger.debug("Sending %u messages", requiredParts)
         for i in range(requiredParts):
 
             # create message
@@ -350,22 +350,22 @@ class SpreadPort(rsb.transport.Port):
 
             serialized = n.SerializeToString()
 
-            self.__logger.debug("Sending part %u with data length %u" % (i + 1, len(dataPart)))
+            self.__logger.debug("Sending part %u with data length %u", i + 1, len(dataPart))
 
             # send message
             # TODO respect QoS
             scopes = event.scope.superScopes(True)
             groupNames = [self.__groupName(scope) for scope in scopes]
-            self.__logger.debug("Sending to scopes %s which are groupNames %s" % (scopes, groupNames))
+            self.__logger.debug("Sending to scopes %s which are groupNames %s", scopes, groupNames)
             sent = self.__connection.multigroup_multicast(self.__msgType, tuple(groupNames), serialized)
             if (sent > 0):
-                self.__logger.debug("Message sent successfully (bytes = %i)" % sent)
+                self.__logger.debug("Message sent successfully (bytes = %i)", sent)
             else:
-                self.__logger.warning("Error sending message, status code = %s" % sent)
+                self.__logger.warning("Error sending message, status code = %s", sent)
 
     def filterNotify(self, filter, action):
 
-        self.__logger.debug("Got filter notification with filter %s and action %s" % (filter, action))
+        self.__logger.debug("Got filter notification with filter %s and action %s", filter, action)
 
         if self.__connection == None:
             raise RuntimeError("SpreadPort not activated")
@@ -381,7 +381,7 @@ class SpreadPort(rsb.transport.Port):
                 if not groupName in self.__groupNameSubscribers:
                     self.__connection.join(groupName)
                     self.__groupNameSubscribers[groupName] = 1
-                    self.__logger.info("joined group '%s'" % groupName)
+                    self.__logger.info("joined group '%s'", groupName)
                 else:
                     self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] + 1
 
@@ -389,7 +389,7 @@ class SpreadPort(rsb.transport.Port):
                 # leave group if no more subscriptions exist
 
                 if not groupName in self.__groupNameSubscribers:
-                    self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed" % filter.getScope())
+                    self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed", filter.getScope())
                     return
 
                 assert(self.__groupNameSubscribers[groupName] > 0)
@@ -400,25 +400,25 @@ class SpreadPort(rsb.transport.Port):
                     del self.__groupNameSubscribers[groupName]
 
             else:
-                self.__logger.warning("Received unknown filter action %s for filter %s" % (action, filter))
+                self.__logger.warning("Received unknown filter action %s for filter %s", action, filter)
 
         else:
-            self.__logger.debug("Ignoring filter %s with action %s" % (filter, action))
+            self.__logger.debug("Ignoring filter %s with action %s", filter, action)
 
     def setQualityOfServiceSpec(self, qos):
-        self.__logger.debug("Adapting service type for QoS %s" % qos)
+        self.__logger.debug("Adapting service type for QoS %s", qos)
         if qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.UNRELIABLE_MESS
-            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s" % self.__msgType)
+            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s", self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s" % self.__msgType)
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.RELIABLE_MESS
-            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s" % self.__msgType)
+            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s", self.__msgType)
         elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s" % self.__msgType)
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
         else:
             assert(False)
 
@@ -428,4 +428,4 @@ class SpreadPort(rsb.transport.Port):
             self.__logger.debug("Passing observer to receive task")
             self.__receiveTask.setObserverAction(observerAction)
         else:
-            self.__logger.warn("Ignoring observer action %s because there is no dispatch task" % observerAction)
+            self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
