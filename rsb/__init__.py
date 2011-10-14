@@ -383,6 +383,8 @@ class Scope(object):
         '''
         return copy.copy(self.__components)
 
+    components = property(getComponents)
+
     def toString(self):
         '''
         Reconstructs a fully formal string representation of the scope with
