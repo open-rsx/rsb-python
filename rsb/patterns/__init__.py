@@ -222,25 +222,29 @@ class LocalMethod (Method):
                             .concat(rsb.Scope('/' + self.name)),
                             object)
 
-    def _handleRequest(self, arg):
-        if arg.method is None or arg.method != 'REQUEST':
+    def _handleRequest(self, request):
+        if request.method is None or request.method != 'REQUEST':
             return
-        userInfos = { 'rsb:reply': str(arg.id.getAsUUID()) }
+        userInfos = { 'rsb:reply': str(request.id.getAsUUID()) }
         try:
-            result = self._func(arg.data)
-            # this check is required because the reply informer is created with
-            # type 'object' to enable throwing exceptions
-            if not isinstance(result, self.replyType):
-                raise ValueError("The result '%s' of method %s does not match the method's declared return type %s."
-                             % (result, self.name, self.replyType))
+            result = self._func(request.data)
         except Exception, e:
             userInfos['rsb:error?'] = '1'
             result = str(e)
-        reply = rsb.Event(scope     = self.informer.scope,
-                          method    = 'REPLY',
-                          data      = result,
-                          type      = type(result),
-                          userInfos = userInfos)
+
+        if isinstance(result, rsb.Event):
+            reply = result
+        else:
+            # this check is required because the reply informer is
+            # created with type 'object' to enable throwing exceptions
+            if not isinstance(result, self.replyType):
+                raise ValueError("The result '%s' (of type %s) of method %s does not match the method's declared return type %s."
+                                 % (result, type(result), self.name, self.replyType))
+            reply = rsb.Event(scope     = self.informer.scope,
+                              method    = 'REPLY',
+                              data      = result,
+                              type      = type(result),
+                              userInfos = userInfos)
         self.informer.publishEvent(reply)
 
 class LocalServer (Server):
