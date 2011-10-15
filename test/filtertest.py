@@ -16,8 +16,10 @@
 # ============================================================
 
 import unittest
+import uuid
 import rsb
 from rsb import Scope
+import rsb.filter
 
 class ScopeFilterTest(unittest.TestCase):
 
@@ -36,8 +38,25 @@ class ScopeFilterTest(unittest.TestCase):
         e.scope = Scope("/blubbbbbb")
         self.assertFalse(f.match(e))
 
+class OriginFilterTest (unittest.TestCase):
+    def testMatch(self):
+        senderId1 = uuid.uuid1()
+        e1 = rsb.Event(id = rsb.EventId(participantId  = senderId1,
+                                        sequenceNumber = 0))
+        senderId2 = uuid.uuid1()
+        e2 = rsb.Event(id = rsb.EventId(participantId  = senderId2,
+                                        sequenceNumber = 1))
+
+        f = rsb.filter.OriginFilter(origin = senderId1)
+        self.assertTrue(f.match(e1))
+        self.assertFalse(f.match(e2))
+
+        f = rsb.filter.OriginFilter(origin = senderId1, invert = True)
+        self.assertFalse(f.match(e1))
+        self.assertTrue(f.match(e2))
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OriginFilterTest))
     return suite
-
