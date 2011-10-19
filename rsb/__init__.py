@@ -770,7 +770,7 @@ class Event(object):
         """
 
         self.__id = id
-        self.__scope = scope
+        self.__scope = Scope.ensureScope(scope)
         self.__method = method
         self.__data = data
         self.__type = type
