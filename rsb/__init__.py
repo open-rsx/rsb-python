@@ -741,7 +741,7 @@ class Event(object):
 
     def __init__(self, id = None, scope = Scope("/"), method = None,
                  data = None, type = None,
-                 metaData=None, userInfos=None, userTimes=None):
+                 metaData=None, userInfos=None, userTimes=None, causes = None):
         """
         Constructs a new event with undefined type, root scope and no data.
 
@@ -764,6 +764,9 @@ class Event(object):
         @type userInfos: dict
         @param userTimes:
         @type userTime: dict
+        @param causes: A set of L{EventId}s of events which causes the
+                       newly constructed events.
+        @type causes: set
         """
 
         self.__id = id
@@ -781,7 +784,8 @@ class Event(object):
         if not userTimes is None:
             for (key, value) in userTimes.items():
                 self.__metaData.getUserTimes()[key] = value
-        self.__causes = []
+        if not causes is None:
+            self.__causes = copy.copy(causes)
 
     def getSequenceNumber(self):
         """
