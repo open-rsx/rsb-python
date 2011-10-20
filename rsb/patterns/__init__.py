@@ -225,7 +225,8 @@ class LocalMethod (Method):
     def _handleRequest(self, request):
         if request.method is None or request.method != 'REQUEST':
             return
-        userInfos = { 'rsb:reply': str(request.id.getAsUUID()) }
+        userInfos = {}
+        causes    = [ request.id ]
         try:
             result = self._func(request.data)
         except Exception, e:
@@ -234,6 +235,7 @@ class LocalMethod (Method):
 
         if isinstance(result, rsb.Event):
             reply = result
+            reply.causes += causes
         else:
             # this check is required because the reply informer is
             # created with type 'object' to enable throwing exceptions
@@ -244,7 +246,8 @@ class LocalMethod (Method):
                               method    = 'REPLY',
                               data      = result,
                               type      = type(result),
-                              userInfos = userInfos)
+                              userInfos = userInfos,
+                              causes    = causes)
         self.informer.publishEvent(reply)
 
 class LocalServer (Server):
@@ -328,9 +331,11 @@ class RemoteMethod (Method):
                             self.requestType)
 
     def _handleReply(self, event):
-        if event.method is None or event.method != 'REPLY':
+        if event.method is None            \
+                or event.method != 'REPLY' \
+                or not event.causes:
             return
-        key = uuid.UUID(event.metaData.userInfos['rsb:reply'])
+        key = event.causes[0]
         with self._lock:
             # We can receive reply events which aren't actually
             # intended for us. We ignore these.
@@ -427,7 +432,7 @@ class RemoteMethod (Method):
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)
-                self._calls[event.id.getAsUUID()] = result
+                self._calls[event.id] = result
         except Exception, e:
             raise RemoteCallError(self.server.scope, self, message = repr(e))
         return result
