@@ -764,9 +764,9 @@ class Event(object):
         @type userInfos: dict
         @param userTimes:
         @type userTime: dict
-        @param causes: A set of L{EventId}s of events which causes the
+        @param causes: A list of L{EventId}s of events which causes the
                        newly constructed events.
-        @type causes: set
+        @type causes: list
         """
 
         self.__id = id
@@ -786,6 +786,8 @@ class Event(object):
                 self.__metaData.getUserTimes()[key] = value
         if not causes is None:
             self.__causes = copy.copy(causes)
+        else:
+            self.__causes = []
 
     def getSequenceNumber(self):
         """
