@@ -15,7 +15,12 @@
 #
 # ============================================================
 
+import logging
+
 import unittest
+
+import rsb
+
 import coretest
 import eventprocessingtest
 import filtertest
@@ -25,13 +30,18 @@ import convertertest
 import utiltest
 import patternstest
 
-import logging
-
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
+class ConfigSettingTestSuite (unittest.TestSuite):
+    def run(self, *args):
+        rsb.getDefaultParticipantConfig()
+        rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromFile('test/with-spread.conf'))
+
+        super(ConfigSettingTestSuite, self).run(*args)
+
 def suite():
-    suite = unittest.TestSuite()
+    suite = ConfigSettingTestSuite()
     suite.addTest(coretest.suite())
     suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())

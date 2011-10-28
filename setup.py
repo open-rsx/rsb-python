@@ -227,12 +227,14 @@ class Test(setuptools.command.test.test):
     @author: jwienke
     """
 
-    user_options = setuptools.command.test.test.user_options + [('spread=', 'd',
-                     "spread executable to use")]
+    user_options = setuptools.command.test.test.user_options \
+        + [ ('spread=',     'd', "spread executable to use"),
+            ('spreadport=', 'p', "port the spread daemon should use") ]
 
     def initialize_options(self):
         setuptools.command.test.test.initialize_options(self)
-        self.spread = None
+        self.spread     = None
+        self.spreadport = 4803
 
     def finalize_options(self):
         setuptools.command.test.test.finalize_options(self)
@@ -244,6 +246,11 @@ class Test(setuptools.command.test.test):
     def run(self):
         self.run_command('build')
 
+        with open('test/with-spread.conf', 'w') as f:
+            f.write('[transport.spread]\nenabled = 1\nport = %s\n' % self.spreadport)
+        with open('test/spread.conf', 'w') as f:
+            f.write('Spread_Segment 127.0.0.255:%s {\nlocalhost	127.0.0.1\n}\nSocketPortReuse = ON\n'
+                    % self.spreadport)
         spread = None
         if self.spread:
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
