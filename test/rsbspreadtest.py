@@ -20,7 +20,7 @@ import unittest
 import rsb.rsbspread
 import rsb.filter
 from threading import Condition
-from rsb.rsbspread import SpreadPort
+from rsb.rsbspread import SpreadConnector
 from rsb.filter import ScopeFilter, FilterAction
 from rsb import Event, Informer, Listener, Scope, EventId
 from rsb.transport.converter import getGlobalConverterMap
@@ -47,7 +47,7 @@ class SettingReceiver(object):
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.scope)
 
-class SpreadPortTest(unittest.TestCase):
+class SpreadConnectorTest(unittest.TestCase):
 
     class DummyMessage:
         pass
@@ -87,7 +87,7 @@ class SpreadPortTest(unittest.TestCase):
         def multicast(self, type, group, message):
             print("Got multicast for group %s with message %s" % (group, message))
             self.__cond.acquire()
-            self.__lastMessage = SpreadPortTest.DummyMessage()
+            self.__lastMessage = SpreadConnectorTest.DummyMessage()
             self.__lastMessage.groups = [group]
             self.__cond.notify()
             self.__cond.release()
@@ -98,48 +98,48 @@ class SpreadPortTest(unittest.TestCase):
             self.returnedConnections = []
 
         def connect(self, daemon=None):
-            c = SpreadPortTest.DummyConnection()
+            c = SpreadConnectorTest.DummyConnection()
             self.returnedConnections.append(c)
             return c
 
     def testActivate(self):
-        dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
+        dummySpread = SpreadConnectorTest.DummySpread()
+        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
-        port.activate()
+        connector.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
 
         # second activation must not do anything
-        port.activate()
+        connector.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
-        port.deactivate()
+        connector.deactivate()
 
     def testDeactivate(self):
-        dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
+        dummySpread = SpreadConnectorTest.DummySpread()
+        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
-        port.activate()
+        connector.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
-        port.deactivate()
+        connector.deactivate()
         self.assertEqual(1, connection.disconnectCalls)
 
         # second activation must not do anything
-        port.deactivate()
+        connector.deactivate()
         self.assertEqual(1, connection.disconnectCalls)
 
     def testSpreadSubscription(self):
-        dummySpread = SpreadPortTest.DummySpread()
-        port = rsb.rsbspread.SpreadPort(converterMap=getGlobalConverterMap(bytearray),
+        dummySpread = SpreadConnectorTest.DummySpread()
+        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
                                         spreadModule=dummySpread)
-        port.activate()
+        connector.activate()
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
         s1 = Scope("/xxx")
         f1 = rsb.filter.ScopeFilter(s1)
-        port.filterNotify(f1, rsb.filter.FilterAction.ADD)
+        connector.filterNotify(f1, rsb.filter.FilterAction.ADD)
 
         hasher = hashlib.md5()
         hasher.update(s1.toString())
@@ -148,30 +148,31 @@ class SpreadPortTest(unittest.TestCase):
 
         connection.clear()
 
-        port.filterNotify(f1, rsb.filter.FilterAction.ADD)
+        connector.filterNotify(f1, rsb.filter.FilterAction.ADD)
         self.assertEqual(0, len(connection.joinCalls))
 
         connection.clear()
 
-        port.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
+        connector.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
         self.assertEqual(0, len(connection.leaveCalls))
-        port.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
+        connector.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
         self.assertEqual(1, len(connection.leaveCalls))
         self.assertTrue(hashed in connection.leaveCalls)
 
-        port.deactivate()
+        connector.deactivate()
 
     def testRoundtrip(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        port.activate()
+        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        connector.activate()
 
         goodScope = Scope("/good")
         receiver = SettingReceiver(goodScope)
-        port.setObserverAction(receiver)
+        connector.setObserverAction(receiver)
 
         filter = ScopeFilter(goodScope)
 
-        port.filterNotify(filter, FilterAction.ADD)
+        connector.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -179,25 +180,28 @@ class SpreadPortTest(unittest.TestCase):
         event.data = "dummy data"
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        port.push(event)
+        connector.push(event)
 
         # and then a desired event
         event.scope = goodScope
-        port.push(event)
+        connector.push(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
+            self.assertTrue(receiver.resultEvent)
             # ignore meta data here
             event.setMetaData(None)
             receiver.resultEvent.setMetaData(None)
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        inconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                      options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        outconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                       options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
 
-        outRouter = Router(outPort=outport)
-        inRouter = Router(inPort=inport)
+        outRouter = Router(outPort=outconnector)
+        inRouter = Router(inPort=inconnector)
 
         scope = Scope("/test/it")
         publisher = Informer(scope, str, router=outRouter)
@@ -237,8 +241,9 @@ class SpreadPortTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        outRouter = Router(outPort=outport)
+        outconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                       options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        outRouter = Router(outPort=outconnector)
         informer = Informer(sendScope, str, router=outRouter)
 
         # set up listeners on the complete hierarchy
@@ -246,8 +251,9 @@ class SpreadPortTest(unittest.TestCase):
         receivers = []
         for scope in superScopes:
 
-            inport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-            inRouter = Router(inPort=inport)
+            inconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                          options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+            inRouter = Router(inPort=inconnector)
 
             listener = Listener(scope, router=inRouter)
             listeners.append(listener)
@@ -269,16 +275,17 @@ class SpreadPortTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        port.activate()
+        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        connector.activate()
 
         goodScope = Scope("/good")
         receiver = SettingReceiver(goodScope)
-        port.setObserverAction(receiver)
+        connector.setObserverAction(receiver)
 
         filter = ScopeFilter(goodScope)
 
-        port.filterNotify(filter, FilterAction.ADD)
+        connector.filterNotify(filter, FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -286,11 +293,11 @@ class SpreadPortTest(unittest.TestCase):
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        port.push(event)
+        connector.push(event)
 
         # and then a desired event
         event.scope = goodScope
-        port.push(event)
+        connector.push(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
@@ -300,8 +307,9 @@ class SpreadPortTest(unittest.TestCase):
 
     def testSendTimeAdaption(self):
 
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        port.activate()
+        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
+                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        connector.activate()
 
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
@@ -310,7 +318,7 @@ class SpreadPortTest(unittest.TestCase):
         event.metaData.senderId = uuid.uuid4()
 
         before = time.time()
-        port.push(event)
+        connector.push(event)
         after = time.time()
 
         self.assertTrue(event.getMetaData().getSendTime() >= before)
@@ -318,5 +326,5 @@ class SpreadPortTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadPortTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadConnectorTest))
     return suite

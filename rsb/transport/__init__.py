@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+#               2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This program is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General
@@ -16,27 +17,25 @@
 # ============================================================
 
 import logging
-
-import rsb.filter
-import converter
-
-from Queue import Queue, Empty
-from rsb import util
-from rsb.util import getLoggerByClass
 from threading import RLock
 
-class Port(object):
+import converter
+
+from rsb import util
+from rsb.util import getLoggerByClass
+
+class Connector(object):
     """
-    Interface for transport-specific ports.
+    Interface for transport-specific connectors.
 
     @author: jwienke
     """
 
     def __init__(self, wireType, converterMap):
         """
-        Creates a new port with a serialization type wireType.
+        Creates a new connector with a serialization type wireType.
 
-        @param wireType: the type of serialized data used by this port.
+        @param wireType: the type of serialized data used by this connector.
         @param converterMap: map of converters to use. If None, the global
                              map of converters for the selected targetType is
                              used
@@ -54,7 +53,7 @@ class Port(object):
 
     def getWireType(self):
         """
-        Returns the serialization type used for this port.
+        Returns the serialization type used for this connector.
 
         @return: python serialization type
         """
@@ -89,27 +88,32 @@ class Port(object):
 
     def activate(self):
         raise NotImplementedError()
+
     def deactivate(self):
         raise NotImplementedError()
+
     def publish(self, event):
         """
         Sends the specified event and adapts its meta data instance with the
         actual send time.
-        
+
         @param event: event to send
         """
         raise NotImplementedError()
+
     def filterNotify(self, filter, action):
         raise NotImplementedError()
+
     def setQualityOfServiceSpec(self, qos):
         raise NotImplementedError()
 
     def setObserverAction(self, observerAction):
         """
-        Sets the action used by the port to notify about incomming events.
-        The call to this method must be thread-safe.
+        Sets the action used by the connector to notify about incoming
+        events. The call to this method must be thread-safe.
 
-        @param observerAction: action called if a new message is received from
-                               the port. Must accept an RSBEvent as parameter.
+        @param observerAction: action called if a new message is
+                               received from the connector. Must
+                               accept an L{Event} as parameter.
         """
         pass

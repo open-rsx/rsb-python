@@ -215,7 +215,7 @@ class SpreadReceiverTask(object):
         with self.__observerActionLock:
             self.__observerAction = action
 
-class SpreadPort(rsb.transport.Port):
+class SpreadConnector(rsb.transport.Connector):
     """
     Spread-based implementation of a connector.
 
@@ -225,7 +225,7 @@ class SpreadPort(rsb.transport.Port):
     __MAX_MSG_LENGTH = 100000
 
     def __init__(self, converterMap, options={}, spreadModule=spread):
-        super(SpreadPort, self).__init__(bytearray, converterMap)
+        super(SpreadConnector, self).__init__(bytearray, converterMap)
         host = options.get('host', None)
         port = options.get('port', '4803')
         if host:
@@ -290,9 +290,7 @@ class SpreadPort(rsb.transport.Port):
         # Create one or more notification fragments for the event
         event.getMetaData().setSendTime()
         converter = self._getConverterForDataType(event.type)
-        self.__logger.warning('computing fragments...')
         fragments = conversion.eventToNotifications(event, converter, self.__MAX_MSG_LENGTH)
-        self.__logger.warning('fragments %s', fragments)
 
         # Send fragments
         self.__logger.debug("Sending %u fragments", len(fragments))
