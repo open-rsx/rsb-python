@@ -164,14 +164,22 @@ class ParticipantConfig (object):
         def getName(self):
             return self.__name
 
+        name = property(getName)
+
         def isEnabled(self):
             return self.__enabled
+
+        enabled = property(isEnabled)
 
         def getConverters(self):
             return self.__converters
 
+        converters = property(getConverters)
+
         def getOptions(self):
             return self.__options
+
+        options = property(getOptions)
 
         def __str__(self):
             return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, options = %s]'
@@ -180,14 +188,27 @@ class ParticipantConfig (object):
         def __repr__(self):
             return str(self)
 
-    def __init__(self, transports={}, options={}, qos=QualityOfServiceSpec()):
-        self.__transports = transports
-        self.__options = options
-        self.__qos = qos
+    def __init__(self, transports=None, options=None, qos=None):
+        if transports is None:
+            self.__transports = {}
+        else:
+            self.__transports = transports
+
+        if options is None:
+            self.__options = {}
+        else:
+            self.__options = options
+
+        if qos is None:
+            self.__qos = QualityOfServiceSpec()
+        else:
+            self.__qos = qos
 
     def getTransports(self, includeDisabled=False):
         return [ t for t in self.__transports.values()
                  if includeDisabled or t.isEnabled() ]
+
+    transports = property(getTransports)
 
     def getTransport(self, name):
         return self.__transports[name]
@@ -1038,6 +1059,24 @@ class Participant(object):
 
     scope = property(getScope, setScope)
 
+    @classmethod
+    def getConnector(clazz, config):
+        if len(config.getTransports()) == 0:
+            raise ValueError, 'No transports specified (config is %s)' \
+                % config
+        if len(config.getTransports()) > 1:
+            raise ValueError, 'Multiple transports are not supported, yet (config has %d transports, config is %s)' \
+                % (len(config.getTransports()), config)
+
+        transport = config.getTransports()[0]
+        if transport.getName() == 'spread':
+            from rsbspread import SpreadConnector
+            klass = SpreadConnector
+        else:
+            raise ValueError, 'No such transport "%s"' % transport.getName()
+        return klass(converterMap = transport.getConverters(),
+                     options      = transport.getOptions())
+
 class Informer(Participant):
     """
     Event-sending part of the communication pattern.
@@ -1046,8 +1085,8 @@ class Informer(Participant):
     """
 
     def __init__(self, scope, type,
-                 config=ParticipantConfig.fromDefaultSources(),
-                 router=None):
+                 config = None,
+                 router = None):
         """
         Constructs a new L{Informer} that publishes L{Event}s carrying
         payloads of type B{type} on B{scope}.
@@ -1064,19 +1103,19 @@ class Informer(Participant):
         """
         super(Informer, self).__init__(scope)
 
-        from rsbspread import SpreadPort
-        from eventprocessing import Router
-
         self.__logger = getLoggerByClass(self.__class__)
+
+        if config is None:
+            config = getDefaultParticipantConfig()
 
         if router:
             self.__router = router
         else:
-            transport = config.getTransport('spread')
-            port = SpreadPort(converterMap=transport.getConverters(),
-                              options=transport.getOptions())
-            port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__router = Router(outPort=port)
+            from eventprocessing import Router
+
+            connector = self.getConnector(config)
+            connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__router = Router(outPort=connector)
         self.__router.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         # TODO check that type can be converted
         self.__type = type
@@ -1163,8 +1202,8 @@ class Listener(Participant):
     """
 
     def __init__(self, scope,
-                 config=ParticipantConfig.fromDefaultSources(),
-                 router=None):
+                 config = None,
+                 router = None):
         """
         Create a new L{Listener} for B{scope}.
 
@@ -1173,19 +1212,19 @@ class Listener(Participant):
         """
         super(Listener, self).__init__(scope)
 
-        from rsbspread import SpreadPort
-        from eventprocessing import Router
-
         self.__logger = getLoggerByClass(self.__class__)
+
+        if config is None:
+            config = getDefaultParticipantConfig()
 
         if router:
             self.__router = router
         else:
-            transport = config.getTransport('spread')
-            port = SpreadPort(converterMap=transport.getConverters(),
-                              options=transport.getOptions())
-            port.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__router = Router(inPort=port)
+            from eventprocessing import Router
+
+            connector = self.getConnector(config)
+            connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__router = Router(inPort=connector)
 
         self.__mutex = threading.Lock()
         self.__active = False
@@ -1298,17 +1337,16 @@ def setDefaultParticipantConfig(config):
 
     @param config: A ParticipantConfig object which contains the new defaults.
     """
+    global __defaultParticipantConfig
     __defaultParticipantConfig = config
 
-def createListener(scope, config=None):
+def createListener(scope, config = None):
     """
     Creates a new Listener for the specified scope.
 
     @param scope: the scope of the new Listener. Can be a Scope object or a string.
     @return: a new Listener object.
     """
-    if config is None:
-        config = __defaultParticipantConfig
     return Listener(Scope.ensureScope(scope), config)
 
 def createInformer(scope, config=None, dataType=object):
@@ -1321,8 +1359,6 @@ def createInformer(scope, config=None, dataType=object):
                      to select converters
     @return: a new Informer object.
     """
-    if config is None:
-        config = __defaultParticipantConfig
     return Informer(Scope.ensureScope(scope), dataType, config)
 
 def createService(scope):
