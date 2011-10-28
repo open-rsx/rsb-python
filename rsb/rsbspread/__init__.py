@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+#               2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This program is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General
@@ -16,23 +17,25 @@
 # ============================================================
 
 import threading
+from threading import RLock
 import uuid
-
-import spread
-
-import rsb.filter
-import rsb.transport
-from Protocol_pb2 import Notification, MetaData
-from google.protobuf.message import DecodeError
-from rsb.util import getLoggerByClass, unixMicrosecondsToTime
-from rsb import Event, Scope, QualityOfServiceSpec, EventId
-from rsb.transport.converter import UnknownConverterError
 import hashlib
 import math
 import logging
 import time
-from rsb.rsbspread.Protocol_pb2 import UserInfo, UserTime
-from threading import RLock
+
+import spread
+
+import rsb
+import rsb.util
+import rsb.filter
+import rsb.transport
+import rsb.transport.converter
+
+from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
+from google.protobuf.message import DecodeError
+
+import conversion
 
 def makeKey(notification):
     key = notification.event_id.sender_id + '%08x' % notification.event_id.sequence_number
@@ -46,22 +49,22 @@ class Assembly(object):
     @author: jwienke
     """
 
-    def __init__(self, notification):
-        self.__requiredParts = notification.num_data_parts
+    def __init__(self, fragment):
+        self.__requiredParts = fragment.num_data_parts
         assert(self.__requiredParts > 1)
-        self.__id = makeKey(notification)
-        self.__parts = {notification.data_part : notification}
+        self.__id    = makeKey(fragment.notification)
+        self.__parts = {fragment.data_part : fragment}
 
-    def add(self, notification):
-        key = makeKey(notification)
+    def add(self, fragment):
+        key = makeKey(fragment.notification)
         assert(key == self.__id)
-        if notification.data_part in self.__parts:
-            raise ValueError("Received part %u for notification with id %s again." % (notification.data_part, key))
+        if fragment.data_part in self.__parts:
+            raise ValueError("Received part %u for notification with id %s again." % (fragment.data_part, key))
 
-        self.__parts[notification.data_part] = notification
+        self.__parts[fragment.data_part] = fragment
 
         if len(self.__parts) == self.__requiredParts:
-            return self.__join()
+            return self.__parts[0].notification, self.__join(), self.__parts[0].notification.wire_schema
         else:
             return None
 
@@ -70,13 +73,13 @@ class Assembly(object):
         keys.sort()
         finalData = bytearray()
         for key in keys:
-            finalData += bytearray(self.__parts[key].data)
+            finalData += bytearray(self.__parts[key].notification.data)
         return finalData
 
 class AssemblyPool(object):
     """
-    Maintains the parallel joining of notfications that are received in an
-    interleaved fashion.
+    Maintains the parallel joining of notification fragments that are
+    received in an interleaved fashion.
 
     @author: jwienke
     """
@@ -84,18 +87,19 @@ class AssemblyPool(object):
     def __init__(self):
         self.__assemblies = {}
 
-    def add(self, notification):
-        if notification.num_data_parts == 1:
-            return bytearray(notification.data)
+    def add(self, fragment):
+        notification = fragment.notification
+        if fragment.num_data_parts == 1:
+            return notification, bytearray(notification.data), notification.wire_schema
         key = makeKey(notification)
         if not key in self.__assemblies:
-            self.__assemblies[key] = Assembly(notification)
+            self.__assemblies[key] = Assembly(fragment)
             return None
         else:
-            result = self.__assemblies[key].add(notification)
+            result = self.__assemblies[key].add(fragment)
             if result != None:
                 del self.__assemblies[key]
-            return result
+                return result
 
 class SpreadReceiverTask(object):
     """
@@ -113,7 +117,7 @@ class SpreadReceiverTask(object):
         @param converterMap: converters for data
         """
 
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__interrupted = False
         self.__interruptionLock = threading.RLock()
@@ -161,40 +165,22 @@ class SpreadReceiverTask(object):
                     if self.__wakeupGroup in message.groups:
                         continue
 
-                    notification = Notification()
-                    notification.ParseFromString(message.message)
+                    fragment = FragmentedNotification()
+                    fragment.ParseFromString(message.message)
+
                     if self.__logger.isEnabledFor(logging.DEBUG):
-                        data = str(notification)
+                        data = str(fragment)
                         if len(data) > 5000:
                             data = data[:5000] + " [... truncated for printing]"
-                        self.__logger.debug("Received notification from bus: %s", data)
+                        self.__logger.debug("Received notification fragment from bus: %s", data)
 
-                    joinedData = self.__assemblyPool.add(notification)
-
-                    if not joinedData is None:
-                        # find a suitable converter
-                        converter = self.__converterMap.getConverterForWireSchema(notification.wire_schema)
-                        # build rsbevent from notification
-                        event = Event(EventId(uuid.UUID(bytes=notification.event_id.sender_id), notification.event_id.sequence_number))
-                        event.scope = Scope(notification.scope)
-                        if notification.HasField("method"):
-                            event.method = notification.method
-                        event.type = converter.getDataType()
-                        event.data = converter.deserialize(joinedData, notification.wire_schema)
-
-                        # meta data
-                        event.metaData.createTime = unixMicrosecondsToTime(notification.meta_data.create_time)
-                        event.metaData.sendTime = unixMicrosecondsToTime(notification.meta_data.send_time)
-                        event.metaData.setReceiveTime()
-                        for info in notification.meta_data.user_infos:
-                            event.metaData.setUserInfo(info.key, info.value)
-                        for time in notification.meta_data.user_times:
-                            event.metaData.setUserTime(time.key, unixMicrosecondsToTime(time.timestamp))
-                        
-                        # causes
-                        for cause in notification.causes:
-                            id = EventId(uuid.UUID(bytes=cause.sender_id), cause.sequence_number)
-                            event.addCause(id)
+                    assembled = self.__assemblyPool.add(fragment)
+                    if assembled:
+                        notification, joinedData, wireSchema = assembled
+                        # Create event from (potentially assembled)
+                        # notification(s)
+                        converter = self.__converterMap.getConverterForWireSchema(wireSchema)
+                        event = conversion.notificationToEvent(notification, joinedData, wireSchema, converter)
 
                         self.__logger.debug("Sending event to dispatch task: %s", event)
 
@@ -206,7 +192,7 @@ class SpreadReceiverTask(object):
                 elif isinstance(message, spread.MembershipMsgType):
                     self.__logger.info("Received membership message for group `%s'", message.group)
 
-            except UnknownConverterError, e:
+            except rsb.transport.converter.UnknownConverterError, e:
                 self.__logger.exception("Unable to deserialize message: %s", e)
             except DecodeError, e:
                 self.__logger.exception("Error decoding notification: %s", e)
@@ -231,7 +217,7 @@ class SpreadReceiverTask(object):
 
 class SpreadPort(rsb.transport.Port):
     """
-    Spread-based implementation of a port.
+    Spread-based implementation of a connector.
 
     @author: jwienke
     """
@@ -248,7 +234,7 @@ class SpreadPort(rsb.transport.Port):
             self.__daemonName = port
 
         self.__spreadModule = spreadModule
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
         self.__connection = None
         self.__groupNameSubscribers = {}
         """
@@ -257,14 +243,14 @@ class SpreadPort(rsb.transport.Port):
         self.__receiveThread = None
         self.__receiveTask = None
         self.__observerAction = None
-        self.setQualityOfServiceSpec(QualityOfServiceSpec())
+        self.setQualityOfServiceSpec(rsb.QualityOfServiceSpec())
 
     def __del__(self):
         self.deactivate()
 
     def activate(self):
         if self.__connection == None:
-            self.__logger.info("Activating spread port with daemon name %s", self.__daemonName)
+            self.__logger.info("Activating spread connector with daemon name %s", self.__daemonName)
 
             self.__connection = self.__spreadModule.connect(self.__daemonName)
 
@@ -275,7 +261,7 @@ class SpreadPort(rsb.transport.Port):
 
     def deactivate(self):
         if self.__connection != None:
-            self.__logger.info("Deactivating spread port")
+            self.__logger.info("Deactivating spread connector")
 
             self.__receiveTask.interrupt()
             self.__receiveThread.join(timeout=1)
@@ -285,9 +271,9 @@ class SpreadPort(rsb.transport.Port):
             self.__connection.disconnect()
             self.__connection = None
 
-            self.__logger.debug("SpreadPort deactivated")
+            self.__logger.debug("SpreadConnector deactivated")
         else:
-            self.__logger.warning("spread port already deactivated")
+            self.__logger.warning("spread connector already deactivated")
 
     def __groupName(self, scope):
         sum = hashlib.md5()
@@ -295,72 +281,36 @@ class SpreadPort(rsb.transport.Port):
         return sum.hexdigest()[:-1]
 
     def push(self, event):
-
         self.__logger.debug("Sending event: %s", event)
 
         if self.__connection == None:
-            self.__logger.warning("Port not activated")
+            self.__logger.warning("Connector not activated")
             return
 
-        # convert data
-        converter = self._getConverterForDataType(event.type)
-        wireData, wireSchema = converter.serialize(event.data)
-
-        # find out the number of required messages
-        if len(wireData) > 0:
-            requiredParts = int(math.ceil(float(len(wireData)) / float(self.__MAX_MSG_LENGTH)))
-        else:
-            requiredParts = 1
-
+        # Create one or more notification fragments for the event
         event.getMetaData().setSendTime()
+        converter = self._getConverterForDataType(event.type)
+        self.__logger.warning('computing fragments...')
+        fragments = conversion.eventToNotifications(event, converter, self.__MAX_MSG_LENGTH)
+        self.__logger.warning('fragments %s', fragments)
 
-        # build partial messages and send them
-        self.__logger.debug("Sending %u messages", requiredParts)
-        for i in range(requiredParts):
+        # Send fragments
+        self.__logger.debug("Sending %u fragments", len(fragments))
+        for (i, fragment) in enumerate(fragments):
+            serialized = fragment.SerializeToString()
+            self.__logger.debug("Sending fragment %u of length %u", i + 1, len(serialized))
 
-            # create message
-            n = Notification()
-            n.event_id.sequence_number = event.sequenceNumber
-            n.scope = event.scope.toString()
-            n.event_id.sender_id = event.senderId.bytes
-            if not event.method is None:
-                n.method = event.method
-            n.wire_schema = wireSchema
-            dataPart = wireData[i * self.__MAX_MSG_LENGTH:i * self.__MAX_MSG_LENGTH + self.__MAX_MSG_LENGTH]
-            n.data = str(dataPart)
-            n.num_data_parts = requiredParts
-            n.data_part = i
-            # add meta-data
-            md = n.meta_data
-            md.create_time = rsb.util.timeToUnixMicroseconds(event.metaData.createTime)
-            md.send_time = rsb.util.timeToUnixMicroseconds(event.metaData.sendTime)
-            for (k, v) in event.metaData.userInfos.items():
-                info = md.user_infos.add()
-                info.key = k
-                info.value = v
-            for (k, v) in event.metaData.userTimes.items():
-                time = md.user_times.add()
-                time.key = k
-                time.timestamp = rsb.util.timeToUnixMicroseconds(v)
-            # causes
-            for cause in event.causes:
-                id = n.causes.add()
-                id.sender_id = cause.participantId.bytes
-                id.sequence_number = cause.sequenceNumber
-
-            serialized = n.SerializeToString()
-
-            self.__logger.debug("Sending part %u with data length %u", i + 1, len(dataPart))
-
-            # send message
+            # send message,,
             # TODO respect QoS
-            scopes = event.scope.superScopes(True)
-            groupNames = [self.__groupName(scope) for scope in scopes]
+            scopes     = event.scope.superScopes(True)
+            groupNames = map(self.__groupName, scopes)
             self.__logger.debug("Sending to scopes %s which are groupNames %s", scopes, groupNames)
+
             sent = self.__connection.multigroup_multicast(self.__msgType, tuple(groupNames), serialized)
             if (sent > 0):
                 self.__logger.debug("Message sent successfully (bytes = %i)", sent)
             else:
+                # TODO(jmoringe): propagate error
                 self.__logger.warning("Error sending message, status code = %s", sent)
 
     def filterNotify(self, filter, action):
@@ -368,7 +318,7 @@ class SpreadPort(rsb.transport.Port):
         self.__logger.debug("Got filter notification with filter %s and action %s", filter, action)
 
         if self.__connection == None:
-            raise RuntimeError("SpreadPort not activated")
+            raise RuntimeError("SpreadConnector not activated")
 
         # scope filter is the only interesting filter
         if (isinstance(filter, rsb.filter.ScopeFilter)):
@@ -407,16 +357,16 @@ class SpreadPort(rsb.transport.Port):
 
     def setQualityOfServiceSpec(self, qos):
         self.__logger.debug("Adapting service type for QoS %s", qos)
-        if qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
+        if qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.UNRELIABLE_MESS
             self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
             self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.UNORDERED:
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.RELIABLE_MESS
             self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == QualityOfServiceSpec.Ordering.ORDERED:
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
             self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
         else:

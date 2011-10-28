@@ -138,7 +138,7 @@ class BuildProtobufs(Command):
                                 "Please specify it's location using the command option or config file.") % protoRoot)
 
         # create output directory
-        outdir = "rsb/rsbspread"
+        outdir = "."
         try:
             os.makedirs(outdir)
         except os.error:
@@ -152,6 +152,8 @@ class BuildProtobufs(Command):
             ret = subprocess.call(call)
             if ret != 0:
                 raise RuntimeError("Unable to build proto file: %s" % proto)
+        with open('rsb/protocol/__init__.py', 'w'):
+            pass
 
 class Coverage(Command):
     """
