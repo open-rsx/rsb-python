@@ -150,19 +150,31 @@ class Server (rsb.Participant):
     @author: jmoringe
     """
 
-    def __init__(self, scope):
+    def __init__(self, scope, config = None):
         """
         Create a new Server object that provides its methods under the
         scope B{scope}.
 
         @param scope: The under which methods of the server are
                       provided.
+        @param config: The transport configuration that should be used
+                       for communication performed by this server.
+        @type config: ParticipantConfig
         """
         super(Server, self).__init__(scope)
+        if config is None:
+            self.__config = rsb.getDefaultParticipantConfig()
+        else:
+            self.__config = config
         self._methods = {}
 
     def __del__(self):
         self.deactivate
+
+    def getConfig(self):
+        return self.__config
+
+    config = property(getConfig)
 
     def getMethods(self):
         return self._methods.values()
@@ -212,7 +224,8 @@ class LocalMethod (Method):
     def makeListener(self):
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/request"))
-                                .concat(rsb.Scope('/' + self.name)))
+                                .concat(rsb.Scope('/' + self.name)),
+                                self.server.config)
         listener.addHandler(self._handleRequest)
         return listener
 
@@ -220,7 +233,8 @@ class LocalMethod (Method):
         return rsb.Informer(self.server.scope
                             .concat(rsb.Scope("/reply"))
                             .concat(rsb.Scope('/' + self.name)),
-                            object)
+                            object,
+                            config = self.server.config)
 
     def _handleRequest(self, request):
         if request.method is None or request.method != 'REQUEST':
@@ -258,7 +272,7 @@ class LocalServer (Server):
 
     @author: jmoringe
     """
-    def __init__(self, scope):
+    def __init__(self, scope, config = None):
         """
         Creates a new L{LocalServer} object that exposes methods under
         a the scope B{scope}.
@@ -266,10 +280,13 @@ class LocalServer (Server):
         @param scope: The scope under which the methods of the newly
                       created server should be provided.
         @type scope: Scope
+        @param config: The transport configuration that should be used
+        for communication performed by this server.
+        @type config: ParticipantConfig
 
         See also: L{createServer}
         """
-        super(LocalServer, self).__init__(scope)
+        super(LocalServer, self).__init__(scope, config)
 
     def addMethod(self, name, func, requestType = object, replyType = object):
         """
@@ -320,7 +337,8 @@ class RemoteMethod (Method):
     def makeListener(self):
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/reply"))
-                                .concat(rsb.Scope('/' + self.name)))
+                                .concat(rsb.Scope('/' + self.name)),
+                                self.server.config)
         listener.addHandler(self._handleReply)
         return listener
 
@@ -328,7 +346,8 @@ class RemoteMethod (Method):
         return rsb.Informer(self.server.scope
                             .concat(rsb.Scope("/request"))
                             .concat(rsb.Scope('/' + self.name)),
-                            self.requestType)
+                            self.requestType,
+                            config = self.server.config)
 
     def _handleReply(self, event):
         if event.method is None            \
@@ -451,7 +470,7 @@ class RemoteServer (Server):
 
     @author: jmoringe
     """
-    def __init__(self, scope):
+    def __init__(self, scope, config = None):
         """
         Create a new L{RemoteServer} object that provides its methods
         under the scope B{scope}.
@@ -459,10 +478,13 @@ class RemoteServer (Server):
         @param scope: The common super-scope under which the methods
         of the remote created server are provided.
         @type scope: Scope
+        @param config: The transport configuration that should be used
+        for communication performed by this server.
+        @type config: ParticipantConfig
 
         See also: L{createRemoteServer}
         """
-        super(RemoteServer, self).__init__(scope)
+        super(RemoteServer, self).__init__(scope, config)
 
     def __getattr__(self, name):
         try:

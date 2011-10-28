@@ -1370,7 +1370,8 @@ def createService(scope):
     """
     raise RuntimeError, "not implemented"
 
-def createServer(scope, object = None, expose = None, methods = None):
+def createServer(scope, object = None, expose = None, methods = None,
+                 config = None):
     """
     Create and return a new L{LocalServer} object that exposes its
     methods under B{scope}.
@@ -1382,6 +1383,9 @@ def createServer(scope, object = None, expose = None, methods = None):
     @param scope: The scope under which the newly created server
                   should expose its methods.
     @type scope: Scope
+    @param config: The transport configuration that should be used
+                   for communication performed by this server.
+    @type config: ParticipantConfig
     @param object: An object the methods of which should be exposed
                    via the newly created server. Has to be supplied in
                    combination with the expose keyword parameter.
@@ -1415,7 +1419,7 @@ def createServer(scope, object = None, expose = None, methods = None):
             server.addMethod(name, func, requestType, replyType)
     return server
 
-def createRemoteServer(scope):
+def createRemoteServer(scope, config = None):
     """
     Create a new L{RemoteServer} object for a remote server that
     provides its methods under B{scope}.
@@ -1424,7 +1428,10 @@ def createRemoteServer(scope):
                   methods.
     @type scope: Scope
     @return: A newly created L{RemoteServer} object.
+    @param config: The transport configuration that should be used
+                   for communication performed by this server.
+    @type config: ParticipantConfig
     @rtype: rsb.patterns.RemoteServer
     """
     import rsb.patterns
-    return rsb.patterns.RemoteServer(scope)
+    return rsb.patterns.RemoteServer(scope, config)
