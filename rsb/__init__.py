@@ -30,9 +30,9 @@ class QualityOfServiceSpec(object):
     '''
     Specification of desired quality of service settings for sending
     and receiving events. Specification given here are required "at
-    least". This means concrete port instances can implement "better"
-    QoS specs without any notification to the clients. Better is
-    decided by the integer value of the specification enums. Higher
+    least". This means concrete connector implementations can provide
+    "better" QoS specs without any notification to the clients. Better
+    is decided by the integer value of the specification enums. Higher
     values mean better services.
 
     @author: jwienke
