@@ -94,10 +94,12 @@ def eventToNotifications(event, converter, maxFragmentSize):
                 id.sequence_number = cause.sequenceNumber
 
         # Add data fragment
+        # We reserve at least 5 bytes for the payload: up to 4 bytes
+        # for the field header and one byte for the payload data.
         room = maxFragmentSize - fragment.ByteSize()
         if room < 5:
             raise ValueError, 'The event %s cannot be encoded in a notification because the serialized meta-data would not fit into a single fragment' % event
-        fragmentSize = min(room - 4, remaining)
+        fragmentSize = min(room - 4, remaining) # allow for 4 byte field header
         n.data    =  str(wireData[offset:offset + fragmentSize])
         offset    += fragmentSize
         remaining -= fragmentSize
