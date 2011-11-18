@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This program is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General
@@ -17,26 +18,23 @@
 
 import unittest
 
-import rsb.rsbspread
-import rsb.filter
-from threading import Condition
-from rsb.rsbspread import SpreadConnector
-from rsb.filter import ScopeFilter, FilterAction
-from rsb import Event, Informer, Listener, Scope, EventId
-from rsb.transport.converter import getGlobalConverterMap
+import threading
 import hashlib
 import random
 import string
 import uuid
-from rsb.eventprocessing import Router
 import time
-from uuid import uuid4
+
+import rsb.rsbspread
+import rsb.filter
+from rsb import Event, Informer, Listener, Scope, EventId
+from rsb.eventprocessing import Router
 
 class SettingReceiver(object):
 
     def __init__(self, scope):
         self.resultEvent = None
-        self.resultCondition = Condition()
+        self.resultCondition = threading.Condition()
         self.scope = scope
 
     def __call__(self, event):
@@ -56,7 +54,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
         def __init__(self):
             self.clear()
-            self.__cond = Condition()
+            self.__cond = threading.Condition()
             self.__lastMessage = None
 
         def clear(self):
@@ -102,11 +100,23 @@ class SpreadConnectorTest(unittest.TestCase):
             self.returnedConnections.append(c)
             return c
 
+    def __getConnector(self,
+                       clazz    = rsb.rsbspread.Connector,
+                       module   = None,
+                       activate = True):
+        kwargs = {}
+        if module:
+            kwargs['spreadModule'] = module
+        connector = clazz(converterMap = rsb.transport.converter.getGlobalConverterMap(bytearray),
+                          options      = rsb.getDefaultParticipantConfig().getTransport("spread").options,
+                          **kwargs)
+        if activate:
+            connector.activate()
+        return connector
+
     def testActivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                        spreadModule=dummySpread)
-        connector.activate()
+        connector = self.__getConnector(module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
 
         # second activation must not do anything
@@ -116,9 +126,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testDeactivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                        spreadModule=dummySpread)
-        connector.activate()
+        connector = self.__getConnector(module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -131,9 +139,8 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testSpreadSubscription(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = rsb.rsbspread.SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                        spreadModule=dummySpread)
-        connector.activate()
+        connector = self.__getConnector(clazz  = rsb.rsbspread.InConnector,
+                                        module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -162,17 +169,16 @@ class SpreadConnectorTest(unittest.TestCase):
         connector.deactivate()
 
     def testRoundtrip(self):
-        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
-        connector.activate()
+        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
+        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
         goodScope = Scope("/good")
         receiver = SettingReceiver(goodScope)
-        connector.setObserverAction(receiver)
+        inconnector.setObserverAction(receiver)
 
-        filter = ScopeFilter(goodScope)
+        filter = rsb.filter.ScopeFilter(goodScope)
 
-        connector.filterNotify(filter, FilterAction.ADD)
+        inconnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -180,11 +186,11 @@ class SpreadConnectorTest(unittest.TestCase):
         event.data = "dummy data"
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        connector.push(event)
+        outconnector.push(event)
 
         # and then a desired event
         event.scope = goodScope
-        connector.push(event)
+        outconnector.push(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
@@ -195,10 +201,8 @@ class SpreadConnectorTest(unittest.TestCase):
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                      options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
-        outconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                       options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
+        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
         outRouter = Router(outPort=outconnector)
         inRouter = Router(inPort=inconnector)
@@ -220,8 +224,8 @@ class SpreadConnectorTest(unittest.TestCase):
         sentEvent.getMetaData().setUserInfo("test again", "it works?")
         sentEvent.getMetaData().setUserTime("blubb", 234234)
         sentEvent.getMetaData().setUserTime("bla", 3434343.45)
-        sentEvent.addCause(EventId(uuid4(), 1323))
-        sentEvent.addCause(EventId(uuid4(), 42))
+        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
+        sentEvent.addCause(EventId(uuid.uuid4(), 42))
 
         before = time.time()
         publisher.publishEvent(sentEvent)
@@ -241,8 +245,8 @@ class SpreadConnectorTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                       options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+        outconnector = self.__getConnector(clazz    = rsb.rsbspread.OutConnector,
+                                           activate = False)
         outRouter = Router(outPort=outconnector)
         informer = Informer(sendScope, str, router=outRouter)
 
@@ -251,8 +255,8 @@ class SpreadConnectorTest(unittest.TestCase):
         receivers = []
         for scope in superScopes:
 
-            inconnector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                          options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
+            inconnector = self.__getConnector(clazz    = rsb.rsbspread.InConnector,
+                                              activate = False)
             inRouter = Router(inPort=inconnector)
 
             listener = Listener(scope, router=inRouter)
@@ -275,17 +279,16 @@ class SpreadConnectorTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
-        connector.activate()
+        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
+        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
         goodScope = Scope("/good")
         receiver = SettingReceiver(goodScope)
-        connector.setObserverAction(receiver)
+        inconnector.setObserverAction(receiver)
 
-        filter = ScopeFilter(goodScope)
+        filter = rsb.filter.ScopeFilter(goodScope)
 
-        connector.filterNotify(filter, FilterAction.ADD)
+        inconnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -293,11 +296,11 @@ class SpreadConnectorTest(unittest.TestCase):
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        connector.push(event)
+        outconnector.push(event)
 
         # and then a desired event
         event.scope = goodScope
-        connector.push(event)
+        outconnector.push(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
@@ -306,10 +309,7 @@ class SpreadConnectorTest(unittest.TestCase):
             #self.assertEqual(receiver.resultEvent, event)
 
     def testSendTimeAdaption(self):
-
-        connector = SpreadConnector(converterMap=getGlobalConverterMap(bytearray),
-                                    options=rsb.getDefaultParticipantConfig().getTransport("spread").options)
-        connector.activate()
+        connector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")

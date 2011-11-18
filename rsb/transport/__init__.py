@@ -16,17 +16,11 @@
 #
 # ============================================================
 
-import logging
-from threading import RLock
-
-import converter
-
-from rsb import util
 from rsb.util import getLoggerByClass
 
 class Connector(object):
     """
-    Interface for transport-specific connectors.
+    Superclass for transport-specific connector implementations.
 
     @author: jwienke
     """
@@ -58,6 +52,8 @@ class Connector(object):
         @return: python serialization type
         """
         return self.__wireType
+
+    wireType = property(getWireType)
 
     def _getConverterForDataType(self, dataType):
         """
@@ -92,28 +88,43 @@ class Connector(object):
     def deactivate(self):
         raise NotImplementedError()
 
+    def setQualityOfServiceSpec(self, qos):
+        raise NotImplementedError()
+
+class InConnector(Connector):
+    """
+    Superclass for in-direction (that is dealing with incoming events)
+    connector implementations.
+
+    @author: jmoringe
+    """
+
+    def filterNotify(self, filter, action):
+        raise NotImplementedError()
+
+    def setObserverAction(self, action):
+        """
+        Sets the action used by the connector to notify about incoming
+        events. The call to this method must be thread-safe.
+
+        @param action: action called if a new message is received from
+        the connector. Must accept an L{Event} as parameter.
+        """
+        pass
+
+class OutConnector(Connector):
+    """
+    Superclass for out-direction (that is dealing with outgoing
+    events) connector implementations.
+
+    @author: jmoringe
+    """
+
     def publish(self, event):
         """
-        Sends the specified event and adapts its meta data instance with the
+        Sends B{event} and adapts its meta data instance with the
         actual send time.
 
         @param event: event to send
         """
         raise NotImplementedError()
-
-    def filterNotify(self, filter, action):
-        raise NotImplementedError()
-
-    def setQualityOfServiceSpec(self, qos):
-        raise NotImplementedError()
-
-    def setObserverAction(self, observerAction):
-        """
-        Sets the action used by the connector to notify about incoming
-        events. The call to this method must be thread-safe.
-
-        @param observerAction: action called if a new message is
-                               received from the connector. Must
-                               accept an L{Event} as parameter.
-        """
-        pass

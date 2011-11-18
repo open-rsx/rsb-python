@@ -215,17 +215,17 @@ class SpreadReceiverTask(object):
         with self.__observerActionLock:
             self.__observerAction = action
 
-class SpreadConnector(rsb.transport.Connector):
+class Connector(rsb.transport.Connector):
     """
     Spread-based implementation of a connector.
 
     @author: jwienke
     """
 
-    __MAX_MSG_LENGTH = 100000
+    MAX_MSG_LENGTH = 100000
 
     def __init__(self, converterMap, options={}, spreadModule=spread):
-        super(SpreadConnector, self).__init__(bytearray, converterMap)
+        super(Connector, self).__init__(bytearray, converterMap)
         host = options.get('host', None)
         port = options.get('port', '4803')
         if host:
@@ -236,17 +236,23 @@ class SpreadConnector(rsb.transport.Connector):
         self.__spreadModule = spreadModule
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
         self.__connection = None
-        self.__groupNameSubscribers = {}
         """
         A map of scope subscriptions with the list of subscriptions.
         """
-        self.__receiveThread = None
-        self.__receiveTask = None
-        self.__observerAction = None
         self.setQualityOfServiceSpec(rsb.QualityOfServiceSpec())
 
     def __del__(self):
         self.deactivate()
+
+    def getConnection(self):
+        return self.__connection
+
+    connection = property(getConnection)
+
+    def _getMsgType(self):
+        return self.__msgType
+
+    _msgType = property(_getMsgType)
 
     def activate(self):
         if self.__connection == None:
@@ -254,19 +260,9 @@ class SpreadConnector(rsb.transport.Connector):
 
             self.__connection = self.__spreadModule.connect(self.__daemonName)
 
-            self.__receiveTask = SpreadReceiverTask(self.__connection, self.__observerAction, self._getConverterMap())
-            self.__receiveThread = threading.Thread(target=self.__receiveTask)
-            self.__receiveThread.setDaemon(True)
-            self.__receiveThread.start()
-
     def deactivate(self):
         if self.__connection != None:
             self.__logger.info("Deactivating spread connector")
-
-            self.__receiveTask.interrupt()
-            self.__receiveThread.join(timeout=1)
-            self.__receiveThread = None
-            self.__receiveTask = None
 
             self.__connection.disconnect()
             self.__connection = None
@@ -275,83 +271,10 @@ class SpreadConnector(rsb.transport.Connector):
         else:
             self.__logger.warning("spread connector already deactivated")
 
-    def __groupName(self, scope):
+    def _groupName(self, scope):
         sum = hashlib.md5()
         sum.update(scope.toString())
         return sum.hexdigest()[:-1]
-
-    def push(self, event):
-        self.__logger.debug("Sending event: %s", event)
-
-        if self.__connection == None:
-            self.__logger.warning("Connector not activated")
-            return
-
-        # Create one or more notification fragments for the event
-        event.getMetaData().setSendTime()
-        converter = self._getConverterForDataType(event.type)
-        fragments = conversion.eventToNotifications(event, converter, self.__MAX_MSG_LENGTH)
-
-        # Send fragments
-        self.__logger.debug("Sending %u fragments", len(fragments))
-        for (i, fragment) in enumerate(fragments):
-            serialized = fragment.SerializeToString()
-            self.__logger.debug("Sending fragment %u of length %u", i + 1, len(serialized))
-
-            # send message,,
-            # TODO respect QoS
-            scopes     = event.scope.superScopes(True)
-            groupNames = map(self.__groupName, scopes)
-            self.__logger.debug("Sending to scopes %s which are groupNames %s", scopes, groupNames)
-
-            sent = self.__connection.multigroup_multicast(self.__msgType, tuple(groupNames), serialized)
-            if (sent > 0):
-                self.__logger.debug("Message sent successfully (bytes = %i)", sent)
-            else:
-                # TODO(jmoringe): propagate error
-                self.__logger.warning("Error sending message, status code = %s", sent)
-
-    def filterNotify(self, filter, action):
-
-        self.__logger.debug("Got filter notification with filter %s and action %s", filter, action)
-
-        if self.__connection == None:
-            raise RuntimeError("SpreadConnector not activated")
-
-        # scope filter is the only interesting filter
-        if (isinstance(filter, rsb.filter.ScopeFilter)):
-
-            groupName = self.__groupName(filter.getScope());
-
-            if action == rsb.filter.FilterAction.ADD:
-                # join group if necessary, else only increment subscription counter
-
-                if not groupName in self.__groupNameSubscribers:
-                    self.__connection.join(groupName)
-                    self.__groupNameSubscribers[groupName] = 1
-                    self.__logger.info("joined group '%s'", groupName)
-                else:
-                    self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] + 1
-
-            elif action == rsb.filter.FilterAction.REMOVE:
-                # leave group if no more subscriptions exist
-
-                if not groupName in self.__groupNameSubscribers:
-                    self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed", filter.getScope())
-                    return
-
-                assert(self.__groupNameSubscribers[groupName] > 0)
-                self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] - 1
-                if self.__groupNameSubscribers[groupName] == 0:
-                    self.__connection.leave(groupName)
-                    self.__logger.info("left group '%s'" % groupName)
-                    del self.__groupNameSubscribers[groupName]
-
-            else:
-                self.__logger.warning("Received unknown filter action %s for filter %s", action, filter)
-
-        else:
-            self.__logger.debug("Ignoring filter %s with action %s", filter, action)
 
     def setQualityOfServiceSpec(self, qos):
         self.__logger.debug("Adapting service type for QoS %s", qos)
@@ -370,6 +293,75 @@ class SpreadConnector(rsb.transport.Connector):
         else:
             assert(False)
 
+class InConnector(Connector,
+                  rsb.transport.InConnector):
+    def __init__(self, *args, **kwargs):
+        super(InConnector, self).__init__(*args, **kwargs)
+
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__receiveThread = None
+        self.__receiveTask = None
+        self.__observerAction = None
+
+        self.__groupNameSubscribers = {}
+
+    def activate(self):
+        super(InConnector, self).activate()
+
+        self.__receiveTask = SpreadReceiverTask(self.connection, self.__observerAction, self._getConverterMap())
+        self.__receiveThread = threading.Thread(target=self.__receiveTask)
+        self.__receiveThread.setDaemon(True)
+        self.__receiveThread.start()
+
+    def deactivate(self):
+        self.__receiveTask.interrupt()
+        self.__receiveThread.join(timeout=1)
+        self.__receiveThread = None
+        self.__receiveTask = None
+
+        super(InConnector, self).deactivate()
+
+    def filterNotify(self, filter, action):
+        self.__logger.debug("Got filter notification with filter %s and action %s", filter, action)
+
+        if self.connection == None:
+            raise RuntimeError("SpreadConnector not activated")
+
+        # scope filter is the only interesting filter
+        if not isinstance(filter, rsb.filter.ScopeFilter):
+            self.__logger.debug("Ignoring filter %s with action %s", filter, action)
+            return
+
+        groupName = self._groupName(filter.getScope());
+
+        if action == rsb.filter.FilterAction.ADD:
+            # join group if necessary, else only increment subscription counter
+
+            if not groupName in self.__groupNameSubscribers:
+                self.connection.join(groupName)
+                self.__groupNameSubscribers[groupName] = 1
+                self.__logger.info("joined group '%s'", groupName)
+            else:
+                self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] + 1
+
+        elif action == rsb.filter.FilterAction.REMOVE:
+            # leave group if no more subscriptions exist
+
+            if not groupName in self.__groupNameSubscribers:
+                self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed", filter.getScope())
+                return
+
+            assert(self.__groupNameSubscribers[groupName] > 0)
+            self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] - 1
+            if self.__groupNameSubscribers[groupName] == 0:
+                self.connection.leave(groupName)
+                self.__logger.info("left group '%s'" % groupName)
+                del self.__groupNameSubscribers[groupName]
+
+        else:
+            self.__logger.warning("Received unknown filter action %s for filter %s", action, filter)
+
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
         if self.__receiveTask != None:
@@ -377,3 +369,39 @@ class SpreadConnector(rsb.transport.Connector):
             self.__receiveTask.setObserverAction(observerAction)
         else:
             self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
+
+class OutConnector(Connector,
+                   rsb.transport.OutConnector):
+    def __init__(self, *args, **kwargs):
+        super(OutConnector, self).__init__(*args, **kwargs)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+    def push(self, event):
+        self.__logger.debug("Sending event: %s", event)
+
+        if self.connection is None:
+            self.__logger.warning("Connector not activated")
+            return
+
+        # Create one or more notification fragments for the event
+        event.getMetaData().setSendTime()
+        converter = self._getConverterForDataType(event.type)
+        fragments = conversion.eventToNotifications(event, converter, self.MAX_MSG_LENGTH)
+
+        # Send fragments
+        self.__logger.debug("Sending %u fragments", len(fragments))
+        for (i, fragment) in enumerate(fragments):
+            serialized = fragment.SerializeToString()
+            self.__logger.debug("Sending fragment %u of length %u", i + 1, len(serialized))
+
+            # TODO respect QoS
+            scopes     = event.scope.superScopes(True)
+            groupNames = map(self._groupName, scopes)
+            self.__logger.debug("Sending to scopes %s which are groupNames %s", scopes, groupNames)
+
+            sent = self.connection.multigroup_multicast(self._msgType, tuple(groupNames), serialized)
+            if (sent > 0):
+                self.__logger.debug("Message sent successfully (bytes = %i)", sent)
+            else:
+                # TODO(jmoringe): propagate error
+                self.__logger.warning("Error sending message, status code = %s", sent)

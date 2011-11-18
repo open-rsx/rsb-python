@@ -237,7 +237,8 @@ class ParticipantConfig (object):
         # Transport options
         for transport in [ 'spread' ]:
             options = dict(sectionOptions('transport.%s' % transport))
-            result.__transports[transport] = clazz.Transport(transport, options)
+            if options:
+                result.__transports[transport] = clazz.Transport(transport, options)
         return result
 
     @classmethod
@@ -1060,7 +1061,9 @@ class Participant(object):
     scope = property(getScope, setScope)
 
     @classmethod
-    def getConnector(clazz, config):
+    def getConnector(clazz, direction, config):
+        if not direction in ('in', 'out'):
+            raise ValueError, 'invalid direction: %s (valid directions are "in" and "out")' % direction
         if len(config.getTransports()) == 0:
             raise ValueError, 'No transports specified (config is %s)' \
                 % config
@@ -1070,8 +1073,13 @@ class Participant(object):
 
         transport = config.getTransports()[0]
         if transport.getName() == 'spread':
-            from rsbspread import SpreadConnector
-            klass = SpreadConnector
+            import rsbspread
+            if direction == 'in':
+                klass = rsbspread.InConnector
+            elif direction == 'out':
+                klass = rsbspread.OutConnector
+            else:
+                assert(False)
         else:
             raise ValueError, 'No such transport "%s"' % transport.getName()
         return klass(converterMap = transport.getConverters(),
@@ -1113,7 +1121,7 @@ class Informer(Participant):
         else:
             from eventprocessing import Router
 
-            connector = self.getConnector(config)
+            connector = self.getConnector('out', config)
             connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__router = Router(outPort=connector)
         self.__router.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
@@ -1222,7 +1230,7 @@ class Listener(Participant):
         else:
             from eventprocessing import Router
 
-            connector = self.getConnector(config)
+            connector = self.getConnector('in', config)
             connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__router = Router(inPort=connector)
 
