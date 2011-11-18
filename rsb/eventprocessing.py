@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This program is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General
@@ -19,6 +20,46 @@ from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
 import rsb
 from threading import RLock
 from rsb.filter import FilterAction
+
+class BroadcastProcessor (object):
+    """
+    This event processor implements synchronous broadcast dispatch to
+    a list of handlers.
+
+    @author: jmoringe
+    """
+    def __init__(self, handlers = None):
+        if handlers is None:
+            self.__handlers = []
+        else:
+            self.__handlers = handlers
+
+    def getHandlers(self):
+        return self.__handlers
+
+    def addHandler(self, handler):
+        self.__handlers.append(handler)
+
+    def removeHandler(self, handler):
+        self.__handlers.remove(handler)
+
+    handlers = property(getHandlers)
+
+    def __call__(self, event):
+        self.handle(event)
+
+    def handle(self, event):
+        self.dispatch(event)
+
+    def dispatch(self, event):
+        for handler in sefl.handlers:
+            handler(event)
+
+    def __str__(self):
+        return '<%s %d handlers at 0x%x>' \
+            % (type(self).__name__,
+               len(self.handlers),
+               id(self))
 
 class EventProcessor(object):
     """

@@ -235,7 +235,7 @@ class ParticipantConfig (object):
         result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', QualityOfServiceSpec().getOrdering().__str__())))
 
         # Transport options
-        for transport in [ 'spread' ]:
+        for transport in [ 'spread', 'socket' ]:
             options = dict(sectionOptions('transport.%s' % transport))
             if options:
                 result.__transports[transport] = clazz.Transport(transport, options)
@@ -1078,6 +1078,15 @@ class Participant(object):
                 klass = rsbspread.InConnector
             elif direction == 'out':
                 klass = rsbspread.OutConnector
+            else:
+                assert(False)
+        elif transport.getName() == 'socket':
+            import rsb.transport.socket
+            klass = OutConnector
+            if direction == 'in':
+                klass = rsb.transport.socket.InConnector
+            elif direction == 'out':
+                klass = rsb.transport.socket.OutConnector
             else:
                 assert(False)
         else:
