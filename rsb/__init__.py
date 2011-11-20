@@ -1063,7 +1063,7 @@ class Participant(object):
     @classmethod
     def getConnector(clazz, direction, config):
         if not direction in ('in', 'out'):
-            raise ValueError, 'invalid direction: %s (valid directions are "in" and "out")' % direction
+            raise ValueError, 'Invalid direction: %s (valid directions are "in" and "out")' % direction
         if len(config.getTransports()) == 0:
             raise ValueError, 'No transports specified (config is %s)' \
                 % config
@@ -1090,7 +1090,7 @@ class Participant(object):
             else:
                 assert(False)
         else:
-            raise ValueError, 'No such transport "%s"' % transport.getName()
+            raise ValueError, 'No such transport: "%s"' % transport.getName()
         return klass(converterMap = transport.getConverters(),
                      options      = transport.getOptions())
 
