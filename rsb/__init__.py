@@ -129,7 +129,7 @@ class ParticipantConfig (object):
         @author: jmoringe
         '''
         def __init__(self, name, options={}):
-            import rsb.transport.converter
+            import rsb.converter
             self.__name = name
             self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes')
 
@@ -142,12 +142,12 @@ class ParticipantConfig (object):
             #    map of the transport, resolving conflicts based on
             #    configuration options when necessary
             wireType = bytearray
-            self.__converters = rsb.transport.converter.UnambiguousConverterMap(wireType)
+            self.__converters = rsb.converter.UnambiguousConverterMap(wireType)
             # Find and transform configuration options
             converterOptions = dict([ (key[17:], value) for (key, value) in options.items()
                                       if key.startswith('converter.python') ])
             # Try to add converters form global map
-            globalMap = rsb.transport.converter.getGlobalConverterMap(wireType)
+            globalMap = rsb.converter.getGlobalConverterMap(wireType)
             for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
                 # Converter can be added if converterOptions does not
                 # contain a disambiguation that gives precedence to a

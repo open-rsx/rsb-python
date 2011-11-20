@@ -18,7 +18,7 @@
 import time
 
 import rsb
-from rsb.transport.converter import registerGlobalConverter, getGlobalConverterMap, ProtocolBufferConverter
+from rsb.converter import registerGlobalConverter, getGlobalConverterMap, ProtocolBufferConverter
 
 # Load the generated protocol buffer data holder class from the
 # current directory. This would look different if the protocol buffer

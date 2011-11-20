@@ -30,7 +30,7 @@ import rsb
 import rsb.util
 import rsb.filter
 import rsb.transport
-import rsb.transport.converter
+import rsb.converter
 
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
 from google.protobuf.message import DecodeError
@@ -192,7 +192,7 @@ class SpreadReceiverTask(object):
                 elif isinstance(message, spread.MembershipMsgType):
                     self.__logger.info("Received membership message for group `%s'", message.group)
 
-            except rsb.transport.converter.UnknownConverterError, e:
+            except rsb.converter.UnknownConverterError, e:
                 self.__logger.exception("Unable to deserialize message: %s", e)
             except DecodeError, e:
                 self.__logger.exception("Error decoding notification: %s", e)

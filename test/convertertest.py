@@ -16,7 +16,7 @@
 import unittest
 import re
 
-from rsb.transport.converter import Converter, NoneConverter, StringConverter, Uint64Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
+from rsb.converter import Converter, NoneConverter, StringConverter, Uint64Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
 class ConflictingStringConverter(Converter):
     def __init__(self):

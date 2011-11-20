@@ -107,7 +107,7 @@ class SpreadConnectorTest(unittest.TestCase):
         kwargs = {}
         if module:
             kwargs['spreadModule'] = module
-        connector = clazz(converterMap = rsb.transport.converter.getGlobalConverterMap(bytearray),
+        connector = clazz(converterMap = rsb.converter.getGlobalConverterMap(bytearray),
                           options      = rsb.getDefaultParticipantConfig().getTransport("spread").options,
                           **kwargs)
         if activate:
