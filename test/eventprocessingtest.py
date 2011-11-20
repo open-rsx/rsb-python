@@ -18,18 +18,18 @@
 import uuid
 import unittest
 
-from rsb.eventprocessing import EventProcessor, Router
+from rsb.eventprocessing import ParallelEventReceivingStrategy, Router
 from threading import Condition
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 from rsb import Event, EventId
 import rsb
 
-class EventProcessorTest(unittest.TestCase):
+class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testMatchingProcess(self):
 
 
-        ep = EventProcessor(5)
+        ep = ParallelEventReceivingStrategy(5)
 
         mc1Cond = Condition()
         matchingCalls1 = []
@@ -55,8 +55,8 @@ class EventProcessorTest(unittest.TestCase):
         event1 = Event(EventId(uuid.uuid4(), 0))
         event2 = Event(EventId(uuid.uuid4(), 1))
 
-        ep.process(event1)
-        ep.process(event2)
+        ep.handle(event1)
+        ep.handle(event2)
 
         # both filters must have been called
         with matchingRecordingFilter1.condition:
@@ -92,7 +92,7 @@ class EventProcessorTest(unittest.TestCase):
 
     def testNotMatchingProcess(self):
 
-        ep = EventProcessor(5)
+        ep = ParallelEventReceivingStrategy(5)
 
         noMatchingCalls = []
 
@@ -107,9 +107,9 @@ class EventProcessorTest(unittest.TestCase):
         event2 = Event(EventId(uuid.uuid4(), 1))
         event3 = Event(EventId(uuid.uuid4(), 2))
 
-        ep.process(event1)
-        ep.process(event2)
-        ep.process(event3)
+        ep.handle(event1)
+        ep.handle(event2)
+        ep.handle(event3)
 
         # no Match listener must not have been called
         with noMatchRecordingFilter.condition:
@@ -124,7 +124,7 @@ class EventProcessorTest(unittest.TestCase):
 
     def testAddRemove(self):
         for size in xrange(2, 10):
-            ep = EventProcessor(size)
+            ep = ParallelEventReceivingStrategy(size)
 
             h1 = lambda e: e
             h2 = lambda e: e
@@ -132,9 +132,9 @@ class EventProcessorTest(unittest.TestCase):
             ep.addHandler(h2, wait = True)
             ep.addHandler(h1, wait = True)
 
-            ep.process(Event(EventId(uuid.uuid4(), 0)))
-            ep.process(Event(EventId(uuid.uuid4(), 1)))
-            ep.process(Event(EventId(uuid.uuid4(), 2)))
+            ep.handle(Event(EventId(uuid.uuid4(), 0)))
+            ep.handle(Event(EventId(uuid.uuid4(), 1)))
+            ep.handle(Event(EventId(uuid.uuid4(), 2)))
 
             ep.removeHandler(h1, wait = True)
             ep.removeHandler(h2, wait = True)
@@ -268,6 +268,6 @@ class RouterTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventProcessorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParallelEventReceivingStrategyTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RouterTest))
     return suite

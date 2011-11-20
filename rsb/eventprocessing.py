@@ -61,8 +61,36 @@ class BroadcastProcessor (object):
                len(self.handlers),
                id(self))
 
-class EventProcessor(object):
+class EventReceivingStrategy(object):
     """
+    Superclass for event receiving strategies.
+
+    @author: jmoringe
+    """
+    def __init__(self):
+        pass
+
+    def addFilter(self, filter):
+        raise NotImplementedError
+
+    def removeFilter(self, filter):
+        raise NotImplementedError
+
+    def addHandler(self, handler):
+        raise NotImplementedError
+
+    def removeHandler(self, hanlder):
+        raise NotImplementedError
+
+    def handle(self):
+        raise NotImplementedError
+
+
+class ParallelEventReceivingStrategy(EventReceivingStrategy):
+    """
+    An L{EventReceivingStrategy} that dispatches events to multiple
+    handlers in individual threads in parallel.
+
     @author: jwienke
     """
 
@@ -74,11 +102,11 @@ class EventProcessor(object):
         self.__filtersMutex = RLock()
 
     def __del__(self):
-        self.__logger.debug("Destructing EventProcesor")
+        self.__logger.debug("Destructing ParallelEventReceivingStrategy")
         self.deactivate()
 
     def deactivate(self):
-        self.__logger.debug("Deactivating EventProcesor")
+        self.__logger.debug("Deactivating ParallelEventReceivingStrategy")
         if self.__pool:
             self.__pool.stop()
             self.__pool = None
@@ -95,7 +123,7 @@ class EventProcessor(object):
                 return False
         return True
 
-    def process(self, event):
+    def handle(self, event):
         """
         Dispatches the event to all registered listeners.
 
@@ -144,8 +172,8 @@ class Router(object):
             self.__inPort = inPort
             self.__eventProcessor = eventProcessor
             if self.__eventProcessor == None:
-                self.__eventProcessor = EventProcessor()
-            self.__inPort.setObserverAction(self.__eventProcessor.process)
+                self.__eventProcessor = ParallelEventReceivingStrategy()
+            self.__inPort.setObserverAction(self.__eventProcessor.handle)
         else:
             self.__inPort = None
             self.__eventProcessor = None
