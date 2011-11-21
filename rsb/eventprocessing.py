@@ -148,90 +148,134 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__filtersMutex:
             self.__filters.append(filter)
 
-class Router(object):
+class EventSendingStrategy (object):
+    def handle(self, event):
+        raise NotImplementedError
+
+class Configurator (object):
     """
-    Routers to publish and subscribe on events.
+    Superclass for in- and out-direction Configurator classes. Manages
+    the basic aspects like the connector list and (de)activation that
+    are not direction-specific.
 
     @author: jwienke
+    @author: jmoringe
     """
-
-    def __init__(self, inPort=None, outPort=None, eventProcessor=None):
-        """
-        Creates a new router.
-
-        @param inPort: port for ingoing communication or None for no port
-        @param outPort: port for outgoing communication or None for no port
-        @param eventProcessor: event processor to use
-        """
-
+    def __init__(self, connectors = None):
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__logger.debug("Creating router with inPort = %s, outPort = %s and eventProcessor = %s" % (inPort, outPort, eventProcessor))
-
-        if inPort:
-            self.__inPort = inPort
-            self.__eventProcessor = eventProcessor
-            if self.__eventProcessor == None:
-                self.__eventProcessor = ParallelEventReceivingStrategy()
-            self.__inPort.setObserverAction(self.__eventProcessor.handle)
+        if connectors is None:
+            self.__connectors = []
         else:
-            self.__inPort = None
-            self.__eventProcessor = None
-        if outPort:
-            self.__outPort = outPort
-        else:
-            self.__outPort = None
-
-        self.__active = False
+            self.__connectors = connectors
+        self.__active     = False
 
     def __del__(self):
-        self.__logger.debug("Destructing router")
+        self.__logger.debug("Destructing Configurator")
         if self.__active:
             self.deactivate()
 
-    def setQualityOfServiceSpec(self, qos):
-        if self.__inPort:
-            self.__inPort.setQualityOfServiceSpec(qos)
-        if self.__outPort:
-            self.__outPort.setQualityOfServiceSpec(qos)
+    def getConnectors(self):
+        return self.__connectors
+
+    connectors = property(getConnectors)
+
+    def isActive(self):
+        return self.__active
+
+    active = property(isActive)
 
     def activate(self):
-        if not self.__active:
-            self.__logger.info("Activating router")
-            if self.__inPort:
-                self.__inPort.activate()
-            if self.__outPort:
-                self.__outPort.activate()
-            self.__active = True
-        else:
-            self.__logger.warning("Router was already activated")
+        if self.__active:
+            raise RuntimeError, "Configurator is already active"
+
+        self.__logger.info("Activating configurator")
+        for connector in self.connectors:
+            connector.activate()
+        self.__active = True
 
     def deactivate(self):
-        if self.__active:
-            self.__logger.info("Deactivating router")
-            if self.__inPort:
-                self.__inPort.deactivate()
-                self.__inPort.setObserverAction(None)
-                self.__eventProcessor.deactivate()
-            if self.__outPort:
-                self.__outPort.deactivate()
-            self.__active = False
-        else:
-            self.__logger.warning("Router was not active")
+        if not self.__active:
+            raise RuntimeError, "Configurator is not active"
 
-    def publish(self, event):
-        if self.__active and self.__outPort:
-            self.__logger.debug("Publishing event: %s" % event)
-            self.__outPort.push(event)
+        self.__logger.info("Deactivating configurator")
+        for connector in self.connectors:
+            connector.deactivate()
+        self.__active = False
+
+    def setQualityOfServiceSpec(self, qos):
+        for connector in self.connectors:
+            connector.setQualityOfServiceSpec(qos)
+
+class InRouteConfigurator(Configurator):
+    """
+    Instances of this class manage the receiving, filtering and
+    dispatching of events via one or more L{rsb.transport.Connector} s
+    and an L{EventReceivingStrategy}.
+
+    @author: jwienke
+    @author: jmoringe
+    """
+
+    def __init__(self, connectors = None, receivingStrategy = None):
+        """
+        Creates a new configurator which manages B{connectors} and
+        B{receivingStrategy}.
+
+        @param connectors: Connectors through which events are received.
+
+        @param receivingStrategy: The event receiving strategy
+                                  according to which the filtering and
+                                  dispatching of incoming events
+                                  should be performed.
+        """
+        super(InRouteConfigurator, self).__init__(connectors)
+
+        self.__logger = getLoggerByClass(self.__class__)
+
+        if receivingStrategy is None:
+            self.__receivingStrategy = ParallelEventReceivingStrategy()
         else:
-            self.__logger.warning("Router is not active or has no outgoing port. Cannot publish.")
+            self.__receivingStrategy = receivingStrategy
+
+        for connector in self.connectors:
+            connector.setObserverAction(self.__receivingStrategy.handle)
+
+    def deactivate(self):
+        super(InRouteConfigurator, self).deactivate()
+
+        for connector in self.connectors:
+            connector.setObserverAction(None)
+        self.__receivingStrategy.deactivate()
 
     def handlerAdded(self, handler, wait):
-        self.__eventProcessor.addHandler(handler, wait)
+        self.__receivingStrategy.addHandler(handler, wait)
 
     def handlerRemoved(self, handler, wait):
-        self.__eventProcessor.removeHandler(handler, wait)
+        self.__receivingStrategy.removeHandler(handler, wait)
 
     def filterAdded(self, filter):
-        self.__eventProcessor.addFilter(filter)
-        self.__inPort.filterNotify(filter, FilterAction.ADD)
+        self.__receivingStrategy.addFilter(filter)
+        for connector in self.connectors:
+            connector.filterNotify(filter, FilterAction.ADD)
+
+class OutRouteConfigurator(Configurator):
+    """
+    Instances of this class manage the sending of events via one or
+    more L{rsb.transport.Connector} s and an L{EventSendingStrategy}.
+
+    @author: jmoringe
+    """
+
+    def __init__(self, connectors = None, sendingStrategy = None):
+        super(OutRouteConfigurator, self).__init__(connectors)
+
+        self.__logger = getLoggerByClass(self.__class__)
+
+    def publish(self, event):
+        if not self.active:
+            raise RuntimeError, "Trying to publish event on Configurator which is not active."
+
+        self.__logger.debug("Publishing event: %s" % event)
+        for connector in self.connectors:
+            connector.push(event)

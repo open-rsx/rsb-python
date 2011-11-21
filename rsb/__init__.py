@@ -20,11 +20,13 @@ import copy
 import logging
 import threading
 import time
-from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool, Enum
 import re
 import os
 import ConfigParser
-from rsb.filter import ScopeFilter
+
+from rsb.util import getLoggerByClass, Enum
+import rsb.eventprocessing
+import rsb.filter
 
 class QualityOfServiceSpec(object):
     '''
@@ -1102,8 +1104,8 @@ class Informer(Participant):
     """
 
     def __init__(self, scope, type,
-                 config = None,
-                 router = None):
+                 config       = None,
+                 configurator = None):
         """
         Constructs a new L{Informer} that publishes L{Event}s carrying
         payloads of type B{type} on B{scope}.
@@ -1114,7 +1116,8 @@ class Informer(Participant):
                      that will be sent via the new informer. Instances
                      of subtypes are permitted as well.
         @type type: type
-        @param router: router object with open outgoing port for communication
+        @param configurator: Out route configurator to manage sending
+                             of events through out connectors.
         @todo: maybe provide an automatic type identifier deduction for default
                types?
         """
@@ -1125,15 +1128,13 @@ class Informer(Participant):
         if config is None:
             config = getDefaultParticipantConfig()
 
-        if router:
-            self.__router = router
+        if configurator:
+            self.__configurator = configurator
         else:
-            from eventprocessing import Router
-
             connector = self.getConnector('out', config)
             connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__router = Router(outPort=connector)
-        self.__router.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ connector ])
+        self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         # TODO check that type can be converted
         self.__type = type
 
@@ -1190,13 +1191,13 @@ class Informer(Participant):
             event.id = EventId(self.id, self.__sequenceNumber)
             self.__sequenceNumber += 1
         self.__logger.debug("Publishing event '%s'" % event)
-        self.__router.publish(event)
+        self.__configurator.publish(event)
         return event
 
     def __activate(self):
         with self.__mutex:
             if not self.__active:
-                self.__router.activate()
+                self.__configurator.activate()
                 self.__active = True
                 self.__logger.info("Activated informer")
             else:
@@ -1205,7 +1206,7 @@ class Informer(Participant):
     def deactivate(self):
         with self.__mutex:
             if self.__active:
-                self.__router.deactivate()
+                self.__configurator.deactivate()
                 self.__active = False
                 self.__logger.info("Deactivated informer")
             else:
@@ -1219,13 +1220,17 @@ class Listener(Participant):
     """
 
     def __init__(self, scope,
-                 config = None,
-                 router = None):
+                 config       = None,
+                 configurator = None):
         """
         Create a new L{Listener} for B{scope}.
 
-        @param scope: scope to subscribe one
-        @param router: router with existing inport
+        @param scope: The scope of the channel in which the new
+                      listener should participate.
+        @type scope: Scope
+        @param configurator: An in route configurator to manage the
+                             receiving of events from in connectors
+                             and their filtering and dispatching.
         """
         super(Listener, self).__init__(scope)
 
@@ -1234,14 +1239,12 @@ class Listener(Participant):
         if config is None:
             config = getDefaultParticipantConfig()
 
-        if router:
-            self.__router = router
+        if configurator:
+            self.__configurator = configurator
         else:
-            from eventprocessing import Router
-
             connector = self.getConnector('in', config)
             connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__router = Router(inPort=connector)
+            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
 
         self.__mutex = threading.Lock()
         self.__active = False
@@ -1250,7 +1253,7 @@ class Listener(Participant):
         self.__handlers = []
 
         self.__activate()
-        self.__router.filterAdded(ScopeFilter(self.scope))
+        self.__configurator.filterAdded(rsb.filter.ScopeFilter(self.scope))
 
     def __del__(self):
         self.deactivate()
@@ -1259,7 +1262,7 @@ class Listener(Participant):
         # TODO commonality with Informer... refactor
         with self.__mutex:
             if not self.__active:
-                self.__router.activate()
+                self.__configurator.activate()
                 self.__active = True
                 self.__logger.info("Activated listener")
             else:
@@ -1268,7 +1271,7 @@ class Listener(Participant):
     def deactivate(self):
         with self.__mutex:
             if self.__active:
-                self.__router.deactivate()
+                self.__configurator.deactivate()
                 self.__active = False
                 self.__logger.info("Deactivated listener")
             else:
@@ -1283,7 +1286,7 @@ class Listener(Participant):
 
         with self.__mutex:
             self.__filters.append(filter)
-            self.__router.filterAdded(filter)
+            self.__configurator.filterAdded(filter)
 
     def getFilters(self):
         """
@@ -1311,7 +1314,7 @@ class Listener(Participant):
         with self.__mutex:
             if not handler in self.__handlers:
                 self.__handlers.append(handler)
-                self.__router.handlerAdded(handler, wait)
+                self.__configurator.handlerAdded(handler, wait)
 
     def removeHandler(self, handler, wait=True):
         """
@@ -1327,7 +1330,7 @@ class Listener(Participant):
 
         with self.__mutex:
             if handler in self.__handlers:
-                self.__router.handlerRemoved(handler, wait)
+                self.__configurator.handlerRemoved(handler, wait)
                 self.__handlers.remove(handler)
 
     def getHandlers(self):

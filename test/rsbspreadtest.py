@@ -28,7 +28,6 @@ import time
 import rsb.rsbspread
 import rsb.filter
 from rsb import Event, Informer, Listener, Scope, EventId
-from rsb.eventprocessing import Router
 
 class SettingReceiver(object):
 
@@ -201,18 +200,17 @@ class SpreadConnectorTest(unittest.TestCase):
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
-        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
+        inConnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
+        outConnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
-        outRouter = Router(outPort=outconnector)
-        inRouter = Router(inPort=inconnector)
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
+        inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
 
         scope = Scope("/test/it")
-        publisher = Informer(scope, str, router=outRouter)
-        listener = Listener(scope, router=inRouter)
+        publisher = Informer(scope, str, configurator = outConfigurator)
+        listener = Listener(scope, configurator = inConfigurator)
 
         receiver = SettingReceiver(scope)
-
         listener.addHandler(receiver)
 
         data1 = "a string to test"
@@ -245,21 +243,21 @@ class SpreadConnectorTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outconnector = self.__getConnector(clazz    = rsb.rsbspread.OutConnector,
+        outConnector = self.__getConnector(clazz    = rsb.rsbspread.OutConnector,
                                            activate = False)
-        outRouter = Router(outPort=outconnector)
-        informer = Informer(sendScope, str, router=outRouter)
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
+        informer = Informer(sendScope, str, configurator = outConfigurator)
 
         # set up listeners on the complete hierarchy
         listeners = []
         receivers = []
         for scope in superScopes:
 
-            inconnector = self.__getConnector(clazz    = rsb.rsbspread.InConnector,
+            inConnector = self.__getConnector(clazz    = rsb.rsbspread.InConnector,
                                               activate = False)
-            inRouter = Router(inPort=inconnector)
+            inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
 
-            listener = Listener(scope, router=inRouter)
+            listener = Listener(scope, configurator = inConfigurator)
             listeners.append(listener)
 
             receiver = SettingReceiver(scope)
@@ -279,16 +277,16 @@ class SpreadConnectorTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
-        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
+        inConnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
+        outConnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
 
         goodScope = Scope("/good")
         receiver = SettingReceiver(goodScope)
-        inconnector.setObserverAction(receiver)
+        inConnector.setObserverAction(receiver)
 
         filter = rsb.filter.ScopeFilter(goodScope)
 
-        inconnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
+        inConnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -296,11 +294,11 @@ class SpreadConnectorTest(unittest.TestCase):
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        outconnector.push(event)
+        outConnector.push(event)
 
         # and then a desired event
         event.scope = goodScope
-        outconnector.push(event)
+        outConnector.push(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)

@@ -17,19 +17,17 @@
 
 import uuid
 import unittest
-
-from rsb.eventprocessing import ParallelEventReceivingStrategy, Router
 from threading import Condition
+
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 from rsb import Event, EventId
 import rsb
+import rsb.eventprocessing
 
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testMatchingProcess(self):
-
-
-        ep = ParallelEventReceivingStrategy(5)
+        ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
 
         mc1Cond = Condition()
         matchingCalls1 = []
@@ -92,7 +90,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testNotMatchingProcess(self):
 
-        ep = ParallelEventReceivingStrategy(5)
+        ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
 
         noMatchingCalls = []
 
@@ -124,7 +122,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testAddRemove(self):
         for size in xrange(2, 10):
-            ep = ParallelEventReceivingStrategy(size)
+            ep = rsb.eventprocessing.ParallelEventReceivingStrategy(size)
 
             h1 = lambda e: e
             h2 = lambda e: e
@@ -140,134 +138,149 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             ep.removeHandler(h2, wait = True)
             ep.removeHandler(h1, wait = True)
 
-class RouterTest(unittest.TestCase):
+class MockConnector(object):
+    def activate(self):
+        pass
 
-    def testActivate(self):
+    def deactivate(self):
+        pass
 
-        class ActivateCountingPort(object):
+    def push(self, event):
+        pass
 
-            activations = 0
+    def filterNotify(self, filter, action):
+        pass
 
-            def activate(self):
-                ActivateCountingPort.activations = ActivateCountingPort.activations + 1
+    def setObserverAction(self, action):
+        pass
 
-            def deactivate(self):
-                pass
+# TODO(jmoringe): could be useful in all tests for active objects
+class ActivateCountingMockConnector(MockConnector):
+    def __init__(self, case):
+        self.__case        = case
+        self.activations   = 0
+        self.deactivations = 0
 
-            def setObserverAction(self, action):
-                pass
+    def activate(self):
+        self.activations += 1
 
-        router = Router(ActivateCountingPort(), ActivateCountingPort())
-        self.assertEqual(0, ActivateCountingPort.activations)
+    def deactivate(self):
+        self.deactivations += 1
 
-        router.activate()
-        self.assertEqual(2, ActivateCountingPort.activations)
-        router.activate()
-        self.assertEqual(2, ActivateCountingPort.activations)
+    def expect(self, activations, deactivations):
+        self.__case.assertEqual(activations,   self.activations)
+        self.__case.assertEqual(deactivations, self.deactivations)
 
-    def testDeactivate(self):
+class OutRouteConfiguratorTest(unittest.TestCase):
 
-        class DeactivateCountingPort(object):
+    def testActivation(self):
+        connector = ActivateCountingMockConnector(self)
+        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ connector ])
 
-            deactivations = 0
+        # Cannot deactivate inactive configurator
+        self.assertRaises(RuntimeError, configurator.deactivate)
+        connector.expect(0, 0)
 
-            def activate(self):
-                pass
+        configurator.activate()
+        connector.expect(1, 0)
 
-            def deactivate(self):
-                DeactivateCountingPort.deactivations = DeactivateCountingPort.deactivations + 1
+        # Cannot activate already activated configurator
+        self.assertRaises(RuntimeError, configurator.activate)
+        connector.expect(1, 0)
 
-            def setObserverAction(self, action):
-                pass
+        configurator.deactivate()
+        connector.expect(1, 1)
 
-        router = Router(DeactivateCountingPort(), DeactivateCountingPort())
-        self.assertEqual(0, DeactivateCountingPort.deactivations)
-
-        router.deactivate()
-        self.assertEqual(0, DeactivateCountingPort.deactivations)
-
-        router.activate()
-        self.assertEqual(0, DeactivateCountingPort.deactivations)
-        router.deactivate()
-        self.assertEqual(2, DeactivateCountingPort.deactivations)
-        router.deactivate()
-        self.assertEqual(2, DeactivateCountingPort.deactivations)
+        # Cannot deactivate twice
+        self.assertRaises(RuntimeError, configurator.deactivate)
+        connector.expect(1, 1)
 
     def testPublish(self):
-
-        class PublishCheckRouter(object):
-
+        class RecordingOutConnector(MockConnector):
             lastEvent = None
 
-            def activate(self):
-                pass
-            def deactivate(self):
-                pass
-
             def push(self, event):
-                PublishCheckRouter.lastEvent = event
+                RecordingOutConnector.lastEvent = event
 
-            def setObserverAction(self, action):
-                pass
-
-        router = Router(PublishCheckRouter(), PublishCheckRouter())
+        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ RecordingOutConnector() ])
 
         event = 42
-        router.publish(event)
-        self.assertEqual(None, PublishCheckRouter.lastEvent)
-        router.activate()
-        router.publish(event)
-        self.assertEqual(event, PublishCheckRouter.lastEvent)
+
+        # Cannot publish while inactive
+        self.assertRaises(RuntimeError, configurator.publish, event)
+        self.assertEqual(None, RecordingOutConnector.lastEvent)
+
+        configurator.activate()
+        configurator.publish(event)
+        self.assertEqual(event, RecordingOutConnector.lastEvent)
+
         event = 34
-        router.publish(event)
-        self.assertEqual(event, PublishCheckRouter.lastEvent)
+        configurator.publish(event)
+        self.assertEqual(event, RecordingOutConnector.lastEvent)
 
-        PublishCheckRouter.lastEvent = None
-        router.deactivate()
-        router.publish(event)
-        self.assertEqual(None, PublishCheckRouter.lastEvent)
+        # Deactivate and check exception, again
+        RecordingOutConnector.lastEvent = None
+        configurator.deactivate()
+        self.assertRaises(RuntimeError, configurator.publish, event)
+        self.assertEqual(None, RecordingOutConnector.lastEvent)
 
-    def testNotifyInPort(self):
+class InRouteConfiguratorTest(unittest.TestCase):
 
-        class SubscriptionTestPort(object):
+    def testActivation(self):
+        connector = ActivateCountingMockConnector(self)
+        configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
 
+        # Cannot deactivate inactive configurator
+        self.assertRaises(RuntimeError, configurator.deactivate)
+        connector.expect(0, 0)
+
+        configurator.activate()
+        connector.expect(1, 0)
+
+        # Cannot activate already activated configurator
+        self.assertRaises(RuntimeError, configurator.activate)
+        connector.expect(1, 0)
+
+        configurator.deactivate()
+        connector.expect(1, 1)
+
+        # Cannot deactivate twice
+        self.assertRaises(RuntimeError, configurator.deactivate)
+        connector.expect(1, 1)
+
+    def testNotifyConnector(self):
+        class RecordingMockConnector(MockConnector):
             def __init__(self):
-                self.activated = False
-                self.deactivated = False
-                self.filterCalls = []
+                self.calls = []
 
-            def activate(self):
-                self.activated = True
-            def deactivate(self):
-                self.deactivated = True
             def filterNotify(self, filter, action):
-                self.filterCalls.append((filter, action))
-            def setObserverAction(self, action):
-                pass
+                self.calls.append((filter, action))
 
-        ip = SubscriptionTestPort()
-        op = SubscriptionTestPort()
-        router = Router(ip, op)
+            def expect(self1, calls):
+                self.assertEqual(len(calls), len(self1.calls))
+                for (expFilter, expAction), (filter, action) in zip(calls, self1.calls):
+                    self.assertEqual(expFilter, filter)
+                    if expAction == 'add':
+                        self.assertEquals(action, rsb.filter.FilterAction.ADD)
 
-        f1 = 12
-        f2 = 24
-        f3 = 36
-        f4 = 48
-        router.filterAdded(f1)
-        router.filterAdded(f2)
-        self.assertEqual(2, len(ip.filterCalls))
-        self.assertTrue((f1, rsb.filter.FilterAction.ADD) in ip.filterCalls)
-        self.assertTrue((f2, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        connector = RecordingMockConnector()
+        configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
+        configurator.activate()
+        connector.expect(())
 
-        router.filterAdded(f3)
-        router.filterAdded(f4)
+        f1, f2, f3 = 12, 24, 36
+        configurator.filterAdded(f1)
+        connector.expect(((f1, 'add'),))
 
-        self.assertEqual(4, len(ip.filterCalls))
-        self.assertTrue((f3, rsb.filter.FilterAction.ADD) in ip.filterCalls)
-        self.assertTrue((f4, rsb.filter.FilterAction.ADD) in ip.filterCalls)
+        configurator.filterAdded(f2)
+        connector.expect(((f1, 'add'), (f2, 'add')))
+
+        configurator.filterAdded(f3)
+        connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add')))
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParallelEventReceivingStrategyTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RouterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutRouteConfiguratorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InRouteConfiguratorTest))
     return suite
