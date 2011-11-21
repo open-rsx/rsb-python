@@ -1093,8 +1093,8 @@ class Participant(object):
                 assert(False)
         else:
             raise ValueError, 'No such transport: "%s"' % transport.getName()
-        return klass(converterMap = transport.getConverters(),
-                     options      = transport.getOptions())
+        return klass(converters = transport.getConverters(),
+                     options    = transport.getOptions())
 
 class Informer(Participant):
     """

@@ -215,17 +215,21 @@ class SpreadReceiverTask(object):
         with self.__observerActionLock:
             self.__observerAction = action
 
-class Connector(rsb.transport.Connector):
+class Connector(rsb.transport.Connector,
+                rsb.transport.ConverterSelectingConnector):
     """
-    Spread-based implementation of a connector.
+    Superclass for Spread-based connector classes. This class manages
+    the direction-independent aspects like the Spread connection and
+    (de)activation.
 
     @author: jwienke
     """
 
     MAX_MSG_LENGTH = 100000
 
-    def __init__(self, converterMap, options={}, spreadModule=spread):
-        super(Connector, self).__init__(bytearray, converterMap)
+    def __init__(self, options = {}, spreadModule = spread, **kwargs):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
         host = options.get('host', None)
         port = options.get('port', '4803')
         if host:
@@ -234,11 +238,10 @@ class Connector(rsb.transport.Connector):
             self.__daemonName = port
 
         self.__spreadModule = spreadModule
-        self.__logger = rsb.util.getLoggerByClass(self.__class__)
         self.__connection = None
-        """
-        A map of scope subscriptions with the list of subscriptions.
-        """
+
+        super(Connector, self).__init__(wireType = bytearray, **kwargs)
+
         self.setQualityOfServiceSpec(rsb.QualityOfServiceSpec())
 
     def __del__(self):
@@ -295,9 +298,7 @@ class Connector(rsb.transport.Connector):
 
 class InConnector(Connector,
                   rsb.transport.InConnector):
-    def __init__(self, *args, **kwargs):
-        super(InConnector, self).__init__(*args, **kwargs)
-
+    def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__receiveThread = None
@@ -306,10 +307,14 @@ class InConnector(Connector,
 
         self.__groupNameSubscribers = {}
 
+        super(InConnector, self).__init__(**kwargs)
+
     def activate(self):
         super(InConnector, self).activate()
 
-        self.__receiveTask = SpreadReceiverTask(self.connection, self.__observerAction, self._getConverterMap())
+        self.__receiveTask = SpreadReceiverTask(self.connection,
+                                                self.__observerAction,
+                                                self.converterMap)
         self.__receiveThread = threading.Thread(target=self.__receiveTask)
         self.__receiveThread.setDaemon(True)
         self.__receiveThread.start()
@@ -372,9 +377,10 @@ class InConnector(Connector,
 
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
-    def __init__(self, *args, **kwargs):
-        super(OutConnector, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        super(OutConnector, self).__init__(**kwargs)
 
     def push(self, event):
         self.__logger.debug("Sending event: %s", event)
@@ -385,7 +391,7 @@ class OutConnector(Connector,
 
         # Create one or more notification fragments for the event
         event.getMetaData().setSendTime()
-        converter = self._getConverterForDataType(event.type)
+        converter = self.getConverterForDataType(event.type)
         fragments = conversion.eventToNotifications(event, converter, self.MAX_MSG_LENGTH)
 
         # Send fragments

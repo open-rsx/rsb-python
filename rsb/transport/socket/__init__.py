@@ -18,15 +18,13 @@
 import socket
 import threading
 
-from rsb.eventprocessing import BroadcastProcessor
-
 import rsb.transport
 
 from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
 from rsb.protocol.Notification_pb2 import Notification
 
-class BusConnection (BroadcastProcessor):
+class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     """
     Instances of this class implement connections to a socket-based
     bus.
@@ -325,7 +323,8 @@ class BusServer (Bus):
             log('Connection from %s', addr)
             self.addConnection(BucConnection(socket = socket))
 
-class Connector (rsb.transport.Connector):
+class Connector(rsb.transport.Connector,
+                rsb.transport.ConverterSelectingConnector):
     """
     Instances of subclasses of this class receive events from a bus
     (represented by a L{Bus} object) that is accessed via a socket
@@ -334,14 +333,14 @@ class Connector (rsb.transport.Connector):
     @author: jmoringe
     """
 
-    def __init__(self, host, port, server, converterMap):
-        super(Connector, self).__init__(wireType = bytes,
-                                        converterMap)
+    def __init__(self, host, port, server, **kwargs):
+        super(Connector, self).__init__(wireType = bytes, **kwargs)
+
         # TODO(jmoringe): do this when activating?
         if server:
-            self.__bus = getBusServerFor(host, port)
+            self.__bus = getBusServerFor(host, port, self)
         else:
-            self.__bus = getBusClientFor(host, port)
+            self.__bus = getBusClientFor(host, port, self)
 
     def getBus(self):
         return self.__bus
@@ -369,10 +368,10 @@ class InPushConnector (Connector,
     @author: jmoringe
     """
 
-    def __init__(self, converterMap):
-        super(InPushConnector, self, converterMap)
-
+    def __init__(self, **kwargs):
         self.__action = None
+
+        super(InPushConnector, self).__init__(**kwargs)
 
     def filterNotify(self, filter, action):
         pass
@@ -382,8 +381,5 @@ class InPushConnector (Connector,
 
 class OutConnector (Connector,
                     rsb.transport.OutConnector):
-    def __init__(self, converterMap):
-        super(OutConnector, self, converterMap)
-
     def publish(self, event):
         self.bus.publish(event)

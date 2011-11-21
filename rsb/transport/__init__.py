@@ -20,30 +20,29 @@ from rsb.util import getLoggerByClass
 
 class Connector(object):
     """
-    Superclass for transport-specific connector implementations.
+    Superclass for transport-specific connector classes.
 
     @author: jwienke
     """
 
-    def __init__(self, wireType, converterMap):
+    def __init__(self, wireType = None, **kwargs):
         """
         Creates a new connector with a serialization type wireType.
 
-        @param wireType: the type of serialized data used by this connector.
-        @param converterMap: map of converters to use. If None, the global
-                             map of converters for the selected targetType is
-                             used
+        @param wireType: the type of serialized data used by this
+                         connector.
+        @type wireType: type
         """
-
+        print 'Connector'
         self.__logger = getLoggerByClass(self.__class__)
 
         if wireType == None:
-            raise ValueError("Wire type must be a class or primitive type, None given")
+            raise ValueError("Wire type must be a type object, None given")
 
         self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
-        self.__converterMap = converterMap
-        assert(self.__converterMap.getWireType() == wireType)
         self.__wireType = wireType
+
+        super(Connector, self).__init__(**kwargs)
 
     def getWireType(self):
         """
@@ -54,33 +53,6 @@ class Connector(object):
         return self.__wireType
 
     wireType = property(getWireType)
-
-    def _getConverterForDataType(self, dataType):
-        """
-        Returns a converter that can convert the supplied data to the
-        wire-type.
-
-        @param dataType: the type of the object for which a suitable
-                         converter should returned.
-        @return: converter
-        @raise KeyError: no converter is available for the supplied data.
-        """
-        #self.__logger.debug("Searching for converter for data '%s' in map %s" % (data, self.__converterMap))
-        return self.__converterMap.getConverterForDataType(dataType)
-
-    def _getConverterForWireSchema(self, wireSchema):
-        """
-        Returns the converter for the wire-schema.
-
-        @param wireSchema: the wire-schema to or from which the returned converter should convert
-        @return: converter
-        @raise KeyError: no converter is available for the specified wire-schema
-        """
-        self.__logger.debug("Searching for converter with wireSchema '%s' in map %s" % (wireSchema, self.__converterMap))
-        return self.__converterMap.getConverterForWireSchema(wireSchema)
-
-    def _getConverterMap(self):
-        return self.__converterMap
 
     def activate(self):
         raise NotImplementedError()
@@ -128,3 +100,62 @@ class OutConnector(Connector):
         @param event: event to send
         """
         raise NotImplementedError()
+
+class ConverterSelectingConnector (object):
+    """
+    This class is intended to be used a superclass (or rather mixin
+    class) for connector classes which have to store a map of
+    converters and select converters for (de)serialization.
+
+    @author: jmoringe
+    """
+
+    def __init__(self, converters, **kwargs):
+        """
+        Creates a new connector that uses the converters in
+        B{converters} to deserialize notification and/or serialize
+        events.
+
+        @param converters: The converter selection strategy that
+                           should be used by the connector. If
+                           C{None}, the global map of converters for
+                           the wire-type of the connector is used.
+        @type converters: rsb.converter.ConverterSelectionStrategy
+        """
+        print 'ConverterSelectingConnector'
+        self.__converterMap = converters
+
+        super(ConverterSelectingConnector, self).__init__(**kwargs)
+
+        assert(self.__converterMap.getWireType() == self.wireType)
+
+    def getConverterForDataType(self, dataType):
+        """
+        Returns a converter that can convert the supplied data to the
+        wire-type.
+
+        @param dataType: the type of the object for which a suitable
+                         converter should returned.
+        @return: converter
+        @raise KeyError: no converter is available for the supplied
+                         data.
+        """
+        return self.__converterMap.getConverterForDataType(dataType)
+
+    def getConverterForWireSchema(self, wireSchema):
+        """
+        Returns a suitable converter for the B{wireSchema}.
+
+        @param wireSchema: the wire-schema to or from which the
+                           returned converter should convert
+        @type wireSchema: str
+        @return: converter
+        @raise KeyError: no converter is available for the specified
+                         wire-schema.
+        """
+        return self.__converterMap.getConverterForWireSchema(wireSchema)
+
+    def getConverterMap(self):
+        return self.__converterMap
+
+    converterMap = property(getConverterMap)
