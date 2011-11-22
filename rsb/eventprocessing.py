@@ -149,8 +149,36 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
             self.__filters.append(filter)
 
 class EventSendingStrategy (object):
+    def getConnectors(self):
+        raise NotImplementedError
+
+    connectors = property(getConnectors)
+
+    def addConnector(self, connector):
+        raise NotImplementedError
+
+    def removeConnector(self, connector):
+        raise NotImplementedError
+
     def handle(self, event):
         raise NotImplementedError
+
+class DirectEventSendingStrategy (EventSendingStrategy):
+    def __init__(self):
+        self.__connectors = []
+
+    def getConnectors(self):
+        return self.__connectors
+
+    def addConnector(self, connector):
+        self.__connectors.append(connector)
+
+    def removeConnector(self, connector):
+        self.__connectors.remove(connector)
+
+    def handle(self, event):
+        for connector in self.__connectors:
+            connector.handle(event)
 
 class Configurator (object):
     """
@@ -268,14 +296,21 @@ class OutRouteConfigurator(Configurator):
     """
 
     def __init__(self, connectors = None, sendingStrategy = None):
-        super(OutRouteConfigurator, self).__init__(connectors)
-
         self.__logger = getLoggerByClass(self.__class__)
 
-    def publish(self, event):
+        super(OutRouteConfigurator, self).__init__(connectors)
+
+        if sendingStrategy is None:
+            self.__sendingStrategy = DirectEventSendingStrategy()
+        else:
+            self.__sendingStrategy = sendingStrategy
+
+        if not connectors is None:
+            map(self.__sendingStrategy.addConnector, connectors)
+
+    def handle(self, event):
         if not self.active:
             raise RuntimeError, "Trying to publish event on Configurator which is not active."
 
         self.__logger.debug("Publishing event: %s" % event)
-        for connector in self.connectors:
-            connector.push(event)
+        self.__sendingStrategy.handle(event)

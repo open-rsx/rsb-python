@@ -1191,7 +1191,7 @@ class Informer(Participant):
             event.id = EventId(self.id, self.__sequenceNumber)
             self.__sequenceNumber += 1
         self.__logger.debug("Publishing event '%s'" % event)
-        self.__configurator.publish(event)
+        self.__configurator.handle(event)
         return event
 
     def __activate(self):

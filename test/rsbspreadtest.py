@@ -185,11 +185,11 @@ class SpreadConnectorTest(unittest.TestCase):
         event.data = "dummy data"
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        outconnector.push(event)
+        outconnector.handle(event)
 
         # and then a desired event
         event.scope = goodScope
-        outconnector.push(event)
+        outconnector.handle(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
@@ -294,11 +294,11 @@ class SpreadConnectorTest(unittest.TestCase):
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
-        outConnector.push(event)
+        outConnector.handle(event)
 
         # and then a desired event
         event.scope = goodScope
-        outConnector.push(event)
+        outConnector.handle(event)
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
@@ -316,7 +316,7 @@ class SpreadConnectorTest(unittest.TestCase):
         event.metaData.senderId = uuid.uuid4()
 
         before = time.time()
-        connector.push(event)
+        connector.handle(event)
         after = time.time()
 
         self.assertTrue(event.getMetaData().getSendTime() >= before)

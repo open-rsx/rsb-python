@@ -199,7 +199,7 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         class RecordingOutConnector(MockConnector):
             lastEvent = None
 
-            def push(self, event):
+            def handle(self, event):
                 RecordingOutConnector.lastEvent = event
 
         configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ RecordingOutConnector() ])
@@ -207,21 +207,21 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         event = 42
 
         # Cannot publish while inactive
-        self.assertRaises(RuntimeError, configurator.publish, event)
+        self.assertRaises(RuntimeError, configurator.handle, event)
         self.assertEqual(None, RecordingOutConnector.lastEvent)
 
         configurator.activate()
-        configurator.publish(event)
+        configurator.handle(event)
         self.assertEqual(event, RecordingOutConnector.lastEvent)
 
         event = 34
-        configurator.publish(event)
+        configurator.handle(event)
         self.assertEqual(event, RecordingOutConnector.lastEvent)
 
         # Deactivate and check exception, again
         RecordingOutConnector.lastEvent = None
         configurator.deactivate()
-        self.assertRaises(RuntimeError, configurator.publish, event)
+        self.assertRaises(RuntimeError, configurator.handle, event)
         self.assertEqual(None, RecordingOutConnector.lastEvent)
 
 class InRouteConfiguratorTest(unittest.TestCase):

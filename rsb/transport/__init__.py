@@ -65,8 +65,8 @@ class Connector(object):
 
 class InConnector(Connector):
     """
-    Superclass for in-direction (that is dealing with incoming events)
-    connector implementations.
+    Superclass for in-direction (that is, dealing with incoming
+    events) connector implementations.
 
     @author: jmoringe
     """
@@ -86,13 +86,13 @@ class InConnector(Connector):
 
 class OutConnector(Connector):
     """
-    Superclass for out-direction (that is dealing with outgoing
+    Superclass for out-direction (that is, dealing with outgoing
     events) connector implementations.
 
     @author: jmoringe
     """
 
-    def publish(self, event):
+    def handle(self, event):
         """
         Sends B{event} and adapts its meta data instance with the
         actual send time.

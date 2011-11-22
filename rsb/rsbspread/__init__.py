@@ -382,7 +382,7 @@ class OutConnector(Connector,
 
         super(OutConnector, self).__init__(**kwargs)
 
-    def push(self, event):
+    def handle(self, event):
         self.__logger.debug("Sending event: %s", event)
 
         if self.connection is None:
