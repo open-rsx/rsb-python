@@ -233,16 +233,15 @@ def registerGlobalConverter(converter, replaceExisting=False):
                             is C{False} and such a converter exists,
                             an error is raised.
     """
-    if not converter.getWireType() in __globalConverterMaps:
-        __globalConverterMaps[converter.getWireType()] = ConverterMap(converter.getWireType())
-    __globalConverterMaps[converter.getWireType()].addConverter(converter, replaceExisting)
+    mapForWireType = getGlobalConverterMap(converter.getWireType())
+    print 'adding', converter, 'to', mapForWireType
+    mapForWireType.addConverter(converter, replaceExisting)
 
 def getGlobalConverterMap(wireType):
     """
-    Get a map with all globally known converters for the desired target
-    serialization type.
+    Get a map with all globally known converters for the B{wireType}.
 
-    @param wireType: Python type for target serialization
+    @param wireType: Python type for designating the wire-type.
     @type wireType: type
     @return: converter map constantly updated
     """
