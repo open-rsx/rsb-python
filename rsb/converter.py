@@ -234,7 +234,6 @@ def registerGlobalConverter(converter, replaceExisting=False):
                             an error is raised.
     """
     mapForWireType = getGlobalConverterMap(converter.getWireType())
-    print 'adding', converter, 'to', mapForWireType
     mapForWireType.addConverter(converter, replaceExisting)
 
 def getGlobalConverterMap(wireType):
