@@ -33,7 +33,6 @@ class Connector(object):
                          connector.
         @type wireType: type
         """
-        print 'Connector'
         self.__logger = getLoggerByClass(self.__class__)
 
         if wireType == None:
@@ -122,7 +121,6 @@ class ConverterSelectingConnector (object):
                            the wire-type of the connector is used.
         @type converters: rsb.converter.ConverterSelectionStrategy
         """
-        print 'ConverterSelectingConnector'
         self.__converterMap = converters
 
         super(ConverterSelectingConnector, self).__init__(**kwargs)
