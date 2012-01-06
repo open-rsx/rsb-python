@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2011 Jan Moringen
 #
-# This file may be licensed under the terms of of the
+# This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
 # or (at your option) any later version.
 #
