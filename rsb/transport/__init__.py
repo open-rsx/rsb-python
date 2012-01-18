@@ -59,6 +59,15 @@ class Connector(object):
         return self.__wireType
 
     wireType = property(getWireType)
+    
+    def setScope(self, scope):
+        """
+        Sets the scope this connector will receive events from. Called before
+        #activate.
+        
+        @param scope: scope scope of the connector
+        """
+        pass
 
     def activate(self):
         raise NotImplementedError()

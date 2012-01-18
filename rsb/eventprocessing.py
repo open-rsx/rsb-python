@@ -272,9 +272,22 @@ class InRouteConfigurator(Configurator):
             self.__receivingStrategy = ParallelEventReceivingStrategy()
         else:
             self.__receivingStrategy = receivingStrategy
+        self.__scope= None
 
         for connector in self.connectors:
             connector.setObserverAction(self.__receivingStrategy.handle)
+
+    def setScope(self, scope):
+        """
+        Defines the scope the in route has to be set up. This will be called
+        before calling #activate.
+        
+        @param scope: the scope of the in route
+        """
+        self.__scope = scope
+        self.__logger.debug("Got new scope %s" % scope)
+        for connector in self.connectors:
+            connector.setScope(scope)
 
     def deactivate(self):
         super(InRouteConfigurator, self).deactivate()

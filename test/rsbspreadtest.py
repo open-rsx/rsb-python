@@ -107,6 +107,7 @@ class SpreadConnectorTest(unittest.TestCase):
             return c
 
     def __getConnector(self,
+                       scope,
                        clazz    = rsb.rsbspread.Connector,
                        module   = None,
                        activate = True):
@@ -116,13 +117,14 @@ class SpreadConnectorTest(unittest.TestCase):
         connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
                           options    = rsb.getDefaultParticipantConfig().getTransport("spread").options,
                           **kwargs)
+        connector.setScope(scope)
         if activate:
             connector.activate()
         return connector
 
     def testActivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(module = dummySpread)
+        connector = self.__getConnector(Scope("/foo"), module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
 
         # second activation must not do anything
@@ -132,7 +134,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testDeactivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(module = dummySpread)
+        connector = self.__getConnector(Scope("/foo"), module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -144,47 +146,30 @@ class SpreadConnectorTest(unittest.TestCase):
         self.assertEqual(1, connection.disconnectCalls)
 
     def testSpreadSubscription(self):
+        s1 = Scope("/xxx")
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(clazz  = rsb.rsbspread.InConnector,
+        connector = self.__getConnector(s1,
+                                        clazz  = rsb.rsbspread.InConnector,
                                         module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
-
-        s1 = Scope("/xxx")
-        f1 = rsb.filter.ScopeFilter(s1)
-        connector.filterNotify(f1, rsb.filter.FilterAction.ADD)
 
         hasher = hashlib.md5()
         hasher.update(s1.toString())
         hashed = hasher.hexdigest()[:-1]
         self.assertTrue(hashed in connection.joinCalls)
 
-        connection.clear()
-
-        connector.filterNotify(f1, rsb.filter.FilterAction.ADD)
-        self.assertEqual(0, len(connection.joinCalls))
-
-        connection.clear()
-
-        connector.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
-        self.assertEqual(0, len(connection.leaveCalls))
-        connector.filterNotify(f1, rsb.filter.FilterAction.REMOVE)
-        self.assertEqual(1, len(connection.leaveCalls))
-        self.assertTrue(hashed in connection.leaveCalls)
-
         connector.deactivate()
 
     def testRoundtrip(self):
-        inconnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
-        outconnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
-
+        
         goodScope = Scope("/good")
+        
+        inconnector = self.__getConnector(goodScope, clazz=rsb.rsbspread.InConnector)
+        outconnector = self.__getConnector(goodScope, clazz=rsb.rsbspread.OutConnector)
+
         receiver = SettingReceiver(goodScope)
         inconnector.setObserverAction(receiver)
-
-        filter = rsb.filter.ScopeFilter(goodScope)
-
-        inconnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -207,13 +192,13 @@ class SpreadConnectorTest(unittest.TestCase):
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inConnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
-        outConnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
+        scope = Scope("/test/it")
+        inConnector  = self.__getConnector(scope, clazz = rsb.rsbspread.InConnector)
+        outConnector = self.__getConnector(scope, clazz = rsb.rsbspread.OutConnector)
 
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
         inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
 
-        scope = Scope("/test/it")
         publisher = Informer(scope, str, configurator = outConfigurator)
         listener = Listener(scope, configurator = inConfigurator)
 
@@ -250,7 +235,8 @@ class SpreadConnectorTest(unittest.TestCase):
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outConnector = self.__getConnector(clazz    = rsb.rsbspread.OutConnector,
+        outConnector = self.__getConnector(sendScope,
+                                           clazz    = rsb.rsbspread.OutConnector,
                                            activate = False)
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
         informer = Informer(sendScope, str, configurator = outConfigurator)
@@ -260,7 +246,8 @@ class SpreadConnectorTest(unittest.TestCase):
         receivers = []
         for scope in superScopes:
 
-            inConnector = self.__getConnector(clazz    = rsb.rsbspread.InConnector,
+            inConnector = self.__getConnector(scope,
+                                              clazz    = rsb.rsbspread.InConnector,
                                               activate = False)
             inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
 
@@ -284,16 +271,12 @@ class SpreadConnectorTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        inConnector  = self.__getConnector(clazz = rsb.rsbspread.InConnector)
-        outConnector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
-
         goodScope = Scope("/good")
+        inConnector  = self.__getConnector(goodScope, clazz = rsb.rsbspread.InConnector)
+        outConnector = self.__getConnector(goodScope, clazz = rsb.rsbspread.OutConnector)
+
         receiver = SettingReceiver(goodScope)
         inConnector.setObserverAction(receiver)
-
-        filter = rsb.filter.ScopeFilter(goodScope)
-
-        inConnector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
@@ -314,10 +297,11 @@ class SpreadConnectorTest(unittest.TestCase):
             #self.assertEqual(receiver.resultEvent, event)
 
     def testSendTimeAdaption(self):
-        connector = self.__getConnector(clazz = rsb.rsbspread.OutConnector)
+        scope = Scope("/notGood")
+        connector = self.__getConnector(scope, clazz = rsb.rsbspread.OutConnector)
 
         event = Event(EventId(uuid.uuid4(), 0))
-        event.scope = Scope("/notGood")
+        event.scope = scope
         event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()

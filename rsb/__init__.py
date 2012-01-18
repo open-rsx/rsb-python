@@ -1252,6 +1252,7 @@ class Listener(Participant):
             connector = self.getConnector('in', config)
             connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
+        self.__configurator.setScope(scope)
 
         self.__mutex = threading.Lock()
         self.__active = False
@@ -1260,7 +1261,6 @@ class Listener(Participant):
         self.__handlers = []
 
         self.__activate()
-        self.__configurator.filterAdded(rsb.filter.ScopeFilter(self.scope))
 
     def __del__(self):
         self.deactivate()

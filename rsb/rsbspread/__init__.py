@@ -312,13 +312,20 @@ class InConnector(Connector,
         self.__receiveTask = None
         self.__observerAction = None
 
-        self.__groupNameSubscribers = {}
+        self.__scope = None
 
         super(InConnector, self).__init__(**kwargs)
+        
+    def setScope(self, scope):
+        self.__logger.debug("Got new scope %s", scope)
+        self.__scope = scope
 
     def activate(self):
         super(InConnector, self).activate()
-
+        
+        assert self.__scope is not None
+        self.connection.join(self._groupName(self.__scope))
+        
         self.__receiveTask = SpreadReceiverTask(self.connection,
                                                 self.__observerAction,
                                                 self.converterMap)
@@ -335,44 +342,7 @@ class InConnector(Connector,
         super(InConnector, self).deactivate()
 
     def filterNotify(self, filter, action):
-        self.__logger.debug("Got filter notification with filter %s and action %s", filter, action)
-
-        if self.connection == None:
-            raise RuntimeError("SpreadConnector not activated")
-
-        # scope filter is the only interesting filter
-        if not isinstance(filter, rsb.filter.ScopeFilter):
-            self.__logger.debug("Ignoring filter %s with action %s", filter, action)
-            return
-
-        groupName = self._groupName(filter.getScope());
-
-        if action == rsb.filter.FilterAction.ADD:
-            # join group if necessary, else only increment subscription counter
-
-            if not groupName in self.__groupNameSubscribers:
-                self.connection.join(groupName)
-                self.__groupNameSubscribers[groupName] = 1
-                self.__logger.info("joined group '%s'", groupName)
-            else:
-                self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] + 1
-
-        elif action == rsb.filter.FilterAction.REMOVE:
-            # leave group if no more subscriptions exist
-
-            if not groupName in self.__groupNameSubscribers:
-                self.__logger.warning("Got unsubscribe for groupName '%s' even though I was not subscribed", filter.getScope())
-                return
-
-            assert(self.__groupNameSubscribers[groupName] > 0)
-            self.__groupNameSubscribers[groupName] = self.__groupNameSubscribers[groupName] - 1
-            if self.__groupNameSubscribers[groupName] == 0:
-                self.connection.leave(groupName)
-                self.__logger.info("left group '%s'" % groupName)
-                del self.__groupNameSubscribers[groupName]
-
-        else:
-            self.__logger.warning("Received unknown filter action %s for filter %s", action, filter)
+        self.__logger.debug("Ignoring filter %s with action %s", filter, action)
 
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
