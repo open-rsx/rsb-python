@@ -36,6 +36,7 @@ import transporttest
 import convertertest
 import utiltest
 import patternstest
+import localtransporttest
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
@@ -57,4 +58,5 @@ def suite():
     suite.addTest(convertertest.suite())
     suite.addTest(utiltest.suite())
     suite.addTest(patternstest.suite())
+    suite.addTest(localtransporttest.suite())
     return suite
