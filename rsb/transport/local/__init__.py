@@ -23,6 +23,7 @@
 # ============================================================
 
 from threading import RLock
+from rsb import transport
 
 class Bus(object):
     '''
@@ -74,4 +75,28 @@ class Bus(object):
                     for sink in sinkList:
                         sink.handle(event)
 
-bus = Bus()
+globalBus = Bus()
+
+class OutConnector(transport.OutConnector):
+    '''
+    In-process OutConnector.
+    
+    @author: jwienke
+    '''
+    
+    def __init__(self, bus=globalBus, **kwargs):
+        transport.OutConnector.__init__(self, wireType=object, **kwargs)
+        self.__bus = bus
+        
+    def handle(self, event):
+        event.metaData.setSendTime()
+        self.__bus.handle(event)
+        
+    def activate(self):
+        pass
+
+    def deactivate(self):
+        pass
+
+    def setQualityOfServiceSpec(self, qos):
+        pass

@@ -24,19 +24,20 @@
 
 import unittest
 
-from rsb.transport.local import Bus
+from rsb.transport.local import Bus, OutConnector
 from rsb import Scope, Event
+import time
+
+class StubSink(object):
+    
+    def __init__(self, scope):
+        self.scope = scope
+        self.events = []
+        
+    def handle(self, event):
+        self.events.append(event)
 
 class BusTest(unittest.TestCase):
-    
-    class StubSink(object):
-        
-        def __init__(self, scope):
-            self.scope = scope
-            self.events = []
-            
-        def handle(self, event):
-            self.events.append(event)
 
     def testConstruction(self):
         Bus()
@@ -48,12 +49,12 @@ class BusTest(unittest.TestCase):
         scopes = targetScope.superScopes(True)
         sinksByScope = {}
         for scope in scopes:
-            sinksByScope[scope] = self.StubSink(scope)
+            sinksByScope[scope] = StubSink(scope)
             bus.addSink(sinksByScope[scope])
             
-        notNotifiedSiblingSink = self.StubSink(Scope("/not/notified"))
+        notNotifiedSiblingSink = StubSink(Scope("/not/notified"))
         bus.addSink(notNotifiedSiblingSink)
-        notNotifiedChildSink = self.StubSink(targetScope.concat(Scope("/child")))
+        notNotifiedChildSink = StubSink(targetScope.concat(Scope("/child")))
         bus.addSink(notNotifiedChildSink)
             
         event = Event(scope=targetScope)
@@ -62,7 +63,34 @@ class BusTest(unittest.TestCase):
             self.assertTrue(event in sink.events)
             self.assertEqual(1, len(sink.events))
 
+class OutConnectorTest(unittest.TestCase):
+    
+    def testConstruction(self):
+        OutConnector()
+        
+    def testHandle(self):
+        
+        bus = Bus()
+        connector = OutConnector(bus=bus)
+        
+        scope = Scope("/a/test")
+        sink = StubSink(scope)
+        bus.addSink(sink)
+        
+        e = Event()
+        e.scope = scope
+        
+        before = time.time()
+        connector.handle(e)
+        after = time.time()
+        self.assertEqual(1, len(sink.events))
+        self.assertTrue(e in sink.events)
+        self.assertGreaterEqual(e.metaData.sendTime, before)
+        self.assertLessEqual(e.metaData.sendTime, after)
+        
+        
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(BusTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutConnectorTest))
     return suite
