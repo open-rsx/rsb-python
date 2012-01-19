@@ -24,7 +24,7 @@
 
 import unittest
 
-from rsb.transport.local import Bus, OutConnector
+from rsb.transport.local import Bus, OutConnector, InConnector
 from rsb import Scope, Event
 import time
 
@@ -34,8 +34,14 @@ class StubSink(object):
         self.scope = scope
         self.events = []
         
+    def getScope(self):
+        return self.scope
+        
     def handle(self, event):
         self.events.append(event)
+        
+    def __call__(self, event):
+        self.handle(event)
 
 class BusTest(unittest.TestCase):
 
@@ -88,9 +94,33 @@ class OutConnectorTest(unittest.TestCase):
         self.assertGreaterEqual(e.metaData.sendTime, before)
         self.assertLessEqual(e.metaData.sendTime, after)
         
+class InConnectorTest(unittest.TestCase):
+    
+    def testConstruction(self):
+        InConnector()
+    
+    def testPassToAction(self):
+        
+        scope = Scope("/lets/go")
+
+        bus = Bus()
+        connector = InConnector(bus=bus)
+        connector.setScope(scope)
+        connector.activate()
+        
+        action = StubSink(scope)
+        connector.setObserverAction(action)
+        
+        e = Event()
+        e.scope = scope
+        bus.handle(e)
+        self.assertEqual(1, len(action.events))
+        self.assertTrue(e in action.events)
+                
         
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(BusTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutConnectorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InConnectorTest))
     return suite

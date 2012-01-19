@@ -44,9 +44,9 @@ class Bus(object):
         '''
         with self.__mutex:
             # ensure that there is a list of sinks for the given scope
-            if sink.scope not in self.__sinksByScope:
-                self.__sinksByScope[sink.scope] = []
-            self.__sinksByScope[sink.scope].append(sink)
+            if sink.getScope() not in self.__sinksByScope:
+                self.__sinksByScope[sink.getScope()] = []
+            self.__sinksByScope[sink.getScope()].append(sink)
     
     def removeSink(self, sink):
         '''
@@ -56,9 +56,9 @@ class Bus(object):
         '''
         with self.__mutex:
             # return immediately if there is no such scope known for sinks
-            if sink.scope not in self.__sinksByScope:
+            if sink.getScope() not in self.__sinksByScope:
                 return
-            self.__sinksByScope[sink.scope].remove(sink)
+            self.__sinksByScope[sink.getScope()].remove(sink)
     
     def handle(self, event):
         '''
@@ -100,3 +100,45 @@ class OutConnector(transport.OutConnector):
 
     def setQualityOfServiceSpec(self, qos):
         pass
+
+class InConnector(transport.InConnector):
+    '''
+    InConnector for the local transport.
+    
+    @author: jwienke
+    '''
+    
+    def __init__(self, bus=globalBus, **kwargs):
+        transport.InConnector.__init__(self, wireType=object, **kwargs)
+        self.__bus = bus
+        self.__scope = None
+        self.__observerAction = None
+    
+    def filterNotify(self, filter, action):
+        pass
+
+    def setObserverAction(self, action):
+        self.__observerAction = action
+    
+    def setScope(self, scope):
+        self.__scope = scope
+        
+    def getScope(self):
+        return self.__scope
+
+    def activate(self):
+        assert self.__scope is not None
+        self.__bus.addSink(self)
+
+    def deactivate(self):
+        self.__bus.removeSink(self)
+
+    def setQualityOfServiceSpec(self, qos):
+        raise NotImplementedError()
+    
+    def handle(self, event):
+        # get reference which will survive parallel changes to the action
+        action = self.__observerAction
+        if action is not None:
+            action(event)
+            
