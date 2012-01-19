@@ -1082,7 +1082,7 @@ class Participant(object):
 
         transport = config.getTransports()[0]
         if transport.getName() == 'spread':
-            import rsbspread
+            from transport import rsbspread
             if direction == 'in':
                 klass = rsbspread.InConnector
             elif direction == 'out':

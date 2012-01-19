@@ -32,7 +32,7 @@ import string
 import uuid
 import time
 
-import rsb.rsbspread
+from rsb.transport import rsbspread
 import rsb.filter
 from rsb import Event, Informer, Listener, Scope, EventId
 
@@ -108,7 +108,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def __getConnector(self,
                        scope,
-                       clazz    = rsb.rsbspread.Connector,
+                       clazz    = rsbspread.Connector,
                        module   = None,
                        activate = True):
         kwargs = {}
@@ -149,7 +149,7 @@ class SpreadConnectorTest(unittest.TestCase):
         s1 = Scope("/xxx")
         dummySpread = SpreadConnectorTest.DummySpread()
         connector = self.__getConnector(s1,
-                                        clazz  = rsb.rsbspread.InConnector,
+                                        clazz  = rsbspread.InConnector,
                                         module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
@@ -165,8 +165,8 @@ class SpreadConnectorTest(unittest.TestCase):
         
         goodScope = Scope("/good")
         
-        inconnector = self.__getConnector(goodScope, clazz=rsb.rsbspread.InConnector)
-        outconnector = self.__getConnector(goodScope, clazz=rsb.rsbspread.OutConnector)
+        inconnector = self.__getConnector(goodScope, clazz=rsbspread.InConnector)
+        outconnector = self.__getConnector(goodScope, clazz=rsbspread.OutConnector)
 
         receiver = SettingReceiver(goodScope)
         inconnector.setObserverAction(receiver)
@@ -193,8 +193,8 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
-        inConnector  = self.__getConnector(scope, clazz = rsb.rsbspread.InConnector)
-        outConnector = self.__getConnector(scope, clazz = rsb.rsbspread.OutConnector)
+        inConnector  = self.__getConnector(scope, clazz=rsbspread.InConnector)
+        outConnector = self.__getConnector(scope, clazz=rsbspread.OutConnector)
 
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
         inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
@@ -236,7 +236,7 @@ class SpreadConnectorTest(unittest.TestCase):
         superScopes = sendScope.superScopes(True)
 
         outConnector = self.__getConnector(sendScope,
-                                           clazz    = rsb.rsbspread.OutConnector,
+                                           clazz    = rsbspread.OutConnector,
                                            activate = False)
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
         informer = Informer(sendScope, str, configurator = outConfigurator)
@@ -247,7 +247,7 @@ class SpreadConnectorTest(unittest.TestCase):
         for scope in superScopes:
 
             inConnector = self.__getConnector(scope,
-                                              clazz    = rsb.rsbspread.InConnector,
+                                              clazz    = rsbspread.InConnector,
                                               activate = False)
             inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
 
@@ -272,8 +272,8 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testSequencing(self):
         goodScope = Scope("/good")
-        inConnector  = self.__getConnector(goodScope, clazz = rsb.rsbspread.InConnector)
-        outConnector = self.__getConnector(goodScope, clazz = rsb.rsbspread.OutConnector)
+        inConnector  = self.__getConnector(goodScope, clazz = rsbspread.InConnector)
+        outConnector = self.__getConnector(goodScope, clazz = rsbspread.OutConnector)
 
         receiver = SettingReceiver(goodScope)
         inConnector.setObserverAction(receiver)
@@ -298,7 +298,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testSendTimeAdaption(self):
         scope = Scope("/notGood")
-        connector = self.__getConnector(scope, clazz = rsb.rsbspread.OutConnector)
+        connector = self.__getConnector(scope, clazz = rsbspread.OutConnector)
 
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = scope
