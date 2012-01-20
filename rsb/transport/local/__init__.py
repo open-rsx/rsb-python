@@ -138,6 +138,7 @@ class InConnector(transport.InConnector):
     
     def handle(self, event):
         # get reference which will survive parallel changes to the action
+        event.metaData.setReceiveTime()
         action = self.__observerAction
         if action is not None:
             action(event)

@@ -37,9 +37,9 @@ import convertertest
 import utiltest
 import patternstest
 import localtransporttest
+import sys
 
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class ConfigSettingTestSuite (unittest.TestSuite):
     def run(self, *args):
@@ -54,7 +54,6 @@ def suite():
     suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())
     suite.addTest(rsbspreadtest.suite())
-    suite.addTest(transporttest.suite())
     suite.addTest(convertertest.suite())
     suite.addTest(utiltest.suite())
     suite.addTest(patternstest.suite())

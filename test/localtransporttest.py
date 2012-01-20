@@ -27,6 +27,7 @@ import unittest
 from rsb.transport.local import Bus, OutConnector, InConnector
 from rsb import Scope, Event
 import time
+from transporttest import TransportTest
 
 class StubSink(object):
     
@@ -117,10 +118,26 @@ class InConnectorTest(unittest.TestCase):
         self.assertEqual(1, len(action.events))
         self.assertTrue(e in action.events)
                 
+class LocalTransportTest(TransportTest):
+    
+    def _getInConnector(self, scope, activate=True):
+        connector = InConnector()
+        connector.setScope(scope)
+        if activate:
+            connector.activate()
+        return connector
+    
+    def _getOutConnector(self, scope, activate=True):
+        connector = OutConnector()
+        connector.setScope(scope)
+        if activate:
+            connector.activate()
+        return connector
         
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(BusTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutConnectorTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InConnectorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(LocalTransportTest))
     return suite

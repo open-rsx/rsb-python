@@ -30,26 +30,26 @@ import hashlib
 import random
 import string
 import uuid
-import time
 
 from rsb.transport import rsbspread
-import rsb.filter
-from rsb import Event, Informer, Listener, Scope, EventId
+from rsb import Event, Scope, EventId
+from test.transporttest import SettingReceiver, TransportTest
+import rsb
 
-class SettingReceiver(object):
-
-    def __init__(self, scope):
-        self.resultEvent = None
-        self.resultCondition = threading.Condition()
-        self.scope = scope
-
-    def __call__(self, event):
-        with self.resultCondition:
-            self.resultEvent = event
-            self.resultCondition.notifyAll()
-
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.scope)
+def getConnector(scope,
+                   clazz    = rsbspread.Connector,
+                   module   = None,
+                   activate = True):
+    kwargs = {}
+    if module:
+        kwargs['spreadModule'] = module
+    connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
+                      options    = rsb.getDefaultParticipantConfig().getTransport("spread").options,
+                      **kwargs)
+    connector.setScope(scope)
+    if activate:
+        connector.activate()
+    return connector
 
 class SpreadConnectorTest(unittest.TestCase):
 
@@ -106,25 +106,9 @@ class SpreadConnectorTest(unittest.TestCase):
             self.returnedConnections.append(c)
             return c
 
-    def __getConnector(self,
-                       scope,
-                       clazz    = rsbspread.Connector,
-                       module   = None,
-                       activate = True):
-        kwargs = {}
-        if module:
-            kwargs['spreadModule'] = module
-        connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                          options    = rsb.getDefaultParticipantConfig().getTransport("spread").options,
-                          **kwargs)
-        connector.setScope(scope)
-        if activate:
-            connector.activate()
-        return connector
-
     def testActivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(Scope("/foo"), module = dummySpread)
+        connector = getConnector(Scope("/foo"), module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
 
         # second activation must not do anything
@@ -134,7 +118,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testDeactivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(Scope("/foo"), module = dummySpread)
+        connector = getConnector(Scope("/foo"), module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -148,7 +132,7 @@ class SpreadConnectorTest(unittest.TestCase):
     def testSpreadSubscription(self):
         s1 = Scope("/xxx")
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = self.__getConnector(s1,
+        connector = getConnector(s1,
                                         clazz  = rsbspread.InConnector,
                                         module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
@@ -161,119 +145,10 @@ class SpreadConnectorTest(unittest.TestCase):
 
         connector.deactivate()
 
-    def testRoundtrip(self):
-        
-        goodScope = Scope("/good")
-        
-        inconnector = self.__getConnector(goodScope, clazz=rsbspread.InConnector)
-        outconnector = self.__getConnector(goodScope, clazz=rsbspread.OutConnector)
-
-        receiver = SettingReceiver(goodScope)
-        inconnector.setObserverAction(receiver)
-
-        # first an event that we do not want
-        event = Event(EventId(uuid.uuid4(), 0))
-        event.scope = Scope("/notGood")
-        event.data = "dummy data"
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
-        outconnector.handle(event)
-
-        # and then a desired event
-        event.scope = goodScope
-        outconnector.handle(event)
-
-        with receiver.resultCondition:
-            receiver.resultCondition.wait(10)
-            self.assertTrue(receiver.resultEvent)
-            # ignore meta data here
-            event.setMetaData(None)
-            receiver.resultEvent.setMetaData(None)
-            self.assertEqual(receiver.resultEvent, event)
-
-    def testUserRoundtrip(self):
-        scope = Scope("/test/it")
-        inConnector  = self.__getConnector(scope, clazz=rsbspread.InConnector)
-        outConnector = self.__getConnector(scope, clazz=rsbspread.OutConnector)
-
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
-        inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
-
-        publisher = Informer(scope, str, configurator = outConfigurator)
-        listener = Listener(scope, configurator = inConfigurator)
-
-        receiver = SettingReceiver(scope)
-        listener.addHandler(receiver)
-
-        data1 = "a string to test"
-        sentEvent = Event(EventId(uuid.uuid4(), 0))
-        sentEvent.setData(data1)
-        sentEvent.setType(str)
-        sentEvent.setScope(scope)
-        sentEvent.getMetaData().setUserInfo("test", "it")
-        sentEvent.getMetaData().setUserInfo("test again", "it works?")
-        sentEvent.getMetaData().setUserTime("blubb", 234234)
-        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
-        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
-        sentEvent.addCause(EventId(uuid.uuid4(), 42))
-
-        before = time.time()
-        publisher.publishEvent(sentEvent)
-
-        with receiver.resultCondition:
-            receiver.resultCondition.wait(10)
-            if receiver.resultEvent == None:
-                self.fail("Listener did not receive an event")
-            receiveTime = time.time()
-            self.assertTrue(receiver.resultEvent.metaData.createTime <= receiver.resultEvent.metaData.sendTime <= receiver.resultEvent.metaData.receiveTime <= receiver.resultEvent.metaData.deliverTime)
-            sentEvent.metaData.receiveTime = receiver.resultEvent.metaData.receiveTime
-            sentEvent.metaData.deliverTime = receiver.resultEvent.metaData.deliverTime
-            self.assertEqual(sentEvent, receiver.resultEvent)
-
-    def testHierarchySending(self):
-
-        sendScope = Scope("/this/is/a/test")
-        superScopes = sendScope.superScopes(True)
-
-        outConnector = self.__getConnector(sendScope,
-                                           clazz    = rsbspread.OutConnector,
-                                           activate = False)
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ outConnector ])
-        informer = Informer(sendScope, str, configurator = outConfigurator)
-
-        # set up listeners on the complete hierarchy
-        listeners = []
-        receivers = []
-        for scope in superScopes:
-
-            inConnector = self.__getConnector(scope,
-                                              clazz    = rsbspread.InConnector,
-                                              activate = False)
-            inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ inConnector ])
-
-            listener = Listener(scope, configurator = inConfigurator)
-            listeners.append(listener)
-
-            receiver = SettingReceiver(scope)
-
-            listener.addHandler(receiver)
-
-            receivers.append(receiver)
-
-        data = "a string to test"
-        informer.publishData(data)
-
-        for receiver in receivers:
-            with receiver.resultCondition:
-                receiver.resultCondition.wait(10)
-                if receiver.resultEvent == None:
-                    self.fail("Listener on scope %s did not receive an event" % receiver.scope)
-                self.assertEqual(receiver.resultEvent.data, data)
-
     def testSequencing(self):
         goodScope = Scope("/good")
-        inConnector  = self.__getConnector(goodScope, clazz = rsbspread.InConnector)
-        outConnector = self.__getConnector(goodScope, clazz = rsbspread.OutConnector)
+        inConnector  = getConnector(goodScope, clazz = rsbspread.InConnector)
+        outConnector = getConnector(goodScope, clazz = rsbspread.OutConnector)
 
         receiver = SettingReceiver(goodScope)
         inConnector.setObserverAction(receiver)
@@ -296,24 +171,16 @@ class SpreadConnectorTest(unittest.TestCase):
                 self.fail("Did not receive an event")
             #self.assertEqual(receiver.resultEvent, event)
 
-    def testSendTimeAdaption(self):
-        scope = Scope("/notGood")
-        connector = self.__getConnector(scope, clazz = rsbspread.OutConnector)
-
-        event = Event(EventId(uuid.uuid4(), 0))
-        event.scope = scope
-        event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
-
-        before = time.time()
-        connector.handle(event)
-        after = time.time()
-
-        self.assertTrue(event.getMetaData().getSendTime() >= before)
-        self.assertTrue(event.getMetaData().getSendTime() <= after)
+class SpreadTransportTest(TransportTest):
+    
+    def _getInConnector(self, scope, activate=True):
+        return getConnector(scope, clazz=rsbspread.InConnector, activate=activate)
+    
+    def _getOutConnector(self, scope, activate=True):
+        return getConnector(scope, clazz=rsbspread.OutConnector, activate=activate)
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadConnectorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadTransportTest))
     return suite
