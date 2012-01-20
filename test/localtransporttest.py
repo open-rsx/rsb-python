@@ -92,8 +92,8 @@ class OutConnectorTest(unittest.TestCase):
         after = time.time()
         self.assertEqual(1, len(sink.events))
         self.assertTrue(e in sink.events)
-        self.assertGreaterEqual(e.metaData.sendTime, before)
-        self.assertLessEqual(e.metaData.sendTime, after)
+        self.assertTrue(e.metaData.sendTime >= before)
+        self.assertTrue(e.metaData.sendTime <= after)
         
 class InConnectorTest(unittest.TestCase):
     
