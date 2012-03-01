@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -29,6 +30,7 @@ import threading
 import time
 import re
 import os
+import platform
 import ConfigParser
 
 from rsb.util import getLoggerByClass, Enum
@@ -326,9 +328,10 @@ class ParticipantConfig (object):
         in a L{ParticipantConfig} object and return it. The following
         sources of configuration information will be consulted:
 
-        1. C{~/.config/rsb.conf}
-        2. C{\$(PWD)/rsb.conf}
-        3. Environment Variables
+        1. C{/etc/rsb.conf}
+        2. C{~/.config/rsb.conf}
+        3. C{\$(PWD)/rsb.conf}
+        4. Environment Variables
 
         @param defaults: A L{ParticipantConfig} object the options of
                          which should be used as defaults.
@@ -340,7 +343,11 @@ class ParticipantConfig (object):
 
         See also: L{fromFile}, L{fromEnvironment}
         '''
-        partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"))
+        if platform.system() == 'Windows':
+            partial = clazz.__fromFile("c:\\rsb.conf")
+        else:
+            partial = clazz.__fromFile("/etc/rsb.conf")
+        partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"), partial)
         partial = clazz.__fromFile("rsb.conf", partial)
         options = clazz.__fromEnvironment(partial)
         return clazz.__fromDict(options)
