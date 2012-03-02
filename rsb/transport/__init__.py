@@ -23,6 +23,9 @@
 #
 # ============================================================
 
+import copy
+import threading
+
 from rsb.util import getLoggerByClass
 
 class Connector(object):
@@ -59,12 +62,12 @@ class Connector(object):
         return self.__wireType
 
     wireType = property(getWireType)
-    
+
     def setScope(self, scope):
         """
         Sets the scope this connector will receive events from. Called before
         #activate.
-        
+
         @param scope: scope scope of the connector
         """
         pass
@@ -173,3 +176,14 @@ class ConverterSelectingConnector (object):
         return self.__converterMap
 
     converterMap = property(getConverterMap)
+
+__connectors = []
+__connectorsLock = threading.Lock()
+
+def getConnectors():
+    with __connectorsLock:
+        return copy.copy(__connectors)
+
+def addConnector(clazz):
+    with __connectorsLock:
+        __connectors.append(clazz)

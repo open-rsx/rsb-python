@@ -315,17 +315,17 @@ class InConnector(Connector,
         self.__scope = None
 
         super(InConnector, self).__init__(**kwargs)
-        
+
     def setScope(self, scope):
         self.__logger.debug("Got new scope %s", scope)
         self.__scope = scope
 
     def activate(self):
         super(InConnector, self).activate()
-        
+
         assert self.__scope is not None
         self.connection.join(self._groupName(self.__scope))
-        
+
         self.__receiveTask = SpreadReceiverTask(self.connection,
                                                 self.__observerAction,
                                                 self.converterMap)
@@ -351,6 +351,8 @@ class InConnector(Connector,
             self.__receiveTask.setObserverAction(observerAction)
         else:
             self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
+
+rsb.transport.addConnector(InConnector)
 
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
@@ -388,3 +390,5 @@ class OutConnector(Connector,
             else:
                 # TODO(jmoringe): propagate error
                 self.__logger.warning("Error sending message, status code = %s", sent)
+
+rsb.transport.addConnector(OutConnector)
