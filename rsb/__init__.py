@@ -155,21 +155,22 @@ class ParticipantConfig (object):
             
             if not converter_:
                 self.__converters = rsb.converter.UnambiguousConverterMap(wireType)
+                # Find and transform configuration options
+                converterOptions = dict([ (key[17:], value) for (key, value) in options.items()
+                                          if key.startswith('converter.python') ])
+                # Try to add converters form global map
+                globalMap = rsb.converter.getGlobalConverterMap(wireType)
+                for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
+                    # Converter can be added if converterOptions does not
+                    # contain a disambiguation that gives precedence to a
+                    # different converter. map may still raise an
+                    # exception in case of ambiguity.
+                    if not wireSchema in converterOptions \
+                            or dataType.__name__ == converterOptions[wireSchema]:
+                        self.__converters.addConverter(converter)
             else:
+                # If the converter has already been created and configured.
                 self.__converters = converter_
-            # Find and transform configuration options
-            converterOptions = dict([ (key[17:], value) for (key, value) in options.items()
-                                      if key.startswith('converter.python') ])
-            # Try to add converters form global map
-            globalMap = rsb.converter.getGlobalConverterMap(wireType)
-            for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
-                # Converter can be added if converterOptions does not
-                # contain a disambiguation that gives precedence to a
-                # different converter. map may still raise an
-                # exception in case of ambiguity.
-                if not wireSchema in converterOptions \
-                        or dataType.__name__ == converterOptions[wireSchema]:
-                    self.__converters.addConverter(converter)
 
             # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
