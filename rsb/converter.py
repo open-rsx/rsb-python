@@ -196,7 +196,10 @@ class PredicateConverterList (ConverterMap):
                      dataTypePredicate=None,
                      replaceExisting=True):
         if wireSchemaPredicate is None:
-            wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
+            #if converter.getWireSchema() == 'void': 
+            #    wireSchemaPredicate = lambda wireSchema: True
+            #else:
+                wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
         if dataTypePredicate is None:
             dataTypePredicate = lambda dataType: dataType == converter.getDataType()
         key = (wireSchemaPredicate, dataTypePredicate)
@@ -257,6 +260,25 @@ def getGlobalConverterMap(wireType):
     return __globalConverterMaps[wireType]
 
 # --- converters with bytearray as serialization type ---
+
+class IdentityConverter (Converter):
+    """
+    This converter does nothing. Use it in combination with the 
+    "AlwaysApplicable"-wireSchema. 
+
+    @author: plueckin
+    """
+    def __init__(self):
+        super(IdentityConverter, self).__init__(bytearray, type(None), 'void')
+
+    def serialize(self, input):
+        return bytearray(), self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        pass
+    
+    def AlwaysApplicable(self):   
+        return bytearray
 
 class NoneConverter (Converter):
     """
