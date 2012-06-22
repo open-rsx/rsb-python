@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -248,11 +248,17 @@ class LocalMethod (Method):
             return
         userInfos = {}
         causes    = [ request.id ]
+        isError   = False
         try:
-            result = self._func(request.data)
+            if self.requestType is type(None):
+                assert(request.data is None)
+                result = self._func()
+            else:
+                result = self._func(request.data)
         except Exception, e:
+            isError                 = True
             userInfos['rsb:error?'] = '1'
-            result = str(e)
+            result                  = str(e)
 
         if isinstance(result, rsb.Event):
             reply = result
@@ -260,7 +266,7 @@ class LocalMethod (Method):
         else:
             # this check is required because the reply informer is
             # created with type 'object' to enable throwing exceptions
-            if not isinstance(result, self.replyType):
+            if not isError and not isinstance(result, self.replyType):
                 raise ValueError("The result '%s' (of type %s) of method %s does not match the method's declared return type %s."
                                  % (result, type(result), self.name, self.replyType))
             reply = rsb.Event(scope     = self.informer.scope,
@@ -375,7 +381,7 @@ class RemoteMethod (Method):
         else:
             result.set(event)
 
-    def __call__(self, arg):
+    def __call__(self, arg = None):
         """
         Call the method synchronously with argument B{arg}, returning
         the value returned by the remote method.
@@ -406,7 +412,7 @@ class RemoteMethod (Method):
         """
         return self.async(arg).get()
 
-    def async(self, arg):
+    def async(self, arg = None):
         """
         Call the method asynchronously with argument B{arg}, returning
         a L{Future} instance that can be used to retrieve the result.
