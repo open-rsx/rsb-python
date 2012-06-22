@@ -1111,7 +1111,9 @@ class Participant(object):
                 % (len(config.getTransports()), config)
 
         transport = config.getTransports()[0]
-        if transport.getName() == 'spread' and haveSpread():
+        if transport.getName() == 'spread':
+            if not haveSpread():
+                raise ValueError, "Spread transport not enabled as the python spread module cannot be found in the running interpreter"
             from transport import rsbspread
             if direction == 'in':
                 klass = rsbspread.InConnector
