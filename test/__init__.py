@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -22,6 +23,7 @@
 #
 # ============================================================
 
+import sys
 import logging
 
 import unittest
@@ -36,8 +38,9 @@ import convertertest
 import utiltest
 import patternstest
 import localtransporttest
-import sys
+import sockettransporttest
 from rsb import haveSpread
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -50,14 +53,18 @@ class ConfigSettingTestSuite (unittest.TestSuite):
 
 def suite():
     suite = ConfigSettingTestSuite()
+    suite.addTest(utiltest.suite())
     suite.addTest(coretest.suite())
     suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())
+    suite.addTest(convertertest.suite())
+
+    suite.addTest(patternstest.suite())
+
     if haveSpread():
         import rsbspreadtest
-        suite.addTest(rsbspreadtest.suite())
-    suite.addTest(convertertest.suite())
-    suite.addTest(utiltest.suite())
-    suite.addTest(patternstest.suite())
+    suite.addTest(rsbspreadtest.suite())
     suite.addTest(localtransporttest.suite())
+    suite.addTest(sockettransporttest.suite())
+
     return suite

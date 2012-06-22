@@ -22,9 +22,17 @@
 #
 # ============================================================
 
+"""
+This module contains a transport implementation that uses multiple
+point-to-point socket connections to simulate a bus.
+
+@author: jmoringe
+"""
+
 import socket
 import threading
 
+import rsb.util
 import rsb.transport
 
 from rsb.protocol.EventId_pb2 import EventId
@@ -67,10 +75,10 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
                 self.__socket = socket.create_connection((host, port))
             else:
                 raise ValueError, 'specify either host and port or socket'
-        elif not socket is None:
+        elif not socket_ is None:
             self.__socket = socket_
         else:
-            raise ValueError, 'specify either host and port or socket'
+            raise ValueError, 'specify either host and port or socket_'
         self.__file = self.__socket.makefile()
 
     # receiving
@@ -173,8 +181,7 @@ class Bus (object):
     connections = property(getConnections)
 
     def getConnectors(self):
-        with self.__lock:
-            return self.__connectors
+        return self.__connectors
 
     def addConnector(self, connector):
         """
@@ -197,11 +204,20 @@ class Bus (object):
 
     connectors = property(getConnectors)
 
-    def publish(self, event):
-        raise NotImplementedError
+    def handle(self, event):
+        with self.__lock:
+            # Distribute the event to remote participants via network
+            # connections.
+            for connection in self.connections:
+                connection.handle(event)
+            # Distribute the event to participants in our own process
+            # via InPushConnector instances.
+            for connector in self.connectors:
+                if isinstance(connector, InPushConnector):
+                    connector.handle(event)
 
     def __repr__(self):
-        return '<%s %d conns %d cntors at 0x%x>' \
+        return '<%s %d connections %d connectors at 0x%x>' \
             % (type(self).__name__,
                len(self.getConnections()),
                len(self.getConnectors()),
@@ -221,7 +237,7 @@ def getBusClientFor(host, port, connector):
     @param host: A hostname or address of the node on which the bus
                  server listens.
     @type host: str
-    @param port: The port on which the new bus server listens.
+    @param port: The port on which the bus server listens.
     @type port: int
     @param connector: A connector that should be attached to the bus
                       client.
@@ -234,7 +250,6 @@ def getBusClientFor(host, port, connector):
             __busClients[key] = bus
             bus.addConnector(connector)
         else:
-            # TODO lock bus
             bus.addConnector(connector)
         return bus
 
@@ -286,7 +301,6 @@ def getBusServerFor(host, port, connector):
             __busServers[key] = bus
             bus.addConnector(connector)
         else:
-            # TODO lock bus here
             bus.addConnector(connector)
         return bus
 
@@ -327,7 +341,6 @@ class BusServer (Bus):
     def acceptClients(self):
         while True:
             socket, addr = self.__socket.accept()
-            log('Connection from %s', addr)
             self.addConnection(BucConnection(socket = socket))
 
 class Connector(rsb.transport.Connector,
@@ -340,14 +353,29 @@ class Connector(rsb.transport.Connector,
     @author: jmoringe
     """
 
-    def __init__(self, host, port, server, **kwargs):
-        super(Connector, self).__init__(wireType = bytes, **kwargs)
+    def __init__(self, converters, options = {}, **kwargs):
+        super(Connector, self).__init__(wireType   = bytearray,
+                                        converters = converters,
+                                        **kwargs)
 
-        # TODO(jmoringe): do this when activating?
-        if server:
+        self.__bus    = None
+        self.__host   = options.get('host', 'localhost')
+        self.__port   = int(options.get('port', '5555'))
+        self.__server = options.get('server', 'auto')
+
+    def __getBus(self, host, port, server):
+        if server == True:
             self.__bus = getBusServerFor(host, port, self)
-        else:
+        elif server == False:
             self.__bus = getBusClientFor(host, port, self)
+        elif server == 'auto':
+            try:
+                self.__bus = getBusServerFor(host, port, self)
+            except Exception, e:
+                self.__bus = getBusClientFor(host, port, self)
+        else:
+            raise TypeError, 'server argument has to be True, false or "auto", not %s' % server
+        return self.__bus
 
     def getBus(self):
         return self.__bus
@@ -355,9 +383,12 @@ class Connector(rsb.transport.Connector,
     bus = property(getBus)
 
     def activate(self):
-        pass
+        self.__bus = self.__getBus(self.__host, self.__port, self.__server)
 
     def deactivate(self):
+        pass
+
+    def setQualityOfServiceSpec(self, qos):
         pass
 
 class InPushConnector (Connector,
@@ -386,11 +417,47 @@ class InPushConnector (Connector,
     def setObserverAction(self, action):
         self.__action = action
 
+    def handle(self, notification):
+        if self.__action is None:
+            return
+
+        import rsb.transport.rsbspread.conversion as conversion
+        from rsb.protocol.Notification_pb2 import Notification
+
+        converter = self.getConverterForWireSchema(notification.wire_schema)
+        event = conversion.notificationToEvent(notification,
+                                               wireData   = notification.data,
+                                               wireSchema = notification.wire_schema,
+                                               converter  = converter)
+        self.__action(event)
+
 rsb.transport.addConnector(InPushConnector)
 
 class OutConnector (Connector,
                     rsb.transport.OutConnector):
-    def publish(self, event):
-        self.bus.publish(event)
+    """
+    Instance of this class send events to a bus (represented by a
+    L{Bus} object) that is accessed via a socket connection.
+
+    @author: jmoringe
+    """
+
+    def __init__(self, **kwargs):
+        super(OutConnector, self).__init__(**kwargs)
+
+    def handle(self, event):
+        import rsb.transport.rsbspread.conversion as conversion
+        from rsb.protocol.Notification_pb2 import Notification
+
+        # Create a notification fragment for the event and send it
+        # over the bus.
+        event.getMetaData().setSendTime()
+        converter = self.getConverterForDataType(event.type)
+        wireData, wireSchema = converter.serialize(event.data)
+        notification = Notification()
+        conversion.eventToNotification(notification, event,
+                                       wireSchema = wireSchema,
+                                       data       = wireData)
+        self.bus.handle(notification)
 
 rsb.transport.addConnector(OutConnector)
