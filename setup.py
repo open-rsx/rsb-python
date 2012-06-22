@@ -80,7 +80,7 @@ class ApiDocCommand(Command):
         # ensure that everything that's needed is built
         self.run_command('build')
 
-        outdir = os.path.join("doc", self.format)
+        outdir = os.path.join("docs", self.format)
         try:
             os.makedirs(outdir)
         except OSError:
@@ -292,6 +292,20 @@ setup(name='rsb-python',
       author_email='jwienke@techfak.uni-bielefeld.de',
       license="LGPLv3+",
       url="https://code.cor-lab.org/projects/rsb",
+      keywords=["middleware", "bus", "robotics"],
+      classifiers=[
+        "Programming Language :: Python",
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Other Environment",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+        "Operating System :: OS Independent",
+        "Topic :: Communications",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        ],
 
       setup_requires=["coverage", "epydoc", "unittest-xml-reporting"],
       
