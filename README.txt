@@ -24,20 +24,26 @@ Afterwards type::
 Running Unit Tests
 ------------------
 
-python setup.py test
+Execute::
+
+  python setup.py test
 
 Reports will be generated in test-reports and on the command line.
 
 Generating the API Documentation
 --------------------------------
 
-python setup.py doc
+Execute::
+
+  python setup.py doc
 
 Will be available at doc/html.
 
 Generating the Coverage Report
 ------------------------------
 
-python setup.py coverage
+Execute::
+
+  python setup.py coverage
 
 Will be available in covhtml.
