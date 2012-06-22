@@ -152,7 +152,7 @@ class ParticipantConfig (object):
             #    map of the transport, resolving conflicts based on
             #    configuration options when necessary
             wireType = bytearray
-            
+
             if not converter_:
                 self.__converters = rsb.converter.UnambiguousConverterMap(wireType)
                 # Find and transform configuration options
@@ -251,9 +251,9 @@ class ParticipantConfig (object):
 
         # Transport options
         for transport in [ 'spread', 'socket' ]:
-            options = dict(sectionOptions('transport.%s' % transport))
+            transportOptions = dict(sectionOptions('transport.%s' % transport))
             if options:
-                result.__transports[transport] = clazz.Transport(transport, options)
+                result.__transports[transport] = clazz.Transport(transport, transportOptions)
         return result
 
     @classmethod
@@ -1102,7 +1102,6 @@ class Participant(object):
                 assert(False)
         elif transport.getName() == 'socket':
             import rsb.transport.socket
-            klass = OutConnector
             if direction == 'in':
                 klass = rsb.transport.socket.InConnector
             elif direction == 'out':
