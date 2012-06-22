@@ -32,7 +32,7 @@ import string
 import uuid
 
 from rsb.transport import rsbspread
-from rsb import Event, Scope, EventId
+from rsb import Event, Scope, EventId, ParticipantConfig
 from test.transporttest import SettingReceiver, TransportTest
 import rsb
 
@@ -44,7 +44,7 @@ def getConnector(scope,
     if module:
         kwargs['spreadModule'] = module
     connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                      options    = rsb.getDefaultParticipantConfig().getTransport("spread").options,
+                      options    = ParticipantConfig.fromDict({"transport.spread.enabled": 1, "transport.spread.port": "4803"}).getTransport("spread").options,
                       **kwargs)
     connector.setScope(scope)
     if activate:

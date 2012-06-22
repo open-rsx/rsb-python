@@ -29,7 +29,7 @@ import unittest
 
 import rsb
 from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
-    Informer, EventId
+    Informer, EventId, setDefaultParticipantConfig
 import time
 from uuid import uuid4
 
@@ -48,7 +48,7 @@ class ParticipantConfigTest (unittest.TestCase):
                          QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.getTransports()), 1)
-        self.assertEqual(len(config.getTransports(includeDisabled=True)), 1)
+        self.assertEqual(len(config.getTransports(includeDisabled=True)), 2)
 
         # Check spread transport
         transport = config.getTransport('spread')
@@ -320,6 +320,11 @@ class EventTest(unittest.TestCase):
         self.assertEqual(e1, e2)
 
 class FactoryTest(unittest.TestCase):
+    
+    def setUp(self):
+        config = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
+        setDefaultParticipantConfig(config)
+    
     def testDefaultParticipantConfig(self):
         self.assert_(rsb.getDefaultParticipantConfig())
 

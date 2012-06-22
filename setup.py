@@ -37,6 +37,7 @@ import setuptools.command.test
 import subprocess
 import sys
 import time
+import rsb
 
 class CommandStarter(object):
 
@@ -141,7 +142,7 @@ class BuildProtobufs(Command):
                     protoFiles.append(os.path.join(root, file))
 
         if len(protoFiles) == 0:
-            raise RuntimeError(("Could not find rsb protocol at '%s'. " +
+            raise RuntimeError(("Could not find rsb protocol at '%s'. " + 
                                 "Please specify it's location using the command option or config file.") % protoRoot)
 
         # create output directory
@@ -177,7 +178,7 @@ class Coverage(Command):
         self.spread = None
 
     def finalize_options(self):
-        if self.spread == None:
+        if self.spread == None and rsb.haveSpread():
             self.spread = find_executable("spread")
             if self.spread == None:
                 print("WARNING: no spread daemon found. Make sure that one is running before starting the coverage report")
@@ -235,17 +236,17 @@ class Test(setuptools.command.test.test):
     """
 
     user_options = setuptools.command.test.test.user_options \
-        + [ ('spread=',     'd', "spread executable to use"),
+        + [ ('spread=', 'd', "spread executable to use"),
             ('spreadport=', 'p', "port the spread daemon should use") ]
 
     def initialize_options(self):
         setuptools.command.test.test.initialize_options(self)
-        self.spread     = None
+        self.spread = None
         self.spreadport = 4803
 
     def finalize_options(self):
         setuptools.command.test.test.finalize_options(self)
-        if self.spread == None:
+        if self.spread == None and rsb.haveSpread():
             self.spread = find_executable("spread")
             if self.spread == None:
                 print("WARNING: no spread daemon found. Make sure that one is running before starting the unit tests")
@@ -283,7 +284,7 @@ class Test(setuptools.command.test.test):
 
 
 setup(name='rsb-python',
-      version = '0.7.0',
+      version='0.7.0',
       description='''
                   Fully event-driven Robotics Service Bus
                   ''',
@@ -293,7 +294,10 @@ setup(name='rsb-python',
       url="https://code.cor-lab.org/projects/rsb",
 
       setup_requires=["coverage", "epydoc", "unittest-xml-reporting"],
-      install_requires=["SpreadModule"],
+      
+      extras_require={
+        'spread-transport':  ["SpreadModule>=1.5spread4"],
+      },
 
       packages=find_packages(exclude=["test", "examples", "build"]),
       test_suite="test.suite",

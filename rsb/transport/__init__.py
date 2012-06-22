@@ -27,6 +27,7 @@ import copy
 import threading
 
 from rsb.util import getLoggerByClass
+import logging
 
 class Connector(object):
     """
@@ -50,7 +51,8 @@ class Connector(object):
 
         self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
         self.__wireType = wireType
-
+        
+        # fails if still some arguments are left over
         super(Connector, self).__init__(**kwargs)
 
     def getWireType(self):
@@ -141,8 +143,6 @@ class ConverterSelectingConnector (object):
         @type converters: rsb.converter.ConverterSelectionStrategy
         """
         self.__converterMap = converters
-
-        super(ConverterSelectingConnector, self).__init__(**kwargs)
 
         assert(self.__converterMap.getWireType() == self.wireType)
 

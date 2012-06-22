@@ -31,13 +31,13 @@ import rsb
 import coretest
 import eventprocessingtest
 import filtertest
-import rsbspreadtest
 import transporttest
 import convertertest
 import utiltest
 import patternstest
 import localtransporttest
 import sys
+from rsb import haveSpread
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,7 +53,9 @@ def suite():
     suite.addTest(coretest.suite())
     suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())
-    suite.addTest(rsbspreadtest.suite())
+    if haveSpread():
+        import rsbspreadtest
+        suite.addTest(rsbspreadtest.suite())
     suite.addTest(convertertest.suite())
     suite.addTest(utiltest.suite())
     suite.addTest(patternstest.suite())

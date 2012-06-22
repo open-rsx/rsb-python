@@ -37,6 +37,21 @@ from rsb.util import getLoggerByClass, Enum
 import rsb.eventprocessing
 import rsb.filter
 
+_spreadAvailable = False
+try:
+    import spread
+    _spreadAvailable = True
+except ImportError:
+    pass
+
+def haveSpread():
+    '''
+    Indicates whether the installation of RSB has spread support.
+    
+    @return: True if spread is available, else False
+    '''
+    return _spreadAvailable
+
 class QualityOfServiceSpec(object):
     '''
     Specification of desired quality of service settings for sending
@@ -183,8 +198,11 @@ class ParticipantConfig (object):
 
         def isEnabled(self):
             return self.__enabled
+        
+        def setEnabled(self, flag):
+            self.__enabled = flag
 
-        enabled = property(isEnabled)
+        enabled = property(isEnabled, setEnabled)
 
         def getConverters(self):
             return self.__converters
@@ -250,9 +268,9 @@ class ParticipantConfig (object):
         result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', QualityOfServiceSpec().getOrdering().__str__())))
 
         # Transport options
-        for transport in [ 'spread', 'socket' ]:
+        for transport in [ 'spread', 'socket', 'inprocess' ]:
             transportOptions = dict(sectionOptions('transport.%s' % transport))
-            if options:
+            if transportOptions:
                 result.__transports[transport] = clazz.Transport(transport, transportOptions)
         return result
 
@@ -347,10 +365,11 @@ class ParticipantConfig (object):
 
         See also: L{fromFile}, L{fromEnvironment}
         '''
+        defaults = {"transport.socket.enabled": "1"}
         if platform.system() == 'Windows':
-            partial = clazz.__fromFile("c:\\rsb.conf")
+            partial = clazz.__fromFile("c:\\rsb.conf", defaults)
         else:
-            partial = clazz.__fromFile("/etc/rsb.conf")
+            partial = clazz.__fromFile("/etc/rsb.conf", defaults)
         partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"), partial)
         partial = clazz.__fromFile("rsb.conf", partial)
         options = clazz.__fromEnvironment(partial)
@@ -1092,7 +1111,7 @@ class Participant(object):
                 % (len(config.getTransports()), config)
 
         transport = config.getTransports()[0]
-        if transport.getName() == 'spread':
+        if transport.getName() == 'spread' and haveSpread():
             from transport import rsbspread
             if direction == 'in':
                 klass = rsbspread.InConnector
@@ -1106,6 +1125,14 @@ class Participant(object):
                 klass = rsb.transport.socket.InConnector
             elif direction == 'out':
                 klass = rsb.transport.socket.OutConnector
+            else:
+                assert(False)
+        elif transport.getName() == 'inprocess':
+            import rsb.transport.local
+            if direction == 'in':
+                klass = rsb.transport.local.InConnector
+            elif direction == 'out':
+                klass = rsb.transport.local.OutConnector
             else:
                 assert(False)
         else:
@@ -1447,7 +1474,7 @@ def createServer(scope, object = None, expose = None, methods = None,
 
     # Create the server object and potentially add methods.
     import rsb.patterns
-    server = rsb.patterns.LocalServer(scope)
+    server = rsb.patterns.LocalServer(scope, config)
     if object and expose:
         methods = [ (name, getattr(object, name), requestType, replyType)
                     for (name, requestType, replyType) in expose ]

@@ -24,19 +24,21 @@
 
 import unittest
 import rsb
+from rsb import ParticipantConfig
 
 class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
+        
         # Test creating a server without methods
-        server = rsb.createServer('/some/scope')
+        server = rsb.createServer('/some/scope', config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual(server.methods, [])
 
-        server = rsb.createServer(rsb.Scope('/some/scope'))
+        server = rsb.createServer(rsb.Scope('/some/scope'), config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
         server = rsb.createServer(rsb.Scope('/some/scope'),
-                                  methods = [ ('foo', lambda x: x, str, str) ])
+                                  methods = [ ('foo', lambda x: x, str, str) ], config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
 
         # Test creating a server that exposes method of an existing
@@ -48,7 +50,8 @@ class LocalServerTest (unittest.TestCase):
         someObject = SomeClass()
         server = rsb.createServer(rsb.Scope('/some/scope'),
                                   object = someObject,
-                                  expose = [ ('bar', str, None) ])
+                                  expose = [ ('bar', str, None) ],
+                                  config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
 
         # Cannot supply expose without object
@@ -67,11 +70,14 @@ class LocalServerTest (unittest.TestCase):
 
 class RoundTripTest (unittest.TestCase):
     def testRoundTrip(self):
+        
+        config = ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"})
+        
         localServer = rsb.createServer(
             '/roundtrip',
-            methods = [ ('addone', lambda x: x + 1, long, long) ])
+            methods = [ ('addone', lambda x: long(x + 1), long, long) ], config=config)
 
-        remoteServer = rsb.createRemoteServer('/roundtrip')
+        remoteServer = rsb.createRemoteServer('/roundtrip', config)
 
         # Call synchronously
         self.assertEqual(map(remoteServer.addone, range(100)),

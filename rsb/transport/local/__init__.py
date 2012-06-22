@@ -84,7 +84,7 @@ class OutConnector(transport.OutConnector):
     @author: jwienke
     '''
     
-    def __init__(self, bus=globalBus, **kwargs):
+    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
         transport.OutConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         
@@ -108,7 +108,7 @@ class InConnector(transport.InConnector):
     @author: jwienke
     '''
     
-    def __init__(self, bus=globalBus, **kwargs):
+    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
         transport.InConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         self.__scope = None
@@ -134,7 +134,7 @@ class InConnector(transport.InConnector):
         self.__bus.removeSink(self)
 
     def setQualityOfServiceSpec(self, qos):
-        raise NotImplementedError()
+        pass
     
     def handle(self, event):
         # get reference which will survive parallel changes to the action
