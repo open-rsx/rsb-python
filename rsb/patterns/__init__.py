@@ -250,7 +250,7 @@ class LocalMethod (Method):
         causes    = [ request.id ]
         isError   = False
         try:
-            if self.requestType() is type(None):
+            if self.requestType is type(None):
                 assert(request.data is None)
                 result = self._func()
             else:
