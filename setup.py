@@ -307,7 +307,7 @@ setup(name='rsb-python',
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
 
-      setup_requires=["coverage", "epydoc", "unittest-xml-reporting"],
+      setup_requires=["coverage", "epydoc", "unittest-xml-reporting", "protobuf"],
       
       extras_require={
         'spread-transport':  ["SpreadModule>=1.5spread4"],
