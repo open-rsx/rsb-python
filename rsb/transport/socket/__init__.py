@@ -421,7 +421,7 @@ class InPushConnector (Connector,
         if self.__action is None:
             return
 
-        import rsb.transport.rsbspread.conversion as conversion
+        import rsb.transport.conversion as conversion
         from rsb.protocol.Notification_pb2 import Notification
 
         converter = self.getConverterForWireSchema(notification.wire_schema)
@@ -446,7 +446,7 @@ class OutConnector (Connector,
         super(OutConnector, self).__init__(**kwargs)
 
     def handle(self, event):
-        import rsb.transport.rsbspread.conversion as conversion
+        import rsb.transport.conversion as conversion
         from rsb.protocol.Notification_pb2 import Notification
 
         # Create a notification fragment for the event and send it

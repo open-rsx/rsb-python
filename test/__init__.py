@@ -58,12 +58,10 @@ def suite():
     suite.addTest(eventprocessingtest.suite())
     suite.addTest(filtertest.suite())
     suite.addTest(convertertest.suite())
-
     suite.addTest(patternstest.suite())
-
     if haveSpread():
         import rsbspreadtest
-    suite.addTest(rsbspreadtest.suite())
+        suite.addTest(rsbspreadtest.suite())
     suite.addTest(localtransporttest.suite())
     suite.addTest(sockettransporttest.suite())
 

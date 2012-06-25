@@ -42,7 +42,7 @@ import rsb.converter
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
 from google.protobuf.message import DecodeError
 
-import conversion
+import rsb.transport.conversion as conversion
 
 def makeKey(notification):
     key = notification.event_id.sender_id + '%08x' % notification.event_id.sequence_number
