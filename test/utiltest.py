@@ -87,10 +87,6 @@ class EnumTest(unittest.TestCase):
 
 class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
-    def setUp(self):
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-
     class StubReciever(object):
 
         nextReceiverNum = 1
