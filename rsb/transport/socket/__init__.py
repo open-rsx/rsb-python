@@ -413,6 +413,9 @@ class BusServer (Bus):
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
+        self.__host           = host
+        self.__port           = port
+        self.__backlog        = backlog
         self.__socket         = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__acceptorThread = None
 
@@ -443,8 +446,8 @@ class BusServer (Bus):
 
     def activate(self):
         # Bind the socket and start listening
-        self.__socket.bind(('0.0.0.0', port))
-        self.__socket.listen(backlog)
+        self.__socket.bind(('0.0.0.0', self.__port))
+        self.__socket.listen(self.__backlog)
 
         self.__acceptorThread = threading.Thread(target = self.acceptClients)
         self.__acceptorThread.start()
