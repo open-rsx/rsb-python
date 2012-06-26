@@ -47,7 +47,7 @@ except ImportError:
 def haveSpread():
     '''
     Indicates whether the installation of RSB has spread support.
-    
+
     @return: True if spread is available, else False
     '''
     return _spreadAvailable
@@ -198,7 +198,7 @@ class ParticipantConfig (object):
 
         def isEnabled(self):
             return self.__enabled
-        
+
         def setEnabled(self, flag):
             self.__enabled = flag
 
@@ -1124,7 +1124,7 @@ class Participant(object):
         elif transport.getName() == 'socket':
             import rsb.transport.socket
             if direction == 'in':
-                klass = rsb.transport.socket.InConnector
+                klass = rsb.transport.socket.InPushConnector
             elif direction == 'out':
                 klass = rsb.transport.socket.OutConnector
             else:
