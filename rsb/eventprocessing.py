@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -39,7 +39,7 @@ class BroadcastProcessor (object):
         if handlers is None:
             self.__handlers = []
         else:
-            self.__handlers = handlers
+            self.__handlers = list(handlers)
 
     def getHandlers(self):
         return self.__handlers
@@ -59,7 +59,7 @@ class BroadcastProcessor (object):
         self.dispatch(event)
 
     def dispatch(self, event):
-        for handler in sefl.handlers:
+        for handler in self.handlers:
             handler(event)
 
     def __str__(self):
@@ -281,7 +281,7 @@ class InRouteConfigurator(Configurator):
         """
         Defines the scope the in route has to be set up. This will be called
         before calling #activate.
-        
+
         @param scope: the scope of the in route
         """
         self.__scope = scope
