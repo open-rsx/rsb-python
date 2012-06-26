@@ -1193,7 +1193,8 @@ class Informer(Participant):
 
     def __del__(self):
         self.__logger.debug("Destructing Informer")
-        self.deactivate()
+        if self.__active:
+            self.deactivate()
 
     def getType(self):
         """
@@ -1302,7 +1303,8 @@ class Listener(Participant):
         self.__activate()
 
     def __del__(self):
-        self.deactivate()
+        if self.__active:
+            self.deactivate()
 
     def __activate(self):
         # TODO commonality with Informer... refactor
