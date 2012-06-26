@@ -107,10 +107,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def __del__(self):
         if self.__active:
-            try:
-                self.deactivate()
-            except Exception, e:
-                print 'WARNING: error during shutdown of %s: %s' % (self, e)
+            self.deactivate()
 
     def getErrorHook(self):
         return self.__errorHook
@@ -152,7 +149,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             try:
                 self.doOneNotification()
             except Exception, e:
-                # __socket is None means => shutdown in progress
+                # __socket is None => shutdown in progress
                 if self.__socket:
                     self.__logger.warn('Receive error: %s', e)
                     if not self.errorHook is None:
@@ -204,10 +201,10 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         except Exception, e:
             self.__logger.warn('Failed to close socket: %s', e)
 
-        if not self.__thread is threading.currentThread():
+        if not self.__thread is None \
+                and not self.__thread is threading.currentThread():
             self.__logger.info('Joining thread')
-            if not self.__thread is None:
-                self.__thread.join()
+            self.__thread.join()
 
         self.__active = False
 
@@ -263,8 +260,8 @@ class Bus (object):
             class Handler(object):
                 def __init__(_self):
                     _self.bus = self
-                def __call__(self, notification):
-                    return ( connection, notification )
+                def __call__(_self, notification):
+                    self.handleIncoming(( connection, notification ))
             connection.addHandler(Handler())
             connection.errorHook = lambda exception: self.removeConnection(connection)
             connection.activate()
