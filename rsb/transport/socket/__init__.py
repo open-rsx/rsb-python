@@ -59,7 +59,9 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     @author: jmoringe
     """
 
-    def __init__(self, host = None, port = None, socket_ = None):
+    def __init__(self,
+                 host = None, port = None, socket_ = None,
+                 isServer = False):
         """
         @param host: Hostname or address of the bus server.
         @type host: str or None
@@ -70,6 +72,14 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
         See: L{getBusClientFor}, L{getBusServerFor}.
         """
+        super(BusConnection, self).__init__()
+
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__thread = None
+        self.__socket = None
+        self.__file   = None
+
         if not host is None and not port is None:
             if socket_ is None:
                 self.__socket = socket.create_connection((host, port))
@@ -81,15 +91,34 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             raise ValueError, 'specify either host and port or socket_'
         self.__file = self.__socket.makefile()
 
+        if isServer:
+            self.__file.write('\0\0\0\0')
+            self.__file.flush()
+        else:
+            zero = self.__file.read(size = 4)
+            if len(zero) == '\0\0\0\0':
+                raise RuntimeError, 'incorrect handshake'
+
+    def __del__(self):
+        try:
+            self.deactivate()
+        except Exception, e:
+            print 'WARNING: error during shutdown of %s: %s' % (self, e)
+
     # receiving
 
     def receiveNotification(self):
         size = self.__file.read(size = 4)
+        if not (len(size) == 4):
+            raise RuntimeError, 'short read when receiving notification size'
         size = ord(size[0])      \
             | ord(size[1]) << 8  \
             | ord(size[2]) << 16 \
             | ord(size[3]) << 24
+        self.__logger.info('Receiving notification of size %d' % size)
         notification = self.__file.read(size = size)
+        if not (len(notification) == size):
+            raise RuntimeError, 'short read when receiving notification payload'
         return notification
 
     def bufferToNotification(self, serialized):
@@ -104,18 +133,21 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def receiveNotifications(self):
         while True:
+            self.__logger.info('Receiving notifications')
             self.doOneNotification()
 
     # sending
 
     def sendNotification(self, notification):
         size = len(notification)
+        self.__logger.info('Sending notification of size %d' % size)
         size = ''.join((chr(size & 0x000000ff),
                         chr((size & 0x0000ff00) >> 8),
                         chr((size & 0x00ff0000) >> 16),
                         chr((size & 0xff000000) >> 24)))
         self.__file.write(size)
         self.__file.write(notification)
+        self.__file.flush()
 
     def notificationToBuffer(self, notification):
         return notification.SerializeToString()
@@ -126,9 +158,17 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     # state management
 
-    def close(self):
-        self.__file.close()
-        self.__socket.close()
+    def activate(self):
+        self.__thread = threading.Thread(target = self.receiveNotifications)
+        self.__thread.start()
+
+    def deactivate(self):
+        if not self.__thread is None:
+            self.__thread.join()
+        if not self.__socket is None:
+            self.__socket.close()
+        if not self.__file is None:
+            self.__file.close()
 
 class Bus (object):
     """
@@ -147,9 +187,16 @@ class Bus (object):
     @author: jmoringe
     """
     def __init__(self):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
         self.__connections = []
         self.__connectors  = []
         self.__lock        = threading.Lock()
+
+    def getLock(self):
+        return self.__lock
+
+    lock = property(getLock)
 
     def getConnections(self):
         """
@@ -168,14 +215,22 @@ class Bus (object):
         @param connection: The connection that should be added to this
                            bus.
         """
-        with self.__lock:
+        with self.lock:
             self.__connections.append(connection)
+            connection.addHandler(lambda notification: self.handleIncoming(( connection, notification )))
+            connection.activate()
 
     def removeConnection(self, connection):
         """
-        @param connection:
+        Remove B{connection} from the list of connections of this bus.
+
+        @param connection: The connection that should be removed from
+                           this bus.
         """
-        with self.__lock:
+        with self.lock:
+            connection.deactivate()
+            connection.removeHandler([ h for h in connection.handlers
+                                       if h[1] == self.handleIncoming ][0])
             self.__connections.remove(connection)
 
     connections = property(getConnections)
@@ -193,28 +248,50 @@ class Bus (object):
         @param connector: The connector that should be added to this
                           bus.
         """
-        with self.__lock:
+        with self.lock:
             self.__connectors.append(connector)
 
     def removeConnector(self, connector):
-        with self.__lock:
+        with self.lock:
             self.__connectors.remove(connector)
             if not self.__connectors:
                 pass # TODO last remaining connector removed, destroy the bus
 
     connectors = property(getConnectors)
 
-    def handle(self, event):
-        with self.__lock:
-            # Distribute the event to remote participants via network
-            # connections.
-            for connection in self.connections:
-                connection.handle(event)
-            # Distribute the event to participants in our own process
-            # via InPushConnector instances.
+    def handleIncoming(self, connectionAndNotification):
+        (connection, notification) = connectionAndNotification
+        with self.lock:
+            # Distribute the notification to participants in our
+            # process via InPushConnector instances.
             for connector in self.connectors:
-                if isinstance(connector, InPushConnector):
-                    connector.handle(event)
+                if isinstance(connector, InPushConnector): # TODO connector.direction == 'in'
+                    connector.handle(notification)
+
+    def handleOutgoing(self, notification):
+        with self.lock:
+            # Distribute the notification to remote participants via
+            # network connections.
+            self._toConnections(notification)
+            # Distribute the notification to participants in our own
+            # process via InPushConnector instances.
+            self._toConnectors(notification)
+
+    # Low-level helpers
+
+    def _toConnections(self, notification, exclude = None):
+        for connection in self.connections:
+            if not connection is exclude:
+                try:
+                    connection.handle(notification)
+                except Exception, e:
+                    # TODO handle this
+                    self.__logger.info('Failed to send to %s: %s' % (connection, e))
+
+    def _toConnectors(self, notification):
+        for connector in self.connectors:
+            if isinstance(connector, InPushConnector):
+                connector.handle(notification)
 
     def __repr__(self):
         return '<%s %d connections %d connectors at 0x%x>' \
@@ -334,14 +411,50 @@ class BusServer (Bus):
         """
         super(BusServer, self).__init__()
 
-        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__socket.bind((host, port))
-        self.__socket.listen(backlog)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__socket         = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__acceptorThread = None
+
+        self.activate()
+
+    def __del__(self):
+        self.deactivate()
 
     def acceptClients(self):
         while True:
+            self.__logger.info('Waiting for clients')
             socket, addr = self.__socket.accept()
-            self.addConnection(BucConnection(socket = socket))
+            self.__logger.info('Accepted client %s', addr)
+            self.addConnection(BusConnection(socket_ = socket, isServer = True))
+
+    # Receiving notifications
+
+    def handleIncoming(self, connectionAndNotification):
+        super(BusServer, self).handleIncoming(connectionAndNotification)
+
+        # Distribute the notification to all connections except the
+        # one that sent it.
+        (sendingConnection, notification) = connectionAndNotification
+        with self.lock:
+            self._toConnections(notification, exclude = sendingConnection)
+
+    # State management
+
+    def activate(self):
+        # Bind the socket and start listening
+        self.__socket.bind(('0.0.0.0', port))
+        self.__socket.listen(backlog)
+
+        self.__acceptorThread = threading.Thread(target = self.acceptClients)
+        self.__acceptorThread.start()
+
+    def deactivate(self):
+        # TODO do this less brutally
+        if not self.__socket is None:
+            self.__socket.close()
+        if not self.__acceptorThread is None:
+            self.__acceptorThread.join()
 
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
@@ -357,6 +470,7 @@ class Connector(rsb.transport.Connector,
         super(Connector, self).__init__(wireType   = bytearray,
                                         converters = converters,
                                         **kwargs)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__bus    = None
         self.__host   = options.get('host', 'localhost')
@@ -365,16 +479,24 @@ class Connector(rsb.transport.Connector,
 
     def __getBus(self, host, port, server):
         if server == True:
+            self.__logger.info('Getting bus server %s:%d', host, port)
             self.__bus = getBusServerFor(host, port, self)
         elif server == False:
+            self.__logger.info('Getting bus client %s:%d', host, port)
             self.__bus = getBusClientFor(host, port, self)
         elif server == 'auto':
             try:
+                self.__logger.info('Trying to get bus server %s:%d (in server = auto mode)',
+                                   host, port)
                 self.__bus = getBusServerFor(host, port, self)
             except Exception, e:
+                self.__logger.info('Failed to get bus server: %s', e)
+                self.__logger.info('Trying to get bus client %s:%d (in server = auto mode)',
+                                   host, port)
                 self.__bus = getBusClientFor(host, port, self)
         else:
             raise TypeError, 'server argument has to be True, false or "auto", not %s' % server
+        self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
     def getBus(self):
@@ -386,7 +508,7 @@ class Connector(rsb.transport.Connector,
         self.__bus = self.__getBus(self.__host, self.__port, self.__server)
 
     def deactivate(self):
-        pass
+        self.bus.removeConnector(self)
 
     def setQualityOfServiceSpec(self, qos):
         pass
@@ -458,6 +580,6 @@ class OutConnector (Connector,
         conversion.eventToNotification(notification, event,
                                        wireSchema = wireSchema,
                                        data       = wireData)
-        self.bus.handle(notification)
+        self.bus.handleOutgoing(notification)
 
 rsb.transport.addConnector(OutConnector)
