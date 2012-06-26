@@ -35,6 +35,7 @@ import threading;
 
 import rsb.util
 import rsb.transport
+import rsb.transport.conversion as conversion
 
 from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
@@ -690,9 +691,6 @@ class InPushConnector (Connector,
         if self.__action is None:
             return
 
-        import rsb.transport.conversion as conversion
-        from rsb.protocol.Notification_pb2 import Notification
-
         converter = self.getConverterForWireSchema(notification.wire_schema)
         event = conversion.notificationToEvent(notification,
                                                wireData   = notification.data,
@@ -715,9 +713,6 @@ class OutConnector (Connector,
         super(OutConnector, self).__init__(**kwargs)
 
     def handle(self, event):
-        import rsb.transport.conversion as conversion
-        from rsb.protocol.Notification_pb2 import Notification
-
         # Create a notification fragment for the event and send it
         # over the bus.
         event.getMetaData().setSendTime()
