@@ -21,17 +21,20 @@
 #     Bielefeld University
 #
 # ============================================================
+import time
+
 from rsb import createInformer, Scope
 
 if __name__ == '__main__':
 
     # create an informer for strings on scope "/example/informer".
-    informer = createInformer(Scope("/example/informer"), dataType=str)
-    
+    informer = createInformer("/example/informer", dataType=str)
+
     print("Informer setup finished")
-    
+
     # send some events using a method that directly accepts data
     for i in range(1200):
         informer.publishData("a test string")
-        
+
+    informer.deactivate()
     print("Sent events, exiting")

@@ -28,17 +28,18 @@ def handle(event):
     print("Received event: %s" % event)
 
 if __name__ == '__main__':
-    
     # create a listener on the specified scope. The listener will dispatch all
     # received events asynchronously to all registered listeners
     listener = createListener(Scope("/example/informer"))
-    
+
     # add a handler to handle received events. In python, handlers are callable
     # objects with the event as the single argument
     listener.addHandler(handle)
-    
+
     print("Listener setup finished")
-    
+
     # wait endlessly for received events
     while True:
-        time.sleep(100)
+        time.sleep(10)
+
+    listener.deactivate()
