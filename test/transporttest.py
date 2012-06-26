@@ -50,20 +50,20 @@ class SettingReceiver(object):
 class TransportTest(unittest.TestCase):
     '''
     An abstract base class for ensuring interface assumptions about transports.
-    
+
     @author: jwienke
     '''
-    
+
     def _getInConnector(self, scope, activate=True):
         raise NotImplementedError()
-    
+
     def _getOutConnector(self, scope, activate=True):
         raise NotImplementedError()
-    
+
     def testRoundtrip(self):
-        
+
         goodScope = Scope("/good")
-        
+
         inconnector = self._getInConnector(goodScope)
         outconnector = self._getOutConnector(goodScope)
 
@@ -91,10 +91,13 @@ class TransportTest(unittest.TestCase):
             receiver.resultEvent.setMetaData(None)
             self.assertEqual(receiver.resultEvent, event)
 
+        inconnector.deactivate()
+        outconnector.deactivate()
+
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
-        inConnector = self._getInConnector(scope)
-        outConnector = self._getOutConnector(scope)
+        inConnector = self._getInConnector(scope, activate = False)
+        outConnector = self._getOutConnector(scope, activate = False)
 
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ outConnector ])
         inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ inConnector ])
@@ -126,10 +129,16 @@ class TransportTest(unittest.TestCase):
             if receiver.resultEvent == None:
                 self.fail("Listener did not receive an event")
             receiveTime = time.time()
-            self.assertTrue(receiver.resultEvent.metaData.createTime <= receiver.resultEvent.metaData.sendTime <= receiver.resultEvent.metaData.receiveTime <= receiver.resultEvent.metaData.deliverTime)
+            self.assertTrue(receiver.resultEvent.metaData.createTime
+                            <= receiver.resultEvent.metaData.sendTime
+                            <= receiver.resultEvent.metaData.receiveTime
+                            <= receiver.resultEvent.metaData.deliverTime)
             sentEvent.metaData.receiveTime = receiver.resultEvent.metaData.receiveTime
             sentEvent.metaData.deliverTime = receiver.resultEvent.metaData.deliverTime
             self.assertEqual(sentEvent, receiver.resultEvent)
+
+        listener.deactivate()
+        publisher.deactivate()
 
     def testHierarchySending(self):
 
@@ -167,7 +176,7 @@ class TransportTest(unittest.TestCase):
                 if receiver.resultEvent == None:
                     self.fail("Listener on scope %s did not receive an event" % receiver.scope)
                 self.assertEqual(receiver.resultEvent.data, data)
-                
+
     def testSendTimeAdaption(self):
         scope = Scope("/notGood")
         connector = self._getOutConnector(scope)
@@ -184,3 +193,5 @@ class TransportTest(unittest.TestCase):
 
         self.assertTrue(event.getMetaData().getSendTime() >= before)
         self.assertTrue(event.getMetaData().getSendTime() <= after)
+
+        connector.deactivate()
