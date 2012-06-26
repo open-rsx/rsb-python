@@ -142,7 +142,7 @@ class BuildProtobufs(Command):
                     protoFiles.append(os.path.join(root, file))
 
         if len(protoFiles) == 0:
-            raise RuntimeError(("Could not find rsb protocol at '%s'. " + 
+            raise RuntimeError(("Could not find rsb protocol at '%s'. " +
                                 "Please specify it's location using the command option or config file.") % protoRoot)
 
         # create output directory
@@ -260,7 +260,7 @@ class Test(setuptools.command.test.test):
             f.write('Spread_Segment 127.0.0.255:%s {\nlocalhost	127.0.0.1\n}\nSocketPortReuse = ON\n'
                     % self.spreadport)
         spread = None
-        if self.spread:
+        if self.spread and not self.spread == 'use-running':
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
 
         setuptools.command.test.test.run(self)
@@ -308,7 +308,7 @@ setup(name='rsb-python',
         ],
 
       setup_requires=["coverage", "epydoc", "unittest-xml-reporting", "protobuf"],
-      
+
       extras_require={
         'spread-transport':  ["SpreadModule>=1.5spread4"],
       },
