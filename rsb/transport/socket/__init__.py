@@ -47,8 +47,8 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     bus.
 
     The basic operations provided by this class are receiving an event
-    by calling L{receiveEvent} and submitting an event to the bus by
-    calling L{sendEvent}.
+    by calling L{receiveNotification} and submitting an event to the bus by
+    calling L{sendNotification}.
 
     In a process which act as a client for a particular bus, a single
     instance of this class is connected to the bus server and provides
@@ -71,8 +71,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         @type port: int or None
         @param socket_: A socket object through which the new
                         connection should access the bus.
-
-        See: L{getBusClientFor}, L{getBusServerFor}.
+        @see: L{getBusClientFor}, L{getBusServerFor}.
         """
         super(BusConnection, self).__init__()
 
@@ -220,7 +219,7 @@ class Bus (object):
     L{addConnector} method.
 
     Out-direction connectors submit events to the bus using the
-    L{handle} method.
+    L{handleOutgoing} method.
 
     @author: jmoringe
     """

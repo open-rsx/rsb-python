@@ -95,6 +95,8 @@ class ApiDocCommand(Command):
         cmdline.append(outdir)
         if self.verbose:
             cmdline.append("-v")
+        cmdline.append("--exclude-parse=.*protobuf.*")
+        cmdline.append("--exclude-introspect=.*protobuf.*")
         cmdline.append("--config")
         cmdline.append("epydoc.config")
 

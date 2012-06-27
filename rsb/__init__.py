@@ -134,11 +134,11 @@ class ParticipantConfig (object):
     '''
     Objects of this class describe desired configurations for newly
     created L{Participant}s with respect to:
-    - Quality of service settings
-    - Error handling strategies (not currently used)
-    - Employed transport mechanisms
-      - Their configurations (e.g. port numbers)
-      - Associated converters
+     - Quality of service settings
+     - Error handling strategies (not currently used)
+     - Employed transport mechanisms
+       - Their configurations (e.g. port numbers)
+       - Associated converters
 
     @author: jmoringe
     '''
@@ -147,10 +147,10 @@ class ParticipantConfig (object):
         '''
         Objects of this class describe configurations of transports
         connectors. These consist of
-        - Transport name
-        - Enabled vs. Disabled
-        - Optional converter selection
-        - Transport-specific options
+         - Transport name
+         - Enabled vs. Disabled
+         - Optional converter selection
+         - Transport-specific options
 
         @author: jmoringe
         '''
@@ -350,10 +350,10 @@ class ParticipantConfig (object):
         in a L{ParticipantConfig} object and return it. The following
         sources of configuration information will be consulted:
 
-        1. C{/etc/rsb.conf}
-        2. C{~/.config/rsb.conf}
-        3. C{\$(PWD)/rsb.conf}
-        4. Environment Variables
+         1. C{/etc/rsb.conf}
+         2. C{~/.config/rsb.conf}
+         3. C{\$(PWD)/rsb.conf}
+         4. Environment Variables
 
         @param defaults: A L{ParticipantConfig} object the options of
                          which should be used as defaults.
@@ -535,9 +535,9 @@ class Scope(object):
         if not includeSelf:
             maxIndex -= 1
         for i in range(maxIndex + 1):
-            super = Scope("/")
-            super.__components = self.__components[:i]
-            supers.append(super)
+            superScope = Scope("/")
+            superScope.__components = self.__components[:i]
+            supers.append(superScope)
 
         return supers
 
@@ -590,10 +590,11 @@ class MetaData (object):
                             the associated event was delivered to the
                             user-level handler by RSB.
         @param userTimes: A dictionary of user-supplied timestamps.
-        @type userTime: dict
+        @type userTimes: dict from string name to double value as seconds since
+                         unix epoche
         @param userInfos: A dictionary of user-supplied meta-data
                           items.
-        @type userInfos: dict
+        @type userInfos: dict from string to string
         """
         if createTime is None:
             self.__createTime = time.time()
@@ -816,15 +817,17 @@ class Event(object):
                        communication patters. Examples are
                        C{"REQUEST"} and C{"REPLY"}.
         @type method: str
-        @param data:
-        @param type:
+        @param data: data contained in this event
+        @param type: python data type of the contained data
         @type type: type
-        @param metaData:
+        @param metaData: meta data to use for the new event
         @type metaData: MetaData
-        @param userInfos:
-        @type userInfos: dict
-        @param userTimes:
-        @type userTime: dict
+        @param userInfos: key-value like store of user infos to add to the meta
+                          data of this event
+        @type userInfos: dict from string to string
+        @param userTimes: additional timestamps to add to the meta data 
+        @type userTimes: dict from string timestamp name to value of timestamp
+                         as dobule of seconds unix epoch
         @param causes: A list of L{EventId}s of events which causes the
                        newly constructed events.
         @type causes: list
@@ -875,8 +878,8 @@ class Event(object):
             raise RuntimeError("The event does not have an ID so far.")
         return self.__id
 
-    def setId(self, id):
-        self.__id = id
+    def setId(self, theId):
+        self.__id = theId
 
     id = property(getId, setId)
 
@@ -962,14 +965,14 @@ class Event(object):
 
         return self.__type
 
-    def setType(self, type):
+    def setType(self, theType):
         """
         Sets the type of the user data of this event
 
-        @param type: user data type
+        @param theType: user data type
         """
 
-        self.__type = type
+        self.__type = theType
 
     type = property(getType, setType)
 
@@ -981,47 +984,47 @@ class Event(object):
 
     metaData = property(getMetaData, setMetaData)
 
-    def addCause(self, id):
+    def addCause(self, theId):
         '''
         Adds a causing EventId to the causes of this event.
 
-        @param id: id to add
-        @type id: EventId
+        @param theId: id to add
+        @type theId: EventId
         @return: true if the id was newly added, else false
         @rtype: bool
         '''
-        if id in self.__causes:
+        if theId in self.__causes:
             return False
         else:
-            self.__causes.append(id)
+            self.__causes.append(theId)
             return True
 
-    def removeCause(self, id):
+    def removeCause(self, theId):
         '''
         Removes a causing EventId from the causes of this event.
 
-        @param id: id to remove
-        @type id: EventId
+        @param theId: id to remove
+        @type theId: EventId
         @return: true if the id was remove, else false (because it did not exist)
         @rtype: bool
         '''
-        if id in self.__causes:
-            self.__causes.remove(id)
+        if theId in self.__causes:
+            self.__causes.remove(theId)
             return True
         else:
             return False
 
-    def isCause(self, id):
+    def isCause(self, theId):
         '''
         Checks whether a given id of an event is marked as a cause for this
         event.
 
-        @param id: id to check
-        @type id: EventId
+        @param theId: id to check
+        @type theId: EventId
         @return: true if the id is a cause of this event, else false
         @rtype: bool
         '''
-        return id in self.__causes
+        return theId in self.__causes
 
     def getCauses(self):
         '''
@@ -1086,8 +1089,8 @@ class Participant(object):
     def getId(self):
         return self.__id
 
-    def setId(self, id):
-        self.__id = id
+    def setId(self, theId):
+        self.__id = theId
 
     id = property(getId, setId)
 
@@ -1149,7 +1152,7 @@ class Informer(Participant):
     @author: jwienke
     """
 
-    def __init__(self, scope, type,
+    def __init__(self, scope, theType,
                  config       = None,
                  configurator = None):
         """
@@ -1158,10 +1161,10 @@ class Informer(Participant):
 
         @param scope: scope of the informer
         @type scope: Scope
-        @param type: A Python object designating the type of objects
-                     that will be sent via the new informer. Instances
-                     of subtypes are permitted as well.
-        @type type: type
+        @param theType: A Python object designating the type of objects
+                        that will be sent via the new informer. Instances
+                        of subtypes are permitted as well.
+        @type theType: type
         @param configurator: Out route configurator to manage sending
                              of events through out connectors.
         @todo: maybe provide an automatic type identifier deduction for default
@@ -1182,7 +1185,7 @@ class Informer(Participant):
             self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ connector ])
         self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         # TODO check that type can be converted
-        self.__type = type
+        self.__type = theType
 
         self.__sequenceNumber = 0
 
@@ -1325,7 +1328,7 @@ class Listener(Participant):
             else:
                 self.__logger.info("Deactivate called even though listener was not active")
 
-    def addFilter(self, filter):
+    def addFilter(self, theFilter):
         """
         Appends a filter to restrict the events received by this listener.
 
@@ -1333,8 +1336,8 @@ class Listener(Participant):
         """
 
         with self.__mutex:
-            self.__filters.append(filter)
-            self.__configurator.filterAdded(filter)
+            self.__filters.append(theFilter)
+            self.__configurator.filterAdded(theFilter)
 
     def getFilters(self):
         """

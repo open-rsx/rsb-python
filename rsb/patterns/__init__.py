@@ -407,8 +407,7 @@ class RemoteMethod (Method):
         @raise RemoteCallError: If invoking the remote method fails or
                                 the remote method itself produces an
                                 error.
-
-        See also: L{async}
+        @see: L{async}
         """
         return self.async(arg).get()
 
@@ -444,8 +443,7 @@ class RemoteMethod (Method):
         @rtype: L{Future} or L{DataFuture}
         @raise RemoteCallError: If an error occurs before the remote
                                 was invoked.
-
-        See also: L{__call__}
+        @see: L{__call__}
         """
         self.listener # Force listener creation
 
@@ -494,8 +492,7 @@ class RemoteServer (Server):
         @param config: The transport configuration that should be used
         for communication performed by this server.
         @type config: ParticipantConfig
-
-        See also: L{createRemoteServer}
+        @see: L{createRemoteServer}
         """
         super(RemoteServer, self).__init__(scope, config)
 
