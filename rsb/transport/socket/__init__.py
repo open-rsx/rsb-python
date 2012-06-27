@@ -697,7 +697,7 @@ class InPushConnector (Connector,
 
         converter = self.getConverterForWireSchema(notification.wire_schema)
         event = conversion.notificationToEvent(notification,
-                                               wireData   = notification.data,
+                                               wireData   = bytearray(notification.data),
                                                wireSchema = notification.wire_schema,
                                                converter  = converter)
         self.__action(event)
