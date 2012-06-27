@@ -85,6 +85,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
         self.__active = False
 
+        # Create a socket connection or store the provided connection.
         if not host is None and not port is None:
             if socket_ is None:
                 self.__socket = socket.create_connection((host, port))
@@ -96,6 +97,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             raise ValueError, 'specify either host and port or socket_'
         self.__file = self.__socket.makefile()
 
+        # Perform the client or server part of the handshake.
         if isServer:
             self.__file.write('\0\0\0\0')
             self.__file.flush()
@@ -189,23 +191,30 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         if not self.__active:
             raise RuntimeError, 'trying to deactivate inactive connection'
 
+        self.__active = False
+
+        # If necessary, close the socket, this will cause an exception
+        # in the notification receiver thread (unless we run in the
+        # context that thread).
         self.__logger.info('Closing socket')
         try:
             if not self.__file is None:
                 self.__file.close()
             if not self.__socket is None:
-                self.__socket.shutdown(socket.SHUT_RDWR)
-                self.__socket.close()
-            self.__socket = None
+                socket_ = self.__socket
+                self.__socket = None
+                socket_.shutdown(socket.SHUT_RDWR)
+                socket_.close()
         except Exception, e:
             self.__logger.warn('Failed to close socket: %s', e)
 
+        # If there is a receiver thread and we are not running in its
+        # context, the thread should encounter an exception and exit
+        # eventually. We wait for that to happen.
         if not self.__thread is None \
                 and not self.__thread is threading.currentThread():
             self.__logger.info('Joining thread')
             self.__thread.join()
-
-        self.__active = False
 
 class Bus (object):
     """
@@ -228,7 +237,7 @@ class Bus (object):
 
         self.__connections = []
         self.__connectors  = []
-        self.__lock        = threading.Lock()
+        self.__lock        = threading.RLock()
 
         self.__active = False
 
@@ -274,11 +283,13 @@ class Bus (object):
         """
         self.__logger.info('Removing connection %s', connection)
 
-        with self.lock:
+        try:
             connection.deactivate()
-            connection.removeHandler([ h for h in connection.handlers
-                                       if h.bus is self ][0])
-            self.__connections.remove(connection)
+        finally:
+            with self.lock:
+                connection.removeHandler([ h for h in connection.handlers
+                                           if h.bus is self ][0])
+                self.__connections.remove(connection)
 
     connections = property(getConnections)
 
@@ -318,15 +329,24 @@ class Bus (object):
 
     def handleIncoming(self, connectionAndNotification):
         (connection, notification) = connectionAndNotification
+        self.__logger.debug('Trying to distribute notification to connectors')
         with self.lock:
+            self.__logger.debug('Locked bus to distribute notification to connectors')
+            if not self.__active:
+                self.__logger.info('Cancelled distribution to connectors since bus is not active')
+                return
+            
             # Distribute the notification to participants in our
             # process via InPushConnector instances.
-            for connector in self.connectors:
-                if isinstance(connector, InPushConnector): # TODO connector.direction == 'in'
-                    connector.handle(notification)
+            self._toConnectors(notification)
 
     def handleOutgoing(self, notification):
         with self.lock:
+            self.__logger.debug('Locked bus to distribute notification to connections and connectors')
+            if not self.__active:
+                self.__logger.info('Cancelled distribution to connections and connectors since bus is not active')
+                return
+
             # Distribute the notification to remote participants via
             # network connections.
             self._toConnections(notification)
@@ -340,19 +360,25 @@ class Bus (object):
         if self.__active:
             raise RuntimeError, 'Trying to activate active bus'
 
-        self.__active = True
+        with self.lock:
+            self.__active = True
 
     def deactivate(self):
         if not self.__active:
             raise RuntimeError, 'Trying to deactivate inactive bus'
 
+        with self.lock:
+            self.__active = False
+
+        # We do not have to lock the bus here, since
+        # 1) removeConnection will do that for each connection
+        # 2) the connection list will not be modified concurrently at
+        #    this point
         self.__logger.info('Closing connections')
         try:
             map(self.removeConnection, copy.copy(self.connections))
         except Exception, e:
             self.__logger.error('Failed to close connections: %s', e)
-
-        self.__active = False
 
     # Low-level helpers
 
@@ -373,6 +399,7 @@ class Bus (object):
         #    NOTIFICATION's scope
         scope = rsb.Scope(notification.scope)
         for connector in self.connectors:
+            # TODO connector.direction == 'in' instead of isinstance
             if isinstance(connector, InPushConnector) \
                and (connector.scope == scope \
                     or connector.scope.isSuperScopeOf(scope)):
@@ -548,9 +575,6 @@ class BusServer (Bus):
 
         self.__logger.info('Starting acceptor thread')
         self.__acceptorThread = threading.Thread(target = self.acceptClients)
-        #self.__acceptorThread.daemon = True
-        # TODO we make this a daemon thread since it seems we cannot
-        # interrupt it later.
         self.__acceptorThread.start()
 
         self.__active = True
@@ -559,16 +583,16 @@ class BusServer (Bus):
         if not self.__active:
             raise RuntimeError, 'Trying to deactivate inactive BusServer'
 
-        # TODO do this less brutally. Turns out, this is actually not
-        # brutally enough since the other thread will happily continue
-        # accept()ing after we close the socket here.
+        # If necessary, close the listening socket. This causes an
+        # exception in the acceptor thread.
         self.__logger.info('Closing listen socket')
         if not self.__socket is None:
             self.__socket.shutdown(socket.SHUT_RDWR)
             self.__socket.close()
             self.__socket = None
 
-        # TODO see above comment
+        # The acceptor thread should encounter an exception and exit
+        # eventually. We wait for that.
         self.__logger.info('Waiting for acceptor thread')
         if not self.__acceptorThread is None:
             self.__acceptorThread.join()
