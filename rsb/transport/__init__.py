@@ -46,12 +46,15 @@ class Connector(object):
         """
         self.__logger = getLoggerByClass(self.__class__)
 
+        self.__wireType = None
+        self.__scope    = None
+
         if wireType == None:
             raise ValueError("Wire type must be a type object, None given")
 
         self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
         self.__wireType = wireType
-        
+
         # fails if still some arguments are left over
         super(Connector, self).__init__(**kwargs)
 
@@ -65,14 +68,20 @@ class Connector(object):
 
     wireType = property(getWireType)
 
-    def setScope(self, scope):
-        """
-        Sets the scope this connector will receive events from. Called before
-        #activate.
+    def getScope(self):
+        return self.__scope
 
-        @param scope: scope scope of the connector
+    def setScope(self, newValue):
         """
-        pass
+        Sets the scope this connector will receive events from to
+        B{newValue}. Called before #activate.
+
+        @param newValue: scope of the connector
+        @type newValue: rsb.Scope
+        """
+        self.__scope = newValue
+
+    scope = property(getScope, setScope)
 
     def activate(self):
         raise NotImplementedError()
