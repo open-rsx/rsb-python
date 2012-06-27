@@ -39,7 +39,8 @@ if __name__ == '__main__':
     print("Listener setup finished")
 
     # wait endlessly for received events
-    while True:
-        time.sleep(10)
-
-    listener.deactivate()
+    try:
+        while True:
+            time.sleep(1)
+    finally:
+        listener.deactivate()
