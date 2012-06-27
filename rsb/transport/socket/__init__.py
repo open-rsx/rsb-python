@@ -374,12 +374,9 @@ class Bus (object):
         #    NOTIFICATION's scope
         scope = rsb.Scope(notification.scope)
         for connector in self.connectors:
-            self.__logger.info('%s dispatching %s | %s -> %s',
-                               connector, scope, connector.scope, connector.scope.isSuperScopeOf(scope))
-
             if isinstance(connector, InPushConnector) \
-               and (or connector.scope == scope
-                    connector.scope.isSuperScopeOf(scope)):
+               and (connector.scope == scope \
+                    or connector.scope.isSuperScopeOf(scope)):
                 connector.handle(notification)
 
     def __repr__(self):
