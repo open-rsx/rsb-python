@@ -22,6 +22,13 @@
 #
 # ============================================================
 
+"""
+Contains filters which can be used to restrict the amount of events received by
+clients.
+
+@author: jwienke
+"""
+
 import rsb.util
 from threading import Condition
 

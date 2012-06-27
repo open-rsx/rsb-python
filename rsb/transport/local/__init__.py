@@ -22,6 +22,14 @@
 #
 # ============================================================
 
+"""
+This package contains a highly efficient in-process transport implementation
+which allows participants inside one python process to communicate without
+serialization overhead. 
+
+@author: jwienke
+"""
+
 from threading import RLock
 from rsb import transport
 

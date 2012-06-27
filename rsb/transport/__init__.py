@@ -23,6 +23,13 @@
 #
 # ============================================================
 
+"""
+This module contains different transport implementations for RSB and their
+common base classes and utility functions.
+
+@author: jwienke
+"""
+
 import copy
 import threading
 

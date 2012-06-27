@@ -22,6 +22,12 @@
 #
 # ============================================================
 
+"""
+Various helper classes and methods.
+
+@author: jwienke
+"""
+
 from threading import Lock, Condition, Thread
 from Queue import Queue
 import logging
@@ -367,9 +373,23 @@ class OrderedQueueDispatcherPool(object):
         self.__logger.info("Stopped thread pool")
 
 def getLoggerByClass(klass):
+    """
+    Get a python logger instance based on a class instance. The logger name will
+    be a dotted string containing python module and class name.
+    
+    @param klass: class instance
+    @return: logger instance
+    """
     return logging.getLogger(klass.__module__ + "." + klass.__name__)
 
 def timeToUnixMicroseconds(time):
+    """
+    Converts a floating point, seconds based time to a unix timestamp in
+    microseconds precision.
+    
+    @param time: time since epoch in seconds + fractional part.
+    @return: time as integer with microseconds precision.
+    """
     return int(time * 1000000)
 
 def unixMicrosecondsToTime(value):

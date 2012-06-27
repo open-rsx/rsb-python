@@ -22,6 +22,13 @@
 #
 # ============================================================
 
+"""
+A module containing various converter implementations as well as logic for
+registering and selecting them.
+
+@author: jwienke
+"""
+
 from numbers import Integral
 
 class Converter(object):

@@ -23,7 +23,7 @@
 # ============================================================
 
 """
-This module contains a transport implementation that uses multiple
+This package contains a transport implementation that uses multiple
 point-to-point socket connections to simulate a bus.
 
 @author: jmoringe

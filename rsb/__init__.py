@@ -23,6 +23,18 @@
 #
 # ============================================================
 
+"""
+This package contains all classes that form the high-level user interface of the
+RSB python implementation. It is the entry point for most users and only in
+advanced cases client programs need to use classes from other modules.
+
+In order to create basic objects have a look at the functions L{createInformer},
+L{createListener}, L{createServer} and L{createRemoteServer}.
+
+@author: jwienke
+@author: jmoringe
+"""
+
 import uuid
 import copy
 import logging

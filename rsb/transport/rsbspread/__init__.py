@@ -23,6 +23,13 @@
 #
 # ============================================================
 
+"""
+This package contains a transport implementation based on the spread toolkit
+which uses a multicased-based daemon network.
+
+@author: jwienke
+"""
+
 import threading
 from threading import RLock
 import uuid

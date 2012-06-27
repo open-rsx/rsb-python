@@ -23,6 +23,14 @@
 #
 # ============================================================
 
+"""
+A module with classes maintaining the processing of events between the transport
+layer and the client interface.
+
+@author: jwienke
+@author: jmoringe
+"""
+
 from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
 import rsb
 from threading import RLock
