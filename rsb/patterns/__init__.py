@@ -26,6 +26,7 @@
 Package containing pattern implementations like RPC based on the basic
 participants L{rsb.Listener} and L{rsb.Informer}.
 
+@author: jmoringe
 @author: jwienke
 """
 

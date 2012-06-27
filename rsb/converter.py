@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -26,7 +27,9 @@
 A module containing various converter implementations as well as logic for
 registering and selecting them.
 
+@author: jmoringe
 @author: jwienke
+@author: plueckin
 """
 
 from numbers import Integral
@@ -59,37 +62,37 @@ class Converter(object):
         self.__wireSchema = wireSchema
 
     def getWireType(self):
-        '''
+        """
         Returns the type of the wire-type to/from this converter
         serializes/deserializes.
 
         @return: A type object.
         @rtype: type
-        '''
+        """
         return self.__wireType
 
     wireType = property(getWireType)
 
     def getDataType(self):
-        '''
+        """
         Returns the data type this converter is applicable for.
 
         @return: A type object.
         @rtype: type
-        '''
+        """
         return self.__dataType
 
     dataType = property(getDataType)
 
     def getWireSchema(self):
-        '''
+        """
         Returns the name of the wire schema this converter can
         (de)serialize from/to.
 
         @return: A string designating the wire schema from/to this
                  converter can (de)serialize
         @rtype: str
-        '''
+        """
         return self.__wireSchema
 
     wireSchema = property(getWireSchema)
@@ -203,7 +206,7 @@ class PredicateConverterList (ConverterMap):
                      dataTypePredicate=None,
                      replaceExisting=True):
         if wireSchemaPredicate is None:
-            #if converter.getWireSchema() == 'void': 
+            #if converter.getWireSchema() == 'void':
             #    wireSchemaPredicate = lambda wireSchema: True
             #else:
                 wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
@@ -270,8 +273,8 @@ def getGlobalConverterMap(wireType):
 
 class IdentityConverter (Converter):
     """
-    This converter does nothing. Use it in combination with the 
-    "AlwaysApplicable"-wireSchema. 
+    This converter does nothing. Use it in combination with the
+    "AlwaysApplicable"-wireSchema.
 
     @author: plueckin
     """
@@ -283,8 +286,8 @@ class IdentityConverter (Converter):
 
     def deserialize(self, input, wireSchema):
         pass
-    
-    def AlwaysApplicable(self):   
+
+    def AlwaysApplicable(self):
         return bytearray
 
 class NoneConverter (Converter):

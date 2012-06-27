@@ -57,15 +57,15 @@ except ImportError:
     pass
 
 def haveSpread():
-    '''
+    """
     Indicates whether the installation of RSB has spread support.
 
     @return: True if spread is available, else False
-    '''
+    """
     return _spreadAvailable
 
 class QualityOfServiceSpec(object):
-    '''
+    """
     Specification of desired quality of service settings for sending
     and receiving events. Specification given here are required "at
     least". This means concrete connector implementations can provide
@@ -74,57 +74,57 @@ class QualityOfServiceSpec(object):
     values mean better services.
 
     @author: jwienke
-    '''
+    """
 
     Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
     Reliability = Enum("Reliability", ["UNRELIABLE", "RELIABLE"], [10, 20])
 
     def __init__(self, ordering=Ordering.UNORDERED, reliability=Reliability.RELIABLE):
-        '''
+        """
         Constructs a new QoS specification with desired
         details. Defaults are unordered but reliable.
 
         @param ordering: desired ordering type
         @param reliability: desired reliability type
-        '''
+        """
         self.__ordering = ordering
         self.__reliability = reliability
 
     def getOrdering(self):
-        '''
+        """
         Returns the desired ordering settings.
 
         @return: ordering settings
-        '''
+        """
 
         return self.__ordering
 
     def setOrdering(self, ordering):
-        '''
+        """
         Sets the desired ordering settings
 
         @param ordering: ordering to set
-        '''
+        """
 
         self.__ordering = ordering
 
     ordering = property(getOrdering, setOrdering)
 
     def getReliability(self):
-        '''
+        """
         Returns the desired reliability settings.
 
         @return: reliability settings
-        '''
+        """
 
         return self.__reliability
 
     def setReliability(self, reliability):
-        '''
+        """
         Sets the desired reliability settings
 
         @param reliability: reliability to set
-        '''
+        """
 
         self.__reliability = reliability
 
@@ -143,7 +143,7 @@ class QualityOfServiceSpec(object):
         return "%s(%r, %r)" % (self.__class__.__name__, self.__ordering, self.__reliability)
 
 class ParticipantConfig (object):
-    '''
+    """
     Objects of this class describe desired configurations for newly
     created L{Participant}s with respect to:
      - Quality of service settings
@@ -153,10 +153,10 @@ class ParticipantConfig (object):
        - Associated converters
 
     @author: jmoringe
-    '''
+    """
 
     class Transport (object):
-        '''
+        """
         Objects of this class describe configurations of transports
         connectors. These consist of
          - Transport name
@@ -165,7 +165,7 @@ class ParticipantConfig (object):
          - Transport-specific options
 
         @author: jmoringe
-        '''
+        """
         def __init__(self, name, options={}, converter_ = None):
             import rsb.converter
             self.__name = name
@@ -302,7 +302,7 @@ class ParticipantConfig (object):
 
     @classmethod
     def fromFile(clazz, path, defaults={}):
-        '''
+        """
         Obtain configuration options from the configuration file
         B{path}, store them in a L{ParticipantConfig} object and
         return it.
@@ -321,7 +321,7 @@ class ParticipantConfig (object):
         @rtype: ParticipantConfig
 
         See also: L{fromEnvironment}, L{fromDefaultSources}
-        '''
+        """
         return clazz.__fromDict(clazz.__fromFile(path, defaults))
 
     @classmethod
@@ -334,7 +334,7 @@ class ParticipantConfig (object):
 
     @classmethod
     def fromEnvironment(clazz, defaults={}):
-        '''
+        """
         Obtain configuration options from environment variables, store
         them in a L{ParticipantConfig} object and return
         it. Environment variable names are mapped to RSB option names
@@ -352,12 +352,12 @@ class ParticipantConfig (object):
         @rtype: ParticipantConfig
 
         See also: L{fromFile}, L{fromDefaultSources}
-        '''
+        """
         return clazz.__fromDict(clazz.__fromEnvironment(defaults))
 
     @classmethod
     def fromDefaultSources(clazz, defaults={}):
-        '''
+        """
         Obtain configuration options from multiple sources, store them
         in a L{ParticipantConfig} object and return it. The following
         sources of configuration information will be consulted:
@@ -376,7 +376,7 @@ class ParticipantConfig (object):
         @rtype: ParticipantConfig
 
         See also: L{fromFile}, L{fromEnvironment}
-        '''
+        """
         defaults = {"transport.socket.enabled": "1"}
         if platform.system() == 'Windows':
             partial = clazz.__fromFile("c:\\rsb.conf", defaults)
@@ -388,12 +388,12 @@ class ParticipantConfig (object):
         return clazz.__fromDict(options)
 
 class Scope(object):
-    '''
+    """
     A scope defines a channel of the hierarchical unified bus covered by RSB.
     It is defined by a surface syntax like C{"/a/deep/scope"}.
 
     @author: jwienke
-    '''
+    """
 
     __COMPONENT_SEPARATOR = "/"
     __COMPONENT_REGEX = re.compile("^[a-zA-Z0-9]+$")
@@ -406,14 +406,14 @@ class Scope(object):
             return Scope(thing)
 
     def __init__(self, stringRep):
-        '''
+        """
         Parses a scope from a string representation.
 
         @param stringRep: string representation of the scope
         @type stringRep: str or unicode
         @raise ValueError: if B{stringRep} does not have the right
                            syntax
-        '''
+        """
 
         if len(stringRep) == 0:
             raise ValueError("The empty string does not designate a scope; Use '/' to designate the root scope.")
@@ -444,7 +444,7 @@ class Scope(object):
                 raise ValueError("Invalid character in component %s. Given was scope '%s'." % (com, stringRep))
 
     def getComponents(self):
-        '''
+        """
         Returns all components of the scope as an ordered list. Components are
         the names between the separator character '/'. The first entry in the
         list is the highest level of hierarchy. The scope '/' returns an empty
@@ -453,19 +453,19 @@ class Scope(object):
         @return: components of the represented scope as ordered list with highest
                  level as first entry
         @rtype: list
-        '''
+        """
         return copy.copy(self.__components)
 
     components = property(getComponents)
 
     def toString(self):
-        '''
+        """
         Reconstructs a fully formal string representation of the scope with
         leading an trailing slashes.
 
         @return: string representation of the scope
         @rtype: str
-        '''
+        """
 
         string = self.__COMPONENT_SEPARATOR
         for com in self.__components:
@@ -474,7 +474,7 @@ class Scope(object):
         return string
 
     def concat(self, childScope):
-        '''
+        """
         Creates a new scope that is a sub-scope of this one with the
         subordinated scope described by the given
         argument. E.g. C{"/this/is/".concat("/a/test/")} results in
@@ -485,14 +485,14 @@ class Scope(object):
         @type childScope: Scope
         @return: new scope instance representing the created sub-scope
         @rtype: Scope
-        '''
+        """
         newScope = Scope("/")
         newScope.__components = copy.copy(self.__components)
         newScope.__components += childScope.__components
         return newScope
 
     def isSubScopeOf(self, other):
-        '''
+        """
         Tests whether this scope is a sub-scope of the given other scope, which
         means that the other scope is a prefix of this scope. E.g. "/a/b/" is a
         sub-scope of "/a/".
@@ -502,7 +502,7 @@ class Scope(object):
         @return: C{True} if this is a sub-scope of the other scope, equality gives
                  C{False}, too
         @rtype: Bool
-        '''
+        """
 
         if len(self.__components) <= len(other.__components):
             return False
@@ -510,7 +510,7 @@ class Scope(object):
         return other.__components == self.__components[:len(other.__components)]
 
     def isSuperScopeOf(self, other):
-        '''
+        """
         Inverse operation of L{isSubScopeOf}.
 
         @param other: other scope to test
@@ -518,7 +518,7 @@ class Scope(object):
         @return: C{True} if this scope is a strict super scope of the other scope.
                  equality also gives C{False}.
         @rtype: Bool
-        '''
+        """
 
         if len(self.__components) >= len(other.__components):
             return False
@@ -526,7 +526,7 @@ class Scope(object):
         return self.__components == other.__components[:len(self.__components)]
 
     def superScopes(self, includeSelf=False):
-        '''
+        """
         Generates all super scopes of this scope including the root
         scope "/".  The returned list of scopes is ordered by
         hierarchy with "/" being the first entry.
@@ -539,7 +539,7 @@ class Scope(object):
         @return: list of all super scopes ordered by hierarchy, "/"
                  being first
         @rtype: list of Scopes
-        '''
+        """
 
         supers = []
 
@@ -712,12 +712,12 @@ class MetaData (object):
         return self.__str__()
 
 class EventId(object):
-    '''
+    """
     Uniquely identifies an Event by the sending participants ID and a sequence
     number within this participant. Optional conversion to uuid is possible.
 
     @author: jwienke
-    '''
+    """
 
     def __init__(self, participantId, sequenceNumber):
         self.__participantId = participantId
@@ -797,7 +797,7 @@ class EventId(object):
         return result;
 
 class Event(object):
-    '''
+    """
     Basic event class.
 
     Events are often caused by other events, which e.g. means that their
@@ -811,7 +811,7 @@ class Event(object):
     of Events, Addison-Wessley, 2007
 
     @author: jwienke
-    '''
+    """
 
     def __init__(self, id = None, scope = Scope("/"), method = None,
                  data = None, type = None,
@@ -837,7 +837,7 @@ class Event(object):
         @param userInfos: key-value like store of user infos to add to the meta
                           data of this event
         @type userInfos: dict from string to string
-        @param userTimes: additional timestamps to add to the meta data 
+        @param userTimes: additional timestamps to add to the meta data
         @type userTimes: dict from string timestamp name to value of timestamp
                          as dobule of seconds unix epoch
         @param causes: A list of L{EventId}s of events which causes the
@@ -997,14 +997,14 @@ class Event(object):
     metaData = property(getMetaData, setMetaData)
 
     def addCause(self, theId):
-        '''
+        """
         Adds a causing EventId to the causes of this event.
 
         @param theId: id to add
         @type theId: EventId
         @return: true if the id was newly added, else false
         @rtype: bool
-        '''
+        """
         if theId in self.__causes:
             return False
         else:
@@ -1012,14 +1012,14 @@ class Event(object):
             return True
 
     def removeCause(self, theId):
-        '''
+        """
         Removes a causing EventId from the causes of this event.
 
         @param theId: id to remove
         @type theId: EventId
         @return: true if the id was remove, else false (because it did not exist)
         @rtype: bool
-        '''
+        """
         if theId in self.__causes:
             self.__causes.remove(theId)
             return True
@@ -1027,7 +1027,7 @@ class Event(object):
             return False
 
     def isCause(self, theId):
-        '''
+        """
         Checks whether a given id of an event is marked as a cause for this
         event.
 
@@ -1035,25 +1035,25 @@ class Event(object):
         @type theId: EventId
         @return: true if the id is a cause of this event, else false
         @rtype: bool
-        '''
+        """
         return theId in self.__causes
 
     def getCauses(self):
-        '''
+        """
         Returns all causes of this event.
 
         @return: causing event ids
         @rtype: list of EventIds
-        '''
+        """
         return self.__causes
 
     def setCauses(self, causes):
-        '''
+        """
         Overwrites the cause vector of this event with the given one.
 
         @param causes: new cause vector
         @type causes: list of EventId
-        '''
+        """
         self.__causes = causes
 
     causes = property(getCauses, setCauses)

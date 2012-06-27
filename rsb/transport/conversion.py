@@ -27,6 +27,7 @@ A module containing serialization methods used by several transports which
 convert L{rsb.Event} instances to protocol buffers based data types and vice
 versa.
 
+@author: jmoringe
 @author: jwienke
 """
 
@@ -42,9 +43,9 @@ from rsb.protocol.Notification_pb2 import Notification
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
 
 def notificationToEvent(notification, wireData, wireSchema, converter):
-    '''
+    """
     Build event from notification.
-    '''
+    """
     event = rsb.Event(rsb.EventId(uuid.UUID(bytes=notification.event_id.sender_id),
                                   notification.event_id.sequence_number))
     event.scope = rsb.Scope(notification.scope)
