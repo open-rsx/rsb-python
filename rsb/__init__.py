@@ -1115,47 +1115,46 @@ class Participant(object):
     scope = property(getScope, setScope)
 
     @classmethod
-    def getConnector(clazz, direction, config):
+    def getConnectors(clazz, direction, config):
         if not direction in ('in', 'out'):
             raise ValueError, 'Invalid direction: %s (valid directions are "in" and "out")' % direction
         if len(config.getTransports()) == 0:
             raise ValueError, 'No transports specified (config is %s)' \
                 % config
-        if len(config.getTransports()) > 1:
-            raise ValueError, 'Multiple transports are not supported, yet (config has %d transports, config is %s)' \
-                % (len(config.getTransports()), config)
 
-        transport = config.getTransports()[0]
-        if transport.getName() == 'spread':
-            if not haveSpread():
-                raise ValueError, "Spread transport not enabled as the python spread module cannot be found in the running interpreter"
-            from transport import rsbspread
-            if direction == 'in':
-                klass = rsbspread.InConnector
-            elif direction == 'out':
-                klass = rsbspread.OutConnector
+        transports = []
+        for transport in config.getTransports():
+            if transport.getName() == 'spread':
+                if not haveSpread():
+                    raise ValueError, "Spread transport not enabled as the python spread module cannot be found in the running interpreter"
+                from transport import rsbspread
+                if direction == 'in':
+                    klass = rsbspread.InConnector
+                elif direction == 'out':
+                    klass = rsbspread.OutConnector
+                else:
+                    assert(False)
+            elif transport.getName() == 'socket':
+                import rsb.transport.socket
+                if direction == 'in':
+                    klass = rsb.transport.socket.InPushConnector
+                elif direction == 'out':
+                    klass = rsb.transport.socket.OutConnector
+                else:
+                    assert(False)
+            elif transport.getName() == 'inprocess':
+                import rsb.transport.local
+                if direction == 'in':
+                    klass = rsb.transport.local.InConnector
+                elif direction == 'out':
+                    klass = rsb.transport.local.OutConnector
+                else:
+                    assert(False)
             else:
-                assert(False)
-        elif transport.getName() == 'socket':
-            import rsb.transport.socket
-            if direction == 'in':
-                klass = rsb.transport.socket.InPushConnector
-            elif direction == 'out':
-                klass = rsb.transport.socket.OutConnector
-            else:
-                assert(False)
-        elif transport.getName() == 'inprocess':
-            import rsb.transport.local
-            if direction == 'in':
-                klass = rsb.transport.local.InConnector
-            elif direction == 'out':
-                klass = rsb.transport.local.OutConnector
-            else:
-                assert(False)
-        else:
-            raise ValueError, 'No such transport: "%s"' % transport.getName()
-        return klass(converters = transport.getConverters(),
-                     options    = transport.getOptions())
+                raise ValueError, 'No such transport: "%s"' % transport.getName()
+            transports.append(klass(converters = transport.getConverters(),
+                                    options    = transport.getOptions()))
+        return transports
 
 class Informer(Participant):
     """
@@ -1186,23 +1185,25 @@ class Informer(Participant):
 
         self.__logger = getLoggerByClass(self.__class__)
 
+        # TODO check that type can be converted
+        self.__type           = theType
+        self.__sequenceNumber = 0
+        self.__configurator   = None
+        
+        self.__active         = False
+        self.__mutex          = threading.Lock()
+
         if config is None:
             config = getDefaultParticipantConfig()
 
         if configurator:
             self.__configurator = configurator
         else:
-            connector = self.getConnector('out', config)
-            connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ connector ])
+            connectors = self.getConnectors('out', config)
+            for connector in connectors:
+                connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = connectors)
         self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-        # TODO check that type can be converted
-        self.__type = theType
-
-        self.__sequenceNumber = 0
-
-        self.__active = False
-        self.__mutex = threading.Lock()
 
         self.__activate()
 
@@ -1298,22 +1299,24 @@ class Listener(Participant):
 
         self.__logger = getLoggerByClass(self.__class__)
 
+        self.__filters      = []
+        self.__handlers     = []
+        self.__configurator = None
+        self.__active       = False
+        self.__mutex        = threading.Lock()
+
         if config is None:
             config = getDefaultParticipantConfig()
 
         if configurator:
             self.__configurator = configurator
         else:
-            connector = self.getConnector('in', config)
-            connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
+            connectors = self.getConnectors('in', config)
+            for connector in connectors:
+                connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors)
         self.__configurator.setScope(scope)
 
-        self.__mutex = threading.Lock()
-        self.__active = False
-
-        self.__filters = []
-        self.__handlers = []
 
         self.__activate()
 
