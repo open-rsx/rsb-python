@@ -367,8 +367,15 @@ class Bus (object):
                     self.__logger.warn('Failed to send to %s: %s', connection, e)
 
     def _toConnectors(self, notification):
+        # Deliver NOTIFICATION to connectors which fulfill two
+        # criteria:
+        # 1) Direction has to be "incoming events"
+        # 2) The scope of the connector has to be a superscope of
+        #    NOTIFICATION's scope
+        scope = rsb.Scope(notification.scope)
         for connector in self.connectors:
-            if isinstance(connector, InPushConnector):
+            if isinstance(connector, InPushConnector) \
+               and connector.scope.isSuperScopeOf(scope):
                 connector.handle(notification)
 
     def __repr__(self):
