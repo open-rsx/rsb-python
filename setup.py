@@ -39,6 +39,9 @@ import sys
 import time
 import rsb
 
+def findRsbPackages():
+    return find_packages(exclude=["test", "examples", "build"])
+
 class CommandStarter(object):
 
     def __init__(self, command):
@@ -162,6 +165,11 @@ class BuildProtobufs(Command):
                 raise RuntimeError("Unable to build proto file: %s" % proto)
         with open('rsb/protocol/__init__.py', 'w'):
             pass
+        
+        # reinitialize the list of packages as we have added new python modules
+        self.distribution.packages=findRsbPackages()
+        # also ensure that the build command for python module really gets informed about this
+        self.reinitialize_command("build_py")
 
 class Coverage(Command):
     """
@@ -313,7 +321,7 @@ setup(name='rsb-python',
         'spread-transport':  ["SpreadModule>=1.5spread4"],
       },
 
-      packages=find_packages(exclude=["test", "examples", "build"]),
+      packages=findRsbPackages(),
       test_suite="test.suite",
 
       cmdclass={'doc' : ApiDocCommand,
