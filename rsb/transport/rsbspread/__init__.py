@@ -243,6 +243,8 @@ class Connector(rsb.transport.Connector,
     MAX_MSG_LENGTH = 100000
 
     def __init__(self, options = {}, spreadModule = spread, **kwargs):
+        super(Connector, self).__init__(wireType = bytearray, **kwargs)
+
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         host = options.get('host', None)
@@ -251,16 +253,16 @@ class Connector(rsb.transport.Connector,
             self.__daemonName = '%s@%s' % (port, host)
         else:
             self.__daemonName = port
-
+        self.__connection   = None
         self.__spreadModule = spreadModule
-        self.__connection = None
 
-        super(Connector, self).__init__(wireType = bytearray, **kwargs)
+        self.__active = False
 
         self.setQualityOfServiceSpec(rsb.QualityOfServiceSpec())
 
     def __del__(self):
-        self.deactivate()
+        if self.__active:
+            self.deactivate()
 
     def getConnection(self):
         return self.__connection
@@ -273,21 +275,31 @@ class Connector(rsb.transport.Connector,
     _msgType = property(_getMsgType)
 
     def activate(self):
-        if self.__connection == None:
-            self.__logger.info("Activating spread connector with daemon name %s", self.__daemonName)
+        if self.__active:
+            raise RuntimeError, 'Trying to activate active Connector'
 
+        self.__logger.info("Activating spread connector with daemon name %s", self.__daemonName)
+
+        try:
             self.__connection = self.__spreadModule.connect(self.__daemonName)
+        except Exception, e:
+            raise RuntimeError, 'could not connect to Spread daemon "%s": %s' % (self.__daemonName, e)
+
+        self.__active = True
 
     def deactivate(self):
-        if self.__connection != None:
-            self.__logger.info("Deactivating spread connector")
+        if not self.__active:
+            raise RuntimeError, 'Trying to deactivate inactive Connector'
 
+        self.__logger.info("Deactivating spread connector")
+
+        self.__active = False
+
+        if not self.__connection is None:
             self.__connection.disconnect()
             self.__connection = None
 
-            self.__logger.debug("SpreadConnector deactivated")
-        else:
-            self.__logger.warning("spread connector already deactivated")
+        self.__logger.debug("SpreadConnector deactivated")
 
     def _groupName(self, scope):
         sum = hashlib.md5()
