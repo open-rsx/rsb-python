@@ -64,6 +64,8 @@ class ParticipantConfigTest (unittest.TestCase):
         #self.assertTrue(converters.getConverterForDataType(bool))
 
     def testFromEnvironment(self):
+        os.environ = dict( (key, value) for (key, value) in os.environ.items()
+                           if not 'RSB' in key )
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
         os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'
         os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'yes'
@@ -235,26 +237,26 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
 
 class EventIdTest(unittest.TestCase):
-    
+
     def testHashing(self):
-        
+
         id1 = EventId(uuid.uuid4(), 23)
         id2 = EventId(id1.getParticipantId(), 23)
         id3 = EventId(uuid.uuid4(), 32)
         id4 = EventId(id3.getParticipantId(), 33)
-        
+
         self.assertEqual(hash(id1), hash(id2))
         self.assertNotEqual(hash(id1), hash(id3))
         self.assertNotEqual(hash(id1), hash(id4))
         self.assertNotEqual(hash(id3), hash(id4))
-        
+
     def testGetAsUUID(self):
-        
+
         id1 = EventId(uuid.uuid4(), 23)
         id2 = EventId(id1.participantId, 23)
         id3 = EventId(id1.participantId, 24)
         id4 = EventId(uuid.uuid4(), 24)
-        
+
         self.assertEqual(id1.getAsUUID(), id2.getAsUUID())
         self.assertNotEqual(id1.getAsUUID(), id3.getAsUUID())
         self.assertNotEqual(id1.getAsUUID(), id4.getAsUUID())
@@ -288,7 +290,7 @@ class EventTest(unittest.TestCase):
         self.assertEqual(t, self.e.type)
 
     def testCauses(self):
-        
+
         sid = uuid.uuid4()
         e = Event(EventId(sid, 32))
         self.assertEqual(0, len(e.causes))
@@ -312,7 +314,7 @@ class EventTest(unittest.TestCase):
         self.assertNotEquals(e1, e2)
         e2.metaData.setUserTime("foo", e1.getMetaData().getUserTimes()["foo"])
         self.assertEquals(e1, e2)
-        
+
         cause = EventId(uuid4(), 42)
         e1.addCause(cause)
         self.assertNotEqual(e1, e2)
@@ -320,11 +322,11 @@ class EventTest(unittest.TestCase):
         self.assertEqual(e1, e2)
 
 class FactoryTest(unittest.TestCase):
-    
+
     def setUp(self):
         config = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
         setDefaultParticipantConfig(config)
-    
+
     def testDefaultParticipantConfig(self):
         self.assert_(rsb.getDefaultParticipantConfig())
 
