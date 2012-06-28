@@ -587,8 +587,14 @@ class BusServer (Bus):
         # exception in the acceptor thread.
         self.__logger.info('Closing listen socket')
         if not self.__socket is None:
-            self.__socket.shutdown(socket.SHUT_RDWR)
-            self.__socket.close()
+            try:
+                self.__socket.shutdown(socket.SHUT_RDWR)
+            except Exception, e:
+                self.__logger.warn('Failed to shutdown listen socket: %s' , e)
+            try:
+                self.__socket.close()
+            except:
+                self.__logger.warn('Failed to close listen socket: %s', e)
             self.__socket = None
 
         # The acceptor thread should encounter an exception and exit
@@ -672,6 +678,7 @@ class Connector(rsb.transport.Connector,
             raise RuntimeError, 'trying to activate active connector'
 
         self.__logger.info('Activating')
+        
         self.__bus = self.__getBus(self.__host, self.__port, self.__server)
 
         self.__active = True
@@ -681,10 +688,10 @@ class Connector(rsb.transport.Connector,
             raise RuntimeError, 'trying to deactivate inactive connector'
 
         self.__logger.info('Deactivating')
-        removeConnector(self.bus, self)
-
+        
         self.__active = False
-
+        
+        removeConnector(self.bus, self)
 
     def setQualityOfServiceSpec(self, qos):
         pass
