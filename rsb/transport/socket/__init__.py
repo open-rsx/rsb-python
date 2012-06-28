@@ -631,7 +631,7 @@ class Connector(rsb.transport.Connector,
 
         self.__bus    = None
         self.__host   = options.get('host', 'localhost')
-        self.__port   = int(options.get('port', '5555'))
+        self.__port   = int(options.get('port', '55555'))
         self.__server = options.get('server', 'auto')
 
         self.__active = False
