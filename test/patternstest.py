@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -28,18 +28,21 @@ from rsb import ParticipantConfig
 
 class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
-        
+
         # Test creating a server without methods
         server = rsb.createServer('/some/scope', config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual(server.methods, [])
+        server.deactivate()
 
         server = rsb.createServer(rsb.Scope('/some/scope'), config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual(server.methods, [])
+        server.deactivate()
 
         # Test creating a server with directly specified methods
         server = rsb.createServer(rsb.Scope('/some/scope'),
                                   methods = [ ('foo', lambda x: x, str, str) ], config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
         self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
+        server.deactivate()
 
         # Test creating a server that exposes method of an existing
         # object
@@ -67,12 +70,13 @@ class LocalServerTest (unittest.TestCase):
                           object  = someObject,
                           expose  = [ ('bar', str, None) ],
                           methods = [ ('foo', lambda x: x, str, str) ])
+        server.deactivate()
 
 class RoundTripTest (unittest.TestCase):
     def testRoundTrip(self):
-        
+
         config = ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"})
-        
+
         localServer = rsb.createServer(
             '/roundtrip',
             methods = [ ('addone', lambda x: long(x + 1), long, long) ], config=config)
@@ -87,6 +91,9 @@ class RoundTripTest (unittest.TestCase):
         self.assertEqual(map(lambda x: x.get(),
                              map(remoteServer.addone.async, range(100))),
                          range(1, 101))
+
+        localServer.deactivate()
+        remoteServer.deactivate()
 
 def suite():
     suite = unittest.TestSuite()
