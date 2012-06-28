@@ -1204,7 +1204,8 @@ class Informer(Participant):
                 connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = connectors)
         self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-
+        self.__configurator.scope = self.scope
+        
         self.__activate()
 
     def __del__(self):
@@ -1259,21 +1260,25 @@ class Informer(Participant):
 
     def __activate(self):
         with self.__mutex:
-            if not self.__active:
-                self.__configurator.activate()
-                self.__active = True
-                self.__logger.info("Activated informer")
-            else:
-                self.__logger.info("Activate called even though informer was already active")
+            if self.__active:
+                raise RuntimeError, "Activate called even though informer was already active"
+            
+            self.__logger.info("Activating informer")
+            
+            self.__configurator.activate()
+            
+            self.__active = True
 
     def deactivate(self):
         with self.__mutex:
-            if self.__active:
-                self.__configurator.deactivate()
-                self.__active = False
-                self.__logger.info("Deactivated informer")
-            else:
+            if not self.__active:
                 self.__logger.info("Deactivate called even though informer was not active")
+
+            self.__logger.info("Deactivating informer")
+
+            self.__active = False
+            
+            self.__configurator.deactivate()
 
 class Listener(Participant):
     """
@@ -1317,7 +1322,6 @@ class Listener(Participant):
             self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors)
         self.__configurator.setScope(scope)
 
-
         self.__activate()
 
     def __del__(self):
@@ -1327,21 +1331,26 @@ class Listener(Participant):
     def __activate(self):
         # TODO commonality with Informer... refactor
         with self.__mutex:
-            if not self.__active:
-                self.__configurator.activate()
-                self.__active = True
-                self.__logger.info("Activated listener")
-            else:
-                self.__logger.info("Activate called even though listener was already active")
+            if self.__active:
+                raise RuntimeError, "Activate called even though listener was already active"
+
+            self.__logger.info("Activating listener")
+
+            self.__configurator.activate()
+            
+            self.__active = True
+            
 
     def deactivate(self):
         with self.__mutex:
-            if self.__active:
-                self.__configurator.deactivate()
-                self.__active = False
-                self.__logger.info("Deactivated listener")
-            else:
-                self.__logger.info("Deactivate called even though listener was not active")
+            if not self.__active:
+                raise RuntimeError, "Deactivate called even though listener was not active"
+
+            self.__logger.info("Deactivating listener")
+            
+            self.__configurator.deactivate()
+            
+            self.__active = False
 
     def addFilter(self, theFilter):
         """

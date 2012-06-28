@@ -31,10 +31,13 @@ layer and the client interface.
 @author: jmoringe
 """
 
-from rsb.util import getLoggerByClass, OrderedQueueDispatcherPool
+import copy
+import threading
+
+import rsb.util
+
 import rsb
-from threading import RLock
-from rsb.filter import FilterAction
+import rsb.filter
 
 class BroadcastProcessor (object):
     """
@@ -44,6 +47,8 @@ class BroadcastProcessor (object):
     @author: jmoringe
     """
     def __init__(self, handlers = None):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
         if handlers is None:
             self.__handlers = []
         else:
@@ -110,11 +115,11 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
     """
 
     def __init__(self, numThreads=5):
-        self.__logger = getLoggerByClass(self.__class__)
-        self.__pool = OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=self.__deliver, filterFunc=self.__filter)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__pool = rsb.util.OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=self.__deliver, filterFunc=self.__filter)
         self.__pool.start()
         self.__filters = []
-        self.__filtersMutex = RLock()
+        self.__filtersMutex = threading.RLock()
 
     def __del__(self):
         self.__logger.debug("Destructing ParallelEventReceivingStrategy")
@@ -205,18 +210,37 @@ class Configurator (object):
     @author: jmoringe
     """
     def __init__(self, connectors = None):
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
+        self.__scope = None
         if connectors is None:
             self.__connectors = []
         else:
-            self.__connectors = connectors
+            self.__connectors = copy.copy(connectors)
         self.__active     = False
 
     def __del__(self):
         self.__logger.debug("Destructing Configurator")
         if self.__active:
             self.deactivate()
+
+    def getScope(self):
+        return self.__scope
+
+    def setScope(self, scope):
+        """
+        Defines the scope the in route has to be set up. This will be called
+        before calling #activate.
+
+        @param scope: the scope of the in route
+        @type scope: rsb.Scope
+        """
+        self.__scope = scope
+        self.__logger.debug("Got new scope %s" % scope)
+        for connector in self.connectors:
+            connector.setScope(scope)
+
+    scope = property(getScope, setScope)
 
     def getConnectors(self):
         return self.__connectors
@@ -235,6 +259,7 @@ class Configurator (object):
         self.__logger.info("Activating configurator")
         for connector in self.connectors:
             connector.activate()
+
         self.__active = True
 
     def deactivate(self):
@@ -244,6 +269,7 @@ class Configurator (object):
         self.__logger.info("Deactivating configurator")
         for connector in self.connectors:
             connector.deactivate()
+
         self.__active = False
 
     def setQualityOfServiceSpec(self, qos):
@@ -274,28 +300,15 @@ class InRouteConfigurator(Configurator):
         """
         super(InRouteConfigurator, self).__init__(connectors)
 
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         if receivingStrategy is None:
             self.__receivingStrategy = ParallelEventReceivingStrategy()
         else:
             self.__receivingStrategy = receivingStrategy
-        self.__scope= None
 
         for connector in self.connectors:
             connector.setObserverAction(self.__receivingStrategy.handle)
-
-    def setScope(self, scope):
-        """
-        Defines the scope the in route has to be set up. This will be called
-        before calling #activate.
-
-        @param scope: the scope of the in route
-        """
-        self.__scope = scope
-        self.__logger.debug("Got new scope %s" % scope)
-        for connector in self.connectors:
-            connector.setScope(scope)
 
     def deactivate(self):
         super(InRouteConfigurator, self).deactivate()
@@ -313,7 +326,7 @@ class InRouteConfigurator(Configurator):
     def filterAdded(self, filter):
         self.__receivingStrategy.addFilter(filter)
         for connector in self.connectors:
-            connector.filterNotify(filter, FilterAction.ADD)
+            connector.filterNotify(filter, rsb.filter.FilterAction.ADD)
 
 class OutRouteConfigurator(Configurator):
     """
@@ -324,7 +337,7 @@ class OutRouteConfigurator(Configurator):
     """
 
     def __init__(self, connectors = None, sendingStrategy = None):
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         super(OutRouteConfigurator, self).__init__(connectors)
 

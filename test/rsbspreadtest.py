@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -37,14 +37,16 @@ from test.transporttest import SettingReceiver, TransportTest
 import rsb
 
 def getConnector(scope,
-                   clazz    = rsbspread.Connector,
-                   module   = None,
-                   activate = True):
+                 clazz    = rsbspread.Connector,
+                 module   = None,
+                 activate = True):
     kwargs = {}
     if module:
         kwargs['spreadModule'] = module
+    options = { "transport.spread.enabled": 1,
+                "transport.spread.port"   : "4803"}
     connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                      options    = ParticipantConfig.fromDict({"transport.spread.enabled": 1, "transport.spread.port": "4803"}).getTransport("spread").options,
+                      options    = ParticipantConfig.fromDict(options).getTransport("spread").options,
                       **kwargs)
     connector.setScope(scope)
     if activate:
@@ -110,10 +112,6 @@ class SpreadConnectorTest(unittest.TestCase):
         dummySpread = SpreadConnectorTest.DummySpread()
         connector = getConnector(Scope("/foo"), module = dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
-
-        # second activation must not do anything
-        connector.activate()
-        self.assertEqual(1, len(dummySpread.returnedConnections))
         connector.deactivate()
 
     def testDeactivate(self):
@@ -122,10 +120,6 @@ class SpreadConnectorTest(unittest.TestCase):
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
-        connector.deactivate()
-        self.assertEqual(1, connection.disconnectCalls)
-
-        # second activation must not do anything
         connector.deactivate()
         self.assertEqual(1, connection.disconnectCalls)
 
@@ -172,10 +166,10 @@ class SpreadConnectorTest(unittest.TestCase):
             #self.assertEqual(receiver.resultEvent, event)
 
 class SpreadTransportTest(TransportTest):
-    
+
     def _getInConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.InConnector, activate=activate)
-    
+
     def _getOutConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.OutConnector, activate=activate)
 
