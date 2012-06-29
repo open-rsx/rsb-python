@@ -648,7 +648,7 @@ class Connector(rsb.transport.Connector,
         elif serverString == 'auto':
             self.__server = 'auto'
         else:
-            raise TypeError, 'server option has to be "1", "true", "0", "false" or "auto", not %s' % serverString
+            raise TypeError, 'server option has to be "1", "true", "0", "false" or "auto", not "%s"' % serverString
 
     def __del__(self):
         if self.__active:
@@ -674,7 +674,7 @@ class Connector(rsb.transport.Connector,
                                    host, port)
                 self.__bus = getBusClientFor(host, port, self)
         else:
-            raise TypeError, 'server argument has to be True, False or "auto", not %s' % server
+            raise TypeError, 'server argument has to be True, False or "auto", not "%s"' % server
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
