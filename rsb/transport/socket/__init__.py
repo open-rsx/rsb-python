@@ -547,9 +547,12 @@ class BusServer (Bus):
             self.__logger.info('Waiting for clients')
             try:
                 socket, addr = self.__socket.accept()
+                if sys.platform == 'darwin':
+                    socket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
                 self.addConnection(BusConnection(socket_ = socket, isServer = True))
-            except:
+            except Exception, e:
+                self.__logger.error('Exception in acceptClients %s', e)
                 pass
 
     # Receiving notifications
