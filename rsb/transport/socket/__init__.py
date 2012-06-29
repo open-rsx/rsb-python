@@ -540,6 +540,9 @@ class BusServer (Bus):
             self.deactivate()
 
     def acceptClients(self):
+        import sys
+        if sys.platform == 'darwin':
+            self.__socket.settimeout(1.0)
         while self.__socket:
             self.__logger.info('Waiting for clients')
             try:
