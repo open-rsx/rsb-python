@@ -329,6 +329,8 @@ class ParticipantConfig (object):
         options = defaults
         for (key, value) in os.environ.items():
             if key.startswith('RSB_'):
+                if value == '':
+                   raise ValueError, 'The value of the environment variable %s is the empty string' % key
                 options[key[4:].lower().replace('_', '.')] = value
         return options
 
@@ -1189,7 +1191,7 @@ class Informer(Participant):
         self.__type           = theType
         self.__sequenceNumber = 0
         self.__configurator   = None
-        
+
         self.__active         = False
         self.__mutex          = threading.Lock()
 
@@ -1205,7 +1207,7 @@ class Informer(Participant):
             self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = connectors)
         self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
         self.__configurator.scope = self.scope
-        
+
         self.__activate()
 
     def __del__(self):
@@ -1262,11 +1264,11 @@ class Informer(Participant):
         with self.__mutex:
             if self.__active:
                 raise RuntimeError, "Activate called even though informer was already active"
-            
+
             self.__logger.info("Activating informer")
-            
+
             self.__configurator.activate()
-            
+
             self.__active = True
 
     def deactivate(self):
@@ -1277,7 +1279,7 @@ class Informer(Participant):
             self.__logger.info("Deactivating informer")
 
             self.__active = False
-            
+
             self.__configurator.deactivate()
 
 class Listener(Participant):
@@ -1337,9 +1339,9 @@ class Listener(Participant):
             self.__logger.info("Activating listener")
 
             self.__configurator.activate()
-            
+
             self.__active = True
-            
+
 
     def deactivate(self):
         with self.__mutex:
@@ -1347,9 +1349,9 @@ class Listener(Participant):
                 raise RuntimeError, "Deactivate called even though listener was not active"
 
             self.__logger.info("Deactivating listener")
-            
+
             self.__configurator.deactivate()
-            
+
             self.__active = False
 
     def addFilter(self, theFilter):
