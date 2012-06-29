@@ -335,7 +335,7 @@ class Bus (object):
             if not self.__active:
                 self.__logger.info('Cancelled distribution to connectors since bus is not active')
                 return
-            
+
             # Distribute the notification to participants in our
             # process via InPushConnector instances.
             self._toConnectors(notification)
@@ -635,18 +635,28 @@ class Connector(rsb.transport.Connector,
                                         **kwargs)
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
+        self.__active = False
+
         self.__bus    = None
         self.__host   = options.get('host', 'localhost')
         self.__port   = int(options.get('port', '55555'))
-        self.__server = options.get('server', 'auto')
-
-        self.__active = False
+        serverString = options.get('server', 'auto')
+        if serverString in [ '1', 'true' ]:
+            self.__server = True
+        elif serverString in [ '0', 'false']:
+            self.__server = False
+        elif serverString == 'auto':
+            self.__server = 'auto'
+        else:
+            raise TypeError, 'server option has to be "1", "true", "0", "false" or "auto", not %s' % serverString
 
     def __del__(self):
         if self.__active:
             self.deactivate()
 
     def __getBus(self, host, port, server):
+        self.__logger.info('Requested server role: %s', server)
+
         if server == True:
             self.__logger.info('Getting bus server %s:%d', host, port)
             self.__bus = getBusServerFor(host, port, self)
@@ -664,7 +674,7 @@ class Connector(rsb.transport.Connector,
                                    host, port)
                 self.__bus = getBusClientFor(host, port, self)
         else:
-            raise TypeError, 'server argument has to be True, false or "auto", not %s' % server
+            raise TypeError, 'server argument has to be True, False or "auto", not %s' % server
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
@@ -678,7 +688,7 @@ class Connector(rsb.transport.Connector,
             raise RuntimeError, 'trying to activate active connector'
 
         self.__logger.info('Activating')
-        
+
         self.__bus = self.__getBus(self.__host, self.__port, self.__server)
 
         self.__active = True
@@ -688,9 +698,9 @@ class Connector(rsb.transport.Connector,
             raise RuntimeError, 'trying to deactivate inactive connector'
 
         self.__logger.info('Deactivating')
-        
+
         self.__active = False
-        
+
         removeConnector(self.bus, self)
 
     def setQualityOfServiceSpec(self, qos):
