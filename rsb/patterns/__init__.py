@@ -142,7 +142,7 @@ class Method (object):
     def deactivate(self):
         if not self._informer is None:
             self._informer.deactivate()
-            self._inforer = None
+            self._informer = None
         if not self._listener is None:
             self._listener.deactivate()
             self._listener = None
@@ -177,14 +177,19 @@ class Server (rsb.Participant):
         @type config: ParticipantConfig
         """
         super(Server, self).__init__(scope)
+
+        self.__active = False
         if config is None:
             self.__config = rsb.getDefaultParticipantConfig()
         else:
             self.__config = config
         self._methods = {}
 
+        self.activate()
+
     def __del__(self):
-        self.deactivate
+        if self.__active:
+            self.deactivate()
 
     def getConfig(self):
         return self.__config
@@ -206,8 +211,21 @@ class Server (rsb.Participant):
     def removeMethod(self, method):
         del self._methods[method.name]
 
+    # State management
+
+    def activate(self):
+        self.__active = True
+
     def deactivate(self):
-        map(lambda x: x.deactivate, self._methods.values())
+        if not self.__active:
+            raise RuntimeError, 'Trying to deactivate inactive server'
+
+        self.__active = False
+
+        for m in self._methods.values():
+            m.deactivate()
+
+    # Printing
 
     def __str__(self):
         return '<%s with %d method(s) at 0x%x>' % (type(self).__name__, len(self._methods), id(self))
@@ -263,10 +281,12 @@ class LocalMethod (Method):
                 result = self._func()
             else:
                 result = self._func(request.data)
+            resultType = self.replyType
         except Exception, e:
             isError                 = True
             userInfos['rsb:error?'] = '1'
             result                  = str(e)
+            resultType              = str
 
         if isinstance(result, rsb.Event):
             reply = result
@@ -280,7 +300,7 @@ class LocalMethod (Method):
             reply = rsb.Event(scope     = self.informer.scope,
                               method    = 'REPLY',
                               data      = result,
-                              type      = type(result),
+                              type      = resultType,
                               userInfos = userInfos,
                               causes    = causes)
         self.informer.publishEvent(reply)
