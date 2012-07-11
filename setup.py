@@ -37,10 +37,16 @@ import setuptools.command.test
 import subprocess
 import sys
 import time
+import shutil
 import rsb
 
-def findRsbPackages():
-    return find_packages(exclude=["test", "examples", "build"])
+def findRsbPackages(ignoreProtocol=False):
+    excludes = ["test", "examples", "build"]
+    if ignoreProtocol:
+        excludes.append("rsb/protocol")
+    packages = find_packages(exclude=excludes)
+    print("Relevant rsb packages: %s" % packages)
+    return packages
 
 class CommandStarter(object):
 
@@ -109,7 +115,39 @@ class ApiDocCommand(Command):
         env['PYTHONPATH'] = ppath
         subprocess.call(cmdline, env=env)
 
-class BuildProtobufs(Command):
+class FetchProtocol(Command):
+    '''
+    A command which fetches the protocol files into this project
+    
+    @author: jwienke
+    '''
+
+    user_options = [('protocolroot=', 'p',
+                     "root path of the protocol")]
+    description = "Fetches the protocol files into this project"
+
+    def initialize_options(self):
+        self.protocolroot = None
+
+    def finalize_options(self):
+        if self.protocolroot == None:
+            raise RuntimeError("No protocolroot specified. Use the config file or command line option.")
+
+    def run(self):
+
+        # if it does not exist, create the target directory for the copied files
+        fetchedProtocolDir = "rsb/protocol"
+        try:
+            shutil.rmtree(fetchedProtocolDir)
+        except os.error, e:
+            print(e)
+            pass
+
+        protoRoot = self.protocolroot
+        print("Using protocol folder: %s" % protoRoot)
+        shutil.copytree(os.path.join(protoRoot, "rsb/protocol"), fetchedProtocolDir)
+
+class BuildProtocol(Command):
     '''
     Distutils command to build the protocol buffers.
 
@@ -120,15 +158,12 @@ class BuildProtobufs(Command):
                      "root path of the protocol"),
                     ('protoc=', 'c',
                      "the protoc compiler to use")]
-    description = "generates the protocol buffers from the previously installed protocol project"
+    description = "Generates the protocol buffers from the previously protocol definition"
 
     def initialize_options(self):
-        self.protocolroot = None
         self.protoc = None
 
     def finalize_options(self):
-        if self.protocolroot == None:
-            raise RuntimeError("No protocolroot specified. Use the config file or command line option.")
         if self.protoc == None:
             self.protoc = find_executable("protoc")
         if self.protoc == None:
@@ -136,17 +171,14 @@ class BuildProtobufs(Command):
 
     def run(self):
 
-        protoRoot = self.protocolroot
-        print("Using protocol folder: %s" % protoRoot)
-        protoFiles = []
-        for root, dirs, files in os.walk(protoRoot):
-            for file in files:
-                if file[-6:] == ".proto":
-                    protoFiles.append(os.path.join(root, file))
-
-        if len(protoFiles) == 0:
-            raise RuntimeError(("Could not find rsb protocol at '%s'. " +
-                                "Please specify it's location using the command option or config file.") % protoRoot)
+        try:
+            self.run_command('proto')
+        except RuntimeError, e:
+            # for sdist fetching the protocol may fail as long as we have
+            # the protocol available. Otherwise this is a real error
+            self.warn("Fetching the protocol failed, but this acceptable in cases where the files have been cached: %s" % e)
+            if not os.path.exists("rsb/protocol/Notification.proto"):
+                raise e
 
         # create output directory
         outdir = "."
@@ -155,19 +187,27 @@ class BuildProtobufs(Command):
         except os.error:
             pass
 
+        protoFiles = []
+        for root, dirs, files in os.walk("rsb/protocol"):
+            # collect proto files to build
+            for file in files:
+                if file[-6:] == ".proto":
+                    protoFiles.append(os.path.join(root, file))
+            # create __init__.py files for all resulting packages
+            with open(os.path.join(root, '__init__.py'), 'w'):
+                pass
+
         print("Building protocol files: %s" % protoFiles)
         for proto in protoFiles:
             # TODO use project root for out path as defined in the test command
-            call = [self.protoc, "-I=" + protoRoot, "--python_out=" + outdir, proto]
+            call = [self.protoc, "-I=.", "--python_out=" + outdir, proto]
             #print("calling: %s" % call)
             ret = subprocess.call(call)
             if ret != 0:
                 raise RuntimeError("Unable to build proto file: %s" % proto)
-        with open('rsb/protocol/__init__.py', 'w'):
-            pass
-        
+
         # reinitialize the list of packages as we have added new python modules
-        self.distribution.packages=findRsbPackages()
+        self.distribution.packages = findRsbPackages()
         # also ensure that the build command for python module really gets informed about this
         self.reinitialize_command("build_py")
 
@@ -220,7 +260,7 @@ class Build(build):
     """
 
     def run(self):
-        self.run_command('proto')
+        self.run_command('build_proto')
         build.run(self)
 
 class Sdist(sdist):
@@ -232,7 +272,16 @@ class Sdist(sdist):
     """
 
     def run(self):
+        # fetch the protocol before building the source distribution so that
+        # we have a cached version and each user can rebuild the protocol
+        # with his own protobuf version
         self.run_command('proto')
+        
+        # reinitialize the list of packages for the distribution to include the
+        # precompiled protocol results from protoc which might conflict with the
+        # user's version
+        self.distribution.packages = findRsbPackages(ignoreProtocol=True)
+        
         sdist.run(self)
 
 class Test(setuptools.command.test.test):
@@ -325,7 +374,8 @@ setup(name='rsb-python',
       test_suite="test.suite",
 
       cmdclass={'doc' : ApiDocCommand,
-                'proto': BuildProtobufs,
+                'proto': FetchProtocol,
+                'build_proto': BuildProtocol,
                 'sdist' : Sdist,
                 'build' : Build,
                 'test' : Test,

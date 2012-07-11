@@ -1,1 +1,3 @@
 include COPYING.txt
+
+recursive-include rsb/ *.proto
