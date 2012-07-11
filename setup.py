@@ -25,6 +25,7 @@
 from setuptools import setup
 from setuptools import find_packages
 from setuptools import Command
+from setuptools.command.bdist_egg import bdist_egg
 
 from distutils.command.build import build
 from distutils.command.sdist import sdist
@@ -138,9 +139,11 @@ class FetchProtocol(Command):
         # if it does not exist, create the target directory for the copied files
         fetchedProtocolDir = "rsb/protocol"
         try:
+            # in cases of source distributions this would kill also the fetched
+            # proto files. However, for a source distribution we will never
+            # reach this method because the protocolroot option will not be set
             shutil.rmtree(fetchedProtocolDir)
-        except os.error, e:
-            print(e)
+        except os.error:
             pass
 
         protoRoot = self.protocolroot
@@ -251,6 +254,18 @@ class Coverage(Command):
         cov.html_report(directory='covhtml')
         cov.xml_report(outfile='coverage.xml')
 
+class BDist_egg(bdist_egg):
+    """
+    Simple wrapper around the normal bdist_egg command to require protobuf build
+    before normal build.
+
+    @author: jwienke
+    """
+
+    def run(self):
+        self.run_command('build_proto')
+        bdist_egg.run(self)
+        
 class Build(build):
     """
     Simple wrapper around the normal build command to require protobuf build
@@ -378,6 +393,7 @@ setup(name='rsb-python',
                 'build_proto': BuildProtocol,
                 'sdist' : Sdist,
                 'build' : Build,
+                'bdist_egg': BDist_egg,
                 'test' : Test,
                 'coverage' : Coverage},
       )
