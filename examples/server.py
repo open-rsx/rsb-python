@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -27,32 +27,18 @@ from time import sleep
 from rsb import Scope, createServer
 
 if __name__ == '__main__':
-
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
     server = createServer(Scope('/example/server'))
 
-    # Add a method to the server.
-    server.addMethod('echo', lambda x: x, str, str)
+    # Create a function which processes requests and returns a
+    # result. Note that the name of the function does not determine
+    # the name of the exposed method. See addMethod below.
+    def echo(x):
+        return x
 
-    # It is also possible to create a LocalServer with a given set of
-    # methods. This construction avoids adding the methods
-    # individually.
-    server = createServer(Scope('/example/server'),
-                          methods = [ ('echo2', lambda x: x, str, str) ])
-
-    # Finally, a LocalServer can be created by exposing some or all
-    # methods of an ordinary Python object.
-    class MyObject:
-        def echo3(self, arg):
-            return arg
-
-    server = createServer(Scope('/example/server'),
-                          object = MyObject(),
-                          expose = [ ('echo3', str, str) ])
-
-    # Note: the code above creates three servers, each of which
-    # provides one method on the scope /example/server
+    # Add the function to the server under the name "echo" .
+    server.addMethod('echo', echo, str, str)
 
     # Wait for method calls by clients.
     sleep(100)
