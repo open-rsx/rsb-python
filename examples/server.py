@@ -22,11 +22,15 @@
 #
 # ============================================================
 
+import logging
 from time import sleep
 
 from rsb import Scope, createServer
 
 if __name__ == '__main__':
+    # Pacify logger.
+    logging.basicConfig()
+
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
     server = createServer(Scope('/example/server'))

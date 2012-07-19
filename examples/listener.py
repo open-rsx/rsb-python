@@ -21,13 +21,19 @@
 #     Bielefeld University
 #
 # ============================================================
-from rsb import createListener, Scope
+
 import time
+import logging
+
+from rsb import createListener, Scope
 
 def handle(event):
     print("Received event: %s" % event)
 
 if __name__ == '__main__':
+    # Pacify logger.
+    logging.basicConfig()
+
     # create a listener on the specified scope. The listener will dispatch all
     # received events asynchronously to all registered listeners
     listener = createListener(Scope("/example/informer"))

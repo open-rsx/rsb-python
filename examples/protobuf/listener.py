@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen
+# Copyright (C) 2011, 2012 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -22,6 +22,8 @@
 #
 # ============================================================
 
+import logging
+
 import time
 
 import rsb
@@ -42,6 +44,9 @@ def printData(event):
           % (type(event.data).__name__, str(event.data)))
 
 if __name__ == '__main__':
+    # Pacify logger.
+    logging.basicConfig()
+
     # Register a protocol buffer converter for SimpleImage:
     # The generated data holder class is
     #   SimepleImage_pb2.SimpleImage

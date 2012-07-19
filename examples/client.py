@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -22,9 +22,13 @@
 #
 # ============================================================
 
+import logging
+
 from rsb import Scope, createRemoteServer;
 
 if __name__ == "__main__":
+    # Pacify logger.
+    logging.basicConfig()
 
     # Create a RemoteServer object for the remote server at scope
     # /example/server. Method calls should complete within five

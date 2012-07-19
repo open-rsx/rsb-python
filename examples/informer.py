@@ -21,11 +21,15 @@
 #     Bielefeld University
 #
 # ============================================================
+
 import time
+import logging
 
 from rsb import createInformer, Scope
 
 if __name__ == '__main__':
+    # Pacify logger.
+    logging.basicConfig()
 
     # create an informer for strings on scope "/example/informer".
     informer = createInformer("/example/informer", dataType=str)

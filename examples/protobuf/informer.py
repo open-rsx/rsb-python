@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -22,6 +22,8 @@
 #
 # ============================================================
 
+import logging
+
 import rsb
 
 from rsb.converter import registerGlobalConverter, getGlobalConverterMap, ProtocolBufferConverter
@@ -37,6 +39,9 @@ sys.path.append('.')
 from SimpleImage_pb2 import SimpleImage
 
 if __name__ == '__main__':
+    # Pacify logger.
+    logging.basicConfig()
+
     # Register a protocol buffer converter for SimpleImage:
     # The generated data holder class is
     #   SimepleImage_pb2.SimpleImage
