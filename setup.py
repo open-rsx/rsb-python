@@ -119,7 +119,7 @@ class ApiDocCommand(Command):
 class FetchProtocol(Command):
     '''
     A command which fetches the protocol files into this project
-    
+
     @author: jwienke
     '''
 
@@ -265,7 +265,7 @@ class BDist_egg(bdist_egg):
     def run(self):
         self.run_command('build_proto')
         bdist_egg.run(self)
-        
+
 class Build(build):
     """
     Simple wrapper around the normal build command to require protobuf build
@@ -291,12 +291,12 @@ class Sdist(sdist):
         # we have a cached version and each user can rebuild the protocol
         # with his own protobuf version
         self.run_command('proto')
-        
+
         # reinitialize the list of packages for the distribution to include the
         # precompiled protocol results from protoc which might conflict with the
         # user's version
         self.distribution.packages = findRsbPackages(ignoreProtocol=True)
-        
+
         sdist.run(self)
 
 class Test(setuptools.command.test.test):
@@ -308,13 +308,15 @@ class Test(setuptools.command.test.test):
     """
 
     user_options = setuptools.command.test.test.user_options \
-        + [ ('spread=', 'd', "spread executable to use"),
-            ('spreadport=', 'p', "port the spread daemon should use") ]
+        + [ ('spread=',     'd',  "Spread executable to use"),
+            ('spreadport=', 'p',  "Port the spread daemon should use"),
+            ('socketport=', None, 'Port which should be used by socket transport') ]
 
     def initialize_options(self):
         setuptools.command.test.test.initialize_options(self)
         self.spread = None
         self.spreadport = 4803
+        self.socketport = 55555
 
     def finalize_options(self):
         setuptools.command.test.test.finalize_options(self)
@@ -326,11 +328,28 @@ class Test(setuptools.command.test.test):
     def run(self):
         self.run_command('build')
 
-        with open('test/with-spread.conf', 'w') as f:
-            f.write('[transport.spread]\nenabled = 1\nport = %s\n' % self.spreadport)
+        for name, socketenabled, spreadenabled in [ ('spread', '0', '1'),
+                                                    ('socket', '1', '0') ]:
+            with open('test/with-%s.conf' % name, 'w') as f:
+                f.write("""[transport.spread]
+enabled = {spreadenabled}
+port    = {spreadport}
+
+[transport.socket]
+enabled = {socketenabled}
+port    = {socketport}"""
+                        .format(spreadenabled = spreadenabled,
+                                spreadport    = self.spreadport,
+                                socketenabled = socketenabled,
+                                socketport    = self.socketport))
+
         with open('test/spread.conf', 'w') as f:
-            f.write('Spread_Segment 127.0.0.255:%s {\nlocalhost	127.0.0.1\n}\nSocketPortReuse = ON\n'
-                    % self.spreadport)
+            f.write("""Spread_Segment 127.0.0.255:{spreadport} {{
+localhost 127.0.0.1
+}}
+SocketPortReuse = ON
+                    """
+                    .format(spreadport = self.spreadport))
         spread = None
         if self.spread and not self.spread == 'use-running':
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
@@ -338,11 +357,11 @@ class Test(setuptools.command.test.test):
         setuptools.command.test.test.run(self)
 
     def run_tests(self):
-        '''
+        """
         This method is overridden because setuptools 0.6 does not contain
         support for handling different test runners. In later versions it is
         probably not required to override this method.
-        '''
+        """
         import unittest
         import xmlrunner
         from pkg_resources import EntryPoint
@@ -395,5 +414,5 @@ setup(name='rsb-python',
                 'build' : Build,
                 'bdist_egg': BDist_egg,
                 'test' : Test,
-                'coverage' : Coverage},
+                'coverage' : Coverage}
       )
