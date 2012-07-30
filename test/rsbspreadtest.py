@@ -162,7 +162,8 @@ class SpreadPortTest(unittest.TestCase):
         port.deactivate()
 
     def testRoundtrip(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        port = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                          options      = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options)
         port.activate()
 
         goodScope = Scope("/good")
@@ -193,8 +194,11 @@ class SpreadPortTest(unittest.TestCase):
             self.assertEqual(receiver.resultEvent, event)
 
     def testUserRoundtrip(self):
-        inport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
-        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
+        inport = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                            options      = options)
+        outport = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                             options      = options)
 
         outRouter = Router(outPort=outport)
         inRouter = Router(inPort=inport)
@@ -233,11 +237,13 @@ class SpreadPortTest(unittest.TestCase):
             self.assertEqual(sentEvent, receiver.resultEvent)
 
     def testHierarchySending(self):
+        options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
 
         sendScope = Scope("/this/is/a/test")
         superScopes = sendScope.superScopes(True)
 
-        outport = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        outport = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                             options      = options)
         outRouter = Router(outPort=outport)
         informer = Informer(sendScope, str, router=outRouter)
 
@@ -269,7 +275,10 @@ class SpreadPortTest(unittest.TestCase):
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSequencing(self):
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
+
+        port = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                          options      = options)
         port.activate()
 
         goodScope = Scope("/good")
@@ -299,8 +308,10 @@ class SpreadPortTest(unittest.TestCase):
             #self.assertEqual(receiver.resultEvent, event)
 
     def testSendTimeAdaption(self):
+        options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
 
-        port = SpreadPort(converterMap=getGlobalConverterMap(bytearray))
+        port = SpreadPort(converterMap = getGlobalConverterMap(bytearray),
+                          options      = options)
         port.activate()
 
         event = Event(EventId(uuid.uuid4(), 0))
