@@ -5,5 +5,6 @@ setup.cfg
 /coverage*
 /test-reports
 /rsb/protocol
+/rsb/rsbspread/rsb/protocol
 /test/spread.conf
 /test/with-*.conf
