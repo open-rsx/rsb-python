@@ -26,14 +26,15 @@ import time
 
 import unittest
 
-from rsb import Scope, Event
+from rsb import Scope, Event, ParticipantConfig
 from rsb.converter import getGlobalConverterMap
 from rsb.transport.socket import OutConnector, InPushConnector
 
-from transporttest import TransportTest        
+from transporttest import TransportTest
 
 def getConnector(clazz, scope, activate = True):
-    connector = clazz(converters = getGlobalConverterMap(bytearray))
+    connector = clazz(converters = getGlobalConverterMap(bytearray),
+                      options    = ParticipantConfig.fromFile('test/with-socket.conf').getTransport('socket').options)
     connector.setScope(scope)
     if activate:
         connector.activate()
@@ -42,7 +43,7 @@ def getConnector(clazz, scope, activate = True):
 class SocketTransportTest(TransportTest):
     def _getInConnector(self, scope, activate = True):
         return getConnector(InPushConnector, scope, activate = activate)
-    
+
     def _getOutConnector(self, scope, activate = True):
         return getConnector(OutConnector, scope, activate = activate)
 

@@ -43,10 +43,8 @@ def getConnector(scope,
     kwargs = {}
     if module:
         kwargs['spreadModule'] = module
-    options = { "transport.spread.enabled": 1,
-                "transport.spread.port"   : "4803"}
     connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                      options    = ParticipantConfig.fromDict(options).getTransport("spread").options,
+                      options    = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options,
                       **kwargs)
     connector.setScope(scope)
     if activate:
