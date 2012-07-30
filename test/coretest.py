@@ -48,7 +48,7 @@ class ParticipantConfigTest (unittest.TestCase):
                          QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.getTransports()), 1)
-        self.assertEqual(len(config.getTransports(includeDisabled=True)), 2)
+        self.assertEqual(len(config.getTransports(includeDisabled=True)), 3)
 
         # Check spread transport
         transport = config.getTransport('spread')
