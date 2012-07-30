@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -32,7 +32,7 @@ import string
 import uuid
 
 from rsb.transport import rsbspread
-from rsb import Event, Scope, EventId
+from rsb import Event, Scope, EventId, ParticipantConfig
 from test.transporttest import SettingReceiver, TransportTest
 import rsb
 
@@ -44,7 +44,7 @@ def getConnector(scope,
     if module:
         kwargs['spreadModule'] = module
     connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                      options    = rsb.getDefaultParticipantConfig().getTransport("spread").options,
+                      options    = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options,
                       **kwargs)
     connector.setScope(scope)
     if activate:
@@ -172,10 +172,10 @@ class SpreadConnectorTest(unittest.TestCase):
             #self.assertEqual(receiver.resultEvent, event)
 
 class SpreadTransportTest(TransportTest):
-    
+
     def _getInConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.InConnector, activate=activate)
-    
+
     def _getOutConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.OutConnector, activate=activate)
 

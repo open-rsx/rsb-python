@@ -242,6 +242,7 @@ class Test(setuptools.command.test.test):
         setuptools.command.test.test.initialize_options(self)
         self.spread     = None
         self.spreadport = 4803
+        self.socketport = 55555
 
     def finalize_options(self):
         setuptools.command.test.test.finalize_options(self)
@@ -254,10 +255,18 @@ class Test(setuptools.command.test.test):
         self.run_command('build')
 
         with open('test/with-spread.conf', 'w') as f:
-            f.write('[transport.spread]\nenabled = 1\nport = %s\n' % self.spreadport)
+            f.write("""[transport.spread]
+enabled = 1
+port    = {spreadport}"""
+                    .format(spreadport = self.spreadport))
+
         with open('test/spread.conf', 'w') as f:
-            f.write('Spread_Segment 127.0.0.255:%s {\nlocalhost	127.0.0.1\n}\nSocketPortReuse = ON\n'
-                    % self.spreadport)
+            f.write("""Spread_Segment 127.0.0.255:{spreadport} {{
+localhost 127.0.0.1
+}}
+SocketPortReuse = ON
+                    """
+                    .format(spreadport = self.spreadport))
         spread = None
         if self.spread:
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
@@ -265,11 +274,11 @@ class Test(setuptools.command.test.test):
         setuptools.command.test.test.run(self)
 
     def run_tests(self):
-        '''
+        """
         This method is overridden because setuptools 0.6 does not contain
         support for handling different test runners. In later versions it is
         probably not required to override this method.
-        '''
+        """
         import unittest
         import xmlrunner
         from pkg_resources import EntryPoint
@@ -303,5 +312,5 @@ setup(name='rsb-python',
                 'sdist' : Sdist,
                 'build' : Build,
                 'test' : Test,
-                'coverage' : Coverage},
+                'coverage' : Coverage}
       )
