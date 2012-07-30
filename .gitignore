@@ -1,0 +1,9 @@
+*.pyc
+setup.cfg
+/build
+/rsb_python.egg-info
+/coverage*
+/test-reports
+/rsb/protocol
+/test/spread.conf
+/test/with-*.conf
