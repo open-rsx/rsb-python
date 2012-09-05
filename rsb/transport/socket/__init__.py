@@ -383,13 +383,19 @@ class Bus (object):
     # Low-level helpers
 
     def _toConnections(self, notification, exclude = None):
+        failing = []
         for connection in self.connections:
             if not connection is exclude:
                 try:
                     connection.handle(notification)
                 except Exception, e:
-                    # TODO handle this
-                    self.__logger.warn('Failed to send to %s: %s', connection, e)
+                    self.__logger.warn('Failed to send to %s: %s; will close connection later',
+                                       connection, e)
+                    failing.append(connection)
+
+        # Removed connections for which sending the notification
+        # failed.
+        map(self.removeConnection, failing)
 
     def _toConnectors(self, notification):
         # Deliver NOTIFICATION to connectors which fulfill two
