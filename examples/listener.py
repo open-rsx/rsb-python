@@ -22,6 +22,7 @@
 #
 # ============================================================
 
+# mark-start::body
 import time
 import logging
 
@@ -50,3 +51,4 @@ if __name__ == '__main__':
             time.sleep(1)
     finally:
         listener.deactivate()
+# mark-end::body

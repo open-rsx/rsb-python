@@ -22,6 +22,7 @@
 #
 # ============================================================
 
+# mark-start::body
 import time
 import logging
 
@@ -42,3 +43,4 @@ if __name__ == '__main__':
 
     informer.deactivate()
     print("Sent events, exiting")
+# mark-end::body
