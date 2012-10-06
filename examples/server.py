@@ -22,6 +22,7 @@
 #
 # ============================================================
 
+# mark-start::body
 import logging
 from time import sleep
 
@@ -46,3 +47,4 @@ if __name__ == '__main__':
 
     # Wait for method calls by clients.
     sleep(100)
+# mark-end::body

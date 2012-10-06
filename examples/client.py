@@ -22,6 +22,7 @@
 #
 # ============================================================
 
+# mark-start::body
 import logging
 
 from rsb import Scope, createRemoteServer;
@@ -44,3 +45,4 @@ if __name__ == "__main__":
     future = server.echo.async('bla')
     # do other things
     print 'server replied to asynchronous call: "%s"' % future.get(timeout = 10)
+# mark-end::body
