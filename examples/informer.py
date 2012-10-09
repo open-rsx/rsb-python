@@ -23,24 +23,20 @@
 # ============================================================
 
 # mark-start::body
-import time
 import logging
 
-from rsb import createInformer, Scope
+import rsb
 
 if __name__ == '__main__':
     # Pacify logger.
     logging.basicConfig()
 
-    # create an informer for strings on scope "/example/informer".
-    informer = createInformer("/example/informer", dataType=str)
+    # Create an informer for strings on scope "/example/informer".
+    informer = rsb.createInformer("/example/informer", dataType=str)
 
-    print("Informer setup finished")
+    # Send and event using a method that directly accepts data.
+    informer.publishData("example payload")
 
-    # send some events using a method that directly accepts data
-    for i in range(1200):
-        informer.publishData("a test string")
-
+    # Deactivate the informer after use.
     informer.deactivate()
-    print("Sent events, exiting")
 # mark-end::body

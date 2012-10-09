@@ -23,10 +23,10 @@
 # ============================================================
 
 # mark-start::body
+import time
 import logging
-from time import sleep
 
-from rsb import Scope, createServer
+import rsb
 
 if __name__ == '__main__':
     # Pacify logger.
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    server = createServer(Scope('/example/server'))
+    server = rsb.createServer('/example/server')
 
     # Create a function which processes requests and returns a
     # result. Note that the name of the function does not determine
@@ -42,9 +42,13 @@ if __name__ == '__main__':
     def echo(x):
         return x
 
-    # Add the function to the server under the name "echo" .
+    # Add the function to the server under the name "echo".
     server.addMethod('echo', echo, str, str)
 
     # Wait for method calls by clients.
-    sleep(100)
+    try:
+        while True:
+            time.sleep(1)
+    finally:
+        server.deactivate()
 # mark-end::body

@@ -26,7 +26,7 @@
 import time
 import logging
 
-from rsb import createListener, Scope
+import rsb
 
 def handle(event):
     print("Received event: %s" % event)
@@ -35,17 +35,16 @@ if __name__ == '__main__':
     # Pacify logger.
     logging.basicConfig()
 
-    # create a listener on the specified scope. The listener will dispatch all
-    # received events asynchronously to all registered listeners
-    listener = createListener(Scope("/example/informer"))
+    # Create a listener on the specified scope. The listener will
+    # dispatch all received events asynchronously to all registered
+    # handlers.
+    listener = rsb.createListener("/example/informer")
 
-    # add a handler to handle received events. In python, handlers are callable
-    # objects with the event as the single argument
+    # Add a handler to handle received events. Handlers are callable
+    # objects with the received event as the single argument.
     listener.addHandler(handle)
 
-    print("Listener setup finished")
-
-    # wait endlessly for received events
+    # Wait for events; clean up when interrupted.
     try:
         while True:
             time.sleep(1)
