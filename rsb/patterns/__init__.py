@@ -270,8 +270,15 @@ class LocalMethod (Method):
                             config = self.server.config)
 
     def _handleRequest(self, request):
+        # Only accept request, if its method is 'REQUEST'.
         if request.method is None or request.method != 'REQUEST':
             return
+
+        # Call the callable implementing the behavior of this
+        # method. If it does not take an argument
+        # (i.e. self.requestType is type(None)), call it without
+        # argument. Otherwise pass the payload of the request event to
+        # it.
         userInfos = {}
         causes    = [ request.id ]
         isError   = False
@@ -288,11 +295,14 @@ class LocalMethod (Method):
             result                  = str(e)
             resultType              = str
 
+        # If the returned result is an event, use it as reply event
+        # (after adding the request as cause). Otherwise add all
+        # necessary meta-data.
         if isinstance(result, rsb.Event):
             reply = result
             reply.causes += causes
         else:
-            # this check is required because the reply informer is
+            # This check is required because the reply informer is
             # created with type 'object' to enable throwing exceptions
             if not isError and not isinstance(result, self.replyType):
                 raise ValueError("The result '%s' (of type %s) of method %s does not match the method's declared return type %s."
@@ -303,6 +313,8 @@ class LocalMethod (Method):
                               type      = resultType,
                               userInfos = userInfos,
                               causes    = causes)
+
+        # Publish the reply event.
         self.informer.publishEvent(reply)
 
 class LocalServer (Server):
@@ -475,11 +487,15 @@ class RemoteMethod (Method):
         """
         self.listener # Force listener creation
 
+        # When the caller supplied an event, adjust the meta-data and
+        # create a future that will return an event.
         if isinstance(arg, rsb.Event):
             event        = arg
             event.scope  = self.informer.scope
             event.method = 'REQUEST'
             result       = Future()
+        # Otherwise, create a new event with suitable meta-data and a
+        # future that will return the payload of the reply event.
         else:
             event = rsb.Event(scope  = self.informer.scope,
                               method = 'REQUEST',
@@ -487,6 +503,8 @@ class RemoteMethod (Method):
                               type   = type(arg))
             result = DataFuture()
 
+        # Publish the constructed request event and record the call as
+        # in-progress, waiting for a reply.
         try:
             with self._lock:
                 event = self.informer.publishEvent(event)
@@ -525,6 +543,7 @@ class RemoteServer (Server):
         super(RemoteServer, self).__init__(scope, config)
 
     def __getattr__(self, name):
+        # Treat missing attributes as methods.
         try:
             super(RemoteServer, self).__getattr__(name)
         except AttributeError:
