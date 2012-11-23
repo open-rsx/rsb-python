@@ -6,5 +6,9 @@ setup.cfg
 /test-reports
 /rsb/protocol
 /rsb/rsbspread/rsb/protocol
+/rsb/version.py
 /test/spread.conf
 /test/with-*.conf
+/dist
+/gitversion
+/gitbranch
