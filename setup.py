@@ -435,8 +435,8 @@ def defineProjectVersion(majorMinor):
 (version, commit) = defineProjectVersion('0.8')
 
 # generate a version file so that version information is available at runtime
-with open('rsb/version.py.in', 'r') as template:
-    with open('rsb/version.py', 'w') as target:
+with open(os.path.join('rsb', 'version.py.in'), 'r') as template:
+    with open(os.path.join('rsb', 'version.py'), 'w') as target:
         target.write(template.read().replace('@VERSION@', version).replace('@COMMIT@', commit))
 
 setup(name='rsb-python',
