@@ -546,13 +546,16 @@ class BusServer (Bus):
         while self.__socket:
             self.__logger.info('Waiting for clients')
             try:
-                socket, addr = self.__socket.accept()
+                clientSocket, addr = self.__socket.accept()
                 if sys.platform == 'darwin':
-                    socket.settimeout(None)
+                    clientSocket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
-                self.addConnection(BusConnection(socket_ = socket, isServer = True))
+                self.addConnection(BusConnection(socket_ = clientSocket, isServer = True))
+            except socket.timeout, e:
+                if sys.platform != 'darwin':
+                    self.__logger.error('Unexpected timeout in acceptClients: "%s"', e)
             except Exception, e:
-                self.__logger.error('Exception in acceptClients %s', e)
+                self.__logger.error('Exception in acceptClients: "%s"', e)
                 pass
 
     # Receiving notifications
