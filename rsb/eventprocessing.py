@@ -150,7 +150,7 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         @type event: Event
         @param event: event to dispatch
         """
-        self.__logger.debug("Processing event %s" % event)
+        self.__logger.debug("Processing event %s", event)
         event.metaData.setDeliverTime()
         self.__pool.push(event)
 
@@ -236,7 +236,7 @@ class Configurator (object):
         @type scope: rsb.Scope
         """
         self.__scope = scope
-        self.__logger.debug("Got new scope %s" % scope)
+        self.__logger.debug("Got new scope %s", scope)
         for connector in self.connectors:
             connector.setScope(scope)
 
@@ -353,5 +353,5 @@ class OutRouteConfigurator(Configurator):
         if not self.active:
             raise RuntimeError, "Trying to publish event on Configurator which is not active."
 
-        self.__logger.debug("Publishing event: %s" % event)
+        self.__logger.debug("Publishing event: %s", event)
         self.__sendingStrategy.handle(event)

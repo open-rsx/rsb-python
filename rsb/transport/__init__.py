@@ -60,7 +60,7 @@ class Connector(object):
         if wireType == None:
             raise ValueError("Wire type must be a type object, None given")
 
-        self.__logger.debug("Using specified converter map for wire-type %s" % wireType)
+        self.__logger.debug("Using specified converter map for wire-type %s", wireType)
         self.__wireType = wireType
 
         # fails if still some arguments are left over

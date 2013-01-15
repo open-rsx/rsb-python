@@ -1227,7 +1227,7 @@ class Informer(Participant):
 
     def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation
-        self.__logger.debug("Publishing data '%s'" % data)
+        self.__logger.debug("Publishing data '%s'", data)
         event = Event(scope = self.scope,
                       data = data, type = type(data),
                       userInfos = userInfos, userTimes = userTimes)
@@ -1256,7 +1256,7 @@ class Informer(Participant):
         with self.__mutex:
             event.id = EventId(self.id, self.__sequenceNumber)
             self.__sequenceNumber += 1
-        self.__logger.debug("Publishing event '%s'" % event)
+        self.__logger.debug("Publishing event '%s'", event)
         self.__configurator.handle(event)
         return event
 

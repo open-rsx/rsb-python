@@ -209,7 +209,7 @@ class OrderedQueueDispatcherPool(object):
         with self.__condition:
             self.__receivers.append(self.__Receiver(receiver))
 
-        self.__logger.info("Registered receiver %s" % receiver)
+        self.__logger.info("Registered receiver %s", receiver)
 
     def unregisterReceiver(self, receiver):
         """
@@ -232,7 +232,7 @@ class OrderedQueueDispatcherPool(object):
         if removed:
             with removed.processingCondition:
                 while removed.processing:
-                    self.__logger.info("Waiting for receiver %s to finish" % receiver)
+                    self.__logger.info("Waiting for receiver %s to finish", receiver)
                     removed.processingCondition.wait()
         return not (removed is None)
 
@@ -249,7 +249,7 @@ class OrderedQueueDispatcherPool(object):
             self.__jobsAvailable = True
             self.__condition.notify()
 
-        self.__logger.debug("Got new message to dispatch: %s" % message)
+        self.__logger.debug("Got new message to dispatch: %s", message)
 
     def __nextJob(self, workerNum):
         """
@@ -267,7 +267,7 @@ class OrderedQueueDispatcherPool(object):
             while not gotJob:
 
                 while (not self.__jobsAvailable) and (not self.__interrupted):
-                    self.__logger.debug("Worker %d: no jobs available, waiting" % (workerNum))
+                    self.__logger.debug("Worker %d: no jobs available, waiting", workerNum)
                     self.__condition.wait()
 
                 if (self.__interrupted):
@@ -301,7 +301,7 @@ class OrderedQueueDispatcherPool(object):
                 receiver.processingCondition.notifyAll()
             if not receiver.queue.empty():
                 self.__jobsAvailable = True
-                self.__logger.debug("Worker %d: new jobs available, notifying one" % (workerNum))
+                self.__logger.debug("Worker %d: new jobs available, notifying one", workerNum)
                 self.__condition.notify()
 
     def __worker(self, workerNum):
@@ -317,11 +317,11 @@ class OrderedQueueDispatcherPool(object):
 
                 receiver = self.__nextJob(workerNum)
                 message = receiver.queue.get(True, None)
-                self.__logger.debug("Worker %d: got message %s for receiver %s" % (workerNum, message, receiver.receiver))
+                self.__logger.debug("Worker %d: got message %s for receiver %s", workerNum, message, receiver.receiver)
                 if self.__filterFunc(receiver.receiver, message):
-                    self.__logger.debug("Worker %d: delivering message %s for receiver %s" % (workerNum, message, receiver.receiver))
+                    self.__logger.debug("Worker %d: delivering message %s for receiver %s", workerNum, message, receiver.receiver)
                     self.__delFunc(receiver.receiver, message)
-                    self.__logger.debug("Worker %d: delivery for receiver %s finished" % (workerNum, receiver.receiver))
+                    self.__logger.debug("Worker %d: delivery for receiver %s finished", workerNum, receiver.receiver)
                 self.__finishedWork(receiver, workerNum)
 
         except InterruptedError:
@@ -349,7 +349,7 @@ class OrderedQueueDispatcherPool(object):
 
             self.__started = True
 
-        self.__logger.info("Started pool with %d threads" % self.__threadPoolSize)
+        self.__logger.info("Started pool with %d threads", self.__threadPoolSize)
 
     def stop(self):
         """
@@ -363,7 +363,7 @@ class OrderedQueueDispatcherPool(object):
             self.__condition.notifyAll()
 
         for worker in self.__threadPool:
-            self.__logger.debug("Joining worker %s " % worker)
+            self.__logger.debug("Joining worker %s", worker)
             worker.join()
 
         self.__threadPool = []

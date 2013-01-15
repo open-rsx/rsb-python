@@ -128,7 +128,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             | ord(size[1]) << 8  \
             | ord(size[2]) << 16 \
             | ord(size[3]) << 24
-        self.__logger.info('Receiving notification of size %d' % size)
+        self.__logger.info('Receiving notification of size %d', size)
         notification = self.__file.read(size = size)
         if not (len(notification) == size):
             raise RuntimeError, 'short read when receiving notification payload'
@@ -160,7 +160,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def sendNotification(self, notification):
         size = len(notification)
-        self.__logger.info('Sending notification of size %d' % size)
+        self.__logger.info('Sending notification of size %d', size)
         size = ''.join((chr(size & 0x000000ff),
                         chr((size & 0x0000ff00) >> 8),
                         chr((size & 0x00ff0000) >> 16),
