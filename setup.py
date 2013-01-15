@@ -432,7 +432,7 @@ def defineProjectVersion(majorMinor):
 
     return ("%s.%s" % (majorMinor, patchVersion), str(lastCommit))
 
-(version, commit) = defineProjectVersion('0.8')
+(version, commit) = defineProjectVersion('0.9')
 
 # generate a version file so that version information is available at runtime
 with open(os.path.join('rsb', 'version.py.in'), 'r') as template:
