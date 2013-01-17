@@ -249,7 +249,10 @@ class OrderedQueueDispatcherPool(object):
             self.__jobsAvailable = True
             self.__condition.notify()
 
-        self.__logger.debug("Got new message to dispatch: %s" % message)
+        # XXX: This is disabled because it can trigger this bug for protocol buffers payloads:
+        # http://code.google.com/p/protobuf/issues/detail?id=454
+        # See also #1331
+        #self.__logger.debug("Got new message to dispatch: %s" % message)
 
     def __nextJob(self, workerNum):
         """
