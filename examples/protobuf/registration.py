@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -54,10 +54,10 @@ if __name__ == '__main__':
     print("Registered converters:\n%s " % rsb.converter.getGlobalConverterMap(bytearray))
 
     # After registering one or more converters, it is currently
-    # necessary to replace the default participant configuration with
-    # a fresh one which takes into account the newly registered
-    # converters.
+    # necessary to replace the global default participant
+    # configuration with a fresh one which takes into account the
+    # newly registered converters.
     #
     # This will hopefully become unnecessary in future RSB versions.
-    rsb.__defaultParticipantConfig = rsb.ParticipantConfig.fromDefaultSources()
+    rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromDefaultSources())
 # mark-end::body
