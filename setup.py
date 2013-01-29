@@ -429,10 +429,20 @@ def defineProjectVersion(majorMinor):
     else:
         patchVersion = '0'
         print("Not on a release branch. Skipping patch version")
+        
+    # if we were still not successful defining the commit hash, try to get it
+    # using git log
+    if lastCommit == 'archive':
+        p = subprocess.Popen(['git', 'log' ,'-1', '--pretty=format:g%h'], stdout=subprocess.PIPE)
+        lastCommitOnline, _ = p.communicate()
+        if p.returncode == 0:
+            lastCommit = str(lastCommitOnline).strip()
 
     return ("%s.%s" % (majorMinor, patchVersion), str(lastCommit))
 
 (version, commit) = defineProjectVersion('0.9')
+
+print("This is version %s-%s" % (version, commit))
 
 # generate a version file so that version information is available at runtime
 with open(os.path.join('rsb', 'version.py.in'), 'r') as template:
