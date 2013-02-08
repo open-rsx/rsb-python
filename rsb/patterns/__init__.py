@@ -288,7 +288,7 @@ class LocalMethod (Method):
                 result = self._func()
             else:
                 result = self._func(request.data)
-            resultType = self.replyType
+            resultType = type(result)
         except Exception, e:
             isError                 = True
             userInfos['rsb:error?'] = '1'
@@ -306,7 +306,7 @@ class LocalMethod (Method):
             # created with type 'object' to enable throwing exceptions
             if not isError and not isinstance(result, self.replyType):
                 raise ValueError("The result '%s' (of type %s) of method %s does not match the method's declared return type %s."
-                                 % (result, type(result), self.name, self.replyType))
+                                 % (result, resultType, self.name, self.replyType))
             reply = rsb.Event(scope     = self.informer.scope,
                               method    = 'REPLY',
                               data      = result,
