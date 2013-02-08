@@ -94,6 +94,24 @@ class RoundTripTest (unittest.TestCase):
 
         localServer.deactivate()
         remoteServer.deactivate()
+        
+    def testVoidMethods(self):
+        
+        config = ParticipantConfig.fromDict({"transport.socket.enabled" : "1"})
+        
+        localServer = rsb.createServer('/void', config=config)
+        def nothing(e):
+            pass
+        localServer.addMethod("nothing", nothing, str)
+
+        remoteServer = rsb.createRemoteServer('/void', config)
+        
+        future = remoteServer.nothing.async("test")
+        try:
+            future.get(1)
+        finally:
+            localServer.deactivate()
+            remoteServer.deactivate()
 
 def suite():
     suite = unittest.TestSuite()
