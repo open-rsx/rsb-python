@@ -1,5 +1,6 @@
 *.pyc
 setup.cfg
+/*.egg
 /build
 /rsb_python.egg-info
 /coverage*
