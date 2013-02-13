@@ -360,6 +360,31 @@ class Uint64Converter(Converter):
             output |= (long(input[i]) << (i * 8L))
         return output
 
+class Uint32Converter(Converter):
+    """
+    A converter that serializes unsigned integers that fit in 32 bits.
+
+    @author: jmoringe
+    """
+
+    def __init__(self):
+        super(Uint32Converter, self).__init__(bytearray, Integral, 'uint32')
+
+    def serialize(self, input):
+        if input < 0 or input > ((1 << 32) - 1):
+            raise ValueError, '%s is invalid as uint32 value' % input
+
+        output = bytearray('1234')
+        for i in range(4):
+            output[i] = (input & (0xff << (i * 8))) >> (i * 8)
+        return output, self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        output = 0L
+        for i in range(4L):
+            output |= (long(input[i]) << (i * 8L))
+        return output
+
 class ProtocolBufferConverter(Converter):
     """
     This converter serializes and deserializes objects of protocol
@@ -407,3 +432,4 @@ class ProtocolBufferConverter(Converter):
 registerGlobalConverter(NoneConverter())
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
 registerGlobalConverter(Uint64Converter())
+registerGlobalConverter(Uint32Converter())

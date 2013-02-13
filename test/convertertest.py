@@ -25,7 +25,7 @@
 import unittest
 import re
 
-from rsb.converter import Converter, NoneConverter, StringConverter, Uint64Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
+from rsb.converter import Converter, NoneConverter, StringConverter, Uint64Converter, Uint32Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
@@ -138,6 +138,11 @@ class Uint64ConverterTest(unittest.TestCase):
         for value in [ 0L, 1L, 24378L, ((1L << 64L) - 1L) ]:
             self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
 
+class Uint32ConverterTest(unittest.TestCase):
+    def testRoundtrip(self):
+        converter = Uint32Converter()
+        for value in [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]:
+            self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
 
 def suite():
     suite = unittest.TestSuite()
@@ -147,5 +152,6 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Uint64ConverterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Uint32ConverterTest))
 
     return suite
