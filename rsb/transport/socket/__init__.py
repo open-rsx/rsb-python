@@ -63,7 +63,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def __init__(self,
                  host = None, port = None, socket_ = None,
-                 isServer = False):
+                 isServer = False, tcpnodelay = True):
         """
         @param host: Hostname or address of the bus server.
         @type host: str or None
@@ -71,6 +71,11 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         @type port: int or None
         @param socket_: A socket object through which the new
                         connection should access the bus.
+        @param isServer: if True, the created object will perform the server
+                         part of the handshake protocol.
+        @type isServer: bool
+        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
+        @type tcpnodelay: bool
         @see: L{getBusClientFor}, L{getBusServerFor}.
         """
         super(BusConnection, self).__init__()
@@ -95,6 +100,10 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             self.__socket = socket_
         else:
             raise ValueError, 'specify either host and port or socket_'
+        if tcpnodelay:
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        else:
+            self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 0)
         self.__file = self.__socket.makefile()
 
         # Perform the client or server part of the handshake.
@@ -421,7 +430,7 @@ class Bus (object):
 __busClients = {}
 __busClientsLock = threading.Lock()
 
-def getBusClientFor(host, port, connector):
+def getBusClientFor(host, port, tcpnodelay, connector):
     """
     Return (creating it if necessary), a L{BusClient} for the endpoint
     designated by B{host} and B{port} and attach B{connector} to
@@ -434,14 +443,16 @@ def getBusClientFor(host, port, connector):
     @type host: str
     @param port: The port on which the bus server listens.
     @type port: int
+    @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
+    @type tcpnodelay: bool
     @param connector: A connector that should be attached to the bus
                       client.
     """
-    key = (host, port)
+    key = (host, port, tcpnodelay)
     with __busClientsLock:
         bus = __busClients.get(key)
         if bus is None:
-            bus = BusClient(host, port)
+            bus = BusClient(host, port, tcpnodelay)
             __busClients[key] = bus
             bus.activate()
             bus.addConnector(connector)
@@ -456,22 +467,24 @@ class BusClient (Bus):
 
     @author: jmoringe
     """
-    def __init__(self, host, port):
+    def __init__(self, host, port, tcpnodelay):
         """
         @param host: A hostname or address of the node on which the
                      bus server listens.
         @type host: str
         @param port: The port on which the new bus server listens.
         @type port: int
+        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
+        @type tcpnodelay: bool
         """
         super(BusClient, self).__init__()
 
-        self.addConnection(BusConnection(host, port))
+        self.addConnection(BusConnection(host, port, tcpnodelay=tcpnodelay))
 
 __busServers = {}
 __busServersLock = threading.Lock()
 
-def getBusServerFor(host, port, connector):
+def getBusServerFor(host, port, tcpnodelay, connector):
     """
     Return (creating it if necessary), a L{BusServer} for the endpoint
     designated by B{host} and B{port} and attach B{connector} to
@@ -486,14 +499,16 @@ def getBusServerFor(host, port, connector):
     @param port: The port to which the listen socket of the new bus
                  server should be bound.
     @type port: int
+    @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
+    @type tcpnodelay: bool
     @param connector: A connector that should be attached to the bus
                       server.
     """
-    key = (host, port)
+    key = (host, port, tcpnodelay)
     with __busServersLock:
         bus = __busServers.get(key)
         if bus is None:
-            bus = BusServer(host, port)
+            bus = BusServer(host, port, tcpnodelay)
             bus.activate()
             __busServers[key] = bus
             bus.addConnector(connector)
@@ -516,7 +531,7 @@ class BusServer (Bus):
     @author: jmoringe
     """
 
-    def __init__(self, host, port, backlog = 5):
+    def __init__(self, host, port, tcpnodelay, backlog = 5):
         """
         @param host: A hostname or address identifying the interface
                      to which the listen socket of the new bus server
@@ -525,6 +540,8 @@ class BusServer (Bus):
         @param port: The port to which the listen socket of the new
                      bus server should be bound.
         @type port: int
+        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
+        @type tcpnodelay: bool
         @param backlog: The maximum number of queued connection
                         attempts.
         @type backlog: int
@@ -535,6 +552,7 @@ class BusServer (Bus):
 
         self.__host           = host
         self.__port           = port
+        self.__tcpnodelay     = tcpnodelay
         self.__backlog        = backlog
         self.__socket         = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__acceptorThread = None
@@ -556,7 +574,7 @@ class BusServer (Bus):
                 if sys.platform == 'darwin':
                     clientSocket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
-                self.addConnection(BusConnection(socket_ = clientSocket, isServer = True))
+                self.addConnection(BusConnection(socket_ = clientSocket, isServer = True, tcpnodelay = self.__tcpnodelay))
             except socket.timeout, e:
                 if sys.platform != 'darwin':
                     self.__logger.error('Unexpected timeout in acceptClients: "%s"', e)
@@ -652,9 +670,10 @@ class Connector(rsb.transport.Connector,
 
         self.__active = False
 
-        self.__bus    = None
-        self.__host   = options.get('host', 'localhost')
-        self.__port   = int(options.get('port', '55555'))
+        self.__bus        = None
+        self.__host       = options.get('host', 'localhost')
+        self.__port       = int(options.get('port', '55555'))
+        self.__tcpnodelay = options.get('nodelay', '1') in [ '1', 'true' ]
         serverString = options.get('server', 'auto')
         if serverString in [ '1', 'true' ]:
             self.__server = True
@@ -669,25 +688,25 @@ class Connector(rsb.transport.Connector,
         if self.__active:
             self.deactivate()
 
-    def __getBus(self, host, port, server):
+    def __getBus(self, host, port, tcpnodelay, server):
         self.__logger.info('Requested server role: %s', server)
 
         if server == True:
             self.__logger.info('Getting bus server %s:%d', host, port)
-            self.__bus = getBusServerFor(host, port, self)
+            self.__bus = getBusServerFor(host, port, tcpnodelay, self)
         elif server == False:
             self.__logger.info('Getting bus client %s:%d', host, port)
-            self.__bus = getBusClientFor(host, port, self)
+            self.__bus = getBusClientFor(host, port, tcpnodelay, self)
         elif server == 'auto':
             try:
                 self.__logger.info('Trying to get bus server %s:%d (in server = auto mode)',
                                    host, port)
-                self.__bus = getBusServerFor(host, port, self)
+                self.__bus = getBusServerFor(host, port, tcpnodelay, self)
             except Exception, e:
                 self.__logger.info('Failed to get bus server: %s', e)
                 self.__logger.info('Trying to get bus client %s:%d (in server = auto mode)',
                                    host, port)
-                self.__bus = getBusClientFor(host, port, self)
+                self.__bus = getBusClientFor(host, port, tcpnodelay, self)
         else:
             raise TypeError, 'server argument has to be True, False or "auto", not "%s"' % server
         self.__logger.info('Got %s', self.__bus)
@@ -704,7 +723,7 @@ class Connector(rsb.transport.Connector,
 
         self.__logger.info('Activating')
 
-        self.__bus = self.__getBus(self.__host, self.__port, self.__server)
+        self.__bus = self.__getBus(self.__host, self.__port, self.__tcpnodelay, self.__server)
 
         self.__active = True
 
