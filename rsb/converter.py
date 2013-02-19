@@ -385,6 +385,21 @@ class Uint32Converter(Converter):
             output |= (long(input[i]) << (i * 8L))
         return output
 
+class ByteArrayConverter(Converter):
+    """
+    A converter which just passes through the original byte array of a message.
+
+    @author: jwienke
+    """
+    def __init__(self):
+        super(ByteArrayConverter, self).__init__(bytearray, bytearray, '.*')
+
+    def serialize(self, data):
+        return bytearray(data)
+
+    def deserialize(self, data, wireSchema):
+        return bytearray(data)
+
 class ProtocolBufferConverter(Converter):
     """
     This converter serializes and deserializes objects of protocol
