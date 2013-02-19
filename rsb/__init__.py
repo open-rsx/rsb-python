@@ -218,8 +218,11 @@ class ParticipantConfig (object):
 
         def getConverters(self):
             return self.__converters
+        
+        def setConverters(self, converters):
+            self.__converters = converters
 
-        converters = property(getConverters)
+        converters = property(getConverters, setConverters)
 
         def getOptions(self):
             return self.__options
