@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -32,7 +32,8 @@ registering and selecting them.
 @author: plueckin
 """
 
-from numbers import Integral
+from numbers import Integral, Real
+import struct
 
 class Converter(object):
     """
@@ -311,6 +312,41 @@ class NoneConverter (Converter):
 
         pass
 
+def makeStructBasedConverter(name, dataType, wireSchema, format, size):
+    class NewConverter(Converter):
+        def __init__(self):
+            super(self.__class__, self).__init__(bytearray, dataType, wireSchema)
+
+        def serialize(self, input):
+            return bytearray(struct.pack(format, input)), self.wireSchema
+
+        def deserialize(self, input, wireSchema):
+            assert wireSchema == self.wireSchema
+            return struct.unpack(format, str(input))[0]
+
+    NewConverter.__name__ = name
+    # TODO(jmoringe): seems to be impossible in CPython
+    # NewConverter.__doc__ = """
+    # A converter that serializes %(dataType)s to bytearrays with %(wireSchema)s wire-schema.
+    #
+    # @author: jmoringe
+    # """ % {
+    #     "dataType":   dataType,
+    #     "wireSchema": wireSchema
+    # }
+
+    globals()[name] = NewConverter
+    return NewConverter
+
+makeStructBasedConverter('DoubleConverter', Real,     'double', '<d', 8)
+makeStructBasedConverter('FloatConverter',  Real,     'float',  '<f', 4)
+makeStructBasedConverter('Uint32Converter', Integral, 'uint32', '<I', 4)
+makeStructBasedConverter('Int32Converter',  Integral, 'int32',  '<i', 4)
+makeStructBasedConverter('Uint64Converter', Integral, 'uint64', '<Q', 8)
+makeStructBasedConverter('Int64Converter',  Integral, 'int64',  '<q', 8)
+makeStructBasedConverter('BoolConverter',   bool,     'bool',   '?',  1)
+# Registered at end of file
+
 class StringConverter(Converter):
     """
     A converter that serializes strings to bytearrays with a specified
@@ -334,56 +370,6 @@ class StringConverter(Converter):
             return str(input)
         else:
             raise ValueError("Inacceptable dataType %s" % type)
-
-class Uint64Converter(Converter):
-    """
-    A converter that serializes unsigned integers that fit in 64 bits.
-
-    @author: jmoringe
-    """
-
-    def __init__(self):
-        super(Uint64Converter, self).__init__(bytearray, Integral, 'uint64')
-
-    def serialize(self, input):
-        if input < 0 or input > ((1 << 64) - 1):
-            raise ValueError, '%s is invalid as uint64 value' % input
-
-        output = bytearray('12345678')
-        for i in range(8):
-            output[i] = (input & (0xff << (i * 8))) >> (i * 8)
-        return output, self.wireSchema
-
-    def deserialize(self, input, wireSchema):
-        output = 0L
-        for i in range(8L):
-            output |= (long(input[i]) << (i * 8L))
-        return output
-
-class Uint32Converter(Converter):
-    """
-    A converter that serializes unsigned integers that fit in 32 bits.
-
-    @author: jmoringe
-    """
-
-    def __init__(self):
-        super(Uint32Converter, self).__init__(bytearray, Integral, 'uint32')
-
-    def serialize(self, input):
-        if input < 0 or input > ((1 << 32) - 1):
-            raise ValueError, '%s is invalid as uint32 value' % input
-
-        output = bytearray('1234')
-        for i in range(4):
-            output[i] = (input & (0xff << (i * 8))) >> (i * 8)
-        return output, self.wireSchema
-
-    def deserialize(self, input, wireSchema):
-        output = 0L
-        for i in range(4L):
-            output |= (long(input[i]) << (i * 8L))
-        return output
 
 class ByteArrayConverter(Converter):
     """
@@ -445,6 +431,12 @@ class ProtocolBufferConverter(Converter):
         return str(self)
 
 registerGlobalConverter(NoneConverter())
-registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
-registerGlobalConverter(Uint64Converter())
+registerGlobalConverter(DoubleConverter())
+registerGlobalConverter(FloatConverter())
 registerGlobalConverter(Uint32Converter())
+registerGlobalConverter(Int32Converter())
+registerGlobalConverter(Uint64Converter())
+registerGlobalConverter(Int64Converter())
+registerGlobalConverter(BoolConverter())
+registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
+registerGlobalConverter(ByteArrayConverter())

@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen
+# Copyright (C) 2011, 2013 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -25,7 +25,8 @@
 import unittest
 import re
 
-from rsb.converter import Converter, NoneConverter, StringConverter, Uint64Converter, Uint32Converter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
+import rsb.converter
+from rsb.converter import Converter, NoneConverter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
@@ -132,17 +133,17 @@ class StringConverterTest(unittest.TestCase):
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
                           bytearray(range(133)), 'ascii-string')
 
-class Uint64ConverterTest(unittest.TestCase):
-    def testRoundtrip(self):
-        converter = Uint64Converter()
-        for value in [ 0L, 1L, 24378L, ((1L << 64L) - 1L) ]:
-            self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
+def makeStructBasedConverterTest(name, values):
+    class NewTest(unittest.TestCase):
+        def testRoundtrip(self):
+            converter = rsb.converter.__dict__[name]()
+            for value in values:
+                self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
+    testName = name + 'Test'
+    NewTest.__name__ = testName
+    globals()[testName] = NewTest
+    return NewTest
 
-class Uint32ConverterTest(unittest.TestCase):
-    def testRoundtrip(self):
-        converter = Uint32Converter()
-        for value in [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]:
-            self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
 
 def suite():
     suite = unittest.TestSuite()
@@ -151,7 +152,15 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PredicateConverterListTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Uint64ConverterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(Uint32ConverterTest))
+
+    for args in [ ('DoubleConverter', [ 0.0, -1.0, 1.0 ]),
+                  ('FloatConverter',  [ 0.0, -1.0, 1.0 ]),
+                  ('Int32Converter',  [ 0L, -1L, 1L, -24378L, ((1L << 31L) - 1L) ]),
+                  ('Int64Converter',  [ 0L, -1L, 1L, -24378L, ((1L << 63L) - 1L) ]),
+                  ('Uint32Converter', [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]),
+                  ('Uint64Converter', [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]),
+                  ('BoolConverter',   [ True, False ]) ]:
+        suite.addTest(unittest.TestLoader()
+                      .loadTestsFromTestCase(makeStructBasedConverterTest(*args)))
 
     return suite
