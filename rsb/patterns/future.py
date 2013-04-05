@@ -33,8 +33,8 @@ class FutureTimeout (FutureError):
         super(FutureTimeout, self).__init__(*args)
 
 class FutureExecutionError (FutureError):
-  def __init__(self, *args):
-      super(FutureExecutionError, self).__init__(*args)
+    def __init__(self, *args):
+        super(FutureExecutionError, self).__init__(*args)
 
 class Future (object):
     """
