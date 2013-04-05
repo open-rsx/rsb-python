@@ -403,6 +403,8 @@ setup(name='rsb-python',
       extras_require={
         'spread-transport':  ["SpreadModule>=1.5spread4"],
       },
+      
+      dependency_links=['http://www.spread.org/files/SpreadModule-1.5spread4.tgz#egg=SpreadModule-1.5spread4'],
 
       packages=findRsbPackages(),
       test_suite="test.suite",
