@@ -1064,9 +1064,10 @@ class Event(object):
     causes = property(getCauses, setCauses)
 
     def __str__(self):
-        printData = self.__data
-        if isinstance(self.__data, str) and len(self.__data) > 10000:
-            printData = "string with length %u" % len(self.__data)
+        printData = str(self.__data)
+        if len(printData) > 100:
+            printData = printData[:100] + '...'
+        printData = ''.join(['\\x%x' % ord(c) if ord(c) < 32 else c for c in printData])
         return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s, causes = %s]" \
             % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData, self.__causes)
 
