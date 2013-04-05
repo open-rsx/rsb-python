@@ -213,6 +213,12 @@ class ScopeTest(unittest.TestCase):
         self.assertFalse(rsb.Scope("/a/b/c/d/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
         self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
 
+    def testHash(self):
+        
+        self.assertEqual(hash(Scope("/")), hash(Scope("/")))
+        self.assertNotEqual(hash(Scope("/")), hash(Scope("/foo")))
+        self.assertEqual(hash(Scope("/bla/foo")), hash(Scope("/bla/foo/")))
+
     def testSuperScopes(self):
 
         self.assertEqual(0, len(rsb.Scope("/").superScopes()))

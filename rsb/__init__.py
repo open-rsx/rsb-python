@@ -563,6 +563,9 @@ class Scope(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+    
+    def __hash__(self):
+        return hash(self.toString())
 
     def __lt__(self, other):
         return self.toString() < other.toString()
