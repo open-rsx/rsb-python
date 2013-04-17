@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -218,7 +218,7 @@ class ParticipantConfig (object):
 
         def getConverters(self):
             return self.__converters
-        
+
         def setConverters(self, converters):
             self.__converters = converters
 
@@ -563,7 +563,7 @@ class Scope(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-    
+
     def __hash__(self):
         return hash(self.toString())
 
@@ -831,7 +831,7 @@ class Event(object):
         @type id: EventId
         @param scope: A L{Scope} designating the channel on which the
                       event will be published.
-        @type scope: Scope
+        @type scope: Scope or accepted by Scope constructor
         @param method: A string designating the "method category"
                        which identifies the role of the event in some
                        communication patters. Examples are
@@ -1180,7 +1180,7 @@ class Informer(Participant):
         payloads of type B{type} on B{scope}.
 
         @param scope: scope of the informer
-        @type scope: Scope
+        @type scope: Scope or accepted by Scope constructor
         @param theType: A Python object designating the type of objects
                         that will be sent via the new informer. Instances
                         of subtypes are permitted as well.
@@ -1305,7 +1305,7 @@ class Listener(Participant):
 
         @param scope: The scope of the channel in which the new
                       listener should participate.
-        @type scope: Scope
+        @type scope: Scopeor or accepted by Scope constructor
         @param configurator: An in route configurator to manage the
                              receiving of events from in connectors
                              and their filtering and dispatching.
@@ -1331,7 +1331,7 @@ class Listener(Participant):
                 connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
             self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors,
                                                                           receivingStrategy = receivingStrategy)
-        self.__configurator.setScope(scope)
+        self.__configurator.setScope(self.scope)
 
         self.__activate()
 
@@ -1451,9 +1451,10 @@ def createListener(scope, config = None):
     Creates a new Listener for the specified scope.
 
     @param scope: the scope of the new Listener. Can be a Scope object or a string.
+    @type scope: Scope or accepted by Scope constructor
     @return: a new Listener object.
     """
-    return Listener(Scope.ensureScope(scope), config)
+    return Listener(scope, config)
 
 def createInformer(scope, config=None, dataType=object):
     """
@@ -1461,17 +1462,19 @@ def createInformer(scope, config=None, dataType=object):
 
     @param scope: The scope of the new Informer. Can be a Scope object
                   or a string.
+    @type scope: Scope or accepted by Scope constructor
     @param dataType: the string representation of the data type used
                      to select converters
     @return: a new Informer object.
     """
-    return Informer(Scope.ensureScope(scope), dataType, config)
+    return Informer(scope, dataType, config)
 
 def createService(scope):
     """
     Creates a Service object operating on the given scope.
     @param scope: parent-scope of the new service. Can be a Scope
                   object or a string.
+    @type scope: Scope or accepted by Scope constructor
     @return: new Service object
     """
     raise RuntimeError, "not implemented"
@@ -1488,7 +1491,7 @@ def createServer(scope, object = None, expose = None, methods = None,
 
     @param scope: The scope under which the newly created server
                   should expose its methods.
-    @type scope: Scope
+    @type scope: Scope or accepted by Scope constructor
     @param config: The transport configuration that should be used
                    for communication performed by this server.
     @type config: ParticipantConfig
@@ -1532,7 +1535,7 @@ def createRemoteServer(scope, config = None):
 
     @param scope: The scope under which the remote server provides its
                   methods.
-    @type scope: Scope
+    @type scope: Scope or accepted by Scope constructor
     @return: A newly created L{RemoteServer} object.
     @param config: The transport configuration that should be used
                    for communication performed by this server.
