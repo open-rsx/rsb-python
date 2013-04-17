@@ -345,7 +345,24 @@ makeStructBasedConverter('Int32Converter',  Integral, 'int32',  '<i', 4)
 makeStructBasedConverter('Uint64Converter', Integral, 'uint64', '<Q', 8)
 makeStructBasedConverter('Int64Converter',  Integral, 'int64',  '<q', 8)
 makeStructBasedConverter('BoolConverter',   bool,     'bool',   '?',  1)
+
 # Registered at end of file
+class BytesConverter(Converter):
+    """
+    Handles byte arrays.
+
+    @author: jmoringe
+    """
+
+    def __init__(self, wireSchema = "bytes", dataType = bytearray):
+        super(BytesConverter, self).__init__(bytearray, dataType, wireSchema)
+
+    def serialize(self, input):
+        return input, self.wireSchema
+
+    def deserialize(self, input, wireSchema):
+        assert(wireSchema == self.wireSchema)
+        return input
 
 class StringConverter(Converter):
     """
@@ -438,5 +455,6 @@ registerGlobalConverter(Int32Converter())
 registerGlobalConverter(Uint64Converter())
 registerGlobalConverter(Int64Converter())
 registerGlobalConverter(BoolConverter())
+registerGlobalConverter(BytesConverter())
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
 registerGlobalConverter(ByteArrayConverter())
