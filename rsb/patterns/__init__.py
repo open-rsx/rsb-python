@@ -35,6 +35,7 @@ import threading
 
 import rsb
 from future import Future, DataFuture
+from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 
 # TODO superclass for RSB Errors?
 class RemoteCallError (RuntimeError):
@@ -249,16 +250,21 @@ class LocalMethod (Method):
 
     @author: jmoringe
     """
-    def __init__(self, server, name, func, requestType, replyType):
+    def __init__(self, server, name, func, requestType, replyType, allowParallelExecution):
         super(LocalMethod, self).__init__(server, name, requestType, replyType)
+        self._allowParallelExecution = allowParallelExecution
         self._func = func
         self.listener # force listener creation
 
     def makeListener(self):
+        receivingStrategy = None
+        if self._allowParallelExecution:
+            receivingStrategy = FullyParallelEventReceivingStrategy()
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/request"))
                                 .concat(rsb.Scope('/' + self.name)),
-                                self.server.config)
+                                self.server.config,
+                                receivingStrategy = receivingStrategy)
         listener.addHandler(self._handleRequest)
         return listener
 
@@ -341,7 +347,8 @@ class LocalServer (Server):
         """
         super(LocalServer, self).__init__(scope, config)
 
-    def addMethod(self, name, func, requestType = object, replyType = object):
+    def addMethod(self, name, func, requestType = object, replyType = object,
+                  allowParallelExecution = False):
         """
         Add a method named B{name} that is implemented by B{func}.
 
@@ -355,14 +362,21 @@ class LocalServer (Server):
         @type requestType: type
         @param replyType: A type object indicating the type of reply
                           data of the method.
+        @param allowParallelExecution: if set to True, the method will be called
+                                       fully asynchronously and even multiple
+                                       calls may enter the method in parallel.
+                                       Also, no ordering is guaranteed anymore.
+                                       Default: False
+        @type allowParallelExecution: bool
         @type replyType: type
         @return: The newly created method.
         @rtype: LocalMethod
         """
-        method = LocalMethod(self, name, func, requestType, replyType)
+        method = LocalMethod(self, name, func, requestType, replyType,
+                             allowParallelExecution)
         super(LocalServer, self).addMethod(method)
         return method
-
+    
     def removeMethod(self, method):
         if isinstance(method, str):
             method = self.getMethod(method)

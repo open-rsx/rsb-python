@@ -46,7 +46,7 @@ class BroadcastProcessor (object):
 
     @author: jmoringe
     """
-    def __init__(self, handlers = None):
+    def __init__(self, handlers=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         if handlers is None:
@@ -109,7 +109,8 @@ class EventReceivingStrategy(object):
 class ParallelEventReceivingStrategy(EventReceivingStrategy):
     """
     An L{EventReceivingStrategy} that dispatches events to multiple
-    handlers in individual threads in parallel.
+    handlers in individual threads in parallel. Each handler is called only
+    sequentially but potentially from different threads.
 
     @author: jwienke
     """
@@ -168,6 +169,71 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__filtersMutex:
             self.__filters.append(filter)
 
+class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
+    """
+    An L{EventReceivingStrategy} that dispatches events to multiple
+    handlers in individual threads in parallel. Each handler can be called
+    in parallel for different requests.
+
+    @author: jwienke
+    """
+
+    def __init__(self):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__filters = []
+        self.__mutex = threading.RLock()
+        self.__handlers = []
+
+    def deactivate(self):
+        pass
+    
+    class Worker(threading.Thread):
+
+        def __init__(self, handler, event, filters):
+            threading.Thread.__init__(self, name='DispatcherThread')
+            self.handler = handler
+            self.event = event
+            self.filters = filters
+
+        def run(self):
+
+            for f in self.filters:
+                if not f.match(self.event):
+                    return
+
+            self.handler(self.event)
+
+    def handle(self, event):
+        """
+        Dispatches the event to all registered listeners.
+
+        @type event: Event
+        @param event: event to dispatch
+        """
+        self.__logger.debug("Processing event %s", event)
+        event.metaData.setDeliverTime()
+        workers = []
+        with self.__mutex:
+            for h in self.__handlers:
+                workers.append(self.Worker(h, event, list(self.__filters)))
+        for w in workers:
+            w.start()
+
+    def addHandler(self, handler, wait):
+        # We can ignore wait since the pool implements the desired
+        # behavior.
+        with self.__mutex:
+            self.__handlers.append(handler)
+
+    def removeHandler(self, handler, wait):
+        # TODO anything required to implement wait functionality?
+        with self.__mutex:
+            self.__handlers.remove(handler)
+
+    def addFilter(self, f):
+        with self.__mutex:
+            self.__filters.append(f)
+
 class EventSendingStrategy (object):
     def getConnectors(self):
         raise NotImplementedError
@@ -209,7 +275,7 @@ class Configurator (object):
     @author: jwienke
     @author: jmoringe
     """
-    def __init__(self, connectors = None):
+    def __init__(self, connectors=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__scope = None
@@ -217,7 +283,7 @@ class Configurator (object):
             self.__connectors = []
         else:
             self.__connectors = copy.copy(connectors)
-        self.__active     = False
+        self.__active = False
 
     def __del__(self):
         self.__logger.debug("Destructing Configurator")
@@ -286,7 +352,7 @@ class InRouteConfigurator(Configurator):
     @author: jmoringe
     """
 
-    def __init__(self, connectors = None, receivingStrategy = None):
+    def __init__(self, connectors=None, receivingStrategy=None):
         """
         Creates a new configurator which manages B{connectors} and
         B{receivingStrategy}.
@@ -336,7 +402,7 @@ class OutRouteConfigurator(Configurator):
     @author: jmoringe
     """
 
-    def __init__(self, connectors = None, sendingStrategy = None):
+    def __init__(self, connectors=None, sendingStrategy=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         super(OutRouteConfigurator, self).__init__(connectors)

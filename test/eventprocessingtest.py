@@ -24,12 +24,14 @@
 
 import uuid
 import unittest
-from threading import Condition
+from threading import Condition, Lock
 
 from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
 from rsb import Event, EventId
 import rsb
 import rsb.eventprocessing
+from rsb.eventprocessing import FullyParallelEventReceivingStrategy
+import time
 
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
@@ -54,8 +56,8 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         matchingRecordingFilter2 = RecordingTrueFilter()
         ep.addFilter(matchingRecordingFilter1)
         ep.addFilter(matchingRecordingFilter2)
-        ep.addHandler(matchingAction1, wait = True)
-        ep.addHandler(matchingAction2, wait = True)
+        ep.addHandler(matchingAction1, wait=True)
+        ep.addHandler(matchingAction2, wait=True)
 
         event1 = Event(EventId(uuid.uuid4(), 0))
         event2 = Event(EventId(uuid.uuid4(), 1))
@@ -106,7 +108,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
         noMatchRecordingFilter = RecordingFalseFilter()
         ep.addFilter(noMatchRecordingFilter)
-        ep.addHandler(noMatchingAction, wait = True)
+        ep.addHandler(noMatchingAction, wait=True)
 
         event1 = Event(EventId(uuid.uuid4(), 0))
         event2 = Event(EventId(uuid.uuid4(), 1))
@@ -133,17 +135,17 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
             h1 = lambda e: e
             h2 = lambda e: e
-            ep.addHandler(h1, wait = True)
-            ep.addHandler(h2, wait = True)
-            ep.addHandler(h1, wait = True)
+            ep.addHandler(h1, wait=True)
+            ep.addHandler(h2, wait=True)
+            ep.addHandler(h1, wait=True)
 
             ep.handle(Event(EventId(uuid.uuid4(), 0)))
             ep.handle(Event(EventId(uuid.uuid4(), 1)))
             ep.handle(Event(EventId(uuid.uuid4(), 2)))
 
-            ep.removeHandler(h1, wait = True)
-            ep.removeHandler(h2, wait = True)
-            ep.removeHandler(h1, wait = True)
+            ep.removeHandler(h1, wait=True)
+            ep.removeHandler(h2, wait=True)
+            ep.removeHandler(h1, wait=True)
 
 class MockConnector(object):
     def activate(self):
@@ -164,8 +166,8 @@ class MockConnector(object):
 # TODO(jmoringe): could be useful in all tests for active objects
 class ActivateCountingMockConnector(MockConnector):
     def __init__(self, case):
-        self.__case        = case
-        self.activations   = 0
+        self.__case = case
+        self.activations = 0
         self.deactivations = 0
 
     def activate(self):
@@ -175,14 +177,14 @@ class ActivateCountingMockConnector(MockConnector):
         self.deactivations += 1
 
     def expect(self, activations, deactivations):
-        self.__case.assertEqual(activations,   self.activations)
+        self.__case.assertEqual(activations, self.activations)
         self.__case.assertEqual(deactivations, self.deactivations)
 
 class OutRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ connector ])
+        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ connector ])
 
         # Cannot deactivate inactive configurator
         self.assertRaises(RuntimeError, configurator.deactivate)
@@ -209,7 +211,7 @@ class OutRouteConfiguratorTest(unittest.TestCase):
             def handle(self, event):
                 RecordingOutConnector.lastEvent = event
 
-        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = [ RecordingOutConnector() ])
+        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ RecordingOutConnector() ])
 
         event = 42
 
@@ -235,7 +237,7 @@ class InRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
+        configurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ connector ])
 
         # Cannot deactivate inactive configurator
         self.assertRaises(RuntimeError, configurator.deactivate)
@@ -271,7 +273,7 @@ class InRouteConfiguratorTest(unittest.TestCase):
                         self.assertEquals(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
-        configurator = rsb.eventprocessing.InRouteConfigurator(connectors = [ connector ])
+        configurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ connector ])
         configurator.activate()
         connector.expect(())
 
@@ -285,9 +287,110 @@ class InRouteConfiguratorTest(unittest.TestCase):
         configurator.filterAdded(f3)
         connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add')))
 
+class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
+
+    class CollectingHandler(object):
+        def __init__(self):
+            self.condition = Condition()
+            self.event = None
+        def __call__(self, event):
+            with self.condition:
+                self.event = event
+                self.condition.notifyAll()
+
+    def testSmoke(self):
+
+        strategy = FullyParallelEventReceivingStrategy()
+
+        h1 = self.CollectingHandler()
+        h2 = self.CollectingHandler()
+        strategy.addHandler(h1, True)
+        strategy.addHandler(h2, True)
+
+        event = Event(id=42)
+        strategy.handle(event)
+
+        with h1.condition:
+            while h1.event is None:
+                h1.condition.wait()
+            self.assertEqual(event, h1.event)
+
+        with h2.condition:
+            while h2.event is None:
+                h2.condition.wait()
+            self.assertEqual(event, h2.event)
+
+    def testFiltering(self):
+
+        strategy = FullyParallelEventReceivingStrategy()
+
+        falseFilter = RecordingFalseFilter()
+        strategy.addFilter(falseFilter)
+
+        handler = self.CollectingHandler()
+        strategy.addHandler(handler, True)
+
+        event = Event(id=42)
+        strategy.handle(event)
+
+        with falseFilter.condition:
+            while len(falseFilter.events) == 0:
+                falseFilter.condition.wait(timeout=5)
+                if len(falseFilter.events) == 0:
+                    self.fail("Filter not called")
+
+        time.sleep(1)
+
+        with handler.condition:
+            self.assertEqual(None, handler.event)
+
+    def testParallelCallOfOneHandler(self):
+
+        class Counter(object):
+            def __init__(self):
+                self.value = 0
+        maxParallelCalls = Counter()
+        currentCalls = []
+        callLock = Condition()
+
+        class Receiver(object):
+            def __init__(self, counter):
+                self.counter = counter
+            def __call__(self, message):
+                with callLock:
+                    currentCalls.append(message)
+                    self.counter.value = max(self.counter.value, len(currentCalls))
+                    callLock.notifyAll()
+                time.sleep(2)
+                with callLock:
+                    currentCalls.remove(message)
+                    callLock.notifyAll()
+
+        strategy = FullyParallelEventReceivingStrategy()
+        strategy.addHandler(Receiver(maxParallelCalls), True)
+
+        event = Event(id=42)
+        strategy.handle(event)
+        event = Event(id=43)
+        strategy.handle(event)
+        event = Event(id=44)
+        strategy.handle(event)
+
+        numCalled = 0
+        with callLock:
+            while maxParallelCalls.value < 3 and numCalled < 5:
+                numCalled = numCalled + 1
+                callLock.wait()
+            if numCalled == 5:
+                self.fail("Impossible to be called in parallel again")
+            else:
+                self.assertEqual(3, maxParallelCalls.value)
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParallelEventReceivingStrategyTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutRouteConfiguratorTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InRouteConfiguratorTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FullyParallelEventReceivingStrategyTest))
     return suite

@@ -333,7 +333,7 @@ class ParticipantConfig (object):
         for (key, value) in os.environ.items():
             if key.startswith('RSB_'):
                 if value == '':
-                   raise ValueError, 'The value of the environment variable %s is the empty string' % key
+                    raise ValueError, 'The value of the environment variable %s is the empty string' % key
                 options[key[4:].lower().replace('_', '.')] = value
         return options
 
@@ -1297,8 +1297,9 @@ class Listener(Participant):
     """
 
     def __init__(self, scope,
-                 config       = None,
-                 configurator = None):
+                 config            = None,
+                 configurator      = None,
+                 receivingStrategy = None):
         """
         Create a new L{Listener} for B{scope}.
 
@@ -1328,7 +1329,8 @@ class Listener(Participant):
             connectors = self.getConnectors('in', config)
             for connector in connectors:
                 connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors)
+            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors,
+                                                                          receivingStrategy = receivingStrategy)
         self.__configurator.setScope(scope)
 
         self.__activate()
