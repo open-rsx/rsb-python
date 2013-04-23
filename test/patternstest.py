@@ -137,7 +137,7 @@ class RoundTripTest (unittest.TestCase):
                 with callLock:
                     currentCalls.remove(e)
                     callLock.notifyAll()
-            localServer.addMethod("takeSomeTime", takeSomeTime, str, async=True)
+            localServer.addMethod("takeSomeTime", takeSomeTime, str, allowParallelExecution=True)
     
             remoteServer = rsb.createRemoteServer('/takesometime', config)
     
