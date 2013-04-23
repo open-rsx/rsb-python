@@ -155,8 +155,14 @@ class RoundTripTest (unittest.TestCase):
                 else:
                     self.assertEqual(3, maxParallelCalls.value)
         finally:
-            localServer.deactivate()
-            remoteServer.deactivate()
+            try:
+                localServer.deactivate()
+            except:
+                pass
+            try:
+                remoteServer.deactivate()
+            except:
+                pass
 
 def suite():
     suite = unittest.TestSuite()
