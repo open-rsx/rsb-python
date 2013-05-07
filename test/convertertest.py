@@ -26,7 +26,10 @@ import unittest
 import re
 
 import rsb.converter
-from rsb.converter import Converter, NoneConverter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList
+from rsb.converter import Converter, NoneConverter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
+    EventsByScopeMapConverter
+from rsb import Scope, Event, EventId
+from uuid import uuid4
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
@@ -133,6 +136,47 @@ class StringConverterTest(unittest.TestCase):
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
                           bytearray(range(133)), 'ascii-string')
 
+class EventsByScopeMapConverterTest(unittest.TestCase):
+    
+    def testEmptyRoundtrip(self):
+        
+        data = {}
+        converter = EventsByScopeMapConverter()
+        self.assertEquals(data, converter.deserialize(*converter.serialize(data)))
+
+    def testRoundtrip(self):
+        self.maxDiff = None
+
+        data = {}
+        scope1 = Scope("/a/test")
+        event1 = Event(id=EventId(uuid4(), 32), scope=scope1,
+                       method="foo", data=42, type=int,
+                       userTimes={"foo": 1231234.0})
+        event1.metaData.setSendTime()
+        event1.metaData.setReceiveTime()
+        event2 = Event(id=EventId(uuid4(), 1001), scope=scope1,
+                       method="fooasdas", data=422, type=int,
+                       userTimes={"bar": 1234.05})
+        event2.metaData.setSendTime()
+        event2.metaData.setReceiveTime()
+        data[scope1] = [event1, event2]
+
+        converter = EventsByScopeMapConverter()
+        roundtripped = converter.deserialize(*converter.serialize(data))
+        
+        self.assertEqual(1, len(roundtripped))
+        self.assertTrue(scope1 in roundtripped)
+        self.assertEqual(len(data[scope1]), len(roundtripped[scope1]))
+        
+        for orig, converted in zip(data[scope1], roundtripped[scope1]):
+        
+            self.assertEqual(orig.id, converted.id)
+            self.assertEqual(orig.scope, converted.scope)
+            self.assertEqual(orig.type, converted.type)
+            self.assertEqual(orig.data, converted.data)
+            self.assertAlmostEqual(orig.metaData.createTime, converted.metaData.createTime)
+            self.assertEqual(orig.causes, converted.causes)
+
 def makeStructBasedConverterTest(name, values):
     class NewTest(unittest.TestCase):
         def testRoundtrip(self):
@@ -152,6 +196,7 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PredicateConverterListTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventsByScopeMapConverterTest))
 
     for args in [ ('DoubleConverter', [ 0.0, -1.0, 1.0 ]),
                   ('FloatConverter',  [ 0.0, -1.0, 1.0 ]),

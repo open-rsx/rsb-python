@@ -35,7 +35,7 @@ registering and selecting them.
 from numbers import Integral, Real
 import struct
 from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
-from rsb.transport.conversion import notificationToEvent
+from rsb.transport.conversion import notificationToEvent, eventToNotification
 from rsb import Scope
 from threading import RLock
 
@@ -456,24 +456,34 @@ class ProtocolBufferConverter(Converter):
 class EventsByScopeMapConverter(Converter):
     """
     A converter for aggregated events ordered by their scope and time for each
-    scope.
+    scope. As a client data type dictionaries are used. Think about this when
+    you register the converter and also have other dictionaries to transmit.
     
     @author: jwienke
     """
 
-    class EventsByScopeMap:
-        """
-        Empty tagging class to prevent accidental selection of this converter.
-        """
-        pass
-
     def __init__(self, converterRepository=getGlobalConverterMap(bytearray)):
         self.__converterRepository = converterRepository
         self.__converter = ProtocolBufferConverter(EventsByScopeMap)
-        super(EventsByScopeMapConverter, self).__init__(bytearray, self.EventsByScopeMap, self.__converter.wireSchema)
+        super(EventsByScopeMapConverter, self).__init__(bytearray, dict, self.__converter.wireSchema)
 
     def serialize(self, data):
-        raise NotImplementedError("Serialization is not supported.")
+
+        eventMap = EventsByScopeMap()
+
+        for scope, events in data.iteritems():
+
+            scopeSet = eventMap.sets.add()
+            scopeSet.scope = scope.toString()
+            
+            for event in events:
+                
+                wire, wireSchema = self.__converterRepository.getConverterForDataType(type(event.data)).serialize(event.data)
+
+                notification = scopeSet.notifications.add()
+                eventToNotification(notification, event, wireSchema, wire, True)
+
+        return self.__converter.serialize(eventMap)
 
     def deserialize(self, wire, wireSchema):
         preliminaryMap = self.__converter.deserialize(wire, wireSchema)
