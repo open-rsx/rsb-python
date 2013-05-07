@@ -34,6 +34,7 @@ registering and selecting them.
 
 from numbers import Integral, Real
 import struct
+from threading import RLock
 
 class Converter(object):
     """
@@ -241,6 +242,7 @@ class UnambiguousConverterMap (ConverterMap):
                                        % (converter.getDataType(), wireSchema, dataType))
         super(UnambiguousConverterMap, self).addConverter(converter, replaceExisting)
 
+__globalConverterMapsLock = RLock()
 __globalConverterMaps = {}
 
 def registerGlobalConverter(converter, replaceExisting=False):
@@ -266,9 +268,10 @@ def getGlobalConverterMap(wireType):
     @return: converter map constantly updated
     """
 
-    if not wireType in __globalConverterMaps:
-        __globalConverterMaps[wireType] = ConverterMap(wireType)
-    return __globalConverterMaps[wireType]
+    with __globalConverterMapsLock:
+        if not wireType in __globalConverterMaps:
+            __globalConverterMaps[wireType] = ConverterMap(wireType)
+        return __globalConverterMaps[wireType]
 
 # --- converters with bytearray as serialization type ---
 
