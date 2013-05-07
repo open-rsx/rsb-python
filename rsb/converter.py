@@ -34,6 +34,9 @@ registering and selecting them.
 
 from numbers import Integral, Real
 import struct
+from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
+from rsb.transport.conversion import notificationToEvent
+from rsb import Scope
 from threading import RLock
 
 class Converter(object):
@@ -450,6 +453,43 @@ class ProtocolBufferConverter(Converter):
     def __repr__(self):
         return str(self)
 
+class EventsByScopeMapConverter(Converter):
+    '''
+    A converter for aggregated events ordered by their scope and time for each
+    scope.
+    
+    @author: jwienke
+    '''
+
+    class EventsByScopeMap:
+        pass
+
+    def __init__(self, converterRepository=getGlobalConverterMap(bytearray)):
+        self.__converterRepository = converterRepository
+        self.__converter = ProtocolBufferConverter(EventsByScopeMap)
+        super(EventsByScopeMapConverter, self).__init__(bytearray, self.EventsByScopeMap, self.__converter.wireSchema)
+        print("Instantiated converter for wire type {0}".format(self.wireSchema))
+
+    def serialize(self, data):
+        raise NotImplementedError("Serialization is not supported.")
+
+    def deserialize(self, wire, wireSchema):
+        preliminaryMap = self.__converter.deserialize(wire, wireSchema)
+
+        output = {}
+
+        for scopeSet in preliminaryMap.sets:
+            scope = Scope(scopeSet.scope)
+            output[scope] = []
+            for notification in scopeSet.notifications:
+
+                converter = self.__converterRepository.getConverterForWireSchema(notification.wire_schema)
+                event = notificationToEvent(notification, notification.data, notification.wire_schema, converter)
+
+                output[scope].append(event)
+
+        return output
+
 registerGlobalConverter(NoneConverter())
 registerGlobalConverter(DoubleConverter())
 registerGlobalConverter(FloatConverter())
@@ -461,3 +501,4 @@ registerGlobalConverter(BoolConverter())
 registerGlobalConverter(BytesConverter())
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string", dataType=str, encoding="utf_8"))
 registerGlobalConverter(ByteArrayConverter())
+registerGlobalConverter(EventsByScopeMapConverter())
