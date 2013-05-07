@@ -454,21 +454,23 @@ class ProtocolBufferConverter(Converter):
         return str(self)
 
 class EventsByScopeMapConverter(Converter):
-    '''
+    """
     A converter for aggregated events ordered by their scope and time for each
     scope.
     
     @author: jwienke
-    '''
+    """
 
     class EventsByScopeMap:
+        """
+        Empty tagging class to prevent accidental selection of this converter.
+        """
         pass
 
     def __init__(self, converterRepository=getGlobalConverterMap(bytearray)):
         self.__converterRepository = converterRepository
         self.__converter = ProtocolBufferConverter(EventsByScopeMap)
         super(EventsByScopeMapConverter, self).__init__(bytearray, self.EventsByScopeMap, self.__converter.wireSchema)
-        print("Instantiated converter for wire type {0}".format(self.wireSchema))
 
     def serialize(self, data):
         raise NotImplementedError("Serialization is not supported.")
