@@ -40,7 +40,6 @@ import subprocess
 import sys
 import time
 import shutil
-import rsb
 
 def findRsbPackages(ignoreProtocol=False):
     excludes = ["test", "examples", "build"]
@@ -230,6 +229,7 @@ class Coverage(Command):
         self.spread = None
 
     def finalize_options(self):
+        import rsb
         if self.spread == None and rsb.haveSpread():
             self.spread = find_executable("spread")
             if self.spread == None:
@@ -320,6 +320,9 @@ class Test(setuptools.command.test.test):
         self.socketport = 55555
 
     def finalize_options(self):
+
+        import rsb
+
         setuptools.command.test.test.finalize_options(self)
         if self.spread == None and rsb.haveSpread():
             self.spread = find_executable("spread")
