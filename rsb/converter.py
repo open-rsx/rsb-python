@@ -34,6 +34,9 @@ registering and selecting them.
 
 from numbers import Integral, Real
 import struct
+from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
+from rsb.transport.conversion import notificationToEvent, eventToNotification
+from rsb import Scope
 from threading import RLock
 
 class Converter(object):
@@ -449,6 +452,55 @@ class ProtocolBufferConverter(Converter):
 
     def __repr__(self):
         return str(self)
+
+class EventsByScopeMapConverter(Converter):
+    """
+    A converter for aggregated events ordered by their scope and time for each
+    scope. As a client data type dictionaries are used. Think about this when
+    you register the converter and also have other dictionaries to transmit.
+    
+    @author: jwienke
+    """
+
+    def __init__(self, converterRepository=getGlobalConverterMap(bytearray)):
+        self.__converterRepository = converterRepository
+        self.__converter = ProtocolBufferConverter(EventsByScopeMap)
+        super(EventsByScopeMapConverter, self).__init__(bytearray, dict, self.__converter.wireSchema)
+
+    def serialize(self, data):
+
+        eventMap = EventsByScopeMap()
+
+        for scope, events in data.iteritems():
+
+            scopeSet = eventMap.sets.add()
+            scopeSet.scope = scope.toString()
+            
+            for event in events:
+                
+                wire, wireSchema = self.__converterRepository.getConverterForDataType(type(event.data)).serialize(event.data)
+
+                notification = scopeSet.notifications.add()
+                eventToNotification(notification, event, wireSchema, wire, True)
+
+        return self.__converter.serialize(eventMap)
+
+    def deserialize(self, wire, wireSchema):
+        preliminaryMap = self.__converter.deserialize(wire, wireSchema)
+
+        output = {}
+
+        for scopeSet in preliminaryMap.sets:
+            scope = Scope(scopeSet.scope)
+            output[scope] = []
+            for notification in scopeSet.notifications:
+
+                converter = self.__converterRepository.getConverterForWireSchema(notification.wire_schema)
+                event = notificationToEvent(notification, notification.data, notification.wire_schema, converter)
+
+                output[scope].append(event)
+
+        return output
 
 registerGlobalConverter(NoneConverter())
 registerGlobalConverter(DoubleConverter())
