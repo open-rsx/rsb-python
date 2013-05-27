@@ -102,10 +102,10 @@ class Converter(object):
 
     wireSchema = property(getWireSchema)
 
-    def serialize(self, input):
+    def serialize(self, inp):
         raise NotImplementedError()
 
-    def deserialize(self, input, wireSchema):
+    def deserialize(self, inp, wireSchema):
         raise NotImplementedError()
 
 class UnknownConverterError(KeyError):
@@ -171,12 +171,12 @@ class ConverterMap(ConverterSelectionStrategy):
         self._converters[key] = converter
 
     def _getConverterForWireSchema(self, wireSchema):
-        for ((converterWireSchema, ignored), converter) in self._converters.items():
+        for ((converterWireSchema, _), converter) in self._converters.items():
             if converterWireSchema == wireSchema:
                 return converter
 
     def _getConverterForDataType(self, dataType):
-        for ((ignored, converterDataType), converter) in self._converters.items():
+        for ((_, converterDataType), converter) in self._converters.items():
             if issubclass(dataType, converterDataType):
                 return converter
 
@@ -211,9 +211,9 @@ class PredicateConverterList (ConverterMap):
                      dataTypePredicate=None,
                      replaceExisting=True):
         if wireSchemaPredicate is None:
-            #if converter.getWireSchema() == 'void':
+            # if converter.getWireSchema() == 'void':
             #    wireSchemaPredicate = lambda wireSchema: True
-            #else:
+            # else:
                 wireSchemaPredicate = lambda wireSchema: wireSchema == converter.getWireSchema()
         if dataTypePredicate is None:
             dataTypePredicate = lambda dataType: dataType == converter.getDataType()
@@ -222,12 +222,12 @@ class PredicateConverterList (ConverterMap):
         self._list.append((key, converter))
 
     def _getConverterForWireSchema(self, wireSchema):
-        for ((predicate, ignored), converter) in self._list:
+        for ((predicate, _), converter) in self._list:
             if predicate(wireSchema):
                 return converter
 
     def _getConverterForDataType(self, dataType):
-        for ((ignored, predicate), converter) in self._list:
+        for ((_, predicate), converter) in self._list:
             if predicate(dataType):
                 return converter
 
@@ -288,10 +288,10 @@ class IdentityConverter (Converter):
     def __init__(self):
         super(IdentityConverter, self).__init__(bytearray, type(None), 'void')
 
-    def serialize(self, input):
+    def serialize(self, inp):
         return bytearray(), self.wireSchema
 
-    def deserialize(self, input, wireSchema):
+    def deserialize(self, inp, wireSchema):
         pass
 
     def AlwaysApplicable(self):
@@ -310,25 +310,25 @@ class NoneConverter (Converter):
     def __init__(self):
         super(NoneConverter, self).__init__(bytearray, type(None), 'void')
 
-    def serialize(self, input):
+    def serialize(self, inp):
         return bytearray(), self.wireSchema
 
-    def deserialize(self, input, wireSchema):
+    def deserialize(self, inp, wireSchema):
         assert wireSchema == self.wireSchema
 
         pass
 
-def makeStructBasedConverter(name, dataType, wireSchema, format, size):
+def makeStructBasedConverter(name, dataType, wireSchema, fmt, size):
     class NewConverter(Converter):
         def __init__(self):
             super(self.__class__, self).__init__(bytearray, dataType, wireSchema)
 
-        def serialize(self, input):
-            return bytearray(struct.pack(format, input)), self.wireSchema
+        def serialize(self, inp):
+            return bytearray(struct.pack(fmt, inp)), self.wireSchema
 
-        def deserialize(self, input, wireSchema):
+        def deserialize(self, inp, wireSchema):
             assert wireSchema == self.wireSchema
-            return struct.unpack(format, str(input))[0]
+            return struct.unpack(fmt, str(inp))[0]
 
     NewConverter.__name__ = name
     # TODO(jmoringe): seems to be impossible in CPython
@@ -344,13 +344,13 @@ def makeStructBasedConverter(name, dataType, wireSchema, format, size):
     globals()[name] = NewConverter
     return NewConverter
 
-makeStructBasedConverter('DoubleConverter', Real,     'double', '<d', 8)
-makeStructBasedConverter('FloatConverter',  Real,     'float',  '<f', 4)
+makeStructBasedConverter('DoubleConverter', Real, 'double', '<d', 8)
+makeStructBasedConverter('FloatConverter', Real, 'float', '<f', 4)
 makeStructBasedConverter('Uint32Converter', Integral, 'uint32', '<I', 4)
-makeStructBasedConverter('Int32Converter',  Integral, 'int32',  '<i', 4)
+makeStructBasedConverter('Int32Converter', Integral, 'int32', '<i', 4)
 makeStructBasedConverter('Uint64Converter', Integral, 'uint64', '<Q', 8)
-makeStructBasedConverter('Int64Converter',  Integral, 'int64',  '<q', 8)
-makeStructBasedConverter('BoolConverter',   bool,     'bool',   '?',  1)
+makeStructBasedConverter('Int64Converter', Integral, 'int64', '<q', 8)
+makeStructBasedConverter('BoolConverter', bool, 'bool', '?', 1)
 
 # Registered at end of file
 class BytesConverter(Converter):
@@ -360,15 +360,15 @@ class BytesConverter(Converter):
     @author: jmoringe
     """
 
-    def __init__(self, wireSchema = "bytes", dataType = bytearray):
+    def __init__(self, wireSchema="bytes", dataType=bytearray):
         super(BytesConverter, self).__init__(bytearray, dataType, wireSchema)
 
-    def serialize(self, input):
-        return input, self.wireSchema
+    def serialize(self, inp):
+        return inp, self.wireSchema
 
-    def deserialize(self, input, wireSchema):
+    def deserialize(self, inp, wireSchema):
         assert(wireSchema == self.wireSchema)
-        return input
+        return inp
 
 class StringConverter(Converter):
     """
@@ -382,15 +382,15 @@ class StringConverter(Converter):
         super(StringConverter, self).__init__(bytearray, dataType, wireSchema)
         self.__encoding = encoding
 
-    def serialize(self, input):
-        return bytearray(input.encode(self.__encoding)), self.wireSchema
+    def serialize(self, inp):
+        return bytearray(inp.encode(self.__encoding)), self.wireSchema
 
-    def deserialize(self, input, wireSchema):
-        type = self.getDataType()
-        if type == unicode:
-            return type(str(input), self.__encoding)
-        elif type == str:
-            return str(input)
+    def deserialize(self, inp, wireSchema):
+        dataType = self.getDataType()
+        if dataType == unicode:
+            return dataType(str(inp), self.__encoding)
+        elif dataType == str:
+            return str(inp)
         else:
             raise ValueError("Inacceptable dataType %s" % type)
 
@@ -434,16 +434,16 @@ class ProtocolBufferConverter(Converter):
     def getMessageClassName(self):
         return self.messageClass.DESCRIPTOR.full_name
 
-    def serialize(self, input):
-        return bytearray(input.SerializeToString()), self.wireSchema
+    def serialize(self, inp):
+        return bytearray(inp.SerializeToString()), self.wireSchema
 
-    def deserialize(self, input, wireSchema):
+    def deserialize(self, inp, wireSchema):
         assert wireSchema == self.wireSchema
 
         output = self.messageClass()
         # we need to convert back to string because bytearrays do not work with
         # protobuf
-        output.ParseFromString(str(input))
+        output.ParseFromString(str(inp))
         return output
 
     def __str__(self):
@@ -475,9 +475,9 @@ class EventsByScopeMapConverter(Converter):
 
             scopeSet = eventMap.sets.add()
             scopeSet.scope = scope.toString()
-            
+
             for event in events:
-                
+
                 wire, wireSchema = self.__converterRepository.getConverterForDataType(type(event.data)).serialize(event.data)
 
                 notification = scopeSet.notifications.add()

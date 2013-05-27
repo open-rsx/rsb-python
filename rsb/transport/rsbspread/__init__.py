@@ -302,9 +302,9 @@ class Connector(rsb.transport.Connector,
         self.__logger.debug("SpreadConnector deactivated")
 
     def _groupName(self, scope):
-        sum = hashlib.md5()
-        sum.update(scope.toString())
-        return sum.hexdigest()[:-1]
+        hashSum = hashlib.md5()
+        hashSum.update(scope.toString())
+        return hashSum.hexdigest()[:-1]
 
     def setQualityOfServiceSpec(self, qos):
         self.__logger.debug("Adapting service type for QoS %s", qos)
@@ -361,8 +361,8 @@ class InConnector(Connector,
 
         super(InConnector, self).deactivate()
 
-    def filterNotify(self, filter, action):
-        self.__logger.debug("Ignoring filter %s with action %s", filter, action)
+    def filterNotify(self, theFilter, action):
+        self.__logger.debug("Ignoring filter %s with action %s", theFilter, action)
 
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction

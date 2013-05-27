@@ -35,8 +35,6 @@ import copy
 import threading
 
 import rsb.util
-
-import rsb
 import rsb.filter
 
 class BroadcastProcessor (object):
@@ -90,10 +88,10 @@ class EventReceivingStrategy(object):
     def __init__(self):
         pass
 
-    def addFilter(self, filter):
+    def addFilter(self, theFilter):
         raise NotImplementedError
 
-    def removeFilter(self, filter):
+    def removeFilter(self, theFilter):
         raise NotImplementedError
 
     def addHandler(self, handler):
@@ -139,8 +137,8 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__filtersMutex:
             filterCopy = list(self.__filters)
 
-        for filter in filterCopy:
-            if not filter.match(event):
+        for flt in filterCopy:
+            if not flt.match(event):
                 return False
         return True
 
@@ -165,9 +163,9 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         # behavior.
         self.__pool.unregisterReceiver(handler)
 
-    def addFilter(self, filter):
+    def addFilter(self, theFilter):
         with self.__filtersMutex:
-            self.__filters.append(filter)
+            self.__filters.append(theFilter)
 
 class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     """
@@ -186,7 +184,7 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
 
     def deactivate(self):
         pass
-    
+
     class Worker(threading.Thread):
 
         def __init__(self, handler, event, filters):
@@ -389,10 +387,10 @@ class InRouteConfigurator(Configurator):
     def handlerRemoved(self, handler, wait):
         self.__receivingStrategy.removeHandler(handler, wait)
 
-    def filterAdded(self, filter):
-        self.__receivingStrategy.addFilter(filter)
+    def filterAdded(self, theFilter):
+        self.__receivingStrategy.addFilter(theFilter)
         for connector in self.connectors:
-            connector.filterNotify(filter, rsb.filter.FilterAction.ADD)
+            connector.filterNotify(theFilter, rsb.filter.FilterAction.ADD)
 
 class OutRouteConfigurator(Configurator):
     """
