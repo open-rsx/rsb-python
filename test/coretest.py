@@ -28,10 +28,11 @@ import uuid
 import unittest
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
-    Informer, EventId, setDefaultParticipantConfig
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event, \
+    Informer, EventId, setDefaultParticipantConfig, getDefaultParticipantConfig
 import time
 from uuid import uuid4
+from rsb.converter import Converter, registerGlobalConverter
 
 class ParticipantConfigTest (unittest.TestCase):
 
@@ -470,6 +471,31 @@ class InformerTest(unittest.TestCase):
         # OK
         self.informer.publishData('bla')
 
+class IntegrationTest(unittest.TestCase):
+
+    def testLazyConverterRegistration(self):
+        """
+        Test that converters can be added to the global converter map without
+        requiring a completely new instance of the default participant config.
+        """
+
+        class FooType(object):
+            """
+            Dummy data type for the test
+            """
+
+        class FooTypeConverter(Converter):
+            def __init__(self):
+                Converter.__init__(self, bytearray, FooType, "footype")
+            def serialize(self, inp):
+                return bytearray(), self.wireSchema
+            def deserialize(self, inp, wireSchema):
+                return FooType()
+
+        registerGlobalConverter(FooTypeConverter())
+
+        config = getDefaultParticipantConfig()
+        self.assertTrue(config.getTransport("inprocess").converters.hasConverterForDataType(FooType))
 
 def suite():
     suite = unittest.TestSuite()
@@ -481,4 +507,5 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
     return suite

@@ -166,42 +166,18 @@ class ParticipantConfig (object):
 
         @author: jmoringe
         """
-        def __init__(self, name, options={}, converter_ = None):
-            import rsb.converter
+        def __init__(self, name, options={}, converter_=None):
             self.__name = name
             self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes')
-            # Obtain a consistent converter set for the wire-type of
-            # the transport:
-            # 1. Find global converter map for the wire-type
-            # 2. Find configuration options that specify converters
-            #    for the transport
-            # 3. Add converters from the global map to the unambiguous
-            #    map of the transport, resolving conflicts based on
-            #    configuration options when necessary
-            wireType = bytearray
-
-            if not converter_:
-                self.__converters = rsb.converter.UnambiguousConverterMap(wireType)
-                # Find and transform configuration options
-                converterOptions = dict([ (key[17:], value) for (key, value) in options.items()
-                                          if key.startswith('converter.python') ])
-                # Try to add converters form global map
-                globalMap = rsb.converter.getGlobalConverterMap(wireType)
-                for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
-                    # Converter can be added if converterOptions does not
-                    # contain a disambiguation that gives precedence to a
-                    # different converter. map may still raise an
-                    # exception in case of ambiguity.
-                    if not wireSchema in converterOptions \
-                            or dataType.__name__ == converterOptions[wireSchema]:
-                        self.__converters.addConverter(converter)
-            else:
-                # If the converter has already been created and configured.
-                self.__converters = converter_
+            # If the converter has already been created and configured, cache it
+            self.__converters = converter_
 
             # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
+            # Find and transform configuration options
+            self.__converterOptions = dict([ (key[len("converter.python."):], value) for (key, value) in options.items()
+                                             if key.startswith('converter.python') ])
 
         def getName(self):
             return self.__name
@@ -217,7 +193,31 @@ class ParticipantConfig (object):
         enabled = property(isEnabled, setEnabled)
 
         def getConverters(self):
-            return self.__converters
+            # Obtain a consistent converter set for the wire-type of
+            # the transport:
+            # 1. Find global converter map for the wire-type
+            # 2. Find configuration options that specify converters
+            #    for the transport
+            # 3. Add converters from the global map to the unambiguous
+            #    map of the transport, resolving conflicts based on
+            #    configuration options when necessary
+            wireType = bytearray
+
+            if not self.__converters:
+                converterMap = rsb.converter.UnambiguousConverterMap(wireType)
+                # Try to add converters form global map
+                globalMap = rsb.converter.getGlobalConverterMap(wireType)
+                for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
+                    # Converter can be added if converterOptions does not
+                    # contain a disambiguation that gives precedence to a
+                    # different converter. map may still raise an
+                    # exception in case of ambiguity.
+                    if not wireSchema in self.__converterOptions \
+                            or dataType.__name__ == self.__converterOptions[wireSchema]:
+                        converterMap.addConverter(converter)
+                return converterMap
+            else:
+                return self.__converters
 
         def setConverters(self, converters):
             self.__converters = converters
