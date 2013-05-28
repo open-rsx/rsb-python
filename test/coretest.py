@@ -28,10 +28,12 @@ import uuid
 import unittest
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,\
-    Informer, EventId, setDefaultParticipantConfig
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event, \
+    Informer, EventId, setDefaultParticipantConfig, getDefaultParticipantConfig,\
+    Participant
 import time
 from uuid import uuid4
+from rsb.converter import Converter, registerGlobalConverter
 
 class ParticipantConfigTest (unittest.TestCase):
 
@@ -55,14 +57,6 @@ class ParticipantConfigTest (unittest.TestCase):
         self.assertEqual(transport.getName(), 'spread')
         self.assertTrue(transport.isEnabled())
 
-        # Check converters of spread transport
-        converters = transport.getConverters()
-        self.assertTrue(converters.getConverterForWireSchema('utf-8-string'))
-        self.assertTrue(converters.getConverterForDataType(str))
-        # not yet
-        #self.assertTrue(converters.getConverterForWireSchema('bool'))
-        #self.assertTrue(converters.getConverterForDataType(bool))
-
     def testFromEnvironment(self):
         os.environ = dict( (key, value) for (key, value) in os.environ.items()
                            if not 'RSB' in key )
@@ -85,15 +79,6 @@ class ParticipantConfigTest (unittest.TestCase):
         transport = config.getTransport('spread')
         self.assertEqual(transport.getName(), 'spread')
         self.assertTrue(transport.isEnabled())
-
-        # Check converters of spread transport
-        converters = transport.getConverters()
-        self.assertTrue(converters.getConverterForWireSchema('utf-8-string'))
-        self.assertTrue(converters.getConverterForDataType(str))
-        # not yet
-        #self.assertTrue(converters.getConverterForWireSchema('bool'))
-        #self.assertTrue(converters.getConverterForDataType(bool))
-
 
     def testOverwritingDefaults(self):
         defaults = { 'transport.spread.enabled':     'yes',
@@ -470,6 +455,36 @@ class InformerTest(unittest.TestCase):
         # OK
         self.informer.publishData('bla')
 
+class IntegrationTest(unittest.TestCase):
+
+    def testLazyConverterRegistration(self):
+        """
+        Test that converters can be added to the global converter map without
+        requiring a completely new instance of the default participant config.
+        """
+        
+        # prevent changes to the configuration from other tests
+        setDefaultParticipantConfig(config=ParticipantConfig.fromDict({"transport.socket.enabled": "1"}))
+
+        class FooType(object):
+            """
+            Dummy data type for the test
+            """
+
+        class FooTypeConverter(Converter):
+            def __init__(self):
+                Converter.__init__(self, bytearray, FooType, "footype")
+            def serialize(self, inp):
+                return bytearray(), self.wireSchema
+            def deserialize(self, inp, wireSchema):
+                return FooType()
+
+        registerGlobalConverter(FooTypeConverter())
+
+        config = getDefaultParticipantConfig() 
+        # this will raise an exception if the converter is not available.
+        # This assumes that socket transport is enabled as the only transport
+        self.assertTrue(isinstance(Participant.getConnectors('out', config)[0].getConverterForDataType(FooType), FooTypeConverter))
 
 def suite():
     suite = unittest.TestSuite()
@@ -481,4 +496,5 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
     return suite

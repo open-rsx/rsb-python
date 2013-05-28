@@ -52,12 +52,4 @@ if __name__ == '__main__':
 
     print("Registered converter %s" % converter)
     print("Registered converters:\n%s " % rsb.converter.getGlobalConverterMap(bytearray))
-
-    # After registering one or more converters, it is currently
-    # necessary to replace the global default participant
-    # configuration with a fresh one which takes into account the
-    # newly registered converters.
-    #
-    # This will hopefully become unnecessary in future RSB versions.
-    rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromDefaultSources())
 # mark-end::body
