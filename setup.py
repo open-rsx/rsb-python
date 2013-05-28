@@ -40,6 +40,7 @@ import subprocess
 import sys
 import time
 import shutil
+import contextlib
 
 def findRsbPackages(ignoreProtocol=False):
     excludes = ["test", "examples", "build"]
@@ -49,14 +50,25 @@ def findRsbPackages(ignoreProtocol=False):
     print("Relevant rsb packages: %s" % packages)
     return packages
 
+@contextlib.contextmanager
+def nullContext():
+    yield
+
 class CommandStarter(object):
+    """
+    Starts a command and end it again using the python context manager protocol.
+    
+    @author: jwienke
+    """
 
     def __init__(self, command):
-        self.__open = subprocess.Popen(command)
-        time.sleep(2)
+        self.__command = command
+        
+    def __enter__(self):
+        self.__open = subprocess.Popen(self.__command)
+        time.sleep(5)
 
-    def __del__(self):
-        print("Stopping command %s" % self.__open)
+    def __exit__(self, exc_type, exc_value, traceback):
         self.__open.terminate()
         self.__open.wait()
 
@@ -237,23 +249,25 @@ class Coverage(Command):
 
     def run(self):
 
-        spread = None
+        spread = nullContext()
         if self.spread:
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
 
-        import coverage
-        cov = coverage.coverage(branch=True, source=["rsb"], omit=["*_pb2*"])
-        cov.erase()
-        cov.start()
-        import test
-        suite = test.suite()
-        results = TestResult()
-        suite.run(results)
-        if not results.wasSuccessful():
-            print("Unit tests failed while generating test report.")
-        cov.stop()
-        cov.html_report(directory='covhtml')
-        cov.xml_report(outfile='coverage.xml')
+        with spread:
+
+            import coverage
+            cov = coverage.coverage(branch=True, source=["rsb"], omit=["*_pb2*"])
+            cov.erase()
+            cov.start()
+            import test
+            suite = test.suite()
+            results = TestResult()
+            suite.run(results)
+            if not results.wasSuccessful():
+                print("Unit tests failed while generating test report.")
+            cov.stop()
+            cov.html_report(directory='covhtml')
+            cov.xml_report(outfile='coverage.xml')
 
 class BDist_egg(bdist_egg):
     """
@@ -354,11 +368,13 @@ localhost 127.0.0.1
 SocketPortReuse = ON
                     """
                     .format(spreadport = self.spreadport))
-        spread = None
+
+        # if required, start a spread daemon
+        spread = nullContext()
         if self.spread and not self.spread == 'use-running':
             spread = CommandStarter([self.spread, "-n", "localhost", "-c", "test/spread.conf"])
-
-        setuptools.command.test.test.run(self)
+        with spread:
+            setuptools.command.test.test.run(self)
 
     def run_tests(self):
         """
