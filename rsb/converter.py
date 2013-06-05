@@ -176,9 +176,21 @@ class ConverterMap(ConverterSelectionStrategy):
                 return converter
 
     def _getConverterForDataType(self, dataType):
+        # If multiple converters are applicable, use most specific.
+        candidates = []
         for ((_, converterDataType), converter) in self._converters.items():
             if issubclass(dataType, converterDataType):
-                return converter
+                candidates.append(converter)
+        if len(candidates) == 1:
+            return candidates[0]
+        elif len(candidates) > 1:
+            def compareViaSubclass(x, y):
+                if issubclass(x, y):
+                    return -1
+                else:
+                    return 1
+            return sorted(candidates, compareViaSubclass,
+                          key = lambda x: x.getDataType())[0]
 
     def getConverters(self):
         return self._converters
@@ -458,7 +470,7 @@ class EventsByScopeMapConverter(Converter):
     A converter for aggregated events ordered by their scope and time for each
     scope. As a client data type dictionaries are used. Think about this when
     you register the converter and also have other dictionaries to transmit.
-    
+
     @author: jwienke
     """
 
@@ -502,12 +514,14 @@ class EventsByScopeMapConverter(Converter):
 
         return output
 
+# FIXME We do not register all available converters here to avoid
+# ambiguities.
 registerGlobalConverter(NoneConverter())
 registerGlobalConverter(DoubleConverter())
-registerGlobalConverter(FloatConverter())
-registerGlobalConverter(Uint32Converter())
-registerGlobalConverter(Int32Converter())
-registerGlobalConverter(Uint64Converter())
+#registerGlobalConverter(FloatConverter())
+#registerGlobalConverter(Uint32Converter())
+#registerGlobalConverter(Int32Converter())
+#registerGlobalConverter(Uint64Converter())
 registerGlobalConverter(Int64Converter())
 registerGlobalConverter(BoolConverter())
 registerGlobalConverter(BytesConverter())
