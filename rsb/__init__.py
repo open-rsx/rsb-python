@@ -1103,6 +1103,7 @@ class Participant(object):
                 % config
 
         def getConverters(transport):
+            import rsb
             # Obtain a consistent converter set for the wire-type of
             # the transport:
             # 1. Find global converter map for the wire-type
