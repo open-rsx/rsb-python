@@ -166,7 +166,7 @@ class ParticipantConfig (object):
 
         @author: jmoringe
         """
-        def __init__(self, name, options={}):
+        def __init__(self, name, options={}, converters=None):
             self.__name = name
             self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes')
 
@@ -174,8 +174,10 @@ class ParticipantConfig (object):
             self.__options = dict([ (key, value) for (key, value) in options.items()
                                    if not '.' in key and not key == 'enabled' ])
             # Find converter selection rules
-            self.__converters = dict([ (key[len("converter.python."):], value) for (key, value) in options.items()
-                                       if key.startswith('converter.python') ])
+            self.__converters = converters
+            self.__converterRules \
+                = dict([ (key[len("converter.python."):], value) for (key, value) in options.items()
+                         if key.startswith('converter.python') ])
 
         def getName(self):
             return self.__name
@@ -193,7 +195,18 @@ class ParticipantConfig (object):
         def getConverters(self):
             return self.__converters
 
-        converters = property(getConverters)
+        def setConverters(self, converters):
+            self.__converters = converters
+
+        converters = property(getConverters, setConverters)
+
+        def getConverterRules(self):
+            return self.__converterRules
+
+        def setConverterRules(self, converterRules):
+            self.__converterRules = converterRules
+
+        converterRules = property(getConverterRules, setConverterRules)
 
         def getOptions(self):
             return self.__options
@@ -201,8 +214,8 @@ class ParticipantConfig (object):
         options = property(getOptions)
 
         def __str__(self):
-            return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, options = %s]'
-                    % (self.__name, self.__enabled, self.__converters, self.__options))
+            return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, converterRules = %s, options = %s]'
+                    % (self.__name, self.__enabled, self.__converters, self.__converterRules, self.__options))
 
         def __repr__(self):
             return str(self)
@@ -362,6 +375,55 @@ class ParticipantConfig (object):
         partial = clazz.__fromFile("rsb.conf", partial)
         options = clazz.__fromEnvironment(partial)
         return clazz.__fromDict(options)
+
+def convertersFromTransportConfig(transport):
+    """
+    Returns an object implementing the
+    L{rsb.converter.ConverterSelectionStrategy} protocol suitable for
+    B{transport}.
+
+    If C{transport.converters} is not C{None}, it is used
+    unmodified. Otherwise the specification in
+    C{transport.converterRules} is used.
+
+    @return: The constructed ConverterSelectionStrategy object.
+    @rtype: ConverterSelectionStrategy
+    """
+
+    # There are two possible ways to configure converters:
+    # 1) transport.converters: this is either None or an object
+    #    implementing the "ConverterSelectionStrategy protocol"
+    # 2) when transport.converters is None, transport.converterRules
+    #    is used to construct an object implementing the
+    #    "ConverterSelectionStrategy protocol"
+    if transport.converters is not None:
+        return transport.converters
+
+    # Obtain a consistent converter set for the wire-type of
+    # the transport:
+    # 1. Find global converter map for the wire-type
+    # 2. Find configuration options that specify converters
+    #    for the transport
+    # 3. Add converters from the global map to the unambiguous map of
+    #    the transport, resolving conflicts based on configuration
+    #    options when necessary
+    # TODO hack!
+    wireType = bytearray
+
+    import rsb
+    import rsb.converter
+    converterMap = rsb.converter.UnambiguousConverterMap(wireType)
+    # Try to add converters form global map
+    globalMap = rsb.converter.getGlobalConverterMap(wireType)
+    for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
+        # Converter can be added if converterOptions does not
+        # contain a disambiguation that gives precedence to a
+        # different converter. map may still raise an
+        # exception in case of ambiguity.
+        if not wireSchema in transport.converterRules \
+           or dataType.__name__ == transport.converterRules[wireSchema]:
+            converterMap.addConverter(converter)
+    return converterMap
 
 class Scope(object):
     """
@@ -1102,32 +1164,6 @@ class Participant(object):
             raise ValueError, 'No transports specified (config is %s)' \
                 % config
 
-        def getConverters(transport):
-            import rsb
-            # Obtain a consistent converter set for the wire-type of
-            # the transport:
-            # 1. Find global converter map for the wire-type
-            # 2. Find configuration options that specify converters
-            #    for the transport
-            # 3. Add converters from the global map to the unambiguous
-            #    map of the transport, resolving conflicts based on
-            #    configuration options when necessary
-            # TODO hack!
-            wireType = bytearray
-
-            converterMap = rsb.converter.UnambiguousConverterMap(wireType)
-            # Try to add converters form global map
-            globalMap = rsb.converter.getGlobalConverterMap(wireType)
-            for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
-                # Converter can be added if converterOptions does not
-                # contain a disambiguation that gives precedence to a
-                # different converter. map may still raise an
-                # exception in case of ambiguity.
-                if not wireSchema in transport.converters \
-                        or dataType.__name__ == transport.converters[wireSchema]:
-                    converterMap.addConverter(converter)
-            return converterMap
-
         transports = []
         for transport in config.getTransports():
             if transport.getName() == 'spread':
@@ -1158,7 +1194,7 @@ class Participant(object):
                     assert(False)
             else:
                 raise ValueError, 'No such transport: "%s"' % transport.getName()
-            transports.append(klass(converters = getConverters(transport),
+            transports.append(klass(converters = convertersFromTransportConfig(transport),
                                     options    = transport.getOptions()))
         return transports
 
