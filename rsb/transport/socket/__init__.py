@@ -212,7 +212,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             if not self.__socket is None:
                 socket_ = self.__socket
                 self.__socket = None
-                socket_.shutdown(socket.SHUT_RDWR)
+                socket_.shutdown(socket.SHUT_WR)
                 socket_.close()
         except Exception, e:
             self.__logger.warn('Failed to close socket: %s', e)
