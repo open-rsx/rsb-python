@@ -89,6 +89,9 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         self.__errorHook = None
 
         self.__active = False
+        self.__activeShutdown = False
+        
+        self.__lock = threading.RLock()
 
         # Create a socket connection or store the provided connection.
         if not host is None and not port is None:
@@ -131,13 +134,16 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def receiveNotification(self):
         size = self.__file.read(size = 4)
+        if len(size) == 0:
+            self.__logger.info("Received EOF")
+            raise EOFError()
         if not (len(size) == 4):
-            raise RuntimeError, 'short read when receiving notification size'
+            raise RuntimeError, 'short read when receiving notification size (size: %s)' % len(size)
         size = ord(size[0])      \
             | ord(size[1]) << 8  \
             | ord(size[2]) << 16 \
             | ord(size[3]) << 24
-        self.__logger.info('Receiving notification of size %d', size)
+        self.__logger.debug('Receiving notification of size %d', size)
         notification = self.__file.read(size = size)
         if not (len(notification) == size):
             raise RuntimeError, 'short read when receiving notification payload'
@@ -154,16 +160,22 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         self.dispatch(notification)
 
     def receiveNotifications(self):
-        while self.__socket:
-            self.__logger.info('Receiving notifications')
+        while True:
+            self.__logger.debug('Receiving notifications')
             try:
                 self.doOneNotification()
+            except EOFError, e:
+                self.__logger.info("Received EOF while reading")
+                if not self.__activeShutdown:
+                    self.shutdown()
+                break
             except Exception, e:
-                # __socket is None => shutdown in progress
-                if self.__socket:
-                    self.__logger.warn('Receive error: %s', e)
-                    if not self.errorHook is None:
-                        self.errorHook(e)
+                self.__logger.warn('Receive error: %s', e)
+                break
+
+        if not self.errorHook is None:
+            self.errorHook(e)
+        return
 
     # sending
 
@@ -174,9 +186,10 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
                         chr((size & 0x0000ff00) >> 8),
                         chr((size & 0x00ff0000) >> 16),
                         chr((size & 0xff000000) >> 24)))
-        self.__file.write(size)
-        self.__file.write(notification)
-        self.__file.flush()
+        with self.__lock:
+            self.__file.write(size)
+            self.__file.write(notification)
+            self.__file.flush()
 
     def notificationToBuffer(self, notification):
         return notification.SerializeToString()
@@ -191,39 +204,40 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         if self.__active:
             raise RuntimeError, 'trying to activate active connection'
 
-        self.__thread = threading.Thread(target = self.receiveNotifications)
-        self.__thread.start()
+        with self.__lock:
 
-        self.__active = True
+            self.__thread = threading.Thread(target = self.receiveNotifications)
+            self.__thread.start()
+    
+            self.__active = True
+
+    def shutdown(self):
+        with self.__lock:
+            self.__activeShutdown = True
+            self.__socket.shutdown(socket.SHUT_WR)
 
     def deactivate(self):
-        if not self.__active:
-            raise RuntimeError, 'trying to deactivate inactive connection'
 
-        self.__active = False
-
-        # If necessary, close the socket, this will cause an exception
-        # in the notification receiver thread (unless we run in the
-        # context that thread).
-        self.__logger.info('Closing socket')
-        try:
-            if not self.__file is None:
+        with self.__lock:
+        
+            if not self.__active:
+                raise RuntimeError, 'trying to deactivate inactive connection'
+    
+            self.__active = False
+    
+            # If necessary, close the socket, this will cause an exception
+            # in the notification receiver thread (unless we run in the
+            # context that thread).
+            self.__logger.info('Closing socket')
+            try:
                 self.__file.close()
-            if not self.__socket is None:
-                socket_ = self.__socket
-                self.__socket = None
-                socket_.shutdown(socket.SHUT_WR)
-                socket_.close()
-        except Exception, e:
-            self.__logger.warn('Failed to close socket: %s', e)
+                self.__socket.close()
+            except Exception, e:
+                self.__logger.warn('Failed to close socket: %s', e)
 
-        # If there is a receiver thread and we are not running in its
-        # context, the thread should encounter an exception and exit
-        # eventually. We wait for that to happen.
-        if not self.__thread is None \
-                and not self.__thread is threading.currentThread():
-            self.__logger.info('Joining thread')
-            self.__thread.join()
+    def waitForDeactivation(self):
+        self.__logger.info('Joining thread')
+        self.__thread.join()
 
 class Bus (object):
     """
@@ -280,7 +294,13 @@ class Bus (object):
                 def __call__(_self, notification):
                     self.handleIncoming(( connection, notification ))
             connection.addHandler(Handler())
-            connection.errorHook = lambda exception: self.removeConnection(connection)
+            def removeAndDeactivate(exception):
+                self.removeConnection(connection)
+                try:
+                    connection.deactivate()
+                except Exception, e:
+                    self.__logger.warning("Error while deactivating connection %s: %s", connection, e)
+            connection.errorHook = removeAndDeactivate
             connection.activate()
 
     def removeConnection(self, connection):
@@ -292,13 +312,11 @@ class Bus (object):
         """
         self.__logger.info('Removing connection %s', connection)
 
-        try:
-            connection.deactivate()
-        finally:
-            with self.lock:
-                connection.removeHandler([ h for h in connection.handlers
-                                           if h.bus is self ][0])
+        with self.lock:
+            if connection in self.__connections:
                 self.__connections.remove(connection)
+                connection.removeHandler([ h for h in connection.handlers
+                                       if h.bus is self ][0])
 
     connections = property(getConnections)
 
@@ -358,10 +376,14 @@ class Bus (object):
 
             # Distribute the notification to remote participants via
             # network connections.
-            self._toConnections(notification)
+            failing = self._toConnections(notification)
             # Distribute the notification to participants in our own
             # process via InPushConnector instances.
             self._toConnectors(notification)
+        # there are only failing connection in case of an unorderly shutdown.
+        # So the shutdown protocol does not apply here and
+        # we can immediately call deactivate.
+        map(BusConnection.deactivate, failing)
 
     # State management
 
@@ -378,16 +400,20 @@ class Bus (object):
 
         with self.lock:
             self.__active = False
+            connectionsCopy = copy.copy(self.connections)
 
         # We do not have to lock the bus here, since
         # 1) removeConnection will do that for each connection
         # 2) the connection list will not be modified concurrently at
         #    this point
         self.__logger.info('Closing connections')
-        try:
-            map(self.removeConnection, copy.copy(self.connections))
-        except Exception, e:
-            self.__logger.error('Failed to close connections: %s', e)
+        for connection in connectionsCopy:
+            try:
+                self.removeConnection(connection)
+                connection.shutdown()
+                connection.waitForDeactivation()
+            except Exception, e:
+                self.__logger.error('Failed to close connections: %s', e)
 
     # Low-level helpers
 
@@ -405,6 +431,7 @@ class Bus (object):
         # Removed connections for which sending the notification
         # failed.
         map(self.removeConnection, failing)
+        return failing
 
     def _toConnectors(self, notification):
         # Deliver NOTIFICATION to connectors which fulfill two
