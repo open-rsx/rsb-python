@@ -14,3 +14,4 @@ setup.cfg
 /gitversion
 /gitbranch
 /MANIFEST
+/pylint.out
