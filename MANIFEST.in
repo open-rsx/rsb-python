@@ -1,5 +1,10 @@
 include COPYING.txt
 
+include rsb/version.py.in
+exclude rsb/version.py
+include gitbranch
+include gitversion
+
 recursive-include rsb *.proto
 
 exclude setup.cfg
