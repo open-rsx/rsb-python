@@ -416,7 +416,7 @@ class ByteArrayConverter(Converter):
         super(ByteArrayConverter, self).__init__(bytearray, bytearray, '.*')
 
     def serialize(self, data):
-        return bytearray(data)
+        return bytearray(data), self.wireSchema
 
     def deserialize(self, data, wireSchema):
         return bytearray(data)
