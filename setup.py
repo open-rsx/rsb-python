@@ -72,62 +72,6 @@ class CommandStarter(object):
         self.__open.terminate()
         self.__open.wait()
 
-class ApiDocCommand(Command):
-    '''
-    Distutils command used to build the api documentation with epydoc.
-
-    @author: jwienke
-    '''
-
-    user_options = [('format=', 'f',
-                     "the output format to use (html and pdf)"),
-                     ("verbose", 'v', "print verbose warnings")]
-    description = "generates the api documentation as html or pdf"
-
-    FORMAT_HTML = "html"
-    FORMAT_PDF = "pdf"
-
-    def initialize_options(self):
-        self.format = None
-        self.verbose = False
-
-    def finalize_options(self):
-        if self.format is None:
-            self.format = self.FORMAT_HTML
-        if not self.format in [self.FORMAT_HTML, self.FORMAT_PDF]:
-            self.format = self.FORMAT_HTML
-
-    def run(self):
-
-        # ensure that everything that's needed is built
-        self.run_command('build')
-
-        outdir = os.path.join("docs", self.format)
-        try:
-            os.makedirs(outdir)
-        except OSError:
-            pass
-
-        # build the argument string
-        cmdline = [sys.executable]
-        cmdline.append("-c")
-        cmdline.append("from epydoc import cli; cli.cli()")
-        cmdline.append("--" + self.format)
-        cmdline.append("-o")
-        cmdline.append(outdir)
-        if self.verbose:
-            cmdline.append("-v")
-        cmdline.append("--config")
-        cmdline.append("epydoc.config")
-
-        # call epydoc according to the selected configuration
-        env = os.environ
-        ppath = ""
-        for p in sys.path:
-            ppath += p + os.path.pathsep
-        env['PYTHONPATH'] = ppath
-        subprocess.call(cmdline, env=env)
-
 class FetchProtocol(Command):
     '''
     A command which fetches the protocol files into this project
@@ -493,7 +437,7 @@ setup(name='rsb-python',
         ],
 
       install_requires=["protobuf"],
-      setup_requires=["coverage", "epydoc", "unittest-xml-reporting", "setuptools-lint"],
+      setup_requires=["coverage", "setuptools-epydoc", "unittest-xml-reporting", "setuptools-lint"],
 
       extras_require={
         'spread-transport':  ["SpreadModule>=1.5spread4"],
@@ -504,12 +448,13 @@ setup(name='rsb-python',
       packages=findRsbPackages(),
       test_suite="test.suite",
 
-      cmdclass={'doc' : ApiDocCommand,
-                'proto': FetchProtocol,
-                'build_proto': BuildProtocol,
-                'sdist' : Sdist,
-                'build' : Build,
-                'bdist_egg': BDist_egg,
-                'test' : Test,
-                'coverage' : Coverage}
-      )
+      cmdclass={
+          'proto':       FetchProtocol,
+          'build_proto': BuildProtocol,
+          'sdist' :      Sdist,
+          'build' :      Build,
+          'bdist_egg':   BDist_egg,
+          'test' :       Test,
+          'coverage' :   Coverage
+      }
+  )
