@@ -34,6 +34,7 @@ from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event,
 import time
 from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
+from threading import Condition
 
 class ParticipantConfigTest (unittest.TestCase):
 
@@ -486,6 +487,40 @@ class IntegrationTest(unittest.TestCase):
         # This assumes that socket transport is enabled as the only transport
         self.assertTrue(isinstance(Participant.getConnectors('out', config)[0].getConverterForDataType(FooType), FooTypeConverter))
 
+class ContextManagerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.scope = rsb.Scope('/one/test')
+        self.receivedCondition = Condition()
+        self.receivedData = None
+    
+    def testInformerListenerRoundtrip(self):
+        
+        with rsb.createInformer(self.scope, dataType=str) as informer, \
+             rsb.createListener(self.scope) as listener:
+            def setReceived(event):
+                with self.receivedCondition:
+                    self.receivedData = event.data
+                    self.receivedCondition.notifyAll()
+            listener.addHandler(setReceived)
+            data = 'our little test'
+            informer.publishData(data)
+            with self.receivedCondition:
+                while self.receivedData is None:
+                    self.receivedCondition.wait()
+                self.assertEqual(data, self.receivedData)
+
+    def testRpcRoundtrip(self):
+        
+        with rsb.createServer(self.scope) as server, \
+             rsb.createRemoteServer(self.scope) as client:
+            
+            methodName = 'test'
+            data = 'bla'
+            
+            server.addMethod(methodName, lambda x: x, str, str)
+            self.assertEqual(data, client.test(data))
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
@@ -497,4 +532,5 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ContextManagerTest))
     return suite

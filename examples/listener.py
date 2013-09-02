@@ -38,16 +38,13 @@ if __name__ == '__main__':
     # Create a listener on the specified scope. The listener will
     # dispatch all received events asynchronously to all registered
     # handlers.
-    listener = rsb.createListener("/example/informer")
+    with rsb.createListener("/example/informer") as listener:
 
-    # Add a handler to handle received events. Handlers are callable
-    # objects with the received event as the single argument.
-    listener.addHandler(handle)
+        # Add a handler to handle received events. Handlers are callable
+        # objects with the received event as the single argument.
+        listener.addHandler(handle)
 
-    # Wait for events; clean up when interrupted.
-    try:
+        # Wait for events; clean up when interrupted.
         while True:
             time.sleep(1)
-    finally:
-        listener.deactivate()
 # mark-end::body

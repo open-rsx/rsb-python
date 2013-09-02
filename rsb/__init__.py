@@ -35,6 +35,7 @@ L{createListener}, L{createServer} and L{createRemoteServer}.
 @author: jmoringe
 """
 
+import abc
 import uuid
 import copy
 import logging
@@ -1155,6 +1156,20 @@ class Participant(object):
         self.__scope = scope
 
     scope = property(getScope, setScope)
+
+    @abc.abstractmethod
+    def deactivate(self):
+        """
+        Deactivates a participant by setting tearing down all connection logic.
+        This needs to be called in case you want to ensure that programs can
+        terminate correctly.
+        """
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, execType, execValue, traceback):
+        self.deactivate()
 
     @classmethod
     def getConnectors(clazz, direction, config):

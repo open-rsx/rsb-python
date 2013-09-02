@@ -46,15 +46,12 @@ if __name__ == '__main__':
     # Create an informer that will send the events carrying protocol
     # buffer payloads. See the informer.py example for a more detailed
     # explanation of informer creation.
-    informer = rsb.createInformer("/example/converter",
-                                  dataType = SimpleImage)
+    with rsb.createInformer("/example/converter",
+                            dataType = SimpleImage) as informer:
 
-    try:
         image = SimpleImage()
         image.width  = 100
         image.height = 100
         image.data   = str('bla')
         informer.publishData(image)
-    finally:
-        informer.deactivate()
 # mark-end::body
