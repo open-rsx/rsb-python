@@ -1164,6 +1164,12 @@ class Participant(object):
         This needs to be called in case you want to ensure that programs can
         terminate correctly.
         """
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, execType, execValue, traceback):
+        self.deactivate()
 
     @classmethod
     def getConnectors(clazz, direction, config):
