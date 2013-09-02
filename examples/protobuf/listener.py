@@ -46,12 +46,12 @@ if __name__ == '__main__':
     # Create a listener that will receive the events carrying protocol
     # buffer payloads. See the listener.py example for a more detailed
     # explanation of listener creation.
-    listener = rsb.createListener(rsb.Scope("/example/converter"))
-    def printData(event):
-      print("Received %s object with fields:\n%s"
-            % (type(event.data).__name__, str(event.data)))
-    listener.addHandler(printData)
+    with rsb.createListener(rsb.Scope("/example/converter")) as listener:
+        def printData(event):
+            print("Received %s object with fields:\n%s"
+                  % (type(event.data).__name__, str(event.data)))
+        listener.addHandler(printData)
 
-    # wait endlessly for received events
-    while True:
-        time.sleep(100)
+        # wait endlessly for received events
+        while True:
+            time.sleep(100)

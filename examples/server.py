@@ -34,21 +34,18 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    server = rsb.createServer('/example/server')
+    with rsb.createServer('/example/server') as server:
 
-    # Create a function which processes requests and returns a
-    # result. Note that the name of the function does not determine
-    # the name of the exposed method. See addMethod below.
-    def echo(x):
-        return x
+        # Create a function which processes requests and returns a
+        # result. Note that the name of the function does not determine
+        # the name of the exposed method. See addMethod below.
+        def echo(x):
+            return x
 
-    # Add the function to the server under the name "echo".
-    server.addMethod('echo', echo, str, str)
+        # Add the function to the server under the name "echo".
+        server.addMethod('echo', echo, str, str)
 
-    # Wait for method calls by clients.
-    try:
+        # Wait for method calls by clients.
         while True:
             time.sleep(1)
-    finally:
-        server.deactivate()
 # mark-end::body
