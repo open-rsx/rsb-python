@@ -379,7 +379,7 @@ def getLoggerByClass(klass):
     """
     Get a python logger instance based on a class instance. The logger name will
     be a dotted string containing python module and class name.
-    
+
     @param klass: class instance
     @return: logger instance
     """
@@ -389,7 +389,7 @@ def timeToUnixMicroseconds(time):
     """
     Converts a floating point, seconds based time to a unix timestamp in
     microseconds precision.
-    
+
     @param time: time since epoch in seconds + fractional part.
     @return: time as integer with microseconds precision.
     """
@@ -397,3 +397,29 @@ def timeToUnixMicroseconds(time):
 
 def unixMicrosecondsToTime(value):
     return float(value) / 1000000.0
+
+def prefix():
+    """
+    Tries to return the prefix that this code was installed into by guessing
+    the install location from some rules.
+
+    Adapted from http://ttboj.wordpress.com/2012/09/20/finding-your-software-install-prefix-from-inside-python/
+
+    @return: string path with the install prefix or empty string if not known
+    """
+
+    import os
+    import sys
+
+    path = os.path.abspath(__file__)
+    token = "dummy"
+
+    while len(token) > 0:
+        (path, token) = os.path.split(path)
+        if token in ['site-packages', 'dist-packages']:
+            (path, token) = os.path.split(path)
+            if token == 'python%s' % sys.version[:3]:
+                (path, token) = os.path.split(path)
+                return path
+
+    return ""
