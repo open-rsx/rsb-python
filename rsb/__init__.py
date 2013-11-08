@@ -352,9 +352,10 @@ class ParticipantConfig (object):
         sources of configuration information will be consulted:
 
          1. C{/etc/rsb.conf}
-         2. C{~/.config/rsb.conf}
-         3. C{\$(PWD)/rsb.conf}
-         4. Environment Variables
+         2. C{$prefix/etc/rsb.conf}
+         3. C{~/.config/rsb.conf}
+         4. C{\$(PWD)/rsb.conf}
+         5. Environment Variables
 
         @param defaults: A L{ParticipantConfig} object the options of
                          which should be used as defaults.
@@ -366,11 +367,15 @@ class ParticipantConfig (object):
 
         See also: L{fromFile}, L{fromEnvironment}
         """
+
+        import util
+
         defaults = {"transport.socket.enabled": "1"}
         if platform.system() == 'Windows':
             partial = clazz.__fromFile("c:\\rsb.conf", defaults)
         else:
             partial = clazz.__fromFile("/etc/rsb.conf", defaults)
+        partial = clazz.__fromFile("%s/etc/rsb.conf" % util.prefix(), partial)
         partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"), partial)
         partial = clazz.__fromFile("rsb.conf", partial)
         options = clazz.__fromEnvironment(partial)
