@@ -154,6 +154,8 @@ class Method (rsb.Participant):
             self._listener.deactivate()
             self._listener = None
 
+        super(Method, self).deactivate()
+
     def __str__(self):
         return '<%s "%s" at 0x%x>' % (type(self).__name__, self.name, id(self))
 
@@ -215,6 +217,8 @@ class Server (rsb.Participant):
     def activate(self):
         self.__active = True
 
+        super(Server, self).activate()
+
     def deactivate(self):
         if not self.__active:
             raise RuntimeError, 'Trying to deactivate inactive server'
@@ -223,6 +227,8 @@ class Server (rsb.Participant):
 
         for m in self._methods.values():
             m.deactivate()
+
+        super(Server, self).deactivate()
 
     # Printing
 

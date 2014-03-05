@@ -35,7 +35,6 @@ L{createListener}, L{createServer} and L{createRemoteServer}.
 @author: jmoringe
 """
 
-import abc
 import uuid
 import copy
 import logging
@@ -1146,6 +1145,35 @@ class Event(object):
     def __neq__(self, other):
         return not self.__eq__(other)
 
+class Hook (object):
+    """
+    A mutable collection of callback functions that can be called
+    together.
+
+    @author: jmoringe
+    """
+
+    def __init__(self):
+        self.__lock     = threading.RLock()
+        self.__handlers = []
+
+    def run(self, *args, **kwargs):
+        with self.__lock:
+            for handler in self.__handlers:
+                handler(*args, **kwargs)
+
+    def addHandler(self, handler):
+        with self.__lock:
+            self.__handlers.append(handler)
+
+    def removeHandler(self, handler):
+        with self.__lock:
+            self.__handlers.remove(handler)
+
+participantCreationHook = Hook()
+
+participantDestructionHook = Hook()
+
 class Participant(object):
     """
     Base class for specialized bus participant classes. Has a unique
@@ -1192,13 +1220,16 @@ class Participant(object):
 
     config = property(getConfig)
 
-    @abc.abstractmethod
+    def activate(self):
+        pass
+
     def deactivate(self):
         """
-        Deactivates a participant by setting tearing down all connection logic.
-        This needs to be called in case you want to ensure that programs can
-        terminate correctly.
+        Deactivates a participant by tearing down all connection
+        logic. This needs to be called in case you want to ensure
+        that programs can terminate correctly.
         """
+        participantDestructionHook.run(self)
 
     def __enter__(self):
         return self
@@ -1363,6 +1394,8 @@ class Informer(Participant):
 
             self.__active = True
 
+        self.activate()
+
     def deactivate(self):
         with self.__mutex:
             if not self.__active:
@@ -1373,6 +1406,8 @@ class Informer(Participant):
             self.__active = False
 
             self.__configurator.deactivate()
+
+        super(Informer, self).deactivate()
 
 class Listener(Participant):
     """
@@ -1437,6 +1472,7 @@ class Listener(Participant):
 
             self.__active = True
 
+        self.activate()
 
     def deactivate(self):
         with self.__mutex:
@@ -1448,6 +1484,8 @@ class Listener(Participant):
             self.__configurator.deactivate()
 
             self.__active = False
+
+        super(Listener, self).deactivate()
 
     def addFilter(self, theFilter):
         """
@@ -1537,6 +1575,7 @@ def createParticipant(clazz, scope, config, **kwargs):
         config = getDefaultParticipantConfig()
 
     participant = clazz(scope, config = config, **kwargs)
+    participantCreationHook.run(participant)
     return participant
 
 def createListener(scope, config = None, **kwargs):

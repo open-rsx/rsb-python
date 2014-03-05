@@ -543,6 +543,65 @@ class ContextManagerTest(unittest.TestCase):
             server.addMethod(methodName, lambda x: x, str, str)
             self.assertEqual(data, client.test(data))
 
+class HookTest(unittest.TestCase):
+
+    def setUp(self):
+        self.creationCalls = []
+        def handleCreation(participant):
+            self.creationCalls.append(participant)
+        self.creationHandler = handleCreation
+        rsb.participantCreationHook.addHandler(self.creationHandler)
+
+        self.destructionCalls = []
+        def handleDestruction(participant):
+            self.destructionCalls.append(participant)
+        self.destructionHandler = handleDestruction
+        rsb.participantDestructionHook.addHandler(self.destructionHandler)
+
+    def tearDown(self):
+        rsb.participantCreationHook.removeHandler(self.creationHandler)
+        rsb.participantDestructionHook.removeHandler(self.destructionHandler)
+
+    def testInformer(self):
+        participant = None
+        with rsb.createInformer('/') as informer:
+            participant = informer
+            self.assertEqual(self.creationCalls, [ participant ])
+        self.assertEqual(self.destructionCalls, [ participant ])
+
+    def testListener(self):
+        participant = None
+        with rsb.createListener('/') as listener:
+            participant = listener
+            self.assertEqual(self.creationCalls, [ participant ])
+        self.assertEqual(self.destructionCalls, [ participant ])
+
+    def testLocalServer(self):
+        server = None
+        method = None
+        with rsb.createLocalServer('/') as participant:
+            server = participant
+            self.assertEqual(self.creationCalls, [ server ])
+
+            method = server.addMethod('echo', lambda x: x)
+            self.assertTrue(method in self.creationCalls)
+
+        self.assertTrue(server in self.destructionCalls)
+        self.assertTrue(method in self.destructionCalls)
+
+    def testRemoteServer(self):
+        server = None
+        method = None
+        with rsb.createRemoteServer('/') as participant:
+            server = participant
+            self.assertEqual(self.creationCalls, [ server ])
+
+            method = server.echo
+            self.assertTrue(method in self.creationCalls)
+
+        self.assertTrue(server in self.destructionCalls)
+        self.assertTrue(method in self.destructionCalls)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
@@ -555,4 +614,5 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ContextManagerTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(HookTest))
     return suite
