@@ -290,6 +290,8 @@ class LocalMethod (Method):
             if self.requestType is type(None):
                 assert(request.data is None)
                 result = self._func()
+            elif self.requestType is rsb.Event:
+                result = self._func(request)
             else:
                 result = self._func(request.data)
             resultType = type(result)
@@ -304,6 +306,7 @@ class LocalMethod (Method):
         # necessary meta-data.
         if isinstance(result, rsb.Event):
             reply = result
+            reply.method = 'REPLY'
             reply.causes += causes
         else:
             # This check is required because the reply informer is
