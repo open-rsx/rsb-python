@@ -440,7 +440,7 @@ class Scope(object):
     """
 
     __COMPONENT_SEPARATOR = "/"
-    __COMPONENT_REGEX = re.compile("^[a-zA-Z0-9]+$")
+    __COMPONENT_REGEX = re.compile("^[-_a-zA-Z0-9]+$")
 
     @classmethod
     def ensureScope(cls, thing):
