@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -39,6 +39,7 @@ import utiltest
 import patternstest
 import localtransporttest
 import sockettransporttest
+import introspectiontest
 from rsb import haveSpread
 
 
@@ -64,5 +65,6 @@ def suite():
         suite.addTest(rsbspreadtest.suite())
     suite.addTest(localtransporttest.suite())
     suite.addTest(sockettransporttest.suite())
+    suite.addTest(introspectiontest.suite())
 
     return suite

@@ -1574,6 +1574,9 @@ def createParticipant(clazz, scope, config, **kwargs):
     if config is None:
         config = getDefaultParticipantConfig()
 
+    if config.introspection:
+        import rsb.introspection
+
     participant = clazz(scope, config = config, **kwargs)
     participantCreationHook.run(participant)
     return participant
