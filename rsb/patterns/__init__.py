@@ -74,7 +74,7 @@ class RemoteCallError (RuntimeError):
 #
 ######################################################################
 
-class Method (object):
+class Method (rsb.Participant):
     """
     Objects of this class are methods which are associated to a local
     or remote server. Within a server, each method has a unique name.
@@ -84,7 +84,7 @@ class Method (object):
 
     @author: jmoringe
     """
-    def __init__(self, server, name, requestType, replyType):
+    def __init__(self, scope, config, server, name, requestType, replyType): # TODO scope and name are redundant
         """
         Create a new Method object for the method named B{name}
         provided by B{server}.
@@ -99,6 +99,8 @@ class Method (object):
                           method.
         @type  replyType: type
         """
+        super(Method, self).__init__(scope, config)
+
         self._server      = server
         self._name        = name
         self._listener    = None
@@ -244,8 +246,10 @@ class LocalMethod (Method):
 
     @author: jmoringe
     """
-    def __init__(self, server, name, func, requestType, replyType, allowParallelExecution):
-        super(LocalMethod, self).__init__(server, name, requestType, replyType)
+    def __init__(self, scope, config,
+                 server, name, func, requestType, replyType, allowParallelExecution):
+        super(LocalMethod, self).__init__(scope, config, server, name, requestType, replyType)
+
         self._allowParallelExecution = allowParallelExecution
         self._func = func
         self.listener # force listener creation
@@ -257,7 +261,7 @@ class LocalMethod (Method):
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/request"))
                                 .concat(rsb.Scope('/' + self.name)),
-                                self.server.config,
+                                config            = self.config,
                                 receivingStrategy = receivingStrategy)
         listener.addHandler(self._handleRequest)
         return listener
@@ -267,7 +271,7 @@ class LocalMethod (Method):
                             .concat(rsb.Scope("/reply"))
                             .concat(rsb.Scope('/' + self.name)),
                             object,
-                            config = self.server.config)
+                            config = self.config)
 
     def _handleRequest(self, request):
         # Only accept request, if its method is 'REQUEST'.
@@ -366,8 +370,14 @@ class LocalServer (Server):
         @return: The newly created method.
         @rtype: LocalMethod
         """
-        method = LocalMethod(self, name, func, requestType, replyType,
-                             allowParallelExecution)
+        method = LocalMethod(self.scope.concat(rsb.Scope('/' + name)),
+                             config                 = self.config,
+                             server                 = self,
+                             name                   = name,
+                             func                   = func,
+                             requestType            = requestType,
+                             replyType              = replyType,
+                             allowParallelExecution = allowParallelExecution)
         super(LocalServer, self).addMethod(method)
         return method
     
@@ -390,8 +400,10 @@ class RemoteMethod (Method):
 
     @author: jmoringe
     """
-    def __init__(self, server, name, requestType, replyType):
-        super(RemoteMethod, self).__init__(server, name, requestType, replyType)
+    def __init__(self, scope, config, server, name, requestType, replyType):
+        super(RemoteMethod, self).__init__(scope, config,
+                                           server, name, requestType, replyType)
+
         self._calls = {}
         self._lock  = threading.RLock()
 
@@ -399,7 +411,7 @@ class RemoteMethod (Method):
         listener = rsb.Listener(self.server.scope
                                 .concat(rsb.Scope("/reply"))
                                 .concat(rsb.Scope('/' + self.name)),
-                                self.server.config)
+                                config = self.config)
         listener.addHandler(self._handleReply)
         return listener
 
@@ -408,7 +420,7 @@ class RemoteMethod (Method):
                             .concat(rsb.Scope("/request"))
                             .concat(rsb.Scope('/' + self.name)),
                             self.requestType,
-                            config = self.server.config)
+                            config = self.config)
 
     def _handleReply(self, event):
         if event.method is None            \
@@ -557,6 +569,11 @@ class RemoteServer (Server):
         except AttributeError:
             method = self.getMethod(name)
             if method is None:
-                method = RemoteMethod(self, name, object, object)
+                method = RemoteMethod(self.scope.concat(rsb.Scope('/' + name)),
+                                      config      = self.config,
+                                      server      = self,
+                                      name        = name,
+                                      requestType = object,
+                                      replyType   = object)
                 self.addMethod(method)
             return method
