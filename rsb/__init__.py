@@ -1132,7 +1132,7 @@ class Participant(object):
 
     @author: jmoringe
     """
-    def __init__(self, scope):
+    def __init__(self, scope, config):
         """
         Constructs a new Participant. This should not be done by
         clients.
@@ -1140,11 +1140,15 @@ class Participant(object):
         @param scope: scope of the bus channel.
         @type scope: Scope or accepted by Scope constructor
 
+        @param config: Configuration that the participant should use
+        @type config: ParticipantConfig
+
         See L{createListener}, L{createInformer}, L{createServer},
         L{createRemoteServer}
         """
         self.__id = uuid.uuid4()
         self.__scope = Scope.ensureScope(scope)
+        self.__config = config
 
     def getId(self):
         return self.__id
@@ -1161,6 +1165,11 @@ class Participant(object):
         self.__scope = scope
 
     scope = property(getScope, setScope)
+
+    def getConfig(self):
+        return self.__config
+
+    config = property(getConfig)
 
     @abc.abstractmethod
     def deactivate(self):
@@ -1223,6 +1232,7 @@ class Informer(Participant):
     Event-sending part of the communication pattern.
 
     @author: jwienke
+    @author: jmoringe
     """
 
     def __init__(self, scope, theType,
@@ -1243,7 +1253,10 @@ class Informer(Participant):
         @todo: maybe provide an automatic type identifier deduction for default
                types?
         """
-        super(Informer, self).__init__(scope)
+        if config is None:
+            config = getDefaultParticipantConfig()
+
+        super(Informer, self).__init__(scope, config)
 
         self.__logger = getLoggerByClass(self.__class__)
 
@@ -1254,9 +1267,6 @@ class Informer(Participant):
 
         self.__active         = False
         self.__mutex          = threading.Lock()
-
-        if config is None:
-            config = getDefaultParticipantConfig()
 
         if configurator:
             self.__configurator = configurator
@@ -1347,6 +1357,7 @@ class Listener(Participant):
     Event-receiving part of the communication pattern
 
     @author: jwienke
+    @author: jmoringe
     """
 
     def __init__(self, scope,
@@ -1363,7 +1374,10 @@ class Listener(Participant):
                              receiving of events from in connectors
                              and their filtering and dispatching.
         """
-        super(Listener, self).__init__(scope)
+        if config is None:
+            config = getDefaultParticipantConfig()
+
+        super(Listener, self).__init__(scope, config)
 
         self.__logger = getLoggerByClass(self.__class__)
 
@@ -1372,9 +1386,6 @@ class Listener(Participant):
         self.__configurator = None
         self.__active       = False
         self.__mutex        = threading.Lock()
-
-        if config is None:
-            config = getDefaultParticipantConfig()
 
         if configurator:
             self.__configurator = configurator

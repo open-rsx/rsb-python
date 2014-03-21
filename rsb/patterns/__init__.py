@@ -177,13 +177,12 @@ class Server (rsb.Participant):
                        for communication performed by this server.
         @type config: ParticipantConfig
         """
-        super(Server, self).__init__(scope)
+        if config is None:
+            config = rsb.getDefaultParticipantConfig()
+
+        super(Server, self).__init__(scope, config)
 
         self.__active = False
-        if config is None:
-            self.__config = rsb.getDefaultParticipantConfig()
-        else:
-            self.__config = config
         self._methods = {}
 
         self.activate()
@@ -191,11 +190,6 @@ class Server (rsb.Participant):
     def __del__(self):
         if self.__active:
             self.deactivate()
-
-    def getConfig(self):
-        return self.__config
-
-    config = property(getConfig)
 
     def getMethods(self):
         return self._methods.values()
