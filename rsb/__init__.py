@@ -1110,8 +1110,8 @@ class Event(object):
         if len(printData) > 100:
             printData = printData[:100] + '...'
         printData = ''.join(['\\x%x' % ord(c) if ord(c) < 32 else c for c in printData])
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', metaData = %s, causes = %s]" \
-            % ("Event", self.__id, self.__scope, printData, self.__type, self.__metaData, self.__causes)
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', method = '%s', metaData = %s, causes = %s]" \
+            % ("Event", self.__id, self.__scope, printData, self.__type, self.__method, self.__metaData, self.__causes)
 
     def __repr__(self):
         return self.__str__()
