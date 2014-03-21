@@ -28,7 +28,8 @@ from rsb import ParticipantConfig
 import time
 from threading import Condition
 
-inProcessConfig = ParticipantConfig.fromDict({
+inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
+    'introspection.enabled':        '0',
     'transport.inprocess.enabled' : '1'
 })
 
@@ -36,18 +37,20 @@ class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
 
         # Test creating a server without methods
-        server = rsb.createServer('/some/scope', config = inProcessConfig)
+        server = rsb.createServer('/some/scope',
+                                  config = inProcessNoIntrospectionConfig)
         self.assertEqual(server.methods, [])
         server.deactivate()
 
-        server = rsb.createServer(rsb.Scope('/some/scope'), config = inProcessConfig)
+        server = rsb.createServer(rsb.Scope('/some/scope'),
+                                  config = inProcessNoIntrospectionConfig)
         self.assertEqual(server.methods, [])
         server.deactivate()
 
         # Test creating a server with directly specified methods
         server = rsb.createServer(rsb.Scope('/some/scope'),
                                   methods = [ ('foo', lambda x: x, str, str) ],
-                                  config  = inProcessConfig)
+                                  config  = inProcessNoIntrospectionConfig)
         self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
         server.deactivate()
 
@@ -61,7 +64,7 @@ class LocalServerTest (unittest.TestCase):
         server = rsb.createServer(rsb.Scope('/some/scope'),
                                   object = someObject,
                                   expose = [ ('bar', str, None) ],
-                                  config = inProcessConfig)
+                                  config = inProcessNoIntrospectionConfig)
         self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
 
         # Cannot supply expose without object
@@ -85,9 +88,9 @@ class RoundTripTest (unittest.TestCase):
         localServer = rsb.createServer(
             '/roundtrip',
             methods = [ ('addone', lambda x: long(x + 1), long, long) ],
-            config  = inProcessConfig)
+            config  = inProcessNoIntrospectionConfig)
 
-        remoteServer = rsb.createRemoteServer('/roundtrip', inProcessConfig)
+        remoteServer = rsb.createRemoteServer('/roundtrip', inProcessNoIntrospectionConfig)
 
         # Call synchronously
         self.assertEqual(map(remoteServer.addone, range(100)),
@@ -103,12 +106,12 @@ class RoundTripTest (unittest.TestCase):
 
     def testVoidMethods(self):
 
-        localServer = rsb.createServer('/void', config = inProcessConfig)
+        localServer = rsb.createServer('/void', config = inProcessNoIntrospectionConfig)
         def nothing(e):
             pass
         localServer.addMethod("nothing", nothing, str)
 
-        remoteServer = rsb.createRemoteServer('/void', inProcessConfig)
+        remoteServer = rsb.createRemoteServer('/void', inProcessNoIntrospectionConfig)
 
         future = remoteServer.nothing.async("test")
         try:
@@ -127,7 +130,7 @@ class RoundTripTest (unittest.TestCase):
         callLock = Condition()
 
         try:
-            localServer = rsb.createServer('/takesometime', config = inProcessConfig)
+            localServer = rsb.createServer('/takesometime', config = inProcessNoIntrospectionConfig)
             def takeSomeTime(e):
                 with callLock:
                     currentCalls.append(e)
@@ -139,7 +142,7 @@ class RoundTripTest (unittest.TestCase):
                     callLock.notifyAll()
             localServer.addMethod("takeSomeTime", takeSomeTime, str, allowParallelExecution=True)
 
-            remoteServer = rsb.createRemoteServer('/takesometime', inProcessConfig)
+            remoteServer = rsb.createRemoteServer('/takesometime', inProcessNoIntrospectionConfig)
 
             remoteServer.takeSomeTime.async("test1")
             remoteServer.takeSomeTime.async("test2")

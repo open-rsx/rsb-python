@@ -293,7 +293,10 @@ class Test(setuptools.command.test.test):
         for name, socketenabled, spreadenabled in [ ('spread', '0', '1'),
                                                     ('socket', '1', '0') ]:
             with open('test/with-%s.conf' % name, 'w') as f:
-                f.write("""[transport.spread]
+                f.write("""[introspection]
+enabled = 0
+
+[transport.spread]
 enabled = {spreadenabled}
 port    = {spreadport}
 

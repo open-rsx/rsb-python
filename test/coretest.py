@@ -1,6 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -61,12 +62,20 @@ class ParticipantConfigTest (unittest.TestCase):
         self.assertEqual(transport.getName(), 'spread')
         self.assertTrue(transport.isEnabled())
 
+        # Check introspection
+        self.assertTrue(config.introspection)
+
     def testFromEnvironment(self):
+        # Clear RSB-specific variables from environment
         os.environ = dict( (key, value) for (key, value) in os.environ.items()
                            if not 'RSB' in key )
+
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
         os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'
+
         os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'yes'
+
+        os.environ['RSB_INTROSPECTION_ENABLED'] = '1'
 
         config = ParticipantConfig.fromEnvironment()
 
@@ -83,6 +92,9 @@ class ParticipantConfigTest (unittest.TestCase):
         transport = config.getTransport('spread')
         self.assertEqual(transport.getName(), 'spread')
         self.assertTrue(transport.isEnabled())
+
+        # Check introspection
+        self.assertTrue(config.introspection)
 
     def testOverwritingDefaults(self):
         defaults = { 'transport.spread.enabled':     'yes',
@@ -110,12 +122,16 @@ class QualityOfServiceSpecTest(unittest.TestCase):
     def testConstruction(self):
 
         specs = QualityOfServiceSpec()
-        self.assertEqual(QualityOfServiceSpec.Ordering.UNORDERED, specs.getOrdering())
-        self.assertEqual(QualityOfServiceSpec.Reliability.RELIABLE, specs.getReliability())
+        self.assertEqual(QualityOfServiceSpec.Ordering.UNORDERED,
+                         specs.getOrdering())
+        self.assertEqual(QualityOfServiceSpec.Reliability.RELIABLE,
+                         specs.getReliability())
 
     def testComparison(self):
 
-        self.assertEqual(QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED, QualityOfServiceSpec.Reliability.RELIABLE), QualityOfServiceSpec())
+        self.assertEqual(QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED,
+                                              QualityOfServiceSpec.Reliability.RELIABLE),
+                         QualityOfServiceSpec())
 
 class ScopeTest(unittest.TestCase):
 

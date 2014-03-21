@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2013, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -152,6 +152,8 @@ class ParticipantConfig (object):
      - Employed transport mechanisms
        - Their configurations (e.g. port numbers)
        - Associated converters
+     - Whether introspection should be enabled for the participant
+       (enabled by default)
 
     @author: jmoringe
     """
@@ -169,7 +171,7 @@ class ParticipantConfig (object):
         """
         def __init__(self, name, options={}, converters=None):
             self.__name = name
-            self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes')
+            self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes') # TODO ugly
 
             # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
@@ -221,7 +223,11 @@ class ParticipantConfig (object):
         def __repr__(self):
             return str(self)
 
-    def __init__(self, transports=None, options=None, qos=None):
+    def __init__(self,
+                 transports    = None,
+                 options       = None,
+                 qos           = None,
+                 introspection = False):
         if transports is None:
             self.__transports = {}
         else:
@@ -237,6 +243,8 @@ class ParticipantConfig (object):
         else:
             self.__qos = qos
 
+        self.__introspection = introspection
+
     def getTransports(self, includeDisabled=False):
         return [ t for t in self.__transports.values()
                  if includeDisabled or t.isEnabled() ]
@@ -248,6 +256,11 @@ class ParticipantConfig (object):
 
     def getQualityOfServiceSpec(self):
         return self.__qos
+
+    def getIntrospection(self):
+        return self.__introspection
+
+    introspection = property(getIntrospection)
 
     def __str__(self):
         return 'ParticipantConfig[%s %s]' % (self.__transports.values(), self.__options)
@@ -272,6 +285,11 @@ class ParticipantConfig (object):
             transportOptions = dict(sectionOptions('transport.%s' % transport))
             if transportOptions:
                 result.__transports[transport] = clazz.Transport(transport, transportOptions)
+
+        # Introspection options
+        introspectionOptions = dict(sectionOptions('introspection'))
+        result.__introspection = introspectionOptions.get('enabled', '1') in [ '1', 'true', 'yes' ] # TODO ugly
+
         return result
 
     @classmethod
@@ -371,7 +389,10 @@ class ParticipantConfig (object):
 
         import util
 
-        defaults = {"transport.socket.enabled": "1"}
+        defaults = {
+            'transport.socket.enabled': '1',
+            'introspection.enabled':    '1'
+        }
         if platform.system() == 'Windows':
             partial = clazz.__fromFile("c:\\rsb.conf", defaults)
         else:
