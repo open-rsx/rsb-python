@@ -1141,7 +1141,7 @@ class Participant(object):
         @type scope: Scope or accepted by Scope constructor
 
         See L{createListener}, L{createInformer}, L{createServer},
-        L{createRemoteServer}, L{createService}
+        L{createRemoteServer}
         """
         self.__id = uuid.uuid4()
         self.__scope = Scope.ensureScope(scope)
@@ -1521,16 +1521,6 @@ def createInformer(scope, config=None, dataType=object):
     @return: a new Informer object.
     """
     return Informer(scope, dataType, config)
-
-def createService(scope):
-    """
-    Creates a Service object operating on the given scope.
-    @param scope: parent-scope of the new service. Can be a Scope
-                  object or a string.
-    @type scope: Scope or accepted by Scope constructor
-    @return: new Service object
-    """
-    raise RuntimeError, "not implemented"
 
 def createServer(scope, object = None, expose = None, methods = None,
                  config = None):
