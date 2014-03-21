@@ -258,19 +258,14 @@ class LocalMethod (Method):
         receivingStrategy = None
         if self._allowParallelExecution:
             receivingStrategy = FullyParallelEventReceivingStrategy()
-        listener = rsb.Listener(self.server.scope
-                                .concat(rsb.Scope("/request"))
-                                .concat(rsb.Scope('/' + self.name)),
+        listener = rsb.Listener(self.scope,
                                 config            = self.config,
                                 receivingStrategy = receivingStrategy)
         listener.addHandler(self._handleRequest)
         return listener
 
     def makeInformer(self):
-        return rsb.Informer(self.server.scope
-                            .concat(rsb.Scope("/reply"))
-                            .concat(rsb.Scope('/' + self.name)),
-                            object,
+        return rsb.Informer(self.scope, object,
                             config = self.config)
 
     def _handleRequest(self, request):
@@ -411,18 +406,12 @@ class RemoteMethod (Method):
         self._lock  = threading.RLock()
 
     def makeListener(self):
-        listener = rsb.Listener(self.server.scope
-                                .concat(rsb.Scope("/reply"))
-                                .concat(rsb.Scope('/' + self.name)),
-                                config = self.config)
+        listener = rsb.Listener(self.scope, config = self.config)
         listener.addHandler(self._handleReply)
         return listener
 
     def makeInformer(self):
-        return rsb.Informer(self.server.scope
-                            .concat(rsb.Scope("/request"))
-                            .concat(rsb.Scope('/' + self.name)),
-                            self.requestType,
+        return rsb.Informer(self.scope, self.requestType,
                             config = self.config)
 
     def _handleReply(self, event):
