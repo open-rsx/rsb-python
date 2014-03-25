@@ -62,8 +62,22 @@ class OriginFilterTest (unittest.TestCase):
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
 
+class MethodFilterTest (unittest.TestCase):
+    def testMatch(self):
+        e1 = rsb.Event(method = 'foo')
+        e2 = rsb.Event()
+
+        f = rsb.filter.MethodFilter(method = 'foo')
+        self.assertTrue(f.match(e1))
+        self.assertFalse(f.match(e2))
+
+        f = rsb.filter.MethodFilter(method = 'foo', invert = True)
+        self.assertFalse(f.match(e1))
+        self.assertTrue(f.match(e2))
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OriginFilterTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MethodFilterTest))
     return suite

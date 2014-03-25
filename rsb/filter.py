@@ -128,6 +128,56 @@ class OriginFilter (AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.origin, self.invert)
 
+class MethodFilter (AbstractFilter):
+    """
+    Matching events have (not) have a particular value in their method
+    field.
+
+    @author: jmoringe
+    """
+
+    def __init__(self, method, invert = False):
+        """
+        @param method: The method string that matching events have to
+                       have in their method field.
+        @type method: str
+        @param invert: Controls whether matching results should
+                       inverted (i.e. matching events B{not}
+                       having  B{method} in their method field).
+        @type invert: bool
+
+        """
+        self.__method = method
+        self.__invert = invert
+
+    def getMethod(self):
+        return self.__method
+
+    method = property(getMethod)
+
+    def getInvert(self):
+        return self.__invert
+
+    invert = property(getInvert)
+
+    def match(self, event):
+        result = self.method == event.method
+        if self.invert:
+            return not result
+        else:
+            return result
+
+    def __str__(self):
+        inverted = ''
+        if self.invert:
+            inverted = 'not '
+            return '<%s %sfrom %s at 0x%x>' \
+                % (type(self).__name__, inverted, self.method, id(self))
+
+    def __repr__(self):
+        return '%s("%s", invert = %s)' \
+            % (type(self).__name__, self.method, self.invert)
+
 class RecordingTrueFilter(AbstractFilter):
 
     def __init__(self):
