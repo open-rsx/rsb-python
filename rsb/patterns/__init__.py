@@ -34,6 +34,8 @@ import uuid
 import threading
 
 import rsb
+import rsb.filter
+
 from future import Future, DataFuture
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 
@@ -261,6 +263,7 @@ class LocalMethod (Method):
         listener = rsb.Listener(self.scope,
                                 config            = self.config,
                                 receivingStrategy = receivingStrategy)
+        listener.addFilter(rsb.filter.MethodFilter(method =  'REQUEST'))
         listener.addHandler(self._handleRequest)
         return listener
 
@@ -269,10 +272,6 @@ class LocalMethod (Method):
                             config = self.config)
 
     def _handleRequest(self, request):
-        # Only accept request, if its method is 'REQUEST'.
-        if request.method is None or request.method != 'REQUEST':
-            return
-
         # Call the callable implementing the behavior of this
         # method. If it does not take an argument
         # (i.e. self.requestType is type(None)), call it without
@@ -407,6 +406,7 @@ class RemoteMethod (Method):
 
     def makeListener(self):
         listener = rsb.Listener(self.scope, config = self.config)
+        listener.addFilter(rsb.filter.MethodFilter(method = 'REPLY'))
         listener.addHandler(self._handleReply)
         return listener
 
@@ -415,10 +415,9 @@ class RemoteMethod (Method):
                             config = self.config)
 
     def _handleReply(self, event):
-        if event.method is None            \
-                or event.method != 'REPLY' \
-                or not event.causes:
+        if not event.causes:
             return
+
         key = event.causes[0]
         with self._lock:
             # We can receive reply events which aren't actually
