@@ -29,11 +29,18 @@ import uuid
 from rsb.introspection import ParticipantInfo, ProcessInfo, HostInfo
 
 class ParticipantInfoTest (unittest.TestCase):
-    def testConstruction(self):
+    def testConstructionWithoutParentId(self):
         ParticipantInfo(kind  = 'listener',
                         id    = uuid.uuid4(),
                         scope = '/foo',
                         type  = str)
+
+    def testConstructionWithParentId(self):
+        ParticipantInfo(kind     = 'listener',
+                        id       = uuid.uuid4(),
+                        scope    = '/foo',
+                        type     = str,
+                        parentId = uuid.uuid4())
 
 class ProcessInfoTest (unittest.TestCase):
     def testConstructionDefaults(self):

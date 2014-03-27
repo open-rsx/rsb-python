@@ -1570,7 +1570,7 @@ def setDefaultParticipantConfig(config):
     global __defaultParticipantConfig
     __defaultParticipantConfig = config
 
-def createParticipant(clazz, scope, config, **kwargs):
+def createParticipant(clazz, scope, config, parent = None, **kwargs):
     if config is None:
         config = getDefaultParticipantConfig()
 
@@ -1578,10 +1578,10 @@ def createParticipant(clazz, scope, config, **kwargs):
         import rsb.introspection
 
     participant = clazz(scope, config = config, **kwargs)
-    participantCreationHook.run(participant)
+    participantCreationHook.run(participant, parent = parent)
     return participant
 
-def createListener(scope, config = None, **kwargs):
+def createListener(scope, config = None, parent = None, **kwargs):
     """
     Creates and returns a new L{Listener} for B{scope}.
 
@@ -1590,11 +1590,16 @@ def createListener(scope, config = None, **kwargs):
     @param config: The configuration that should be used by this
                    L{Listener}.
     @type config: ParticipantConfig
+    @param parent: C{None} or the L{Participant} which should be
+                   considered the parent of the new L{Listener}.
+    @type  parent: Participant or NoneType
     @return: a new L{Listener} object.
     """
-    return createParticipant(Listener, scope, config, **kwargs)
+    return createParticipant(Listener, scope, config, parent,
+                             **kwargs)
 
-def createInformer(scope, config = None, dataType = object, **kwargs):
+def createInformer(scope, config = None, parent = None, dataType = object,
+                   **kwargs):
     """
     Creates and returns a new L{Informer} for B{scope}.
 
@@ -1604,6 +1609,9 @@ def createInformer(scope, config = None, dataType = object, **kwargs):
     @param config: The configuration that should be used by this
                    L{Informer}.
     @type config: ParticipantConfig
+    @param parent: C{None} or the L{Participant} which should be
+                   considered the parent of the new L{Informer}.
+    @type  parent: Participant or NoneType
     @param dataType: A Python object designating the type of
                      objects that will be sent via the new
                      L{Informer}. Instances of subtypes are
@@ -1611,10 +1619,11 @@ def createInformer(scope, config = None, dataType = object, **kwargs):
     @type dataType: type
     @return: a new L{Informer} object.
     """
-    return createParticipant(Informer, scope, config, dataType = dataType,
+    return createParticipant(Informer, scope, config, parent,
+                             dataType = dataType,
                              **kwargs)
 
-def createLocalServer(scope, config = None,
+def createLocalServer(scope, config = None, parent = None,
                       object = None, expose = None, methods = None,
                       **kwargs):
     """
@@ -1631,6 +1640,9 @@ def createLocalServer(scope, config = None,
     @param config: The configuration that should be used by this
                    server.
     @type config: ParticipantConfig
+    @param parent: C{None} or the L{Participant} which should be
+                   considered the parent of the new server.
+    @type  parent: Participant or NoneType
     @param object: An object the methods of which should be exposed
                    via the newly created server. Has to be supplied in
                    combination with the expose keyword parameter.
@@ -1655,7 +1667,8 @@ def createLocalServer(scope, config = None,
 
     # Create the server object and potentially add methods.
     import rsb.patterns
-    server = createParticipant(rsb.patterns.LocalServer, scope, config,
+    server = createParticipant(rsb.patterns.LocalServer,
+                               scope, config, parent,
                                **kwargs)
     if object and expose:
         methods = [ (name, getattr(object, name), requestType, replyType)
@@ -1665,7 +1678,7 @@ def createLocalServer(scope, config = None,
             server.addMethod(name, func, requestType, replyType)
     return server
 
-def createRemoteServer(scope, config = None, **kwargs):
+def createRemoteServer(scope, config = None, parent = None, **kwargs):
     """
     Create a new L{RemoteServer} object for a remote server that
     provides its methods under B{scope}.
@@ -1677,19 +1690,24 @@ def createRemoteServer(scope, config = None, **kwargs):
     @param config: The transport configuration that should be used
                    for communication performed by this server.
     @type config: ParticipantConfig
+    @param parent: C{None} or the L{Participant} which should be
+                   considered the parent of the new server.
+    @type  parent: Participant or NoneType
     @rtype: rsb.patterns.RemoteServer
     """
     import rsb.patterns
     return createParticipant(rsb.patterns.RemoteServer, scope, config,
                              **kwargs)
 
-def createServer(scope, config = None,
-                 object = None, expose = None, methods = None):
+def createServer(scope, config = None, parent = None,
+                 object = None, expose = None, methods = None,
+                 **kwargs):
 
     """
     Like L{createLocalServer}.
 
     @deprecated: Use L{createLocalServer} instead.
     """
-    return createLocalServer(scope, config,
-                             object = object, expose = expose, methods = methods)
+    return createLocalServer(scope, config, parent,
+                             object = object, expose = expose, methods = methods,
+                             **kwargs)

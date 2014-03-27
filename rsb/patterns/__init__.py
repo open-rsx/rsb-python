@@ -267,6 +267,7 @@ class LocalMethod (Method):
         if self._allowParallelExecution:
             receivingStrategy = FullyParallelEventReceivingStrategy()
         listener = rsb.createListener(self.scope, self.config,
+                                      parent            = self,
                                       receivingStrategy = receivingStrategy)
         listener.addFilter(rsb.filter.MethodFilter(method =  'REQUEST'))
         listener.addHandler(self._handleRequest)
@@ -274,6 +275,7 @@ class LocalMethod (Method):
 
     def makeInformer(self):
         return rsb.createInformer(self.scope, self.config,
+                                  parent   = self,
                                   dataType = object)
 
     def _handleRequest(self, request):
@@ -374,6 +376,7 @@ class LocalServer (Server):
         """
         scope = self.scope.concat(rsb.Scope('/' + name))
         method = rsb.createParticipant(LocalMethod, scope, self.config,
+                                       parent                 = self,
                                        server                 = self,
                                        name                   = name,
                                        func                   = func,
@@ -410,13 +413,15 @@ class RemoteMethod (Method):
         self._lock  = threading.RLock()
 
     def makeListener(self):
-        listener = rsb.createListener(self.scope, self.config)
+        listener = rsb.createListener(self.scope, self.config,
+                                      parent = self)
         listener.addFilter(rsb.filter.MethodFilter(method = 'REPLY'))
         listener.addHandler(self._handleReply)
         return listener
 
     def makeInformer(self):
         return rsb.createInformer(self.scope, self.config,
+                                  parent   = self,
                                   dataType = self.requestType)
 
     def _handleReply(self, event):
@@ -567,6 +572,7 @@ class RemoteServer (Server):
             if method is None:
                 scope = self.scope.concat(rsb.Scope('/' + name))
                 method = rsb.createParticipant(RemoteMethod, scope, self.config,
+                                               parent      = self,
                                                server      = self,
                                                name        = name,
                                                requestType = object,

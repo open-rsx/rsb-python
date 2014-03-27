@@ -552,8 +552,8 @@ class HookTest(unittest.TestCase):
         setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
 
         self.creationCalls = []
-        def handleCreation(participant):
-            self.creationCalls.append(participant)
+        def handleCreation(participant, parent = None):
+            self.creationCalls.append((participant, parent))
         self.creationHandler = handleCreation
         rsb.participantCreationHook.addHandler(self.creationHandler)
 
@@ -571,14 +571,14 @@ class HookTest(unittest.TestCase):
         participant = None
         with rsb.createInformer('/') as informer:
             participant = informer
-            self.assertEqual(self.creationCalls, [ participant ])
+            self.assertEqual(self.creationCalls, [ (participant, None) ])
         self.assertEqual(self.destructionCalls, [ participant ])
 
     def testListener(self):
         participant = None
         with rsb.createListener('/') as listener:
             participant = listener
-            self.assertEqual(self.creationCalls, [ participant ])
+            self.assertEqual(self.creationCalls, [ (participant, None) ])
         self.assertEqual(self.destructionCalls, [ participant ])
 
     def testLocalServer(self):
@@ -586,10 +586,10 @@ class HookTest(unittest.TestCase):
         method = None
         with rsb.createLocalServer('/') as participant:
             server = participant
-            self.assertEqual(self.creationCalls, [ server ])
+            self.assertEqual(self.creationCalls, [ (server, None) ])
 
             method = server.addMethod('echo', lambda x: x)
-            self.assertTrue(method in self.creationCalls)
+            self.assertTrue((method, server) in self.creationCalls)
 
         self.assertTrue(server in self.destructionCalls)
         self.assertTrue(method in self.destructionCalls)
@@ -599,10 +599,10 @@ class HookTest(unittest.TestCase):
         method = None
         with rsb.createRemoteServer('/') as participant:
             server = participant
-            self.assertEqual(self.creationCalls, [ server ])
+            self.assertEqual(self.creationCalls, [ (server, None) ])
 
             method = server.echo
-            self.assertTrue(method in self.creationCalls)
+            self.assertTrue((method, server) in self.creationCalls)
 
         self.assertTrue(server in self.destructionCalls)
         self.assertTrue(method in self.destructionCalls)

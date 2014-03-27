@@ -64,11 +64,12 @@ class ParticipantInfo (object):
     @author: jmoringe
     """
 
-    def __init__(self, kind, id, scope, type):
+    def __init__(self, kind, id, scope, type, parentId = None):
         self.__kind  = kind
         self.__id    = id
         self.__scope = rsb.Scope.ensureScope(scope)
         self.__type  = type
+        self.__parentId = parentId
 
     def getKind(self):
         """
@@ -120,6 +121,18 @@ class ParticipantInfo (object):
         return self.__type
 
     type = property(getType)
+
+    def getParentId(self):
+        """
+        Return the unique id of the parent participant of the participant,
+        or C{None}, if the participant does not have a parent.
+
+        @return: C{None} or the unique id of the participant's parent.
+        @rtype: uuid.uuid or NoneType
+        """
+        return self.__parentId
+
+    parentId = property(getParentId)
 
     def __str__(self):
         return '<%s %s %s at 0x%0x>' \
@@ -355,11 +368,15 @@ class IntrospectionSender (object):
 
     host = property(getHost)
 
-    def addParticipant(self, participant):
-        info = ParticipantInfo(kind  = type(participant).__name__,
-                               id    = participant.id,
-                               scope = participant.scope,
-                               type  = object) # TODO
+    def addParticipant(self, participant, parent = None):
+        parentId = None
+        if parent:
+            parentId = parent.id
+        info = ParticipantInfo(kind     = type(participant).__name__,
+                               id       = participant.id,
+                               parentId = parentId,
+                               scope    = participant.scope,
+                               type     = object) # TODO
 
         self.__participants.append(info)
 
@@ -383,6 +400,8 @@ class IntrospectionSender (object):
         hello.kind  = participant.kind.lower()
         hello.id    = participant.id.get_bytes()
         hello.scope = participant.scope.toString()
+        if participant.parentId:
+            hello.parent = participant.parentId.get_bytes()
 
         host = hello.host
         if not self.host.id is None:
@@ -423,7 +442,7 @@ class IntrospectionSender (object):
 
 __sender = None
 
-def handleParticipantCreation(participant):
+def handleParticipantCreation(participant, parent = None):
     """
     This function is intended to be connected to
     L{rsb.participantCreationHook} and calls
@@ -438,7 +457,7 @@ def handleParticipantCreation(participant):
 
     if __sender is None:
         __sender = IntrospectionSender()
-    __sender.addParticipant(participant)
+    __sender.addParticipant(participant, parent = parent)
 
 rsb.participantCreationHook.addHandler(handleParticipantCreation)
 
