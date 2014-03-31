@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    with rsb.createServer('/example/server') as server:
+    with rsb.createLocalServer('/example/server') as server:
 
         # Create a function which processes requests and returns a
         # result. Note that the name of the function does not determine

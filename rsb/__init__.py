@@ -1551,9 +1551,9 @@ def createInformer(scope, config = None, dataType = object, **kwargs):
     return createParticipant(Informer, scope, config, dataType = dataType,
                              **kwargs)
 
-def createServer(scope, config = None,
-                 object = None, expose = None, methods = None,
-                 **kwargs):
+def createLocalServer(scope, config = None,
+                      object = None, expose = None, methods = None,
+                      **kwargs):
     """
     Create and return a new L{LocalServer} object that exposes its
     methods under B{scope}.
@@ -1619,3 +1619,14 @@ def createRemoteServer(scope, config = None, **kwargs):
     import rsb.patterns
     return createParticipant(rsb.patterns.RemoteServer, scope, config,
                              **kwargs)
+
+def createServer(scope, config = None,
+                 object = None, expose = None, methods = None):
+
+    """
+    Like L{createLocalServer}.
+
+    @deprecated: Use L{createLocalServer} instead.
+    """
+    return createLocalServer(scope, config,
+                             object = object, expose = expose, methods = methods)
