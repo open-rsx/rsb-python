@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -86,14 +86,16 @@ class Method (rsb.Participant):
 
     @author: jmoringe
     """
-    def __init__(self, scope, config, server, name, requestType, replyType): # TODO scope and name are redundant
+    def __init__(self, scope, config,
+                 server, name, requestType, replyType): # TODO scope and name are redundant
         """
-        Create a new Method object for the method named B{name}
+        Create a new L{Method} object for the method named B{name}
         provided by B{server}.
 
         @param server: The remote or local server to which the method
                        is associated.
         @param name: The name of the method. Unique within a server.
+        @type  name: str
         @param requestType: The type of the request argument accepted
                             by the method.
         @type  requestType: type
@@ -170,20 +172,18 @@ class Server (rsb.Participant):
     @author: jmoringe
     """
 
-    def __init__(self, scope, config = None):
+    def __init__(self, scope, config):
         """
-        Create a new Server object that provides its methods under the
-        scope B{scope}.
+        Create a new L{Server} object that provides its methods under the
+        L{rsb.Scope} B{scope}.
 
         @param scope: The under which methods of the server are
                       provided.
+        @type  scope: rsb.Scope
         @param config: The transport configuration that should be used
                        for communication performed by this server.
-        @type config: ParticipantConfig
+        @type  config: rsb.ParticipantConfig
         """
-        if config is None:
-            config = rsb.getDefaultParticipantConfig()
-
         super(Server, self).__init__(scope, config)
 
         self.__active = False
@@ -260,16 +260,15 @@ class LocalMethod (Method):
         receivingStrategy = None
         if self._allowParallelExecution:
             receivingStrategy = FullyParallelEventReceivingStrategy()
-        listener = rsb.Listener(self.scope,
-                                config            = self.config,
-                                receivingStrategy = receivingStrategy)
+        listener = rsb.createListener(self.scope, self.config,
+                                      receivingStrategy = receivingStrategy)
         listener.addFilter(rsb.filter.MethodFilter(method =  'REQUEST'))
         listener.addHandler(self._handleRequest)
         return listener
 
     def makeInformer(self):
-        return rsb.Informer(self.scope, object,
-                            config = self.config)
+        return rsb.createInformer(self.scope, self.config,
+                                  dataType = object)
 
     def _handleRequest(self, request):
         # Call the callable implementing the behavior of this
@@ -326,19 +325,19 @@ class LocalServer (Server):
 
     @author: jmoringe
     """
-    def __init__(self, scope, config = None):
+    def __init__(self, scope, config):
         """
         Creates a new L{LocalServer} object that exposes methods under
-        a the scope B{scope}.
+        the L{rsb.Scope} B{scope}.
 
         @param scope: The scope under which the methods of the newly
                       created server should be provided.
-        @type scope: Scope
+        @type scope: rsb.Scope
         @param config: The transport configuration that should be used
-        for communication performed by this server.
-        @type config: ParticipantConfig
+                       for communication performed by this server.
+        @type config: rsb.ParticipantConfig
 
-        See also: L{createServer}
+        See also: L{rsb.createServer}
         """
         super(LocalServer, self).__init__(scope, config)
 
@@ -367,17 +366,17 @@ class LocalServer (Server):
         @return: The newly created method.
         @rtype: LocalMethod
         """
-        method = LocalMethod(self.scope.concat(rsb.Scope('/' + name)),
-                             config                 = self.config,
-                             server                 = self,
-                             name                   = name,
-                             func                   = func,
-                             requestType            = requestType,
-                             replyType              = replyType,
-                             allowParallelExecution = allowParallelExecution)
+        scope = self.scope.concat(rsb.Scope('/' + name))
+        method = rsb.createParticipant(LocalMethod, scope, self.config,
+                                       server                 = self,
+                                       name                   = name,
+                                       func                   = func,
+                                       requestType            = requestType,
+                                       replyType              = replyType,
+                                       allowParallelExecution = allowParallelExecution)
         super(LocalServer, self).addMethod(method)
         return method
-    
+
     def removeMethod(self, method):
         if isinstance(method, str):
             method = self.getMethod(method)
@@ -405,14 +404,14 @@ class RemoteMethod (Method):
         self._lock  = threading.RLock()
 
     def makeListener(self):
-        listener = rsb.Listener(self.scope, config = self.config)
+        listener = rsb.createListener(self.scope, self.config)
         listener.addFilter(rsb.filter.MethodFilter(method = 'REPLY'))
         listener.addHandler(self._handleReply)
         return listener
 
     def makeInformer(self):
-        return rsb.Informer(self.scope, self.requestType,
-                            config = self.config)
+        return rsb.createInformer(self.scope, self.config,
+                                  dataType = self.requestType)
 
     def _handleReply(self, event):
         if not event.causes:
@@ -538,18 +537,18 @@ class RemoteServer (Server):
 
     @author: jmoringe
     """
-    def __init__(self, scope, config = None):
+    def __init__(self, scope, config):
         """
         Create a new L{RemoteServer} object that provides its methods
         under the scope B{scope}.
 
         @param scope: The common super-scope under which the methods
-        of the remote created server are provided.
-        @type scope: Scope
-        @param config: The transport configuration that should be used
-        for communication performed by this server.
-        @type config: ParticipantConfig
-        @see: L{createRemoteServer}
+                      of the remote created server are provided.
+        @type scope: rsb.Scope
+        @param config: The configuration that should be used by this
+                       server.
+        @type config: rsb.ParticipantConfig
+        @see: L{rsb.createRemoteServer}
         """
         super(RemoteServer, self).__init__(scope, config)
 
@@ -560,11 +559,11 @@ class RemoteServer (Server):
         except AttributeError:
             method = self.getMethod(name)
             if method is None:
-                method = RemoteMethod(self.scope.concat(rsb.Scope('/' + name)),
-                                      config      = self.config,
-                                      server      = self,
-                                      name        = name,
-                                      requestType = object,
-                                      replyType   = object)
+                scope = self.scope.concat(rsb.Scope('/' + name))
+                method = rsb.createParticipant(RemoteMethod, scope, self.config,
+                                               server      = self,
+                                               name        = name,
+                                               requestType = object,
+                                               replyType   = object)
                 self.addMethod(method)
             return method

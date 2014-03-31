@@ -1235,8 +1235,7 @@ class Informer(Participant):
     @author: jmoringe
     """
 
-    def __init__(self, scope, theType,
-                 config       = None,
+    def __init__(self, scope, config, dataType,
                  configurator = None):
         """
         Constructs a new L{Informer} that publishes L{Event}s carrying
@@ -1244,24 +1243,26 @@ class Informer(Participant):
 
         @param scope: scope of the informer
         @type scope: Scope or accepted by Scope constructor
-        @param theType: A Python object designating the type of objects
-                        that will be sent via the new informer. Instances
-                        of subtypes are permitted as well.
-        @type theType: type
+        @param config: The configuration that should be used by this
+                       L{Informer}.
+        @type config: ParticipantConfig
+        @param dataType: A Python object designating the type of
+                         objects that will be sent via the new
+                         L{Informer}. Instances of subtypes are
+                         permitted as well.
+        @type dataType: type
         @param configurator: Out route configurator to manage sending
                              of events through out connectors.
         @todo: maybe provide an automatic type identifier deduction for default
                types?
+        @see: L{createInformer}
         """
-        if config is None:
-            config = getDefaultParticipantConfig()
-
         super(Informer, self).__init__(scope, config)
 
         self.__logger = getLoggerByClass(self.__class__)
 
         # TODO check that type can be converted
-        self.__type           = theType
+        self.__type           = dataType
         self.__sequenceNumber = 0
         self.__configurator   = None
 
@@ -1360,8 +1361,7 @@ class Listener(Participant):
     @author: jmoringe
     """
 
-    def __init__(self, scope,
-                 config            = None,
+    def __init__(self, scope, config,
                  configurator      = None,
                  receivingStrategy = None):
         """
@@ -1370,13 +1370,14 @@ class Listener(Participant):
         @param scope: The scope of the channel in which the new
                       listener should participate.
         @type scope: Scopeor or accepted by Scope constructor
+        @param config: The configuration that should be used by this
+                        L{Listener}.
+        @type config: ParticipantConfig
         @param configurator: An in route configurator to manage the
                              receiving of events from in connectors
                              and their filtering and dispatching.
+        @see: L{createListener}
         """
-        if config is None:
-            config = getDefaultParticipantConfig()
-
         super(Listener, self).__init__(scope, config)
 
         self.__logger = getLoggerByClass(self.__class__)
@@ -1510,31 +1511,49 @@ def setDefaultParticipantConfig(config):
     global __defaultParticipantConfig
     __defaultParticipantConfig = config
 
-def createListener(scope, config = None):
-    """
-    Creates a new Listener for the specified scope.
+def createParticipant(clazz, scope, config, **kwargs):
+    if config is None:
+        config = getDefaultParticipantConfig()
 
-    @param scope: the scope of the new Listener. Can be a Scope object or a string.
-    @type scope: Scope or accepted by Scope constructor
-    @return: a new Listener object.
-    """
-    return Listener(scope, config)
+    participant = clazz(scope, config = config, **kwargs)
+    return participant
 
-def createInformer(scope, config=None, dataType=object):
+def createListener(scope, config = None, **kwargs):
     """
-    Creates a new Informer in the specified scope.
+    Creates and returns a new L{Listener} for B{scope}.
 
-    @param scope: The scope of the new Informer. Can be a Scope object
-                  or a string.
-    @type scope: Scope or accepted by Scope constructor
-    @param dataType: the string representation of the data type used
-                     to select converters
-    @return: a new Informer object.
+    @param scope: the scope of the new L{Listener}. Can be a L{Scope} object or a string.
+    @type scope: Scope or accepted by L{Scope} constructor
+    @param config: The configuration that should be used by this
+                   L{Listener}.
+    @type config: ParticipantConfig
+    @return: a new L{Listener} object.
     """
-    return Informer(scope, dataType, config)
+    return createParticipant(Listener, scope, config, **kwargs)
 
-def createServer(scope, object = None, expose = None, methods = None,
-                 config = None):
+def createInformer(scope, config = None, dataType = object, **kwargs):
+    """
+    Creates and returns a new L{Informer} for B{scope}.
+
+    @param scope: The scope of the new L{Informer}. Can be a L{Scope}
+                  object or a string.
+    @type scope: Scope or accepted by L{Scope} constructor
+    @param config: The configuration that should be used by this
+                   L{Informer}.
+    @type config: ParticipantConfig
+    @param dataType: A Python object designating the type of
+                     objects that will be sent via the new
+                     L{Informer}. Instances of subtypes are
+                     permitted as well.
+    @type dataType: type
+    @return: a new L{Informer} object.
+    """
+    return createParticipant(Informer, scope, config, dataType = dataType,
+                             **kwargs)
+
+def createServer(scope, config = None,
+                 object = None, expose = None, methods = None,
+                 **kwargs):
     """
     Create and return a new L{LocalServer} object that exposes its
     methods under B{scope}.
@@ -1545,9 +1564,9 @@ def createServer(scope, object = None, expose = None, methods = None,
 
     @param scope: The scope under which the newly created server
                   should expose its methods.
-    @type scope: Scope or accepted by Scope constructor
-    @param config: The transport configuration that should be used
-                   for communication performed by this server.
+    @type scope: Scope or accepted by L{Scope} constructor
+    @param config: The configuration that should be used by this
+                   server.
     @type config: ParticipantConfig
     @param object: An object the methods of which should be exposed
                    via the newly created server. Has to be supplied in
@@ -1573,7 +1592,8 @@ def createServer(scope, object = None, expose = None, methods = None,
 
     # Create the server object and potentially add methods.
     import rsb.patterns
-    server = rsb.patterns.LocalServer(scope, config)
+    server = createParticipant(rsb.patterns.LocalServer, scope, config,
+                               **kwargs)
     if object and expose:
         methods = [ (name, getattr(object, name), requestType, replyType)
                     for (name, requestType, replyType) in expose ]
@@ -1582,7 +1602,7 @@ def createServer(scope, object = None, expose = None, methods = None,
             server.addMethod(name, func, requestType, replyType)
     return server
 
-def createRemoteServer(scope, config = None):
+def createRemoteServer(scope, config = None, **kwargs):
     """
     Create a new L{RemoteServer} object for a remote server that
     provides its methods under B{scope}.
@@ -1597,4 +1617,5 @@ def createRemoteServer(scope, config = None):
     @rtype: rsb.patterns.RemoteServer
     """
     import rsb.patterns
-    return rsb.patterns.RemoteServer(scope, config)
+    return createParticipant(rsb.patterns.RemoteServer, scope, config,
+                             **kwargs)

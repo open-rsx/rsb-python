@@ -24,7 +24,7 @@
 
 import unittest
 
-from rsb import Scope, Event, EventId, Informer, Listener
+from rsb import Scope, Event, EventId, createInformer, createListener
 import threading
 import uuid
 import rsb
@@ -102,8 +102,10 @@ class TransportTest(unittest.TestCase):
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ outConnector ])
         inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ inConnector ])
 
-        publisher = Informer(scope, str, configurator=outConfigurator)
-        listener = Listener(scope, configurator=inConfigurator)
+        publisher = createInformer(scope,
+                                   dataType     = str,
+                                   configurator = outConfigurator)
+        listener = createListener(scope, configurator = inConfigurator)
 
         receiver = SettingReceiver(scope)
         listener.addHandler(receiver)
@@ -147,7 +149,9 @@ class TransportTest(unittest.TestCase):
 
         outConnector = self._getOutConnector(sendScope, activate=False)
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ outConnector ])
-        informer = Informer(sendScope, str, configurator=outConfigurator)
+        informer = createInformer(sendScope,
+                                  dataType     = str,
+                                  configurator = outConfigurator)
 
         # set up listeners on the complete hierarchy
         listeners = []
@@ -157,7 +161,7 @@ class TransportTest(unittest.TestCase):
             inConnector = self._getInConnector(scope, activate=False)
             inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ inConnector ])
 
-            listener = Listener(scope, configurator=inConfigurator)
+            listener = createListener(scope, configurator=inConfigurator)
             listeners.append(listener)
 
             receiver = SettingReceiver(scope)

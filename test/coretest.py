@@ -200,7 +200,7 @@ class ScopeTest(unittest.TestCase):
         self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
 
     def testHash(self):
-        
+
         self.assertEqual(hash(Scope("/")), hash(Scope("/")))
         self.assertNotEqual(hash(Scope("/")), hash(Scope("/foo")))
         self.assertEqual(hash(Scope("/bla/foo")), hash(Scope("/bla/foo/")))
@@ -425,7 +425,9 @@ class InformerTest(unittest.TestCase):
 
     def setUp(self):
         self.defaultScope = Scope("/a/test")
-        self.informer = Informer(self.defaultScope, str)
+        self.informer = Informer(self.defaultScope,
+                                 rsb.getDefaultParticipantConfig(),
+                                 dataType = str)
 
     def tearDown(self):
         self.informer.deactivate()
@@ -463,7 +465,7 @@ class IntegrationTest(unittest.TestCase):
         Test that converters can be added to the global converter map without
         requiring a completely new instance of the default participant config.
         """
-        
+
         # prevent changes to the configuration from other tests
         setDefaultParticipantConfig(config=ParticipantConfig.fromDict({"transport.socket.enabled": "1"}))
 
@@ -482,7 +484,7 @@ class IntegrationTest(unittest.TestCase):
 
         registerGlobalConverter(FooTypeConverter())
 
-        config = getDefaultParticipantConfig() 
+        config = getDefaultParticipantConfig()
         # this will raise an exception if the converter is not available.
         # This assumes that socket transport is enabled as the only transport
         self.assertTrue(isinstance(Participant.getConnectors('out', config)[0].getConverterForDataType(FooType), FooTypeConverter))
@@ -493,9 +495,9 @@ class ContextManagerTest(unittest.TestCase):
         self.scope = rsb.Scope('/one/test')
         self.receivedCondition = Condition()
         self.receivedData = None
-    
+
     def testInformerListenerRoundtrip(self):
-        
+
         with rsb.createInformer(self.scope, dataType=str) as informer, \
              rsb.createListener(self.scope) as listener:
             def setReceived(event):
@@ -511,13 +513,13 @@ class ContextManagerTest(unittest.TestCase):
                 self.assertEqual(data, self.receivedData)
 
     def testRpcRoundtrip(self):
-        
+
         with rsb.createServer(self.scope) as server, \
              rsb.createRemoteServer(self.scope) as client:
-            
+
             methodName = 'test'
             data = 'bla'
-            
+
             server.addMethod(methodName, lambda x: x, str, str)
             self.assertEqual(data, client.test(data))
 
