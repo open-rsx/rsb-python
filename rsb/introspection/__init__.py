@@ -550,7 +550,16 @@ class IntrospectionSender (object):
         parentId = None
         if parent:
             parentId = parent.id
-        info = ParticipantInfo(kind     = type(participant).__name__,
+
+        def camelCaseToDashSeperated(name):
+            result = []
+            for i, c in enumerate(name):
+                if c.isupper() and i > 0 and name[i - 1].islower():
+                    result.append('-')
+                result.append(c.lower())
+            return ''.join(result)
+
+        info = ParticipantInfo(kind     = camelCaseToDashSeperated(type(participant).__name__ ),
                                id       = participant.id,
                                parentId = parentId,
                                scope    = participant.scope,
@@ -575,7 +584,7 @@ class IntrospectionSender (object):
 
     def sendHello(self, participant, query = None):
         hello = Hello()
-        hello.kind  = participant.kind.lower()
+        hello.kind  = participant.kind
         hello.id    = participant.id.get_bytes()
         hello.scope = participant.scope.toString()
         if participant.parentId:
