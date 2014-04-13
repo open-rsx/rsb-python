@@ -141,6 +141,49 @@ class ParticipantInfo (object):
     def __repr__(self):
         return str(self)
 
+__processStartTime = None
+
+def processStartTime():
+    """
+    Return the start time of the current process (or an approximation)
+    in fractional seconds since UNIX epoch.
+
+    @return: Start time in factional seconds since UNIX epoch.
+    @rtype: float
+    """
+    global __processStartTime
+
+    # Used cached value, if there is one.
+    if not __processStartTime is None:
+        return __processStartTime
+
+    # Try to determine the start time of the current process in a
+    # platform dependent way. Since all of these methods seem kind of
+    # error prone, allow failing silently and fall back to the default
+    # implementation below.
+    if 'linux' in sys.platform:
+        try:
+            import re
+
+            procStatContent = open('/proc/stat').read()
+            btimeEntry = re.match('(?:.|\n)*btime ([0-9]+)', procStatContent).group(1)
+            bootTimeUNIXSeconds = int(btimeEntry)
+
+            selfStatContent = open('/proc/self/stat').read()
+            startTimeBootJiffies = int(selfStatContent.split(' ')[21])
+
+            __processStartTime = (  float(bootTimeUNIXSeconds)
+                                  + float(startTimeBootJiffies) / 100.0)
+        except:
+            pass
+
+    # Default/fallback strategy: just use the current time.
+    if __processStartTime is None:
+        import time
+        __processStartTime = time.time()
+
+    return __processStartTime
+
 class ProcessInfo (object):
     """
     Instances of this class store information about operating system
@@ -158,10 +201,12 @@ class ProcessInfo (object):
                                 % (sys.version_info.major,
                                    sys.version_info.minor,
                                    sys.argv[0] or '<stdin>')), # TODO construct absolute path
-                 arguments   = sys.argv[1:]):
+                 arguments   = sys.argv[1:],
+                 startTime   = processStartTime()):
         self.__id          = id
         self.__programName = programName
         self.__arguments   = arguments
+        self.__startTime   = startTime
 
     def getId(self):
         """
@@ -196,6 +241,18 @@ class ProcessInfo (object):
         return self.__arguments
 
     arguments = property(getArguments)
+
+    def getStartTime(self):
+        """
+        Returns the start time of the process in fractional seconds
+        since UNIX epoch.
+
+        @return: start time in fractional seconds since UNIX epoch.
+        @rtype: float
+        """
+        return self.__startTime
+
+    startTime = property(getStartTime)
 
     def __str__(self):
         return '<%s %s [%d] at 0x%0x>' \
@@ -412,6 +469,7 @@ class IntrospectionSender (object):
         process.id           = str(self.process.id)
         process.program_name = self.process.programName
         map(process.commandline_arguments.append, self.process.arguments)
+        process.start_time   = int(self.process.startTime * 1000000.0)
 
         scope = participantScope(participant.id, self.__informer.scope)
         helloEvent = rsb.Event(scope = scope,
