@@ -57,13 +57,13 @@ def nullContext():
 class CommandStarter(object):
     """
     Starts a command and end it again using the python context manager protocol.
-    
+
     @author: jwienke
     """
 
     def __init__(self, command):
         self.__command = command
-        
+
     def __enter__(self):
         self.__open = subprocess.Popen(self.__command)
         time.sleep(5)
@@ -392,7 +392,7 @@ def defineProjectVersion(majorMinor):
     else:
         patchVersion = '0'
         print("Not on a release branch. Skipping patch version")
-        
+
     # if we were still not successful defining the commit hash, try to get it
     # using git log
     if lastCommit == 'archive':
@@ -442,7 +442,7 @@ setup(name='rsb-python',
       extras_require={
         'spread-transport':  ["SpreadModule>=1.5spread4"],
       },
-      
+
       dependency_links=['http://www.spread.org/files/SpreadModule-1.5spread4.tgz#egg=SpreadModule-1.5spread4'],
 
       packages=findRsbPackages(),
