@@ -36,6 +36,9 @@ from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
 from threading import Condition
 
+inProcessConfig = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
+socketConfig = ParticipantConfig.fromFile('test/with-socket.conf')
+
 class ParticipantConfigTest (unittest.TestCase):
 
     def testConstruction(self):
@@ -316,8 +319,7 @@ class EventTest(unittest.TestCase):
 class FactoryTest(unittest.TestCase):
 
     def setUp(self):
-        config = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
-        setDefaultParticipantConfig(config)
+        setDefaultParticipantConfig(inProcessConfig)
 
     def testDefaultParticipantConfig(self):
         self.assert_(rsb.getDefaultParticipantConfig())
@@ -424,6 +426,7 @@ class MetaDataTest(unittest.TestCase):
 class InformerTest(unittest.TestCase):
 
     def setUp(self):
+        setDefaultParticipantConfig(inProcessConfig)
         self.defaultScope = Scope("/a/test")
         self.informer = Informer(self.defaultScope, str)
 
@@ -465,7 +468,7 @@ class IntegrationTest(unittest.TestCase):
         """
         
         # prevent changes to the configuration from other tests
-        setDefaultParticipantConfig(config=ParticipantConfig.fromDict({"transport.socket.enabled": "1"}))
+        setDefaultParticipantConfig(socketConfig)
 
         class FooType(object):
             """
@@ -490,6 +493,7 @@ class IntegrationTest(unittest.TestCase):
 class ContextManagerTest(unittest.TestCase):
 
     def setUp(self):
+        setDefaultParticipantConfig(inProcessConfig)
         self.scope = rsb.Scope('/one/test')
         self.receivedCondition = Condition()
         self.receivedData = None
