@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
+# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -28,43 +28,48 @@ from rsb import ParticipantConfig
 import time
 from threading import Condition
 
+inProcessConfig = ParticipantConfig.fromDict({
+    'transport.inprocess.enabled' : '1'
+})
+
 class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
-  
+
         # Test creating a server without methods
-        server = rsb.createServer('/some/scope', config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
+        server = rsb.createServer('/some/scope', config = inProcessConfig)
         self.assertEqual(server.methods, [])
         server.deactivate()
-  
-        server = rsb.createServer(rsb.Scope('/some/scope'), config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
+
+        server = rsb.createServer(rsb.Scope('/some/scope'), config = inProcessConfig)
         self.assertEqual(server.methods, [])
         server.deactivate()
-  
+
         # Test creating a server with directly specified methods
         server = rsb.createServer(rsb.Scope('/some/scope'),
-                                  methods = [ ('foo', lambda x: x, str, str) ], config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
+                                  methods = [ ('foo', lambda x: x, str, str) ],
+                                  config  = inProcessConfig)
         self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
         server.deactivate()
-  
+
         # Test creating a server that exposes method of an existing
         # object
         class SomeClass (object):
             def bar(x):
                 pass
-  
+
         someObject = SomeClass()
         server = rsb.createServer(rsb.Scope('/some/scope'),
                                   object = someObject,
                                   expose = [ ('bar', str, None) ],
-                                  config=ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"}))
+                                  config = inProcessConfig)
         self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
-  
+
         # Cannot supply expose without object
         self.assertRaises(ValueError,
                           rsb.createServer,
                           '/some/scope',
                           expose  = [ ('bar', str, None) ])
-  
+
         # Cannot supply these simultaneously
         self.assertRaises(ValueError,
                           rsb.createServer,
@@ -76,58 +81,53 @@ class LocalServerTest (unittest.TestCase):
 
 class RoundTripTest (unittest.TestCase):
     def testRoundTrip(self):
-  
-        config = ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"})
-  
+
         localServer = rsb.createServer(
             '/roundtrip',
-            methods = [ ('addone', lambda x: long(x + 1), long, long) ], config=config)
-  
-        remoteServer = rsb.createRemoteServer('/roundtrip', config)
-  
+            methods = [ ('addone', lambda x: long(x + 1), long, long) ],
+            config  = inProcessConfig)
+
+        remoteServer = rsb.createRemoteServer('/roundtrip', inProcessConfig)
+
         # Call synchronously
         self.assertEqual(map(remoteServer.addone, range(100)),
                          range(1, 101))
-  
+
         # Call asynchronously
         self.assertEqual(map(lambda x: x.get(),
                              map(remoteServer.addone.async, range(100))),
                          range(1, 101))
-  
+
         localServer.deactivate()
         remoteServer.deactivate()
-          
+
     def testVoidMethods(self):
-          
-        config = ParticipantConfig.fromDict({"transport.socket.enabled" : "1"})
-          
-        localServer = rsb.createServer('/void', config=config)
+
+        localServer = rsb.createServer('/void', config = inProcessConfig)
         def nothing(e):
             pass
         localServer.addMethod("nothing", nothing, str)
-  
-        remoteServer = rsb.createRemoteServer('/void', config)
-          
+
+        remoteServer = rsb.createRemoteServer('/void', inProcessConfig)
+
         future = remoteServer.nothing.async("test")
         try:
             future.get(1)
         finally:
             localServer.deactivate()
             remoteServer.deactivate()
-            
+
     def testParallelCallOfOneMethod(self):
 
-        config = ParticipantConfig.fromDict({"transport.inprocess.enabled" : "1"})
-        
         class Counter(object):
             def __init__(self):
                 self.value = 0
         maxParallelCalls = Counter()
         currentCalls = []
         callLock = Condition()
-        
+
         try:
-            localServer = rsb.createServer('/takesometime', config=config)
+            localServer = rsb.createServer('/takesometime', config = inProcessConfig)
             def takeSomeTime(e):
                 with callLock:
                     currentCalls.append(e)
@@ -138,13 +138,13 @@ class RoundTripTest (unittest.TestCase):
                     currentCalls.remove(e)
                     callLock.notifyAll()
             localServer.addMethod("takeSomeTime", takeSomeTime, str, allowParallelExecution=True)
-    
-            remoteServer = rsb.createRemoteServer('/takesometime', config)
-    
+
+            remoteServer = rsb.createRemoteServer('/takesometime', inProcessConfig)
+
             remoteServer.takeSomeTime.async("test1")
             remoteServer.takeSomeTime.async("test2")
             remoteServer.takeSomeTime.async("test3")
-    
+
             numCalled = 0
             with callLock:
                 while maxParallelCalls.value < 3 and numCalled < 5:
@@ -169,4 +169,3 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(LocalServerTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RoundTripTest))
     return suite
-    
