@@ -35,6 +35,9 @@ import time
 from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
 
+inProcessConfig = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
+socketConfig = ParticipantConfig.fromFile('test/with-socket.conf')
+
 class ParticipantConfigTest (unittest.TestCase):
 
     def testConstruction(self):
@@ -199,7 +202,7 @@ class ScopeTest(unittest.TestCase):
         self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
 
     def testHash(self):
-        
+
         self.assertEqual(hash(Scope("/")), hash(Scope("/")))
         self.assertNotEqual(hash(Scope("/")), hash(Scope("/foo")))
         self.assertEqual(hash(Scope("/bla/foo")), hash(Scope("/bla/foo/")))
@@ -315,8 +318,7 @@ class EventTest(unittest.TestCase):
 class FactoryTest(unittest.TestCase):
 
     def setUp(self):
-        config = ParticipantConfig.fromDict({"transport.inprocess.enabled": "1"})
-        setDefaultParticipantConfig(config)
+        setDefaultParticipantConfig(inProcessConfig)
 
     def testDefaultParticipantConfig(self):
         self.assert_(rsb.getDefaultParticipantConfig())
@@ -423,6 +425,7 @@ class MetaDataTest(unittest.TestCase):
 class InformerTest(unittest.TestCase):
 
     def setUp(self):
+        setDefaultParticipantConfig(inProcessConfig)
         self.defaultScope = Scope("/a/test")
         self.informer = Informer(self.defaultScope, str)
 
@@ -462,9 +465,9 @@ class IntegrationTest(unittest.TestCase):
         Test that converters can be added to the global converter map without
         requiring a completely new instance of the default participant config.
         """
-        
+
         # prevent changes to the configuration from other tests
-        setDefaultParticipantConfig(config=ParticipantConfig.fromDict({"transport.socket.enabled": "1"}))
+        setDefaultParticipantConfig(socketConfig)
 
         class FooType(object):
             """
@@ -481,7 +484,7 @@ class IntegrationTest(unittest.TestCase):
 
         registerGlobalConverter(FooTypeConverter())
 
-        config = getDefaultParticipantConfig() 
+        config = getDefaultParticipantConfig()
         # this will raise an exception if the converter is not available.
         # This assumes that socket transport is enabled as the only transport
         self.assertTrue(isinstance(Participant.getConnectors('out', config)[0].getConverterForDataType(FooType), FooTypeConverter))
