@@ -412,6 +412,17 @@ with open(os.path.join('rsb', 'version.py.in'), 'r') as template:
     with open(os.path.join('rsb', 'version.py'), 'w') as target:
         target.write(template.read().replace('@VERSION@', version).replace('@COMMIT@', commit))
 
+# determine the protoc version we are working with
+protoc = find_executable("protoc")
+print('Using protoc executable from %s to determine the protobuf library version to use. Adjust PATH if something different is desired.' % protoc)
+proc = subprocess.Popen([protoc, '--version'], stdout=subprocess.PIPE)
+(versionOutput, _) = proc.communicate()
+protocVersionParts = versionOutput.split(' ')
+if len(protocVersionParts) != 2:
+    raise RuntimeError("Unexpected version out from protoc: '%s'" % versionOutput)
+protocVersion = protocVersionParts[1]
+print("I will request a protobuf library of version %s" % protocVersion)
+
 setup(name='rsb-python',
       version = version,
       description='''
@@ -436,7 +447,7 @@ setup(name='rsb-python',
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
 
-      install_requires=["protobuf"],
+      install_requires=["protobuf==%s" % protocVersion],
       setup_requires=["coverage", "setuptools-epydoc", "unittest-xml-reporting", "setuptools-lint"],
 
       extras_require={
