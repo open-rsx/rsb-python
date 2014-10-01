@@ -421,6 +421,22 @@ class ByteArrayConverter(Converter):
     def deserialize(self, data, wireSchema):
         return bytearray(data)
 
+class SchemaAndByteArrayConverter(Converter):
+    """
+    A converter which passes through the wireSchema as well as the original
+    byte array of a message.
+
+    @author: nkoester
+    """
+    def __init__(self):
+        super(SchemaAndByteArrayConverter, self).__init__(bytearray, tuple, '.*')
+
+    def serialize(self, data):
+        return data[1], data[0]
+
+    def deserialize(self, data, wireSchema):
+        return wireSchema, data
+
 class ProtocolBufferConverter(Converter):
     """
     This converter serializes and deserializes objects of protocol
