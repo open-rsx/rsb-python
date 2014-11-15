@@ -40,6 +40,7 @@ import os
 import uuid
 
 import rsb
+import rsb.version
 from rsb.util import getLoggerByClass
 import rsb.converter
 
@@ -203,12 +204,14 @@ class ProcessInfo (object):
                                      sys.argv[0] or '<stdin>')), # TODO construct absolute path
                  arguments     = sys.argv[1:],
                  startTime     = processStartTime(),
-                 executingUser = os.getlogin()):
+                 executingUser = os.getlogin(),
+                 rsbVersion    = rsb.version.getVersion()):
         self.__id            = id
         self.__programName   = programName
         self.__arguments     = arguments
         self.__startTime     = startTime
         self.__executingUser = executingUser
+        self.__rsbVersion    = rsbVersion
 
     def getId(self):
         """
@@ -268,6 +271,19 @@ class ProcessInfo (object):
         return self.__executingUser
 
     executingUser = property(getExecutingUser)
+
+    def getRSBVersion(self):
+        """
+        Return the version of the RSB implementation used in this process.
+
+        @return: Version string of the form::
+
+                   MAJOR.MINOR.REVISION[-COMMIT]
+        @rtype: str
+        """
+        return self.__rsbVersion
+
+    rsbVersion = property(getRSBVersion)
 
     def __str__(self):
         return '<%s %s [%d] at 0x%0x>' \
@@ -549,6 +565,7 @@ class IntrospectionSender (object):
         map(process.commandline_arguments.append, self.process.arguments)
         process.start_time     = int(self.process.startTime * 1000000.0)
         process.executing_user = self.process.executingUser
+        process.rsb_version    = self.process.rsbVersion
         scope = participantScope(participant.id, self.__informer.scope)
         helloEvent = rsb.Event(scope = scope,
                                data  = hello,
