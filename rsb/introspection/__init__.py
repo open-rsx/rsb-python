@@ -196,17 +196,19 @@ class ProcessInfo (object):
     """
 
     def __init__(self,
-                 id          = os.getpid(),
-                 programName = ('python%d.%d %s'
-                                % (sys.version_info.major,
-                                   sys.version_info.minor,
-                                   sys.argv[0] or '<stdin>')), # TODO construct absolute path
-                 arguments   = sys.argv[1:],
-                 startTime   = processStartTime()):
-        self.__id          = id
-        self.__programName = programName
-        self.__arguments   = arguments
-        self.__startTime   = startTime
+                 id            = os.getpid(),
+                 programName   = ('python%d.%d %s'
+                                  % (sys.version_info.major,
+                                     sys.version_info.minor,
+                                     sys.argv[0] or '<stdin>')), # TODO construct absolute path
+                 arguments     = sys.argv[1:],
+                 startTime     = processStartTime(),
+                 executingUser = os.getlogin()):
+        self.__id            = id
+        self.__programName   = programName
+        self.__arguments     = arguments
+        self.__startTime     = startTime
+        self.__executingUser = executingUser
 
     def getId(self):
         """
@@ -253,6 +255,19 @@ class ProcessInfo (object):
         return self.__startTime
 
     startTime = property(getStartTime)
+
+    def getExecutingUser(self):
+        """
+        Return the login- or account-name of the user executing the
+        process.
+
+        @return: login- or account-name of the user executing the
+                 process.
+        @rtype: str
+        """
+        return self.__executingUser
+
+    executingUser = property(getExecutingUser)
 
     def __str__(self):
         return '<%s %s [%d] at 0x%0x>' \
@@ -529,11 +544,11 @@ class IntrospectionSender (object):
         host.software_version = self.host.softwareVersion
 
         process = hello.process
-        process.id           = str(self.process.id)
-        process.program_name = self.process.programName
+        process.id             = str(self.process.id)
+        process.program_name   = self.process.programName
         map(process.commandline_arguments.append, self.process.arguments)
-        process.start_time   = int(self.process.startTime * 1000000.0)
-
+        process.start_time     = int(self.process.startTime * 1000000.0)
+        process.executing_user = self.process.executingUser
         scope = participantScope(participant.id, self.__informer.scope)
         helloEvent = rsb.Event(scope = scope,
                                data  = hello,

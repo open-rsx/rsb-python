@@ -46,6 +46,7 @@ class ProcessInfoTest (unittest.TestCase):
     def testConstructionDefaults(self):
         info = ProcessInfo()
         self.assertTrue(isinstance(info.id, int))
+        self.assertTrue(isinstance(info.executingUser, str))
 
 class HostInfoTest (unittest.TestCase):
     def testConstructionDefaults(self):
