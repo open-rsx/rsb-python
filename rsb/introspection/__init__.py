@@ -292,10 +292,18 @@ class HostInfo (object):
     """
 
     def __init__(self,
-                 id       = hostId(),
-                 hostname = os.uname()[1]): # TODO no os.gethostname(); whatever
-        self.__id       = id
-        self.__hostname = hostname
+                 id              = hostId(),
+                 hostname        = os.uname()[1], # TODO no os.gethostname(); whatever
+                 machineType     = os.uname()[4],
+                 machineVersion  = None,
+                 softwareType    = os.uname()[0].lower(),
+                 softwareVersion = os.uname()[2]):
+        self.__id              = id
+        self.__hostname        = hostname
+        self.__machineType     = machineType
+        self.__machineVersion  = machineVersion
+        self.__softwareType    = softwareType
+        self.__softwareVersion = softwareVersion
 
     def getId(self):
         """
@@ -312,15 +320,65 @@ class HostInfo (object):
         """
         Returns the hostname of the host.
 
-        @return: The hostname
+        @return: The hostname.
         @rtype: str
         """
         return self.__hostname
 
     hostname = property(getHostname)
 
+    def getMachineType(self):
+        """
+        Return the type of the machine, usually CPU architecture.
+
+        @return: The machine type when known.
+        @rtype: str or NoneType
+        """
+        return self.__machineType
+
+    machineType = property(getMachineType)
+
+    def getMachineVersion(self):
+        """
+        Returns the version of the machine within its type, usually
+        the CPU identification string.
+
+        @return: The machine version when known.
+        @rtype: str or NoneType
+        """
+        return self.__machineVersion
+
+    machineVersion = property(getMachineVersion)
+
+    def getSoftwareType(self):
+        """
+        Returns the type of the operating system running on the host,
+        usually the kernel name.
+
+        @return: The software type when known.
+        @rtype: str or NoneType
+        """
+        return self.__softwareType
+
+    softwareType = property(getSoftwareType)
+
+    def getSoftwareVersion(self):
+        """
+        Returns the version of the operating system within its type,
+        usually the kernel version string.
+
+        @return: The software version when known.
+        @rtype: str or NoneType
+        """
+        return self.__softwareVersion
+
+    softwareVersion = property(getSoftwareVersion)
+
     def __str__(self):
-        return '<%s %s at 0x%0x>' % (type(self).__name__, self.hostname, id(self))
+        return '<%s %s %s %s at 0x%0x>' \
+            % (type(self).__name__,
+               self.hostname, self.machineType, self.softwareType,
+               id(self))
 
     def __repr__(self):
         return str(self)
@@ -464,6 +522,11 @@ class IntrospectionSender (object):
         if not self.host.id is None:
             host.id = self.host.id
         host.hostname = self.host.hostname
+        host.machine_type = self.host.machineType
+        if not self.host.machineVersion is None:
+            host.machine_version = self.host.machineVersion
+        host.software_type = self.host.softwareType
+        host.software_version = self.host.softwareVersion
 
         process = hello.process
         process.id           = str(self.process.id)
