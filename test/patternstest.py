@@ -37,22 +37,22 @@ class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
 
         # Test creating a server without methods
-        server = rsb.createServer('/some/scope',
-                                  config = inProcessNoIntrospectionConfig)
-        self.assertEqual(server.methods, [])
-        server.deactivate()
+        with rsb.createServer('/some/scope',
+                              inProcessNoIntrospectionConfig) \
+            as server:
+            self.assertEqual(server.methods, [])
 
-        server = rsb.createServer(rsb.Scope('/some/scope'),
-                                  config = inProcessNoIntrospectionConfig)
-        self.assertEqual(server.methods, [])
-        server.deactivate()
+        with rsb.createServer(rsb.Scope('/some/scope'),
+                              inProcessNoIntrospectionConfig) \
+            as server:
+            self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
-        server = rsb.createServer(rsb.Scope('/some/scope'),
-                                  methods = [ ('foo', lambda x: x, str, str) ],
-                                  config  = inProcessNoIntrospectionConfig)
-        self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
-        server.deactivate()
+        with rsb.createServer(rsb.Scope('/some/scope'),
+                              methods = [ ('foo', lambda x: x, str, str) ],
+                              config  = inProcessNoIntrospectionConfig) \
+            as server:
+            self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
 
         # Test creating a server that exposes method of an existing
         # object
@@ -61,64 +61,60 @@ class LocalServerTest (unittest.TestCase):
                 pass
 
         someObject = SomeClass()
-        server = rsb.createServer(rsb.Scope('/some/scope'),
-                                  object = someObject,
-                                  expose = [ ('bar', str, None) ],
-                                  config = inProcessNoIntrospectionConfig)
-        self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
+        with rsb.createServer(rsb.Scope('/some/scope'),
+                              object = someObject,
+                              expose = [ ('bar', str, None) ],
+                              config = inProcessNoIntrospectionConfig) \
+            as server:
+            self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
 
-        # Cannot supply expose without object
-        self.assertRaises(ValueError,
-                          rsb.createServer,
-                          '/some/scope',
-                          expose  = [ ('bar', str, None) ])
+            # Cannot supply expose without object
+            self.assertRaises(ValueError,
+                              rsb.createServer,
+                              '/some/scope',
+                              expose  = [ ('bar', str, None) ])
 
-        # Cannot supply these simultaneously
-        self.assertRaises(ValueError,
-                          rsb.createServer,
-                          '/some/scope',
-                          object  = someObject,
-                          expose  = [ ('bar', str, None) ],
-                          methods = [ ('foo', lambda x: x, str, str) ])
-        server.deactivate()
+            # Cannot supply these simultaneously
+            self.assertRaises(ValueError,
+                              rsb.createServer,
+                              '/some/scope',
+                              object  = someObject,
+                              expose  = [ ('bar', str, None) ],
+                              methods = [ ('foo', lambda x: x, str, str) ])
 
 class RoundTripTest (unittest.TestCase):
     def testRoundTrip(self):
 
-        localServer = rsb.createServer(
-            '/roundtrip',
-            methods = [ ('addone', lambda x: long(x + 1), long, long) ],
-            config  = inProcessNoIntrospectionConfig)
+        with rsb.createServer('/roundtrip',
+                              methods = [ ('addone', lambda x: long(x + 1), long, long) ],
+                              config  = inProcessNoIntrospectionConfig) \
+            as localServer:
+            with rsb.createRemoteServer('/roundtrip',
+                                        inProcessNoIntrospectionConfig) \
+                as remoteServer:
 
-        remoteServer = rsb.createRemoteServer('/roundtrip', inProcessNoIntrospectionConfig)
+                # Call synchronously
+                self.assertEqual(map(remoteServer.addone, range(100)),
+                                 range(1, 101))
 
-        # Call synchronously
-        self.assertEqual(map(remoteServer.addone, range(100)),
-                         range(1, 101))
-
-        # Call asynchronously
-        self.assertEqual(map(lambda x: x.get(),
-                             map(remoteServer.addone.async, range(100))),
-                         range(1, 101))
-
-        localServer.deactivate()
-        remoteServer.deactivate()
+                # Call asynchronously
+                self.assertEqual(map(lambda x: x.get(),
+                                     map(remoteServer.addone.async, range(100))),
+                                 range(1, 101))
 
     def testVoidMethods(self):
 
-        localServer = rsb.createServer('/void', config = inProcessNoIntrospectionConfig)
-        def nothing(e):
-            pass
-        localServer.addMethod("nothing", nothing, str)
+        with rsb.createServer('/void', inProcessNoIntrospectionConfig) \
+             as localServer:
+            def nothing(e):
+                pass
+            localServer.addMethod("nothing", nothing, str)
 
-        remoteServer = rsb.createRemoteServer('/void', inProcessNoIntrospectionConfig)
-
-        future = remoteServer.nothing.async("test")
-        try:
-            future.get(1)
-        finally:
-            localServer.deactivate()
-            remoteServer.deactivate()
+            with rsb.createRemoteServer('/void',
+                                        inProcessNoIntrospectionConfig) \
+                 as remoteServer:
+                future = remoteServer.nothing.async("test")
+                future.get(1)
 
     def testParallelCallOfOneMethod(self):
 
@@ -129,8 +125,9 @@ class RoundTripTest (unittest.TestCase):
         currentCalls = []
         callLock = Condition()
 
-        try:
-            localServer = rsb.createServer('/takesometime', config = inProcessNoIntrospectionConfig)
+        with rsb.createServer('/takesometime',
+                              inProcessNoIntrospectionConfig) \
+            as localServer:
             def takeSomeTime(e):
                 with callLock:
                     currentCalls.append(e)
@@ -142,30 +139,23 @@ class RoundTripTest (unittest.TestCase):
                     callLock.notifyAll()
             localServer.addMethod("takeSomeTime", takeSomeTime, str, allowParallelExecution=True)
 
-            remoteServer = rsb.createRemoteServer('/takesometime', inProcessNoIntrospectionConfig)
+            with rsb.createRemoteServer('/takesometime',
+                                        inProcessNoIntrospectionConfig) \
+                as remoteServer:
 
-            remoteServer.takeSomeTime.async("test1")
-            remoteServer.takeSomeTime.async("test2")
-            remoteServer.takeSomeTime.async("test3")
+                remoteServer.takeSomeTime.async("test1")
+                remoteServer.takeSomeTime.async("test2")
+                remoteServer.takeSomeTime.async("test3")
 
-            numCalled = 0
-            with callLock:
-                while maxParallelCalls.value < 3 and numCalled < 5:
-                    numCalled = numCalled + 1
-                    callLock.wait()
-                if numCalled == 5:
-                    self.fail("Impossible to be called in parallel again")
-                else:
-                    self.assertEqual(3, maxParallelCalls.value)
-        finally:
-            try:
-                localServer.deactivate()
-            except:
-                pass
-            try:
-                remoteServer.deactivate()
-            except:
-                pass
+                numCalled = 0
+                with callLock:
+                    while maxParallelCalls.value < 3 and numCalled < 5:
+                        numCalled = numCalled + 1
+                        callLock.wait()
+                    if numCalled == 5:
+                        self.fail("Impossible to be called in parallel again")
+                    else:
+                        self.assertEqual(3, maxParallelCalls.value)
 
 def suite():
     suite = unittest.TestSuite()
