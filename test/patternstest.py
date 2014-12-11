@@ -37,20 +37,20 @@ class LocalServerTest (unittest.TestCase):
     def testConstruction(self):
 
         # Test creating a server without methods
-        with rsb.createServer('/some/scope',
-                              inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer('/some/scope',
+                                   inProcessNoIntrospectionConfig) \
             as server:
             self.assertEqual(server.methods, [])
 
-        with rsb.createServer(rsb.Scope('/some/scope'),
-                              inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer(rsb.Scope('/some/scope'),
+                                   inProcessNoIntrospectionConfig) \
             as server:
             self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
-        with rsb.createServer(rsb.Scope('/some/scope'),
-                              methods = [ ('foo', lambda x: x, str, str) ],
-                              config  = inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer(rsb.Scope('/some/scope'),
+                                   methods = [ ('foo', lambda x: x, str, str) ],
+                                   config  = inProcessNoIntrospectionConfig) \
             as server:
             self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
 
@@ -61,22 +61,22 @@ class LocalServerTest (unittest.TestCase):
                 pass
 
         someObject = SomeClass()
-        with rsb.createServer(rsb.Scope('/some/scope'),
-                              object = someObject,
-                              expose = [ ('bar', str, None) ],
-                              config = inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer(rsb.Scope('/some/scope'),
+                                   object = someObject,
+                                   expose = [ ('bar', str, None) ],
+                                   config = inProcessNoIntrospectionConfig) \
             as server:
             self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
 
             # Cannot supply expose without object
             self.assertRaises(ValueError,
-                              rsb.createServer,
+                              rsb.createLocalServer,
                               '/some/scope',
                               expose  = [ ('bar', str, None) ])
 
             # Cannot supply these simultaneously
             self.assertRaises(ValueError,
-                              rsb.createServer,
+                              rsb.createLocalServer,
                               '/some/scope',
                               object  = someObject,
                               expose  = [ ('bar', str, None) ],
@@ -85,9 +85,9 @@ class LocalServerTest (unittest.TestCase):
 class RoundTripTest (unittest.TestCase):
     def testRoundTrip(self):
 
-        with rsb.createServer('/roundtrip',
-                              methods = [ ('addone', lambda x: long(x + 1), long, long) ],
-                              config  = inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer('/roundtrip',
+                                   methods = [ ('addone', lambda x: long(x + 1), long, long) ],
+                                   config  = inProcessNoIntrospectionConfig) \
             as localServer:
             with rsb.createRemoteServer('/roundtrip',
                                         inProcessNoIntrospectionConfig) \
@@ -104,7 +104,7 @@ class RoundTripTest (unittest.TestCase):
 
     def testVoidMethods(self):
 
-        with rsb.createServer('/void', inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer('/void', inProcessNoIntrospectionConfig) \
              as localServer:
             def nothing(e):
                 pass
@@ -125,8 +125,8 @@ class RoundTripTest (unittest.TestCase):
         currentCalls = []
         callLock = Condition()
 
-        with rsb.createServer('/takesometime',
-                              inProcessNoIntrospectionConfig) \
+        with rsb.createLocalServer('/takesometime',
+                                   inProcessNoIntrospectionConfig) \
             as localServer:
             def takeSomeTime(e):
                 with callLock:
