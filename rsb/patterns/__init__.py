@@ -563,19 +563,25 @@ class RemoteServer (Server):
         """
         super(RemoteServer, self).__init__(scope, config)
 
+    def ensureMethod(self, name):
+        method = super(RemoteServer, self).getMethod(name)
+        if method is None:
+            scope = self.scope.concat(rsb.Scope('/' + name))
+            method = rsb.createParticipant(RemoteMethod, scope, self.config,
+                                           parent      = self,
+                                           server      = self,
+                                           name        = name,
+                                           requestType = object,
+                                           replyType   = object)
+            self.addMethod(method)
+        return method
+
+    def getMethod(self, name):
+        return self.ensureMethod(name)
+
     def __getattr__(self, name):
         # Treat missing attributes as methods.
         try:
-            super(RemoteServer, self).__getattr__(name)
+            return super(RemoteServer, self).__getattr__(name)
         except AttributeError:
-            method = self.getMethod(name)
-            if method is None:
-                scope = self.scope.concat(rsb.Scope('/' + name))
-                method = rsb.createParticipant(RemoteMethod, scope, self.config,
-                                               parent      = self,
-                                               server      = self,
-                                               name        = name,
-                                               requestType = object,
-                                               replyType   = object)
-                self.addMethod(method)
-            return method
+            return self.ensureMethod(name)

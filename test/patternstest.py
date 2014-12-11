@@ -116,6 +116,20 @@ class RoundTripTest (unittest.TestCase):
                 future = remoteServer.nothing.async("test")
                 future.get(1)
 
+    def testNonIdentifierMethodName(self):
+        serverScope = '/non-identifier-server'
+        methodName = 'non-identifier-method'
+        with rsb.createLocalServer(serverScope,
+                                   inProcessNoIntrospectionConfig) \
+            as localServer:
+            localServer.addMethod(methodName, lambda x: x, str, str)
+
+            with rsb.createRemoteServer(serverScope,
+                                        inProcessNoIntrospectionConfig) \
+                as remoteServer:
+                self.assertEqual(remoteServer.getMethod(methodName)('foo'),
+                                 'foo')
+
     def testParallelCallOfOneMethod(self):
 
         class Counter(object):
