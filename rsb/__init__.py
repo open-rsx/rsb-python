@@ -215,6 +215,13 @@ class ParticipantConfig (object):
 
         options = property(getOptions)
 
+        def __deepcopy__(self, memo):
+            result                  = copy.copy(self)
+            result.__converters     = copy.deepcopy(self.__converters, memo)
+            result.__converterRules = copy.deepcopy(self.__converterRules, memo)
+            result.__options        = copy.deepcopy(self.__options, memo)
+            return result
+
         def __str__(self):
             return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, converterRules = %s, options = %s]'
                     % (self.__name, self.__enabled, self.__converters, self.__converterRules, self.__options))
@@ -260,6 +267,12 @@ class ParticipantConfig (object):
         return self.__introspection
 
     introspection = property(getIntrospection)
+
+    def __deepcopy__(self, memo):
+        result              = copy.copy(self)
+        result.__transports = copy.deepcopy(self.__transports, memo)
+        result.__options    = copy.deepcopy(self.__options, memo)
+        return result
 
     def __str__(self):
         return 'ParticipantConfig[%s %s]' % (self.__transports.values(), self.__options)

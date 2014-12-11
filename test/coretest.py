@@ -25,6 +25,7 @@
 
 import os
 import uuid
+import copy
 
 import unittest
 
@@ -47,6 +48,21 @@ class ParticipantConfigTest (unittest.TestCase):
 
     def testConstruction(self):
         ParticipantConfig()
+
+    def testCopy(self):
+        transport = ParticipantConfig.Transport('socket',
+                                                options = { 'enabled': '1' })
+        config = ParticipantConfig(transports = { 'socket': transport })
+        config.introspection = True
+
+        copied = copy.deepcopy(config)
+        copied.introspection = False
+        copied.transports[0].enabled = False
+
+        # Assert source object is unmodified.
+        self.assertTrue(config.introspection)
+        self.assertTrue(config.transports[0].enabled)
+
 
     def testFromFile(self):
         config = ParticipantConfig.fromFile('test/smoke-test.conf')
