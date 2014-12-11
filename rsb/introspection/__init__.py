@@ -312,6 +312,13 @@ def hostId():
         or ('linux' in sys.platform and maybeRead('/ect/machine-id'))          \
         or None
 
+def machineType():
+    uname = os.uname()[4]
+    if uname == 'i686':
+        return 'x86'
+    else:
+        return uname
+
 class HostInfo (object):
     """
     Instances of this class store information about a host.
@@ -325,7 +332,7 @@ class HostInfo (object):
     def __init__(self,
                  id              = hostId(),
                  hostname        = os.uname()[1], # TODO no os.gethostname(); whatever
-                 machineType     = os.uname()[4],
+                 machineType     = machineType(),
                  machineVersion  = None,
                  softwareType    = os.uname()[0].lower(),
                  softwareVersion = os.uname()[2]):
