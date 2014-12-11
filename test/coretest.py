@@ -136,6 +136,14 @@ class ParticipantConfigTest (unittest.TestCase):
         # TODO how to test this?
         pass
 
+    def testMutation(self):
+        config = ParticipantConfig()
+
+        config.introspection = True
+        self.assertTrue(config.introspection)
+        config.setIntrospection(False)
+        self.assertFalse(config.introspection)
+
 class QualityOfServiceSpecTest(unittest.TestCase):
 
     def testConstruction(self):

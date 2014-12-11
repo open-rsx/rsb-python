@@ -263,10 +263,19 @@ class ParticipantConfig (object):
     def getQualityOfServiceSpec(self):
         return self.__qos
 
+    def setQualityOfServiceSpec(self, newValue):
+        self.__qos = newValue
+
+    qualityOfServiceSpec = property(getQualityOfServiceSpec,
+                                    setQualityOfServiceSpec)
+
     def getIntrospection(self):
         return self.__introspection
 
-    introspection = property(getIntrospection)
+    def setIntrospection(self, newValue):
+        self.__introspection = newValue
+
+    introspection = property(getIntrospection, setIntrospection)
 
     def __deepcopy__(self, memo):
         result              = copy.copy(self)
