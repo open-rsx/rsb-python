@@ -36,6 +36,7 @@ sender) part of the introspection architecture.
 
 import sys
 import os
+import platform
 
 import uuid
 
@@ -318,11 +319,13 @@ def hostId():
         or None
 
 def machineType():
-    uname = os.uname()[4]
-    if uname == 'i686':
+    result = platform.machine().lower()
+    if result in [ 'i368', 'i586', 'i686' ]:
         return 'x86'
+    elif result in [ 'x86_64', 'amd64' ]:
+        return 'x86_64'
     else:
-        return uname
+        return result
 
 class HostInfo (object):
     """
@@ -336,11 +339,11 @@ class HostInfo (object):
 
     def __init__(self,
                  id              = hostId(),
-                 hostname        = os.uname()[1], # TODO no os.gethostname(); whatever
+                 hostname        = platform.node(),
                  machineType     = machineType(),
                  machineVersion  = None,
-                 softwareType    = os.uname()[0].lower(),
-                 softwareVersion = os.uname()[2]):
+                 softwareType    = platform.system().lower(),
+                 softwareVersion = platform.release()):
         self.__id              = id
         self.__hostname        = hostname
         self.__machineType     = machineType
