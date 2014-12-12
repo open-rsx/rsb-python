@@ -223,7 +223,7 @@ class ParticipantConfig (object):
             return result
 
         def __str__(self):
-            return ('ParticipantConfig.Transport[%s, enabled = %s,  converters = %s, converterRules = %s, options = %s]'
+            return ('ParticipantConfig.Transport[%s, enabled = %s, converters = %s, converterRules = %s, options = %s]'
                     % (self.__name, self.__enabled, self.__converters, self.__converterRules, self.__options))
 
         def __repr__(self):
@@ -284,7 +284,7 @@ class ParticipantConfig (object):
         return result
 
     def __str__(self):
-        return 'ParticipantConfig[%s %s]' % (self.__transports.values(), self.__options)
+        return 'ParticipantConfig[%s, options = %s, qos = %s, introspection = %s]' % (self.__transports.values(), self.__options, self.__qos, self.__introspection)
 
     def __repr__(self):
         return str(self)
