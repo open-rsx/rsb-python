@@ -51,7 +51,7 @@ class ProcessInfoTest (unittest.TestCase):
 class HostInfoTest (unittest.TestCase):
     def testConstructionDefaults(self):
         info = HostInfo()
-        self.assertTrue(isinstance(info.id, str))
+        self.assertTrue(isinstance(info.id, str) or info.id is None)
         self.assertTrue(isinstance(info.machineType, str))
         self.assertTrue(isinstance(info.softwareType, str))
         self.assertTrue(isinstance(info.softwareVersion, str))

@@ -346,7 +346,7 @@ class HostInfo (object):
 
     def __init__(self,
                  id              = hostId(),
-                 hostname        = platform.node(),
+                 hostname        = platform.node().split('.')[0],
                  machineType     = machineType(),
                  machineVersion  = None,
                  softwareType    = platform.system().lower(),
@@ -510,7 +510,7 @@ class IntrospectionSender (object):
 
         self.__listener.addHandler(handle)
 
-        self.__server = rsb.createServer(processScope(self.__host.id,
+        self.__server = rsb.createServer(processScope(self.__host.id or self.__host.hostname,
                                                       str(self.__process.id)))
         def echo(event):
             metaData = event.metaData
@@ -572,7 +572,9 @@ class IntrospectionSender (object):
             hello.parent = participant.parentId.get_bytes()
 
         host = hello.host
-        if not self.host.id is None:
+        if self.host.id is None:
+            host.id = self.host.hostname
+        else:
             host.id = self.host.id
         host.hostname = self.host.hostname
         host.machine_type = self.host.machineType
