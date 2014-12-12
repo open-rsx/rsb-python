@@ -204,13 +204,18 @@ class ProcessInfo (object):
                                      sys.argv[0] or '<stdin>')), # TODO construct absolute path
                  arguments     = sys.argv[1:],
                  startTime     = processStartTime(),
-                 executingUser = os.getlogin(),
+                 executingUser = None,
                  rsbVersion    = rsb.version.getVersion()):
         self.__id            = id
         self.__programName   = programName
         self.__arguments     = arguments
         self.__startTime     = startTime
         self.__executingUser = executingUser
+        if not self.__executingUser:
+            try:
+                self.__executingUser = os.getlogin()
+            except OSError:
+                pass
         self.__rsbVersion    = rsbVersion
 
     def getId(self):
@@ -265,7 +270,7 @@ class ProcessInfo (object):
         process.
 
         @return: login- or account-name of the user executing the
-                 process.
+                 process or None if not determinable
         @rtype: str
         """
         return self.__executingUser
@@ -571,7 +576,8 @@ class IntrospectionSender (object):
         process.program_name   = self.process.programName
         map(process.commandline_arguments.append, self.process.arguments)
         process.start_time     = int(self.process.startTime * 1000000.0)
-        process.executing_user = self.process.executingUser
+        if self.process.executingUser:
+            process.executing_user = self.process.executingUser
         process.rsb_version    = self.process.rsbVersion
         scope = participantScope(participant.id, self.__informer.scope)
         helloEvent = rsb.Event(scope = scope,
