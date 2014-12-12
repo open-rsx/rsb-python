@@ -186,6 +186,13 @@ def processStartTime():
 
     return __processStartTime
 
+def programName():
+    import __main__
+    if hasattr(__main__, '__file__'):
+        return __main__.__file__
+    else:
+        return '<no script>'
+
 class ProcessInfo (object):
     """
     Instances of this class store information about operating system
@@ -202,8 +209,8 @@ class ProcessInfo (object):
                  programName   = ('python%d.%d %s'
                                   % (sys.version_info.major,
                                      sys.version_info.minor,
-                                     sys.argv[0] or '<stdin>')), # TODO construct absolute path
-                 arguments     = sys.argv[1:],
+                                     programName())),
+                 arguments     = sys.argv,
                  startTime     = processStartTime(),
                  executingUser = None,
                  rsbVersion    = rsb.version.getVersion()):
