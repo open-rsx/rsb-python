@@ -334,6 +334,16 @@ def machineType():
     else:
         return result
 
+def machineVersion():
+    if 'linux' in sys.platform:
+        import re
+
+        try:
+            cpuInfo = open('/proc/cpuinfo').read()
+            return re.match('(?:.|\n)*model name\t: ([^\n]+)', cpuInfo).group(1)
+        except:
+            return None
+
 class HostInfo (object):
     """
     Instances of this class store information about a host.
@@ -348,7 +358,7 @@ class HostInfo (object):
                  id              = hostId(),
                  hostname        = platform.node().split('.')[0],
                  machineType     = machineType(),
-                 machineVersion  = None,
+                 machineVersion  = machineVersion(),
                  softwareType    = platform.system().lower(),
                  softwareVersion = platform.release()):
         self.__id              = id
