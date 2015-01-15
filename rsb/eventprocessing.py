@@ -33,6 +33,7 @@ layer and the client interface.
 
 import copy
 import threading
+import Queue
 
 import rsb.util
 import rsb.filter
@@ -231,6 +232,70 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     def addFilter(self, f):
         with self.__mutex:
             self.__filters.append(f)
+
+class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
+    """
+    An L{EventReceivingStrategy} that dispatches events to multiple
+    handlers using a single thread and without queuing. Only a single buffer
+    is used to decouple the transport from the registered handlers. In case
+    the handler processing is slower than the transport, the transport will
+    block on inserting events into this strategy. Callers must ensure that they
+    are in no active call for #handle when deactivating this instance.
+
+    @author: jwienke
+    """
+
+    def __init__(self):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__filters = []
+        self.__mutex = threading.RLock()
+        self.__handlers = []
+        self.__queue = Queue.Queue(1)
+        self.__interrupted = False
+        self.__thread = threading.Thread(target=self.__work)
+        self.__thread.start()
+
+    def deactivate(self):
+        self.__interrupted = True
+        self.__queue.put(None, True)
+        self.__thread.join()
+
+    def __work(self):
+
+        while True:
+
+            event = self.__queue.get(True)
+            # interruption checking is handled here and not in the head of the
+            # loop since we need put an artificial item into the queue when
+            # deactivating this strategy and this item must never receive at
+            # any handler
+            if self.__interrupted:
+                return
+
+            with self.__mutex:
+                for f in self.__filters:
+                    if not f.match(event):
+                        return
+                for handler in self.__handlers:
+                    handler(event)
+
+    def handle(self, event):
+        self.__logger.debug("Processing event %s", event)
+        event.metaData.setDeliverTime()
+        self.__queue.put(event, True)
+
+    def addHandler(self, handler, wait):
+        with self.__mutex:
+            self.__handlers.append(handler)
+
+    def removeHandler(self, handler, wait):
+        with self.__mutex:
+            self.__handlers.remove(handler)
+
+    def addFilter(self, f):
+        with self.__mutex:
+            self.__filters.append(f)
+
 
 class EventSendingStrategy (object):
     def getConnectors(self):
