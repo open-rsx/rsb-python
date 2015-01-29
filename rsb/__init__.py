@@ -309,7 +309,7 @@ class ParticipantConfig (object):
 
         # Introspection options
         introspectionOptions = dict(sectionOptions('introspection'))
-        result.__introspection = introspectionOptions.get('enabled', '1') in [ '1', 'true', 'yes' ] # TODO ugly
+        result.__introspection = introspectionOptions.get('enabled', '0') in [ '1', 'true', 'yes' ] # TODO ugly
 
         return result
 
@@ -412,7 +412,7 @@ class ParticipantConfig (object):
 
         defaults = {
             'transport.socket.enabled': '1',
-            'introspection.enabled':    '1'
+            'introspection.enabled':    '0'
         }
         if platform.system() == 'Windows':
             partial = clazz.__fromFile("c:\\rsb.conf", defaults)
