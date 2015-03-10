@@ -903,7 +903,7 @@ class Event(object):
     """
 
     def __init__(self, id = None, scope = Scope("/"), method = None,
-                 data = None, type = None,
+                 data = None, type = object,
                  metaData=None, userInfos=None, userTimes=None, causes = None):
         """
         Constructs a new event with undefined type, root scope and no data.
@@ -938,6 +938,8 @@ class Event(object):
         self.__scope = Scope.ensureScope(scope)
         self.__method = method
         self.__data = data
+        if type is None:
+            raise ValueError("Type must not be None")
         self.__type = type
         if metaData is None:
             self.__metaData = MetaData()
