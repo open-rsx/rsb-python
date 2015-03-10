@@ -1336,6 +1336,8 @@ class Informer(Participant):
         self.__logger = getLoggerByClass(self.__class__)
 
         # TODO check that type can be converted
+        if dataType is None:
+            raise ValueError("dataType must not be None")
         self.__type           = dataType
         self.__sequenceNumber = 0
         self.__configurator   = None
