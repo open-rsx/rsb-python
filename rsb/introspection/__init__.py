@@ -48,6 +48,8 @@ import rsb.converter
 from rsb.protocol.introspection.Hello_pb2 import Hello
 from rsb.protocol.introspection.Bye_pb2 import Bye
 
+_displayName = None
+
 # Model
 
 class ParticipantInfo (object):
@@ -604,6 +606,8 @@ class IntrospectionSender (object):
         if self.process.executingUser:
             process.executing_user = self.process.executingUser
         process.rsb_version    = self.process.rsbVersion
+        if _displayName:
+            process.display_name = _displayName
         scope = participantScope(participant.id, self.__informer.scope)
         helloEvent = rsb.Event(scope = scope,
                                data  = hello,
@@ -676,6 +680,9 @@ def initialize(displayName=None):
     @param displayName: a user-defined process name to use in the introspection
     @type displayName: str or NoneType if not set
     """
+    global _displayName
+
+    _displayName = displayName
 
     # Register converters for introspection messages
     for clazz in [ Hello, Bye ]:

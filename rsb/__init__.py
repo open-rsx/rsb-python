@@ -56,9 +56,6 @@ try:
 except ImportError:
     pass
 
-_introspectionInitialized = False
-_introspectionMutex = threading.RLock()
-
 def haveSpread():
     """
     Indicates whether the installation of RSB has spread support.
@@ -66,14 +63,6 @@ def haveSpread():
     @return: True if spread is available, else False
     """
     return _spreadAvailable
-
-def _initializeIntrospection():
-    global _introspectionInitialized
-    import rsb.introspection
-    with _introspectionMutex:
-        if not _introspectionInitialized:
-            rsb.introspection.initialize()
-            _introspectionInitialized = True
 
 class QualityOfServiceSpec(object):
     """
@@ -1614,7 +1603,8 @@ class Listener(Participant):
         with self.__mutex:
             return list(self.__handlers)
 
-__defaultParticipantConfig = ParticipantConfig.fromDefaultSources()
+__defaultConfigurationOptions = _configDefaultSourcesToDict()
+__defaultParticipantConfig = ParticipantConfig.fromDict(__defaultConfigurationOptions)
 
 def getDefaultParticipantConfig():
     """
@@ -1630,6 +1620,18 @@ def setDefaultParticipantConfig(config):
     """
     global __defaultParticipantConfig
     __defaultParticipantConfig = config
+
+_introspectionDisplayName = __defaultConfigurationOptions.get('introspection.displayname')
+_introspectionInitialized = False
+_introspectionMutex = threading.RLock()
+
+def _initializeIntrospection():
+    global _introspectionInitialized
+    import rsb.introspection
+    with _introspectionMutex:
+        if not _introspectionInitialized:
+            rsb.introspection.initialize(_introspectionDisplayName)
+            _introspectionInitialized = True
 
 def createParticipant(clazz, scope, config, parent = None, **kwargs):
     if config is None:
