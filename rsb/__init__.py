@@ -208,6 +208,11 @@ def _configDefaultSourcesToDict(defaults={}):
     partial = _configFileToDict("rsb.conf", partial)
     return _configEnvironmentToDict(partial)
 
+_CONFIG_TRUE_VALUES = [ '1', 'true', 'yes' ]
+
+def _configValueIsTrue(value):
+    return value in _CONFIG_TRUE_VALUES
+
 class ParticipantConfig (object):
     """
     Objects of this class describe desired configurations for newly
@@ -236,7 +241,7 @@ class ParticipantConfig (object):
         """
         def __init__(self, name, options={}, converters=None):
             self.__name = name
-            self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes') # TODO ugly
+            self.__enabled = _configValueIsTrue(options.get('enabled', '0'))
 
             # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
@@ -375,7 +380,7 @@ class ParticipantConfig (object):
 
         # Introspection options
         introspectionOptions = dict(sectionOptions('introspection'))
-        result.__introspection = introspectionOptions.get('enabled', '1') in [ '1', 'true', 'yes' ] # TODO ugly
+        result.__introspection = _configValueIsTrue(introspectionOptions.get('enabled', '1'))
 
         return result
 
