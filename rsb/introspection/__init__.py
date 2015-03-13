@@ -48,12 +48,6 @@ import rsb.converter
 from rsb.protocol.introspection.Hello_pb2 import Hello
 from rsb.protocol.introspection.Bye_pb2 import Bye
 
-# Register converters for introspection messages
-
-for clazz in [ Hello, Bye ]:
-    converter = rsb.converter.ProtocolBufferConverter(messageClass = clazz)
-    rsb.converter.registerGlobalConverter(converter, replaceExisting = True)
-
 # Model
 
 class ParticipantInfo (object):
@@ -656,8 +650,6 @@ def handleParticipantCreation(participant, parent = None):
         __sender = IntrospectionSender()
     __sender.addParticipant(participant, parent = parent)
 
-rsb.participantCreationHook.addHandler(handleParticipantCreation)
-
 def handleParticipantDestruction(participant):
     """
     This function is intended to be connected to
@@ -676,4 +668,19 @@ def handleParticipantDestruction(participant):
         __sender.deactivate()
         __sender = None
 
-rsb.participantDestructionHook.addHandler(handleParticipantDestruction)
+def initialize(displayName=None):
+    """
+    Initializes the introspection module. Clients need to ensure that this
+    method is called only once.
+
+    @param displayName: a user-defined process name to use in the introspection
+    @type displayName: str or NoneType if not set
+    """
+
+    # Register converters for introspection messages
+    for clazz in [ Hello, Bye ]:
+        converter = rsb.converter.ProtocolBufferConverter(messageClass = clazz)
+        rsb.converter.registerGlobalConverter(converter, replaceExisting = True)
+
+    rsb.participantCreationHook.addHandler(handleParticipantCreation)
+    rsb.participantDestructionHook.addHandler(handleParticipantDestruction)

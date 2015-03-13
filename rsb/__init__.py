@@ -56,6 +56,9 @@ try:
 except ImportError:
     pass
 
+_introspectionInitialized = False
+_introspectionMutex = threading.RLock()
+
 def haveSpread():
     """
     Indicates whether the installation of RSB has spread support.
@@ -63,6 +66,14 @@ def haveSpread():
     @return: True if spread is available, else False
     """
     return _spreadAvailable
+
+def _initializeIntrospection():
+    global _introspectionInitialized
+    import rsb.introspection
+    with _introspectionMutex:
+        if not _introspectionInitialized:
+            rsb.introspection.initialize()
+            _introspectionInitialized = True
 
 class QualityOfServiceSpec(object):
     """
@@ -1601,7 +1612,7 @@ def createParticipant(clazz, scope, config, parent = None, **kwargs):
         config = getDefaultParticipantConfig()
 
     if config.introspection:
-        import rsb.introspection
+        _initializeIntrospection()
 
     participant = clazz(scope, config = config, **kwargs)
     participantCreationHook.run(participant, parent = parent)
