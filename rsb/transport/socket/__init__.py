@@ -606,8 +606,11 @@ class BusServer (Bus):
                 if sys.platform != 'darwin':
                     self.__logger.error('Unexpected timeout in acceptClients: "%s"', e)
             except Exception, e:
-                self.__logger.error('Exception in acceptClients: "%s"', e)
-                pass
+                if self.__active:
+                    self.__logger.error('Exception in acceptClients: "%s"', e,
+                                        exc_info=True)
+                else:
+                    self.__logger.info('Acceptor thread terminating')
 
     # Receiving notifications
 
@@ -643,6 +646,8 @@ class BusServer (Bus):
         if not self.__active:
             raise RuntimeError, 'Trying to deactivate inactive BusServer'
 
+        self.__active = False
+
         # If necessary, close the listening socket. This causes an
         # exception in the acceptor thread.
         self.__logger.info('Closing listen socket')
@@ -662,8 +667,6 @@ class BusServer (Bus):
         self.__logger.info('Waiting for acceptor thread')
         if not self.__acceptorThread is None:
             self.__acceptorThread.join()
-
-        self.__active = False
 
         super(BusServer, self).deactivate()
 
