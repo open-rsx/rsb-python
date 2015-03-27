@@ -142,6 +142,66 @@ class QualityOfServiceSpec(object):
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.__ordering, self.__reliability)
 
+def _configFileToDict(path, defaults={}):
+    parser = ConfigParser.RawConfigParser()
+    parser.read(path)
+    options = defaults
+    for section in parser.sections():
+        for (k, v) in parser.items(section):
+            options[section + '.' + k] = v.split('#')[0].strip()
+    return options
+
+def _configEnvironmentToDict(defaults={}):
+    options = defaults
+    for (key, value) in os.environ.items():
+        if key.startswith('RSB_'):
+            if value == '':
+                raise ValueError, 'The value of the environment variable %s is the empty string' % key
+            options[key[4:].lower().replace('_', '.')] = value
+    return options
+
+def _configDefaultSourcesToDict(defaults={}):
+    """
+    Obtain configuration options from multiple sources, store them
+    in a L{ParticipantConfig} object and return it. The following
+    sources of configuration information will be consulted:
+
+     1. C{/etc/rsb.conf}
+     2. C{$prefix/etc/rsb.conf}
+     3. C{~/.config/rsb.conf}
+     4. C{\$(PWD)/rsb.conf}
+     5. Environment Variables
+
+    @param defaults: dictionary with default options
+    @type defaults: dict of str -> str
+    @return: A dictionary object that contains the
+             merged configuration options from the sources
+             mentioned above.
+    @rtype: dict of str -> str
+
+    See also: L{_configFileToDict}, L{_configEnvironmentToDict}
+    """
+
+    import util
+
+    if 'transport.socket.enabled' not in defaults:
+        defaults['transport.socket.enabled'] = '1'
+    if 'introspection.enabled' not in defaults:
+        defaults['introspection.enabled'] = '0'
+    if platform.system() == 'Windows':
+        partial = _configFileToDict("c:\\rsb.conf", defaults)
+    else:
+        partial = _configFileToDict("/etc/rsb.conf", defaults)
+    partial = _configFileToDict("%s/etc/rsb.conf" % util.prefix(), partial)
+    partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"), partial)
+    partial = _configFileToDict("rsb.conf", partial)
+    return _configEnvironmentToDict(partial)
+
+_CONFIG_TRUE_VALUES = [ '1', 'true', 'yes' ]
+
+def _configValueIsTrue(value):
+    return value in _CONFIG_TRUE_VALUES
+
 class ParticipantConfig (object):
     """
     Objects of this class describe desired configurations for newly
@@ -170,7 +230,7 @@ class ParticipantConfig (object):
         """
         def __init__(self, name, options={}, converters=None):
             self.__name = name
-            self.__enabled = options.get('enabled', '0') in ('1', 'true', 'yes') # TODO ugly
+            self.__enabled = _configValueIsTrue(options.get('enabled', '0'))
 
             # Extract freestyle options for the transport.
             self.__options = dict([ (key, value) for (key, value) in options.items()
@@ -309,19 +369,9 @@ class ParticipantConfig (object):
 
         # Introspection options
         introspectionOptions = dict(sectionOptions('introspection'))
-        result.__introspection = introspectionOptions.get('enabled', '0') in [ '1', 'true', 'yes' ] # TODO ugly
+        result.__introspection = _configValueIsTrue(introspectionOptions.get('enabled', '0'))
 
         return result
-
-    @classmethod
-    def __fromFile(clazz, path, defaults={}):
-        parser = ConfigParser.RawConfigParser()
-        parser.read(path)
-        options = defaults
-        for section in parser.sections():
-            for (k, v) in parser.items(section):
-                options[section + '.' + k] = v.split('#')[0].strip()
-        return options
 
     @classmethod
     def fromDict(clazz, options):
@@ -342,24 +392,15 @@ class ParticipantConfig (object):
         # A comment
 
         @param path: File of path
-        @param defaults:  defaults
+        @param defaults: dictionary with default options
+        @type defaults: dict of str -> str
         @return: A new L{ParticipantConfig} object containing the
                  options read from B{path}.
         @rtype: ParticipantConfig
 
         See also: L{fromEnvironment}, L{fromDefaultSources}
         """
-        return clazz.__fromDict(clazz.__fromFile(path, defaults))
-
-    @classmethod
-    def __fromEnvironment(clazz, defaults={}):
-        options = defaults
-        for (key, value) in os.environ.items():
-            if key.startswith('RSB_'):
-                if value == '':
-                    raise ValueError, 'The value of the environment variable %s is the empty string' % key
-                options[key[4:].lower().replace('_', '.')] = value
-        return options
+        return clazz.__fromDict(_configFileToDict(path, defaults))
 
     @classmethod
     def fromEnvironment(clazz, defaults={}):
@@ -371,10 +412,8 @@ class ParticipantConfig (object):
 
         RSB_TRANSPORT_SPREAD_PORT -> transport spread port
 
-        @param defaults: A L{ParticipantConfig} object that supplies
-                         values for configuration options for which no
-                         environment variables are found.
-        @type defaults: ParticipantConfig
+        @param defaults: dictionary with default options
+        @type defaults: dict of str -> str
         @return: L{ParticipantConfig} object that contains the merged
                  configuration options from B{defaults} and relevant
                  environment variables.
@@ -382,7 +421,7 @@ class ParticipantConfig (object):
 
         See also: L{fromFile}, L{fromDefaultSources}
         """
-        return clazz.__fromDict(clazz.__fromEnvironment(defaults))
+        return clazz.__fromDict(_configEnvironmentToDict(defaults))
 
     @classmethod
     def fromDefaultSources(clazz, defaults={}):
@@ -397,9 +436,8 @@ class ParticipantConfig (object):
          4. C{\$(PWD)/rsb.conf}
          5. Environment Variables
 
-        @param defaults: A L{ParticipantConfig} object the options of
-                         which should be used as defaults.
-        @type defaults: ParticipantConfig
+        @param defaults: dictionary with default options
+        @type defaults: dict of str -> str
         @return: A L{ParticipantConfig} object that contains the
                  merged configuration options from the sources
                  mentioned above.
@@ -408,21 +446,7 @@ class ParticipantConfig (object):
         See also: L{fromFile}, L{fromEnvironment}
         """
 
-        import util
-
-        defaults = {
-            'transport.socket.enabled': '1',
-            'introspection.enabled':    '0'
-        }
-        if platform.system() == 'Windows':
-            partial = clazz.__fromFile("c:\\rsb.conf", defaults)
-        else:
-            partial = clazz.__fromFile("/etc/rsb.conf", defaults)
-        partial = clazz.__fromFile("%s/etc/rsb.conf" % util.prefix(), partial)
-        partial = clazz.__fromFile(os.path.expanduser("~/.config/rsb.conf"), partial)
-        partial = clazz.__fromFile("rsb.conf", partial)
-        options = clazz.__fromEnvironment(partial)
-        return clazz.__fromDict(options)
+        return clazz.__fromDict(_configDefaultSourcesToDict(defaults))
 
 def convertersFromTransportConfig(transport):
     """
@@ -1575,7 +1599,8 @@ class Listener(Participant):
         with self.__mutex:
             return list(self.__handlers)
 
-__defaultParticipantConfig = ParticipantConfig.fromDefaultSources()
+__defaultConfigurationOptions = _configDefaultSourcesToDict()
+__defaultParticipantConfig = ParticipantConfig.fromDict(__defaultConfigurationOptions)
 
 def getDefaultParticipantConfig():
     """
@@ -1592,12 +1617,24 @@ def setDefaultParticipantConfig(config):
     global __defaultParticipantConfig
     __defaultParticipantConfig = config
 
+_introspectionDisplayName = __defaultConfigurationOptions.get('introspection.displayname')
+_introspectionInitialized = False
+_introspectionMutex = threading.RLock()
+
+def _initializeIntrospection():
+    global _introspectionInitialized
+    import rsb.introspection
+    with _introspectionMutex:
+        if not _introspectionInitialized:
+            rsb.introspection.initialize(_introspectionDisplayName)
+            _introspectionInitialized = True
+
 def createParticipant(clazz, scope, config, parent = None, **kwargs):
     if config is None:
         config = getDefaultParticipantConfig()
 
     if config.introspection:
-        import rsb.introspection
+        _initializeIntrospection()
 
     participant = clazz(scope, config = config, **kwargs)
     participantCreationHook.run(participant, parent = parent)
