@@ -180,8 +180,12 @@ class SpreadReceiverTask(object):
                     if self.__wakeupGroup in message.groups:
                         continue
 
-                    fragment = FragmentedNotification()
-                    fragment.ParseFromString(message.message)
+                    try:
+                        fragment = FragmentedNotification()
+                        fragment.ParseFromString(message.message)
+                    except DecodeError:
+                        self.__logger.exception("Error decoding notification")
+                        continue
 
                     if self.__logger.isEnabledFor(logging.DEBUG):
                         data = str(fragment)
@@ -195,7 +199,11 @@ class SpreadReceiverTask(object):
                         # Create event from (potentially assembled)
                         # notification(s)
                         converter = self.__converterMap.getConverterForWireSchema(wireSchema)
-                        event = conversion.notificationToEvent(notification, joinedData, wireSchema, converter)
+                        try:
+                            event = conversion.notificationToEvent(notification, joinedData, wireSchema, converter)
+                        except Exception:
+                            self.__logger.exception("Unable to decode event. Ignoring and continuing.")
+                            continue
 
                         self.__logger.debug("Sending event to dispatch task: %s", event)
 
@@ -207,12 +215,8 @@ class SpreadReceiverTask(object):
                 elif isinstance(message, spread.MembershipMsgType):
                     self.__logger.info("Received membership message for group `%s'", message.group)
 
-            except rsb.converter.UnknownConverterError, e:
-                self.__logger.exception("Unable to deserialize message: %s", e)
-            except DecodeError, e:
-                self.__logger.exception("Error decoding notification: %s", e)
             except Exception, e:
-                self.__logger.exception("Error decoding notification: %s", e)
+                self.__logger.exception("Error processing new event")
                 raise e
 
         # leave task id group to clean up
