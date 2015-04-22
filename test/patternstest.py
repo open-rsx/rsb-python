@@ -132,11 +132,8 @@ class RoundTripTest (unittest.TestCase):
 
     def testParallelCallOfOneMethod(self):
 
-        class Counter(object):
-            def __init__(self):
-                self.value = 0
-        maxParallelCalls = Counter()
-        currentCalls = []
+        numParallelCalls = 3
+        runningCalls = [0]
         callLock = Condition()
 
         with rsb.createLocalServer('/takesometime',
@@ -144,32 +141,22 @@ class RoundTripTest (unittest.TestCase):
             as localServer:
             def takeSomeTime(e):
                 with callLock:
-                    currentCalls.append(e)
-                    maxParallelCalls.value = max(maxParallelCalls.value, len(currentCalls))
+                    runningCalls[0] = runningCalls[0] + 1
                     callLock.notifyAll()
-                time.sleep(2)
                 with callLock:
-                    currentCalls.remove(e)
-                    callLock.notifyAll()
-            localServer.addMethod("takeSomeTime", takeSomeTime, str, allowParallelExecution=True)
+                    while runningCalls[0] < numParallelCalls:
+                        callLock.wait()
+            localServer.addMethod("takeSomeTime", takeSomeTime,
+                                  str, allowParallelExecution=True)
 
             with rsb.createRemoteServer('/takesometime',
                                         inProcessNoIntrospectionConfig) \
                 as remoteServer:
 
-                remoteServer.takeSomeTime.async("test1")
-                remoteServer.takeSomeTime.async("test2")
-                remoteServer.takeSomeTime.async("test3")
-
-                numCalled = 0
-                with callLock:
-                    while maxParallelCalls.value < 3 and numCalled < 5:
-                        numCalled = numCalled + 1
-                        callLock.wait()
-                    if numCalled == 5:
-                        self.fail("Impossible to be called in parallel again")
-                    else:
-                        self.assertEqual(3, maxParallelCalls.value)
+                results = [remoteServer.takeSomeTime.async('call{}'.format(x))
+                           for x in range(numParallelCalls)]
+                for r in results:
+                    r.get(10)
 
 def suite():
     suite = unittest.TestSuite()
