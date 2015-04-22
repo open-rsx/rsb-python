@@ -554,9 +554,12 @@ class ContextManagerTest(unittest.TestCase):
             listener.addHandler(setReceived)
             data = 'our little test'
             informer.publishData(data)
+            start = time.time()
             with self.receivedCondition:
                 while self.receivedData is None:
-                    self.receivedCondition.wait()
+                    self.receivedCondition.wait(1)
+                    if time.time() > start + 10:
+                        break
                 self.assertEqual(data, self.receivedData)
 
     def testRpcRoundtrip(self):
