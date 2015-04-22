@@ -148,6 +148,28 @@ class SpreadConnection(object):
             raise ValueError("Not activated")
         return getattr(self.__mailbox, name)
 
+
+class RefCountingSpreadConnection(SpreadConnection):
+
+    def __init__(self, daemonName, spreadModule=spread):
+        SpreadConnection.__init__(self, daemonName, spreadModule=spreadModule)
+        self.__lock = threading.RLock()
+        self.__counter = 0
+
+    def activate(self):
+        with self.__lock:
+            if self.__counter == 0:
+                SpreadConnection.activate(self)
+            self.__counter += 1
+
+    def deactivate(self):
+        with self.__lock:
+            if self.__counter <= 0:
+                raise ValueError("deactivate called more times than activate")
+            self.__counter -= 1
+            if self.__counter == 0:
+                SpreadConnection.deactivate(self)
+
 class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
@@ -447,6 +469,10 @@ class TransportFactory(rsb.transport.TransportFactory):
     @author: jwienke
     """
 
+    def __init__(self):
+        self.__lock = threading.RLock()
+        self.__connectionByDaemon = {}
+
     def getName(self):
         return "spread"
 
@@ -459,12 +485,19 @@ class TransportFactory(rsb.transport.TransportFactory):
         else:
             return port
 
+    def __getSharedConnection(self, daemonName):
+        with self.__lock:
+            if daemonName not in self.__connectionByDaemon:
+                self.__connectionByDaemon[daemonName] = \
+                    RefCountingSpreadConnection(daemonName)
+            return self.__connectionByDaemon[daemonName]
+
     def createInPushConnector(self, converters, options):
         return InConnector(connection=SpreadConnection(
             self.__createDaemonName(options)), converters=converters)
 
     def createOutConnector(self, converters, options):
-        return OutConnector(connection=SpreadConnection(
+        return OutConnector(connection=self.__getSharedConnection(
             self.__createDaemonName(options)), converters=converters)
 
 def initialize():
