@@ -43,9 +43,11 @@ def getConnector(scope,
     kwargs = {}
     if module:
         kwargs['spreadModule'] = module
-    connector = clazz(converters = rsb.converter.getGlobalConverterMap(bytearray),
-                      options    = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options,
-                      **kwargs)
+    options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
+    daemon = '{port}@{host}'.format(port=options['port'],
+                                    host=options['host'] or 'localhost')
+    connector = clazz(connection = rsbspread.SpreadConnection(daemon, **kwargs),
+                      converters = rsb.converter.getGlobalConverterMap(bytearray))
     connector.setScope(scope)
     if activate:
         connector.activate()
