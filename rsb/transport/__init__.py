@@ -31,6 +31,7 @@ common base classes and utility functions.
 @author: jwienke
 """
 
+import abc
 import copy
 import threading
 
@@ -194,13 +195,87 @@ class ConverterSelectingConnector (object):
 
     converterMap = property(getConverterMap)
 
-__connectors = []
-__connectorsLock = threading.Lock()
+class TransportFactory(object):
+    """
+    Interface for factories which are able to create L{Connector} instances for
+    a certain transport.
+    """
 
-def getConnectors():
-    with __connectorsLock:
-        return copy.copy(__connectors)
+    __metaclass__ = abc.ABCMeta
 
-def addConnector(clazz):
-    with __connectorsLock:
-        __connectors.append(clazz)
+    @abc.abstractmethod
+    def getName(self):
+        """
+        Returns the name representing this transport.
+
+        @return: name of the transport, non-empty
+        @rtype: str
+        """
+        pass
+
+    @abc.abstractmethod
+    def createInPushConnector(self, converters, options):
+        """
+        Creates a new instance of an L{InConnector} for the represented
+        transport.
+
+        @param converters: the converters to use for this type
+        @type converters: ConverterSelectionStrategy
+        @param options: options for the new connector
+        @type options: dict of str
+        @return: the new connector instance
+        @rtype: InConnector
+        """
+        pass
+
+    @abc.abstractmethod
+    def createOutConnector(self, converters, options):
+        """
+        Creates a new instance of an L{OutConnector} for the represented
+        transport.
+
+        @param converters: the converters to use for this type
+        @type converters: ConverterSelectionStrategy
+        @param options: options for the new connector
+        @type options: dict of str
+        @return: the new connector instance
+        @rtype: OutConnector
+        """
+        pass
+
+
+__factoriesByName = {}
+__factoryLock = threading.Lock()
+
+def registerTransport(factory):
+    """
+    Registers a new transport.
+
+    @param factory: the factory for the transport
+    @type factory: TransportFactory
+    @raise ValueError: there is already a transport registered with this name
+                       or the given factory argument is invalid
+    """
+
+    if factory is None:
+        raise ValueError("None cannot be a TransportFactory")
+    with __factoryLock:
+        if factory.getName() in __factoriesByName:
+            raise ValueError(
+                "There is already a transport with name {name}".format(
+                    name=factory.getName()))
+        __factoriesByName[factory.getName()] = factory
+
+def getTransportFactory(name):
+    """
+    Returns a l{TransportFactory} instance for the transport with the given
+    name.
+
+    @param name: name of the transport
+    @type name: str
+    @return: the l{TransportFactory} instance
+    @rtype: TransportFactory
+    @raise KeyError: there is not transport with the given name
+    """
+    with __factoryLock:
+        return __factoriesByName[name]

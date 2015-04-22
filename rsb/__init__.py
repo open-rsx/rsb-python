@@ -64,6 +64,25 @@ def haveSpread():
     """
     return _spreadAvailable
 
+__defaultTransportsRegistered = False
+__transportRegistrationLock = threading.RLock()
+def __registerDefaultTransports():
+    """
+    Registers all available transports.
+    """
+    global __defaultTransportsRegistered
+    with __transportRegistrationLock:
+        if __defaultTransportsRegistered:
+            return
+        __defaultTransportsRegistered = True
+        import rsb.transport.local
+        rsb.transport.local.initialize()
+        import rsb.transport.socket
+        rsb.transport.socket.initialize()
+        if haveSpread():
+            import rsb.transport.rsbspread
+            rsb.transport.rsbspread.initialize()
+
 class QualityOfServiceSpec(object):
     """
     Specification of desired quality of service settings for sending
@@ -1295,36 +1314,18 @@ class Participant(object):
 
         transports = []
         for transport in config.getTransports():
-            if transport.getName() == 'spread':
-                if not haveSpread():
-                    raise ValueError, "Spread transport not enabled as the python spread module cannot be found in the running interpreter"
-                from transport import rsbspread
-                if direction == 'in':
-                    klass = rsbspread.InConnector
-                elif direction == 'out':
-                    klass = rsbspread.OutConnector
-                else:
-                    assert(False)
-            elif transport.getName() == 'socket':
-                import rsb.transport.socket
-                if direction == 'in':
-                    klass = rsb.transport.socket.InPushConnector
-                elif direction == 'out':
-                    klass = rsb.transport.socket.OutConnector
-                else:
-                    assert(False)
-            elif transport.getName() == 'inprocess':
-                import rsb.transport.local
-                if direction == 'in':
-                    klass = rsb.transport.local.InConnector
-                elif direction == 'out':
-                    klass = rsb.transport.local.OutConnector
-                else:
-                    assert(False)
+            factory = rsb.transport.getTransportFactory(transport.getName())
+            converters = convertersFromTransportConfig(transport)
+            if direction == 'in':
+                transports.append(
+                    factory.createInPushConnector(converters,
+                                                  transport.getOptions()))
+            elif direction == 'out':
+                transports.append(
+                    factory.createOutConnector(converters,
+                                               transport.getOptions()))
             else:
-                raise ValueError, 'No such transport: "%s"' % transport.getName()
-            transports.append(klass(converters = convertersFromTransportConfig(transport),
-                                    options    = transport.getOptions()))
+                assert(False)
         return transports
 
 class Informer(Participant):
@@ -1636,6 +1637,7 @@ def _initializeIntrospection():
 def createParticipant(clazz, scope, config, parent = None, **kwargs):
     if config is None:
         config = getDefaultParticipantConfig()
+    __registerDefaultTransports()
 
     if config.introspection:
         _initializeIntrospection()

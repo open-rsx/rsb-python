@@ -376,8 +376,6 @@ class InConnector(Connector,
         else:
             self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
 
-rsb.transport.addConnector(InConnector)
-
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
     def __init__(self, **kwargs):
@@ -415,4 +413,24 @@ class OutConnector(Connector,
                 # TODO(jmoringe): propagate error
                 self.__logger.warning("Error sending message, status code = %s", sent)
 
-rsb.transport.addConnector(OutConnector)
+class TransportFactory(rsb.transport.TransportFactory):
+    """
+    L{TransportFactory} implementation for the spread transport.
+
+    @author: jwienke
+    """
+
+    def getName(self):
+        return "spread"
+
+    def createInPushConnector(self, converters, options):
+        return InConnector(converters=converters, options=options)
+
+    def createOutConnector(self, converters, options):
+        return OutConnector(converters=converters, options=options)
+
+def initialize():
+    try:
+        rsb.transport.registerTransport(TransportFactory())
+    except ValueError:
+        pass
