@@ -188,10 +188,10 @@ class SpreadReceiverTask(object):
                         continue
 
                     if self.__logger.isEnabledFor(logging.DEBUG):
-                        data = str(fragment)
-                        if len(data) > 5000:
-                            data = data[:5000] + " [... truncated for printing]"
-                        self.__logger.debug("Received notification fragment from bus: %s", data)
+                        self.__logger.debug("Received notification fragment from bus (%s/%s), data length: %s",
+                                            fragment.data_part,
+                                            fragment.num_data_parts,
+                                            len(fragment.notification.data))
 
                     assembled = self.__assemblyPool.add(fragment)
                     if assembled:
