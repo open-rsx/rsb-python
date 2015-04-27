@@ -45,6 +45,14 @@ from rsb import haveSpread
 
 logging.basicConfig(level=logging.INFO)
 
+import rsb.transport.local
+rsb.transport.local.initialize()
+import rsb.transport.socket
+rsb.transport.socket.initialize()
+if haveSpread():
+    import rsb.transport.rsbspread
+    rsb.transport.rsbspread.initialize()
+
 class ConfigSettingTestSuite (unittest.TestSuite):
     def run(self, *args):
         rsb.getDefaultParticipantConfig()

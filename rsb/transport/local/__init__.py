@@ -150,3 +150,25 @@ class InConnector(transport.InConnector):
         action = self.__observerAction
         if action is not None:
             action(event)
+
+class TransportFactory(transport.TransportFactory):
+    """
+    L{TransportFactory} implementation for the local transport.
+
+    @author: jwienke
+    """
+
+    def getName(self):
+        return "inprocess"
+
+    def createInPushConnector(self, converters, options):
+        return InConnector(converters=converters, options=options)
+
+    def createOutConnector(self, converters, options):
+        return OutConnector(converters=converters, options=options)
+
+def initialize():
+    try:
+        transport.registerTransport(TransportFactory())
+    except ValueError:
+        pass

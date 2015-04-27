@@ -807,8 +807,6 @@ class InPushConnector (Connector,
                                                converter  = converter)
         self.__action(event)
 
-rsb.transport.addConnector(InPushConnector)
-
 class OutConnector (Connector,
                     rsb.transport.OutConnector):
     """
@@ -833,4 +831,24 @@ class OutConnector (Connector,
                                        data       = wireData)
         self.bus.handleOutgoing(notification)
 
-rsb.transport.addConnector(OutConnector)
+class TransportFactory(rsb.transport.TransportFactory):
+    """
+    L{TransportFactory} implementation for the socket transport.
+
+    @author: jwienke
+    """
+
+    def getName(self):
+        return "socket"
+
+    def createInPushConnector(self, converters, options):
+        return InPushConnector(converters=converters, options=options)
+
+    def createOutConnector(self, converters, options):
+        return OutConnector(converters=converters, options=options)
+
+def initialize():
+    try:
+        rsb.transport.registerTransport(TransportFactory())
+    except ValueError:
+        pass

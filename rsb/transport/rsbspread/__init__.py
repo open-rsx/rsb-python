@@ -116,6 +116,60 @@ class AssemblyPool(object):
                 del self.__assemblies[key]
                 return result
 
+class SpreadConnection(object):
+    """
+    A wrapper around a spread mailbox for some convenience.
+
+    @author: jwienke
+    """
+
+    def __init__(self, daemonName, spreadModule=spread):
+        self.__daemonName = daemonName
+        self.__spreadModule = spreadModule
+        self.__mailbox = None
+
+    def activate(self):
+        if self.__mailbox is not None:
+            raise ValueError("Already activated")
+        self.__mailbox = self.__spreadModule.connect(self.__daemonName)
+
+    def deactivate(self):
+        if self.__mailbox is None:
+            raise ValueError("Not activated")
+        self.__mailbox.disconnect()
+        self.__mailbox = None
+
+    def __getattr__(self, name):
+        """
+        Dispatches everything that is not implemented in here to the spread
+        mailbox object.
+        """
+        if self.__mailbox is None:
+            raise ValueError("Not activated")
+        return getattr(self.__mailbox, name)
+
+
+class RefCountingSpreadConnection(SpreadConnection):
+
+    def __init__(self, daemonName, spreadModule=spread):
+        SpreadConnection.__init__(self, daemonName, spreadModule=spreadModule)
+        self.__lock = threading.RLock()
+        self.__counter = 0
+
+    def activate(self):
+        with self.__lock:
+            if self.__counter == 0:
+                SpreadConnection.activate(self)
+            self.__counter += 1
+
+    def deactivate(self):
+        with self.__lock:
+            if self.__counter <= 0:
+                raise ValueError("deactivate called more times than activate")
+            self.__counter -= 1
+            if self.__counter == 0:
+                SpreadConnection.deactivate(self)
+
 class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
@@ -246,19 +300,11 @@ class Connector(rsb.transport.Connector,
 
     MAX_MSG_LENGTH = 100000
 
-    def __init__(self, options = {}, spreadModule = spread, **kwargs):
+    def __init__(self, connection, **kwargs):
         super(Connector, self).__init__(wireType = bytearray, **kwargs)
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
-
-        host = options.get('host', None)
-        port = options.get('port', '4803')
-        if host:
-            self.__daemonName = '%s@%s' % (port, host)
-        else:
-            self.__daemonName = port
-        self.__connection   = None
-        self.__spreadModule = spreadModule
+        self.__connection = connection
 
         self.__active = False
 
@@ -273,6 +319,11 @@ class Connector(rsb.transport.Connector,
 
     connection = property(getConnection)
 
+    def isActive(self):
+        return self.__active
+
+    active = property(isActive)
+
     def _getMsgType(self):
         return self.__msgType
 
@@ -282,12 +333,12 @@ class Connector(rsb.transport.Connector,
         if self.__active:
             raise RuntimeError, 'Trying to activate active Connector'
 
-        self.__logger.info("Activating spread connector with daemon name %s", self.__daemonName)
+        self.__logger.info("Activating spread connector with connection %s", self.__connection)
 
         try:
-            self.__connection = self.__spreadModule.connect(self.__daemonName)
+            self.__connection.activate()
         except Exception, e:
-            raise RuntimeError, 'could not connect to Spread daemon "%s": %s' % (self.__daemonName, e)
+            raise RuntimeError, 'could not connect SpreadConnection "%s": %s' % (self._connection, e)
 
         self.__active = True
 
@@ -299,9 +350,7 @@ class Connector(rsb.transport.Connector,
 
         self.__active = False
 
-        if not self.__connection is None:
-            self.__connection.disconnect()
-            self.__connection = None
+        self.__connection.deactivate()
 
         self.__logger.debug("SpreadConnector deactivated")
 
@@ -376,8 +425,6 @@ class InConnector(Connector,
         else:
             self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
 
-rsb.transport.addConnector(InConnector)
-
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
     def __init__(self, **kwargs):
@@ -388,7 +435,7 @@ class OutConnector(Connector,
     def handle(self, event):
         self.__logger.debug("Sending event: %s", event)
 
-        if self.connection is None:
+        if not self.active:
             self.__logger.warning("Connector not activated")
             return
 
@@ -415,4 +462,46 @@ class OutConnector(Connector,
                 # TODO(jmoringe): propagate error
                 self.__logger.warning("Error sending message, status code = %s", sent)
 
-rsb.transport.addConnector(OutConnector)
+class TransportFactory(rsb.transport.TransportFactory):
+    """
+    L{TransportFactory} implementation for the spread transport.
+
+    @author: jwienke
+    """
+
+    def __init__(self):
+        self.__lock = threading.RLock()
+        self.__connectionByDaemon = {}
+
+    def getName(self):
+        return "spread"
+
+    def __createDaemonName(self, options):
+
+        host = options.get('host', None)
+        port = options.get('port', '4803')
+        if host:
+            return '%s@%s' % (port, host)
+        else:
+            return port
+
+    def __getSharedConnection(self, daemonName):
+        with self.__lock:
+            if daemonName not in self.__connectionByDaemon:
+                self.__connectionByDaemon[daemonName] = \
+                    RefCountingSpreadConnection(daemonName)
+            return self.__connectionByDaemon[daemonName]
+
+    def createInPushConnector(self, converters, options):
+        return InConnector(connection=SpreadConnection(
+            self.__createDaemonName(options)), converters=converters)
+
+    def createOutConnector(self, converters, options):
+        return OutConnector(connection=self.__getSharedConnection(
+            self.__createDaemonName(options)), converters=converters)
+
+def initialize():
+    try:
+        rsb.transport.registerTransport(TransportFactory())
+    except ValueError:
+        pass
