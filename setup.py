@@ -406,7 +406,7 @@ def defineProjectVersion(majorMinor):
 
     return ("%s.%s" % (majorMinor, patchVersion), str(lastCommit))
 
-(version, commit) = defineProjectVersion('0.12')
+(version, commit) = defineProjectVersion('0.13')
 
 print("This is version %s-%s" % (version, commit))
 
