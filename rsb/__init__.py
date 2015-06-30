@@ -683,6 +683,8 @@ class Scope(object):
         return supers
 
     def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
         return self.__components == other.__components
 
     def __ne__(self, other):
