@@ -229,6 +229,10 @@ class ScopeTest(unittest.TestCase):
         self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/a/"))
         self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/c/"))
 
+    def testCompareOtherTypeNoCrash(self):
+        self.assertFalse(rsb.Scope("/foo") == "test")
+        self.assertFalse("test" == rsb.Scope("/foo"))
+
     def testHierarchyComparison(self):
 
         self.assertTrue(rsb.Scope("/a/").isSubScopeOf(rsb.Scope("/")))
