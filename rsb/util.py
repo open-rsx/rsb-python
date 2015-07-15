@@ -154,6 +154,7 @@ class OrderedQueueDispatcherPool(object):
             self.processingCondition = Condition()
 
     def __trueFilter(self, receiver, message):
+        # pylint: disable=unused-argument,no-self-use
         return True
 
     def __init__(self, threadPoolSize, delFunc, filterFunc=None):
@@ -289,7 +290,7 @@ class OrderedQueueDispatcherPool(object):
                     raise InterruptedError("Processing was interrupted")
 
                 # search the next job
-                for i in range(len(self.__receivers)):
+                for _ in range(len(self.__receivers)):
 
                     self.__currentPosition = self.__currentPosition + 1
                     realPos = self.__currentPosition % len(self.__receivers)

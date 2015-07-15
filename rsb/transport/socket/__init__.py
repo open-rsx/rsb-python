@@ -152,7 +152,8 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
                 'Short read when receiving notification payload')
         return notification
 
-    def bufferToNotification(self, serialized):
+    @staticmethod
+    def bufferToNotification(serialized):
         notification = Notification()
         notification.ParseFromString(serialized)
         return notification
@@ -194,7 +195,8 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.__file.write(notification)
             self.__file.flush()
 
-    def notificationToBuffer(self, notification):
+    @staticmethod
+    def notificationToBuffer(notification):
         return notification.SerializeToString()
 
     def handle(self, notification):
@@ -698,12 +700,12 @@ class BusServer(Bus):
 
 
 def removeConnector(bus, connector):
-    def removeAndMaybeKill(lock, dict):
+    def removeAndMaybeKill(lock, dictionary):
         with lock:
             if not bus.removeConnector(connector):
                 bus.deactivate()
-                del dict[[key for (key, value) in dict.items()
-                          if value is bus][0]]
+                del dictionary[[key for (key, value) in dictionary.items()
+                                if value is bus][0]]
 
     if isinstance(bus, BusClient):
         removeAndMaybeKill(__busClientsLock, __busClients)

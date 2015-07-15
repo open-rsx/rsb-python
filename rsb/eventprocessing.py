@@ -88,22 +88,19 @@ class EventReceivingStrategy(object):
 
     @author: jmoringe
     """
-    def __init__(self):
-        pass
-
     def addFilter(self, theFilter):
         raise NotImplementedError
 
     def removeFilter(self, theFilter):
         raise NotImplementedError
 
-    def addHandler(self, handler):
+    def addHandler(self, handler, wait):
         raise NotImplementedError
 
-    def removeHandler(self, hanlder):
+    def removeHandler(self, handler, wait):
         raise NotImplementedError
 
-    def handle(self):
+    def handle(self, event):
         raise NotImplementedError
 
 
@@ -136,6 +133,7 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
             self.__pool = None
 
     def __deliver(self, action, event):
+        # pylint: disable=no-self-use
         action(event)
 
     def __filter(self, action, event):

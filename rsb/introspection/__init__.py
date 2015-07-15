@@ -455,16 +455,16 @@ class HostInfo(object):
 
 # IntrospectionSender
 
-baseScope = rsb.Scope('/__rsb/introspection/')
-participantsScope = baseScope.concat(rsb.Scope('/participants/'))
-hostsScope = baseScope.concat(rsb.Scope('/hosts/'))
+BASE_SCOPE = rsb.Scope('/__rsb/introspection/')
+PARTICIPANTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/participants/'))
+HOSTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/hosts/'))
 
 
-def participantScope(participantId, baseScope=participantsScope):
+def participantScope(participantId, baseScope=PARTICIPANTS_SCOPE):
     return baseScope.concat(rsb.Scope('/' + str(participantId)))
 
 
-def processScope(hostId, processId, baseScope=hostsScope):
+def processScope(hostId, processId, baseScope=HOSTS_SCOPE):
     return (baseScope
             .concat(rsb.Scope('/' + hostId))
             .concat(rsb.Scope('/' + processId)))
@@ -492,8 +492,8 @@ class IntrospectionSender(object):
         self.__process = ProcessInfo()
         self.__host = HostInfo()
 
-        self.__informer = rsb.createInformer(participantsScope)
-        self.__listener = rsb.createListener(participantsScope)
+        self.__informer = rsb.createInformer(PARTICIPANTS_SCOPE)
+        self.__listener = rsb.createListener(PARTICIPANTS_SCOPE)
 
         def handle(event):
             # TODO use filter when we get conjunction filter
@@ -502,7 +502,7 @@ class IntrospectionSender(object):
 
             id = None
             participant = None
-            if len(event.scope.components) > len(participantsScope.components):
+            if len(event.scope.components) > len(PARTICIPANTS_SCOPE.components):
                 try:
                     id = uuid.UUID(event.scope.components[-1])
                     if id is not None:
@@ -668,7 +668,7 @@ def handleParticipantCreation(participant, parent=None):
     """
     global __sender
 
-    if participant.scope.isSubScopeOf(baseScope) \
+    if participant.scope.isSubScopeOf(BASE_SCOPE) \
        or not participant.config.introspection:
         return
 
@@ -687,7 +687,7 @@ def handleParticipantDestruction(participant):
     """
     global __sender
 
-    if participant.scope.isSubScopeOf(baseScope) \
+    if participant.scope.isSubScopeOf(BASE_SCOPE) \
        or not participant.config.introspection:
         return
 

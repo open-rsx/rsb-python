@@ -91,13 +91,13 @@ def __registerDefaultTransports():
         if __defaultTransportsRegistered:
             return
         __defaultTransportsRegistered = True
-        import rsb.transport.local
-        rsb.transport.local.initialize()
-        import rsb.transport.socket
-        rsb.transport.socket.initialize()
+        import rsb.transport.local as local
+        local.initialize()
+        import rsb.transport.socket as socket
+        socket.initialize()
         if haveSpread():
-            import rsb.transport.rsbspread
-            rsb.transport.rsbspread.initialize()
+            import rsb.transport.rsbspread as rsbspread
+            rsbspread.initialize()
 
 
 class QualityOfServiceSpec(object):
@@ -226,8 +226,6 @@ def _configDefaultSourcesToDict(defaults={}):
     See also: L{_configFileToDict}, L{_configEnvironmentToDict}
     """
 
-    import util
-
     if 'transport.socket.enabled' not in defaults:
         defaults['transport.socket.enabled'] = '1'
     if 'introspection.enabled' not in defaults:
@@ -236,7 +234,7 @@ def _configDefaultSourcesToDict(defaults={}):
         partial = _configFileToDict("c:\\rsb.conf", defaults)
     else:
         partial = _configFileToDict("/etc/rsb.conf", defaults)
-    partial = _configFileToDict("%s/etc/rsb.conf" % util.prefix(), partial)
+    partial = _configFileToDict("%s/etc/rsb.conf" % rsb.util.prefix(), partial)
     partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"),
                                 partial)
     partial = _configFileToDict("rsb.conf", partial)
@@ -492,7 +490,7 @@ class ParticipantConfig(object):
 
     @classmethod
     def fromDefaultSources(cls, defaults={}):
-        """
+        r"""
         Obtain configuration options from multiple sources, store them
         in a L{ParticipantConfig} object and return it. The following
         sources of configuration information will be consulted:
@@ -1731,10 +1729,10 @@ _introspectionMutex = threading.RLock()
 
 def _initializeIntrospection():
     global _introspectionInitialized
-    import rsb.introspection
+    import rsb.introspection as introspection
     with _introspectionMutex:
         if not _introspectionInitialized:
-            rsb.introspection.initialize(_introspectionDisplayName)
+            introspection.initialize(_introspectionDisplayName)
             _introspectionInitialized = True
 
 
@@ -1839,8 +1837,8 @@ def createLocalServer(scope, config=None, parent=None,
         raise ValueError('object and expose have to supplied together')
 
     # Create the server object and potentially add methods.
-    import rsb.patterns
-    server = createParticipant(rsb.patterns.LocalServer,
+    import rsb.patterns as patterns
+    server = createParticipant(patterns.LocalServer,
                                scope, config, parent,
                                **kwargs)
     if object and expose:
@@ -1869,8 +1867,8 @@ def createRemoteServer(scope, config=None, parent=None, **kwargs):
     @type  parent: Participant or NoneType
     @rtype: rsb.patterns.RemoteServer
     """
-    import rsb.patterns
-    return createParticipant(rsb.patterns.RemoteServer, scope, config,
+    import rsb.patterns as patterns
+    return createParticipant(patterns.RemoteServer, scope, config,
                              **kwargs)
 
 

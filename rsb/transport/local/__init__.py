@@ -95,6 +95,7 @@ class OutConnector(transport.OutConnector):
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
+        # pylint: disable=unused-argument
         transport.OutConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
 
@@ -120,6 +121,7 @@ class InConnector(transport.InConnector):
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
+        # pylint: disable=unused-argument
         transport.InConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         self.__scope = None

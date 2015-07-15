@@ -378,7 +378,8 @@ class Connector(rsb.transport.Connector,
 
         self.__logger.debug("SpreadConnector deactivated")
 
-    def _groupName(self, scope):
+    @staticmethod
+    def _groupName(scope):
         hashSum = hashlib.md5()
         hashSum.update(scope.toString())
         return hashSum.hexdigest()[:-1]
@@ -483,7 +484,7 @@ class OutConnector(Connector,
 
             # TODO respect QoS
             scopes = event.scope.superScopes(True)
-            groupNames = map(self._groupName, scopes)
+            groupNames = [self._groupName(scope) for scope in scopes]
             self.__logger.debug("Sending to scopes %s which are groupNames %s",
                                 scopes, groupNames)
 
@@ -513,7 +514,8 @@ class TransportFactory(rsb.transport.TransportFactory):
     def getName(self):
         return "spread"
 
-    def __createDaemonName(self, options):
+    @staticmethod
+    def __createDaemonName(options):
 
         host = options.get('host', None)
         port = options.get('port', '4803')
