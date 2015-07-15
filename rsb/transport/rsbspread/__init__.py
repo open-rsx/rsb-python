@@ -420,10 +420,12 @@ class InConnector(Connector,
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
         if self.__receiveTask != None:
-            self.__logger.debug("Passing observer to receive task")
+            self.__logger.debug("Passing observer %s to receive task",
+                                observerAction)
             self.__receiveTask.setObserverAction(observerAction)
         else:
-            self.__logger.warn("Ignoring observer action %s because there is no dispatch task", observerAction)
+            self.__logger.debug("Storing observer %s until activation",
+                                observerAction)
 
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
