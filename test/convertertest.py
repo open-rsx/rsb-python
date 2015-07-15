@@ -26,20 +26,24 @@ import unittest
 import re
 
 import rsb.converter
-from rsb.converter import Converter, NoneConverter, StringConverter, ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
+from rsb.converter import Converter, NoneConverter, StringConverter, \
+    ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
     EventsByScopeMapConverter
 from rsb import Scope, Event, EventId
 from uuid import uuid4
 
+
 class ConflictingStringConverter(Converter):
     def __init__(self):
-        Converter.__init__(self, wireType=bytearray, wireSchema="utf-8-string", dataType=float)
+        Converter.__init__(self, wireType=bytearray,
+                           wireSchema="utf-8-string", dataType=float)
 
     def serialize(self, input):
         return str(input)
 
     def deserialize(self, input, wireSchema):
         return str(input)
+
 
 class ConverterMapTest(unittest.TestCase):
     def testAddConverter(self):
@@ -49,12 +53,15 @@ class ConverterMapTest(unittest.TestCase):
         self.assertRaises(Exception, map.addConverter, StringConverter())
         map.addConverter(StringConverter(), replaceExisting=True)
 
+
 class UnambiguousConverterMapTest(unittest.TestCase):
     def testAddConverter(self):
         map = UnambiguousConverterMap(str)
         map.addConverter(StringConverter())
-        self.assertRaises(Exception, map.addConverter, ConflictingStringConverter())
-        self.assertRaises(Exception, map.addConverter, ConflictingStringConverter(), True)
+        self.assertRaises(Exception, map.addConverter,
+                          ConflictingStringConverter())
+        self.assertRaises(Exception, map.addConverter,
+                          ConflictingStringConverter(), True)
         map.addConverter(StringConverter(), replaceExisting=True)
 
 
@@ -82,9 +89,12 @@ class PredicateConverterListTest(unittest.TestCase):
         self.assertIs(alwaysTrue.getConverterForWireSchema("bla"), v1)
 
         regex = PredicateConverterList(str)
-        regex.addConverter(v1,
-                           wireSchemaPredicate=lambda wireSchema: re.match(".*foo.*", wireSchema),
-                           dataTypePredicate=lambda dataType:   re.match(".*foo.*", dataType))
+        regex.addConverter(
+            v1,
+            wireSchemaPredicate=lambda wireSchema:
+                re.match(".*foo.*", wireSchema),
+            dataTypePredicate=lambda dataType:
+                re.match(".*foo.*", dataType))
         self.assertRaises(KeyError, regex.getConverterForWireSchema, "")
         self.assertRaises(KeyError, regex.getConverterForWireSchema, "bla")
         self.assertIs(regex.getConverterForWireSchema("foo"), v1)
@@ -95,12 +105,15 @@ class PredicateConverterListTest(unittest.TestCase):
         self.assertIs(regex.getConverterForDataType("foobar"), v1)
 
         mixed = PredicateConverterList(str)
-        mixed.addConverter(v1,
-                           wireSchemaPredicate=lambda wireSchema: re.match(".*foo.*", wireSchema),
-                           dataTypePredicate=lambda dataType:   re.match(".*foo.*", dataType))
+        mixed.addConverter(
+            v1,
+            wireSchemaPredicate=lambda wireSchema:
+                re.match(".*foo.*", wireSchema),
+            dataTypePredicate=lambda dataType:
+                re.match(".*foo.*", dataType))
         mixed.addConverter(v2,
                            wireSchemaPredicate=lambda wireSchema: True,
-                           dataTypePredicate=lambda dataType:   True)
+                           dataTypePredicate=lambda dataType: True)
         self.assertIs(mixed.getConverterForWireSchema(""), v2)
         self.assertIs(mixed.getConverterForWireSchema("bla"), v2)
         self.assertIs(mixed.getConverterForWireSchema("foo"), v1)
@@ -114,35 +127,45 @@ class PredicateConverterListTest(unittest.TestCase):
 class NoneConverterTest(unittest.TestCase):
     def testRoundtrip(self):
         converter = NoneConverter()
-        self.assertEquals(None, converter.deserialize(*converter.serialize(None)))
+        self.assertEquals(None,
+                          converter.deserialize(*converter.serialize(None)))
+
 
 class StringConverterTest(unittest.TestCase):
 
     def testRoundtripUtf8(self):
         converter = StringConverter()
         orig = u"asd" + unichr(270) + unichr(40928)
-        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
+        self.assertEquals(orig,
+                          converter.deserialize(*converter.serialize(orig)))
         orig = "i am a normal string"
-        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
+        self.assertEquals(orig,
+                          converter.deserialize(*converter.serialize(orig)))
 
     def testRoundtripAscii(self):
-        converter = StringConverter(wireSchema="ascii-string", encoding="ascii", dataType=str)
+        converter = StringConverter(wireSchema="ascii-string",
+                                    encoding="ascii", dataType=str)
         orig = "foooo"
-        self.assertEquals(orig, converter.deserialize(*converter.serialize(orig)))
+        self.assertEquals(orig,
+                          converter.deserialize(*converter.serialize(orig)))
 
     def testCharsetErrors(self):
-        asciiConverter = StringConverter(wireSchema="ascii-string", encoding="ascii")
-        self.assertRaises(UnicodeEncodeError, asciiConverter.serialize, u"test"+unichr(266))
+        asciiConverter = StringConverter(wireSchema="ascii-string",
+                                         encoding="ascii")
+        self.assertRaises(UnicodeEncodeError,
+                          asciiConverter.serialize, u"test"+unichr(266))
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
                           bytearray(range(133)), 'ascii-string')
 
+
 class EventsByScopeMapConverterTest(unittest.TestCase):
-    
+
     def testEmptyRoundtrip(self):
-        
+
         data = {}
         converter = EventsByScopeMapConverter()
-        self.assertEquals(data, converter.deserialize(*converter.serialize(data)))
+        self.assertEquals(data,
+                          converter.deserialize(*converter.serialize(data)))
 
     def testRoundtrip(self):
         self.maxDiff = None
@@ -163,27 +186,32 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
 
         converter = EventsByScopeMapConverter()
         roundtripped = converter.deserialize(*converter.serialize(data))
-        
+
         self.assertEqual(1, len(roundtripped))
         self.assertTrue(scope1 in roundtripped)
         self.assertEqual(len(data[scope1]), len(roundtripped[scope1]))
-        
+
         for orig, converted in zip(data[scope1], roundtripped[scope1]):
-        
+
             self.assertEqual(orig.id, converted.id)
             self.assertEqual(orig.scope, converted.scope)
-            # This test currently does not work correctly without a patch for the converter selection for fundamental types
+            # This test currently does not work correctly without a patch for
+            # the converter selection for fundamental types
             # self.assertEqual(orig.type, converted.type)
             self.assertEqual(orig.data, converted.data)
-            self.assertAlmostEqual(orig.metaData.createTime, converted.metaData.createTime)
+            self.assertAlmostEqual(orig.metaData.createTime,
+                                   converted.metaData.createTime)
             self.assertEqual(orig.causes, converted.causes)
+
 
 def makeStructBasedConverterTest(name, values):
     class NewTest(unittest.TestCase):
         def testRoundtrip(self):
             converter = rsb.converter.__dict__[name]()
             for value in values:
-                self.assertEquals(value, converter.deserialize(*converter.serialize(value)))
+                self.assertEquals(value,
+                                  converter.deserialize(
+                                      *converter.serialize(value)))
     testName = name + 'Test'
     NewTest.__name__ = testName
     globals()[testName] = NewTest
@@ -192,21 +220,32 @@ def makeStructBasedConverterTest(name, values):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ConverterMapTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(UnambiguousConverterMapTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(PredicateConverterListTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventsByScopeMapConverterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ConverterMapTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            UnambiguousConverterMapTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            PredicateConverterListTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            EventsByScopeMapConverterTest))
 
-    for args in [ ('DoubleConverter', [ 0.0, -1.0, 1.0 ]),
-                  ('FloatConverter',  [ 0.0, -1.0, 1.0 ]),
-                  ('Int32Converter',  [ 0L, -1L, 1L, -24378L, ((1L << 31L) - 1L) ]),
-                  ('Int64Converter',  [ 0L, -1L, 1L, -24378L, ((1L << 63L) - 1L) ]),
-                  ('Uint32Converter', [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]),
-                  ('Uint64Converter', [ 0L, 1L, 24378L, ((1L << 32L) - 1L) ]),
-                  ('BoolConverter',   [ True, False ]) ]:
-        suite.addTest(unittest.TestLoader()
-                      .loadTestsFromTestCase(makeStructBasedConverterTest(*args)))
+    for args in [
+            ('DoubleConverter', [0.0, -1.0, 1.0]),
+            ('FloatConverter', [0.0, -1.0, 1.0]),
+            ('Int32Converter', [0L, -1L, 1L, -24378L, ((1L << 31L) - 1L)]),
+            ('Int64Converter', [0L, -1L, 1L, -24378L, ((1L << 63L) - 1L)]),
+            ('Uint32Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
+            ('Uint64Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
+            ('BoolConverter', [True, False])]:
+        suite.addTest(
+            unittest.TestLoader().loadTestsFromTestCase(
+                makeStructBasedConverterTest(*args)))
 
     return suite

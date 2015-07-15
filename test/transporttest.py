@@ -32,6 +32,7 @@ import time
 import random
 import string
 
+
 class SettingReceiver(object):
 
     def __init__(self, scope):
@@ -46,6 +47,7 @@ class SettingReceiver(object):
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.scope)
+
 
 class TransportTest(unittest.TestCase):
     '''
@@ -84,7 +86,7 @@ class TransportTest(unittest.TestCase):
 
         with receiver.resultCondition:
             while receiver.resultEvent is None:
-                    receiver.resultCondition.wait(10)
+                receiver.resultCondition.wait(10)
             self.assertTrue(receiver.resultEvent)
             # ignore meta data here
             event.setMetaData(None)
@@ -96,16 +98,18 @@ class TransportTest(unittest.TestCase):
 
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
-        inConnector = self._getInConnector(scope, activate = False)
-        outConnector = self._getOutConnector(scope, activate = False)
+        inConnector = self._getInConnector(scope, activate=False)
+        outConnector = self._getOutConnector(scope, activate=False)
 
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ outConnector ])
-        inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ inConnector ])
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[outConnector])
+        inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+            connectors=[inConnector])
 
         publisher = createInformer(scope,
-                                   dataType     = str,
-                                   configurator = outConfigurator)
-        listener = createListener(scope, configurator = inConfigurator)
+                                   dataType=str,
+                                   configurator=outConfigurator)
+        listener = createListener(scope, configurator=inConfigurator)
 
         receiver = SettingReceiver(scope)
         listener.addHandler(receiver)
@@ -122,21 +126,21 @@ class TransportTest(unittest.TestCase):
         sentEvent.addCause(EventId(uuid.uuid4(), 1323))
         sentEvent.addCause(EventId(uuid.uuid4(), 42))
 
-        before = time.time()
         publisher.publishEvent(sentEvent)
 
         with receiver.resultCondition:
             while receiver.resultEvent is None:
                 receiver.resultCondition.wait(10)
-            if receiver.resultEvent == None:
+            if receiver.resultEvent is None:
                 self.fail("Listener did not receive an event")
-            receiveTime = time.time()
-            self.assertTrue(receiver.resultEvent.metaData.createTime
-                            <= receiver.resultEvent.metaData.sendTime
-                            <= receiver.resultEvent.metaData.receiveTime
-                            <= receiver.resultEvent.metaData.deliverTime)
-            sentEvent.metaData.receiveTime = receiver.resultEvent.metaData.receiveTime
-            sentEvent.metaData.deliverTime = receiver.resultEvent.metaData.deliverTime
+            self.assertTrue(receiver.resultEvent.metaData.createTime <=
+                            receiver.resultEvent.metaData.sendTime <=
+                            receiver.resultEvent.metaData.receiveTime <=
+                            receiver.resultEvent.metaData.deliverTime)
+            sentEvent.metaData.receiveTime = \
+                receiver.resultEvent.metaData.receiveTime
+            sentEvent.metaData.deliverTime = \
+                receiver.resultEvent.metaData.deliverTime
             self.assertEqual(sentEvent, receiver.resultEvent)
 
         listener.deactivate()
@@ -148,10 +152,11 @@ class TransportTest(unittest.TestCase):
         superScopes = sendScope.superScopes(True)
 
         outConnector = self._getOutConnector(sendScope, activate=False)
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ outConnector ])
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[outConnector])
         informer = createInformer(sendScope,
-                                  dataType     = str,
-                                  configurator = outConfigurator)
+                                  dataType=str,
+                                  configurator=outConfigurator)
 
         # set up listeners on the complete hierarchy
         listeners = []
@@ -159,7 +164,8 @@ class TransportTest(unittest.TestCase):
         for scope in superScopes:
 
             inConnector = self._getInConnector(scope, activate=False)
-            inConfigurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ inConnector ])
+            inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+                connectors=[inConnector])
 
             listener = createListener(scope, configurator=inConfigurator)
             listeners.append(listener)
@@ -177,8 +183,10 @@ class TransportTest(unittest.TestCase):
             with receiver.resultCondition:
                 while receiver.resultEvent is None:
                     receiver.resultCondition.wait(10)
-                if receiver.resultEvent == None:
-                    self.fail("Listener on scope %s did not receive an event" % receiver.scope)
+                if receiver.resultEvent is None:
+                    self.fail(
+                        "Listener on scope %s did not receive an event"
+                        % receiver.scope)
                 self.assertEqual(receiver.resultEvent.data, data)
 
     def testSendTimeAdaption(self):
@@ -187,7 +195,9 @@ class TransportTest(unittest.TestCase):
 
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = scope
-        event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
+        event.data = "".join(
+            random.choice(string.ascii_uppercase + string.ascii_lowercase +
+                          string.digits) for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
 

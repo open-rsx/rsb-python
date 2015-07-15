@@ -53,12 +53,15 @@ if haveSpread():
     import rsb.transport.rsbspread
     rsb.transport.rsbspread.initialize()
 
-class ConfigSettingTestSuite (unittest.TestSuite):
+
+class ConfigSettingTestSuite(unittest.TestSuite):
     def run(self, *args):
         rsb.getDefaultParticipantConfig()
-        rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromFile('test/with-spread.conf'))
+        rsb.setDefaultParticipantConfig(
+            rsb.ParticipantConfig.fromFile('test/with-spread.conf'))
 
         super(ConfigSettingTestSuite, self).run(*args)
+
 
 def suite():
     suite = ConfigSettingTestSuite()

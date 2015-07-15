@@ -38,6 +38,7 @@ import threading
 from rsb.util import getLoggerByClass
 import logging
 
+
 class Connector(object):
     """
     Superclass for transport-specific connector classes.
@@ -45,7 +46,7 @@ class Connector(object):
     @author: jwienke
     """
 
-    def __init__(self, wireType = None, **kwargs):
+    def __init__(self, wireType=None, **kwargs):
         """
         Creates a new connector with a serialization type wireType.
 
@@ -56,12 +57,13 @@ class Connector(object):
         self.__logger = getLoggerByClass(self.__class__)
 
         self.__wireType = None
-        self.__scope    = None
+        self.__scope = None
 
-        if wireType == None:
+        if wireType is None:
             raise ValueError("Wire type must be a type object, None given")
 
-        self.__logger.debug("Using specified converter map for wire-type %s", wireType)
+        self.__logger.debug("Using specified converter map for wire-type %s",
+                            wireType)
         self.__wireType = wireType
 
         # fails if still some arguments are left over
@@ -101,6 +103,7 @@ class Connector(object):
     def setQualityOfServiceSpec(self, qos):
         raise NotImplementedError()
 
+
 class InConnector(Connector):
     """
     Superclass for in-direction (that is, dealing with incoming
@@ -122,6 +125,7 @@ class InConnector(Connector):
         """
         pass
 
+
 class OutConnector(Connector):
     """
     Superclass for out-direction (that is, dealing with outgoing
@@ -139,7 +143,8 @@ class OutConnector(Connector):
         """
         raise NotImplementedError()
 
-class ConverterSelectingConnector (object):
+
+class ConverterSelectingConnector(object):
     """
     This class is intended to be used a superclass (or rather mixin
     class) for connector classes which have to store a map of
@@ -195,6 +200,7 @@ class ConverterSelectingConnector (object):
 
     converterMap = property(getConverterMap)
 
+
 class TransportFactory(object):
     """
     Interface for factories which are able to create L{Connector} instances for
@@ -247,6 +253,7 @@ class TransportFactory(object):
 __factoriesByName = {}
 __factoryLock = threading.Lock()
 
+
 def registerTransport(factory):
     """
     Registers a new transport.
@@ -265,6 +272,7 @@ def registerTransport(factory):
                 "There is already a transport with name {name}".format(
                     name=factory.getName()))
         __factoriesByName[factory.getName()] = factory
+
 
 def getTransportFactory(name):
     """

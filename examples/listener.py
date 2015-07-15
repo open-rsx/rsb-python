@@ -28,6 +28,7 @@ import logging
 
 import rsb
 
+
 def handle(event):
     print("Received event: %s" % event)
 

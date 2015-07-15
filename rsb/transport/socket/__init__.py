@@ -31,7 +31,7 @@ point-to-point socket connections to simulate a bus.
 
 import copy
 import socket
-import threading;
+import threading
 
 import rsb.util
 import rsb.transport
@@ -41,7 +41,8 @@ from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
 from rsb.protocol.Notification_pb2 import Notification
 
-class BusConnection (rsb.eventprocessing.BroadcastProcessor):
+
+class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     """
     Instances of this class implement connections to a socket-based
     bus.
@@ -62,8 +63,8 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     """
 
     def __init__(self,
-                 host = None, port = None, socket_ = None,
-                 isServer = False, tcpnodelay = True):
+                 host=None, port=None, socket_=None,
+                 isServer=False, tcpnodelay=True):
         """
         @param host: Hostname or address of the bus server.
         @type host: str or None
@@ -84,25 +85,25 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
         self.__thread = None
         self.__socket = None
-        self.__file   = None
+        self.__file = None
 
         self.__errorHook = None
 
         self.__active = False
         self.__activeShutdown = False
-        
+
         self.__lock = threading.RLock()
 
         # Create a socket connection or store the provided connection.
-        if not host is None and not port is None:
+        if host is not None and port is not None:
             if socket_ is None:
                 self.__socket = socket.create_connection((host, port))
             else:
-                raise ValueError, 'specify either host and port or socket'
-        elif not socket_ is None:
+                raise ValueError('Specify either host and port or socket')
+        elif socket_ is not None:
             self.__socket = socket_
         else:
-            raise ValueError, 'specify either host and port or socket_'
+            raise ValueError('Specify either host and port or socket_')
         if tcpnodelay:
             self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         else:
@@ -114,9 +115,9 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
             self.__file.write('\0\0\0\0')
             self.__file.flush()
         else:
-            zero = self.__file.read(size = 4)
+            zero = self.__file.read(size=4)
             if len(zero) == '\0\0\0\0':
-                raise RuntimeError, 'incorrect handshake'
+                raise RuntimeError('Incorrect handshake')
 
     def __del__(self):
         if self.__active:
@@ -133,20 +134,22 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     # receiving
 
     def receiveNotification(self):
-        size = self.__file.read(size = 4)
+        size = self.__file.read(size=4)
         if len(size) == 0:
             self.__logger.info("Received EOF")
             raise EOFError()
         if not (len(size) == 4):
-            raise RuntimeError, 'short read when receiving notification size (size: %s)' % len(size)
+            raise RuntimeError('Short read when receiving notification size '
+                               '(size: %s)' % len(size))
         size = ord(size[0])      \
             | ord(size[1]) << 8  \
             | ord(size[2]) << 16 \
             | ord(size[3]) << 24
         self.__logger.debug('Receiving notification of size %d', size)
-        notification = self.__file.read(size = size)
+        notification = self.__file.read(size=size)
         if not (len(notification) == size):
-            raise RuntimeError, 'short read when receiving notification payload'
+            raise RuntimeError(
+                'Short read when receiving notification payload')
         return notification
 
     def bufferToNotification(self, serialized):
@@ -173,7 +176,7 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
                 self.__logger.warn('Receive error: %s', e)
                 break
 
-        if not self.errorHook is None:
+        if self.errorHook is not None:
             self.errorHook(e)
         return
 
@@ -202,13 +205,13 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
 
     def activate(self):
         if self.__active:
-            raise RuntimeError, 'trying to activate active connection'
+            raise RuntimeError('Trying to activate active connection')
 
         with self.__lock:
 
-            self.__thread = threading.Thread(target = self.receiveNotifications)
+            self.__thread = threading.Thread(target=self.receiveNotifications)
             self.__thread.start()
-    
+
             self.__active = True
 
     def shutdown(self):
@@ -219,12 +222,12 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
     def deactivate(self):
 
         with self.__lock:
-        
+
             if not self.__active:
-                raise RuntimeError, 'trying to deactivate inactive connection'
-    
+                raise RuntimeError('Trying to deactivate inactive connection')
+
             self.__active = False
-    
+
             # If necessary, close the socket, this will cause an exception
             # in the notification receiver thread (unless we run in the
             # context that thread).
@@ -239,7 +242,8 @@ class BusConnection (rsb.eventprocessing.BroadcastProcessor):
         self.__logger.info('Joining thread')
         self.__thread.join()
 
-class Bus (object):
+
+class Bus(object):
     """
     Instances of this class provide access to a socket-based bus.
 
@@ -259,8 +263,8 @@ class Bus (object):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__connections = []
-        self.__connectors  = []
-        self.__lock        = threading.RLock()
+        self.__connectors = []
+        self.__lock = threading.RLock()
 
         self.__active = False
 
@@ -288,18 +292,24 @@ class Bus (object):
         """
         with self.lock:
             self.__connections.append(connection)
+
             class Handler(object):
+
                 def __init__(_self):
                     _self.bus = self
+
                 def __call__(_self, notification):
-                    self.handleIncoming(( connection, notification ))
+                    self.handleIncoming((connection, notification))
             connection.addHandler(Handler())
+
             def removeAndDeactivate(exception):
                 self.removeConnection(connection)
                 try:
                     connection.deactivate()
                 except Exception, e:
-                    self.__logger.warning("Error while deactivating connection %s: %s", connection, e)
+                    self.__logger.warning(
+                        "Error while deactivating connection %s: %s",
+                        connection, e)
             connection.errorHook = removeAndDeactivate
             connection.activate()
 
@@ -315,8 +325,8 @@ class Bus (object):
         with self.lock:
             if connection in self.__connections:
                 self.__connections.remove(connection)
-                connection.removeHandler([ h for h in connection.handlers
-                                       if h.bus is self ][0])
+                connection.removeHandler([h for h in connection.handlers
+                                          if h.bus is self][0])
 
     connections = property(getConnections)
 
@@ -348,7 +358,8 @@ class Bus (object):
         with self.lock:
             self.__connectors.remove(connector)
             if not self.__connectors:
-                self.__logger.info('Removed last connector; requesting deletion')
+                self.__logger.info(
+                    'Removed last connector; requesting deletion')
                 return False
             return True
 
@@ -358,9 +369,12 @@ class Bus (object):
         (connection, notification) = connectionAndNotification
         self.__logger.debug('Trying to distribute notification to connectors')
         with self.lock:
-            self.__logger.debug('Locked bus to distribute notification to connectors')
+            self.__logger.debug(
+                'Locked bus to distribute notification to connectors')
             if not self.__active:
-                self.__logger.info('Cancelled distribution to connectors since bus is not active')
+                self.__logger.info(
+                    'Cancelled distribution to connectors '
+                    'since bus is not active')
                 return
 
             # Distribute the notification to participants in our
@@ -369,9 +383,11 @@ class Bus (object):
 
     def handleOutgoing(self, notification):
         with self.lock:
-            self.__logger.debug('Locked bus to distribute notification to connections and connectors')
+            self.__logger.debug('Locked bus to distribute notification to '
+                                'connections and connectors')
             if not self.__active:
-                self.__logger.info('Cancelled distribution to connections and connectors since bus is not active')
+                self.__logger.info('Cancelled distribution to connections '
+                                   'and connectors since bus is not active')
                 return
 
             # Distribute the notification to remote participants via
@@ -389,14 +405,14 @@ class Bus (object):
 
     def activate(self):
         if self.__active:
-            raise RuntimeError, 'Trying to activate active bus'
+            raise RuntimeError('Trying to activate active bus')
 
         with self.lock:
             self.__active = True
 
     def deactivate(self):
         if not self.__active:
-            raise RuntimeError, 'Trying to deactivate inactive bus'
+            raise RuntimeError('Trying to deactivate inactive bus')
 
         with self.lock:
             self.__active = False
@@ -417,15 +433,17 @@ class Bus (object):
 
     # Low-level helpers
 
-    def _toConnections(self, notification, exclude = None):
+    def _toConnections(self, notification, exclude=None):
         failing = []
         for connection in self.connections:
-            if not connection is exclude:
+            if connection is not exclude:
                 try:
                     connection.handle(notification)
                 except Exception, e:
-                    self.__logger.warn('Failed to send to %s: %s; will close connection later',
-                                       connection, e)
+                    self.__logger.warn(
+                        'Failed to send to %s: %s; '
+                        'will close connection later',
+                        connection, e)
                     failing.append(connection)
 
         # Removed connections for which sending the notification
@@ -443,8 +461,8 @@ class Bus (object):
         for connector in self.connectors:
             # TODO connector.direction == 'in' instead of isinstance
             if isinstance(connector, InPushConnector) \
-               and (connector.scope == scope \
-                    or connector.scope.isSuperScopeOf(scope)):
+               and (connector.scope == scope or
+                    connector.scope.isSuperScopeOf(scope)):
                 connector.handle(notification)
 
     def __repr__(self):
@@ -456,6 +474,7 @@ class Bus (object):
 
 __busClients = {}
 __busClientsLock = threading.Lock()
+
 
 def getBusClientFor(host, port, tcpnodelay, connector):
     """
@@ -487,7 +506,8 @@ def getBusClientFor(host, port, tcpnodelay, connector):
             bus.addConnector(connector)
         return bus
 
-class BusClient (Bus):
+
+class BusClient(Bus):
     """
     Instances of this class provide access to a bus by means of a
     client socket.
@@ -510,6 +530,7 @@ class BusClient (Bus):
 
 __busServers = {}
 __busServersLock = threading.Lock()
+
 
 def getBusServerFor(host, port, tcpnodelay, connector):
     """
@@ -543,7 +564,8 @@ def getBusServerFor(host, port, tcpnodelay, connector):
             bus.addConnector(connector)
         return bus
 
-class BusServer (Bus):
+
+class BusServer(Bus):
     """
     Instances of this class provide access to a socket-based bus for
     local and remote bus clients.
@@ -558,7 +580,7 @@ class BusServer (Bus):
     @author: jmoringe
     """
 
-    def __init__(self, host, port, tcpnodelay, backlog = 5):
+    def __init__(self, host, port, tcpnodelay, backlog=5):
         """
         @param host: A hostname or address identifying the interface
                      to which the listen socket of the new bus server
@@ -577,11 +599,11 @@ class BusServer (Bus):
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__host           = host
-        self.__port           = port
-        self.__tcpnodelay     = tcpnodelay
-        self.__backlog        = backlog
-        self.__socket         = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__host = host
+        self.__port = port
+        self.__tcpnodelay = tcpnodelay
+        self.__backlog = backlog
+        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__acceptorThread = None
 
         self.__active = False
@@ -601,10 +623,13 @@ class BusServer (Bus):
                 if sys.platform == 'darwin':
                     clientSocket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
-                self.addConnection(BusConnection(socket_ = clientSocket, isServer = True, tcpnodelay = self.__tcpnodelay))
+                self.addConnection(BusConnection(socket_=clientSocket,
+                                                 isServer=True,
+                                                 tcpnodelay=self.__tcpnodelay))
             except socket.timeout, e:
                 if sys.platform != 'darwin':
-                    self.__logger.error('Unexpected timeout in acceptClients: "%s"', e)
+                    self.__logger.error(
+                        'Unexpected timeout in acceptClients: "%s"', e)
             except Exception, e:
                 if self.__active:
                     self.__logger.error('Exception in acceptClients: "%s"', e,
@@ -621,7 +646,7 @@ class BusServer (Bus):
         # one that sent it.
         (sendingConnection, notification) = connectionAndNotification
         with self.lock:
-            self._toConnections(notification, exclude = sendingConnection)
+            self._toConnections(notification, exclude=sendingConnection)
 
     # State management
 
@@ -629,33 +654,34 @@ class BusServer (Bus):
         super(BusServer, self).activate()
 
         if self.__active:
-            raise RuntimeError, 'trying to activate active BusServer'
+            raise RuntimeError('Trying to activate active BusServer')
 
         # Bind the socket and start listening
-        self.__logger.info('Opening listen socket %s:%d', '0.0.0.0', self.__port)
+        self.__logger.info('Opening listen socket %s:%d',
+                           '0.0.0.0', self.__port)
         self.__socket.bind(('0.0.0.0', self.__port))
         self.__socket.listen(self.__backlog)
 
         self.__logger.info('Starting acceptor thread')
-        self.__acceptorThread = threading.Thread(target = self.acceptClients)
+        self.__acceptorThread = threading.Thread(target=self.acceptClients)
         self.__acceptorThread.start()
 
         self.__active = True
 
     def deactivate(self):
         if not self.__active:
-            raise RuntimeError, 'Trying to deactivate inactive BusServer'
+            raise RuntimeError('Trying to deactivate inactive BusServer')
 
         self.__active = False
 
         # If necessary, close the listening socket. This causes an
         # exception in the acceptor thread.
         self.__logger.info('Closing listen socket')
-        if not self.__socket is None:
+        if self.__socket is not None:
             try:
                 self.__socket.shutdown(socket.SHUT_RDWR)
             except Exception, e:
-                self.__logger.warn('Failed to shutdown listen socket: %s' , e)
+                self.__logger.warn('Failed to shutdown listen socket: %s', e)
             try:
                 self.__socket.close()
             except:
@@ -665,22 +691,25 @@ class BusServer (Bus):
         # The acceptor thread should encounter an exception and exit
         # eventually. We wait for that.
         self.__logger.info('Waiting for acceptor thread')
-        if not self.__acceptorThread is None:
+        if self.__acceptorThread is not None:
             self.__acceptorThread.join()
 
         super(BusServer, self).deactivate()
+
 
 def removeConnector(bus, connector):
     def removeAndMaybeKill(lock, dict):
         with lock:
             if not bus.removeConnector(connector):
                 bus.deactivate()
-                del dict[ [ key for (key, value) in dict.items() if value is bus][0] ]
+                del dict[[key for (key, value) in dict.items()
+                          if value is bus][0]]
 
     if isinstance(bus, BusClient):
         removeAndMaybeKill(__busClientsLock, __busClients)
     else:
         removeAndMaybeKill(__busServersLock, __busServers)
+
 
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
@@ -692,27 +721,29 @@ class Connector(rsb.transport.Connector,
     @author: jmoringe
     """
 
-    def __init__(self, converters, options = {}, **kwargs):
-        super(Connector, self).__init__(wireType   = bytearray,
-                                        converters = converters,
+    def __init__(self, converters, options={}, **kwargs):
+        super(Connector, self).__init__(wireType=bytearray,
+                                        converters=converters,
                                         **kwargs)
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__active = False
 
-        self.__bus        = None
-        self.__host       = options.get('host', 'localhost')
-        self.__port       = int(options.get('port', '55555'))
-        self.__tcpnodelay = options.get('nodelay', '1') in [ '1', 'true' ]
+        self.__bus = None
+        self.__host = options.get('host', 'localhost')
+        self.__port = int(options.get('port', '55555'))
+        self.__tcpnodelay = options.get('nodelay', '1') in ['1', 'true']
         serverString = options.get('server', 'auto')
-        if serverString in [ '1', 'true' ]:
+        if serverString in ['1', 'true']:
             self.__server = True
-        elif serverString in [ '0', 'false']:
+        elif serverString in ['0', 'false']:
             self.__server = False
         elif serverString == 'auto':
             self.__server = 'auto'
         else:
-            raise TypeError, 'server option has to be "1", "true", "0", "false" or "auto", not "%s"' % serverString
+            raise TypeError('Server option has to be '
+                            '"1", "true", "0", "false" or "auto", not "%s"'
+                            % serverString)
 
     def __del__(self):
         if self.__active:
@@ -729,16 +760,20 @@ class Connector(rsb.transport.Connector,
             self.__bus = getBusClientFor(host, port, tcpnodelay, self)
         elif server == 'auto':
             try:
-                self.__logger.info('Trying to get bus server %s:%d (in server = auto mode)',
-                                   host, port)
+                self.__logger.info(
+                    'Trying to get bus server %s:%d (in server = auto mode)',
+                    host, port)
                 self.__bus = getBusServerFor(host, port, tcpnodelay, self)
             except Exception, e:
                 self.__logger.info('Failed to get bus server: %s', e)
-                self.__logger.info('Trying to get bus client %s:%d (in server = auto mode)',
-                                   host, port)
+                self.__logger.info(
+                    'Trying to get bus client %s:%d (in server = auto mode)',
+                    host, port)
                 self.__bus = getBusClientFor(host, port, tcpnodelay, self)
         else:
-            raise TypeError, 'server argument has to be True, False or "auto", not "%s"' % server
+            raise TypeError(
+                'Server argument has to be True, False or "auto", not "%s"'
+                % server)
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
@@ -749,17 +784,20 @@ class Connector(rsb.transport.Connector,
 
     def activate(self):
         if self.__active:
-            raise RuntimeError, 'trying to activate active connector'
+            raise RuntimeError('Trying to activate active connector')
 
         self.__logger.info('Activating')
 
-        self.__bus = self.__getBus(self.__host, self.__port, self.__tcpnodelay, self.__server)
+        self.__bus = self.__getBus(self.__host,
+                                   self.__port,
+                                   self.__tcpnodelay,
+                                   self.__server)
 
         self.__active = True
 
     def deactivate(self):
         if not self.__active:
-            raise RuntimeError, 'trying to deactivate inactive connector'
+            raise RuntimeError('Trying to deactivate inactive connector')
 
         self.__logger.info('Deactivating')
 
@@ -770,8 +808,9 @@ class Connector(rsb.transport.Connector,
     def setQualityOfServiceSpec(self, qos):
         pass
 
-class InPushConnector (Connector,
-                       rsb.transport.InConnector):
+
+class InPushConnector(Connector,
+                      rsb.transport.InConnector):
     """
     Instances of this class receive events from a bus (represented by
     a L{Bus} object) that is accessed via a socket connection.
@@ -801,14 +840,16 @@ class InPushConnector (Connector,
             return
 
         converter = self.getConverterForWireSchema(notification.wire_schema)
-        event = conversion.notificationToEvent(notification,
-                                               wireData   = bytearray(notification.data),
-                                               wireSchema = notification.wire_schema,
-                                               converter  = converter)
+        event = conversion.notificationToEvent(
+            notification,
+            wireData=bytearray(notification.data),
+            wireSchema=notification.wire_schema,
+            converter=converter)
         self.__action(event)
 
-class OutConnector (Connector,
-                    rsb.transport.OutConnector):
+
+class OutConnector(Connector,
+                   rsb.transport.OutConnector):
     """
     Instance of this class send events to a bus (represented by a
     L{Bus} object) that is accessed via a socket connection.
@@ -827,9 +868,10 @@ class OutConnector (Connector,
         wireData, wireSchema = converter.serialize(event.data)
         notification = Notification()
         conversion.eventToNotification(notification, event,
-                                       wireSchema = wireSchema,
-                                       data       = wireData)
+                                       wireSchema=wireSchema,
+                                       data=wireData)
         self.bus.handleOutgoing(notification)
+
 
 class TransportFactory(rsb.transport.TransportFactory):
     """
@@ -846,6 +888,7 @@ class TransportFactory(rsb.transport.TransportFactory):
 
     def createOutConnector(self, converters, options):
         return OutConnector(converters=converters, options=options)
+
 
 def initialize():
     try:

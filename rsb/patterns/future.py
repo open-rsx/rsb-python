@@ -24,19 +24,23 @@
 
 import threading
 
-class FutureError (RuntimeError):
+
+class FutureError(RuntimeError):
     def __init__(self, *args):
         super(FutureError, self).__init__(*args)
 
-class FutureTimeout (FutureError):
+
+class FutureTimeout(FutureError):
     def __init__(self, *args):
         super(FutureTimeout, self).__init__(*args)
 
-class FutureExecutionError (FutureError):
+
+class FutureExecutionError(FutureError):
     def __init__(self, *args):
         super(FutureExecutionError, self).__init__(*args)
 
-class Future (object):
+
+class Future(object):
     """
     Objects of this class represent the results of in-progress
     operations.
@@ -56,11 +60,11 @@ class Future (object):
         Create a new L{Future} object that represents an in-progress
         operation for which a result is not yet available.
         """
-        self.__error     = False
-        self.__result    = None
+        self.__error = False
+        self.__result = None
 
-        self.__lock      = threading.Lock()
-        self.__condition = threading.Condition(lock = self.__lock)
+        self.__lock = threading.Lock()
+        self.__condition = threading.Condition(lock=self.__lock)
 
     def isDone(self):
         """
@@ -71,11 +75,11 @@ class Future (object):
         @rtype: bool
         """
         with self.__lock:
-            return not self.__result is None
+            return self.__result is not None
 
     done = property(isDone)
 
-    def get(self, timeout = 0):
+    def get(self, timeout=0):
         """
         Try to obtain and then return the result of the represented
         operation.
@@ -99,14 +103,17 @@ class Future (object):
                 if timeout <= 0:
                     self.__condition.wait()
                 else:
-                    # TODO(jmoringe): this is probably wrong since there may be spurious wakeups
-                    self.__condition.wait(timeout = timeout)
+                    # TODO(jmoringe): this is probably wrong since there
+                    #                 may be spurious wakeups
+                    self.__condition.wait(timeout=timeout)
                     if self.__result is None:
-                        raise FutureTimeout, 'Timeout while waiting for result; Waited %s seconds.' \
-                            % timeout
+                        raise FutureTimeout(
+                            'Timeout while waiting for result; '
+                            'Waited %s seconds.' % timeout)
 
         if self.__error:
-            raise FutureExecutionError, 'Failed to execute operation: %s' % self.__result
+            raise FutureExecutionError('Failed to execute operation: %s' %
+                                       self.__result)
 
         return self.__result
 
@@ -133,7 +140,7 @@ class Future (object):
         """
         with self.__lock:
             self.__result = message
-            self.__error  = True
+            self.__error = True
             self.__condition.notify()
 
     def __str__(self):
@@ -149,7 +156,8 @@ class Future (object):
     def __repr__(self):
         return str(self)
 
-class DataFuture (Future):
+
+class DataFuture(Future):
     """
     Instances of this class are like ordinary L{Future}s, the only
     difference being that the L{get} method returns the payload of an
@@ -157,5 +165,5 @@ class DataFuture (Future):
 
     @author: jmoringe
     """
-    def get(self, timeout = 0):
-        return super(DataFuture, self).get(timeout = timeout).data
+    def get(self, timeout=0):
+        return super(DataFuture, self).get(timeout=timeout).data

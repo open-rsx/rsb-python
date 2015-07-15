@@ -35,6 +35,7 @@ from threading import Condition
 
 FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
 
+
 class AbstractFilter(object):
     """
     Interface for concrete filters.
@@ -52,6 +53,7 @@ class AbstractFilter(object):
         @return: True if this filter matches the event, else False
         """
         pass
+
 
 class ScopeFilter(AbstractFilter):
     """
@@ -77,16 +79,18 @@ class ScopeFilter(AbstractFilter):
         return self.__scope
 
     def match(self, event):
-        return event.scope == self.__scope or event.scope.isSubScopeOf(self.__scope)
+        return event.scope == self.__scope \
+            or event.scope.isSubScopeOf(self.__scope)
 
-class OriginFilter (AbstractFilter):
+
+class OriginFilter(AbstractFilter):
     """
     Matching events have to originate at a particular participant.
 
     @author: jmoringe
     """
 
-    def __init__(self, origin, invert = False):
+    def __init__(self, origin, invert=False):
         """
         @param origin: The id of the L{Participant} from which
                        matching events should originate.
@@ -128,7 +132,8 @@ class OriginFilter (AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.origin, self.invert)
 
-class MethodFilter (AbstractFilter):
+
+class MethodFilter(AbstractFilter):
     """
     Matching events have (not) have a particular value in their method
     field.
@@ -136,7 +141,7 @@ class MethodFilter (AbstractFilter):
     @author: jmoringe
     """
 
-    def __init__(self, method, invert = False):
+    def __init__(self, method, invert=False):
         """
         @param method: The method string that matching events have to
                        have in their method field.
@@ -178,6 +183,7 @@ class MethodFilter (AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.method, self.invert)
 
+
 class RecordingTrueFilter(AbstractFilter):
 
     def __init__(self):
@@ -189,6 +195,7 @@ class RecordingTrueFilter(AbstractFilter):
             self.events.append(event)
             self.condition.notifyAll()
             return True
+
 
 class RecordingFalseFilter(AbstractFilter):
 
@@ -202,9 +209,11 @@ class RecordingFalseFilter(AbstractFilter):
             self.condition.notifyAll()
             return False
 
+
 class TrueFilter(AbstractFilter):
-        def match(self, event):
-            return True
+    def match(self, event):
+        return True
+
 
 class FalseFilter(AbstractFilter):
     def match(self, event):

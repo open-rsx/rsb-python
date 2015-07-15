@@ -36,29 +36,33 @@ from rsb import Event, Scope, EventId, ParticipantConfig
 from test.transporttest import SettingReceiver, TransportTest
 import rsb
 
+
 def getConnector(scope,
-                 clazz    = rsbspread.Connector,
-                 module   = None,
-                 activate = True):
+                 clazz=rsbspread.Connector,
+                 module=None,
+                 activate=True):
     kwargs = {}
     if module:
         kwargs['spreadModule'] = module
-    options = ParticipantConfig.fromFile('test/with-spread.conf').getTransport("spread").options
+    options = ParticipantConfig.fromFile(
+        'test/with-spread.conf').getTransport("spread").options
     daemon = '{port}@{host}'.format(port=options['port'],
                                     host=options['host'] or 'localhost')
-    connector = clazz(connection = rsbspread.SpreadConnection(daemon, **kwargs),
-                      converters = rsb.converter.getGlobalConverterMap(bytearray))
+    connector = clazz(connection=rsbspread.SpreadConnection(daemon, **kwargs),
+                      converters=rsb.converter.getGlobalConverterMap(
+                          bytearray))
     connector.setScope(scope)
     if activate:
         connector.activate()
     return connector
 
+
 class SpreadConnectorTest(unittest.TestCase):
 
-    class DummyMessage:
+    class DummyMessage(object):
         pass
 
-    class DummyConnection:
+    class DummyConnection(object):
 
         def __init__(self):
             self.clear()
@@ -82,7 +86,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
         def receive(self):
             self.__cond.acquire()
-            while self.__lastMessage == None:
+            while self.__lastMessage is None:
                 self.__cond.wait()
             msg = self.__lastMessage
             self.__lastMessage = None
@@ -91,14 +95,13 @@ class SpreadConnectorTest(unittest.TestCase):
             return msg
 
         def multicast(self, type, group, message):
-            print("Got multicast for group %s with message %s" % (group, message))
             self.__cond.acquire()
             self.__lastMessage = SpreadConnectorTest.DummyMessage()
             self.__lastMessage.groups = [group]
             self.__cond.notify()
             self.__cond.release()
 
-    class DummySpread:
+    class DummySpread(object):
 
         def __init__(self):
             self.returnedConnections = []
@@ -110,13 +113,13 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testActivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = getConnector(Scope("/foo"), module = dummySpread)
+        connector = getConnector(Scope("/foo"), module=dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connector.deactivate()
 
     def testDeactivate(self):
         dummySpread = SpreadConnectorTest.DummySpread()
-        connector = getConnector(Scope("/foo"), module = dummySpread)
+        connector = getConnector(Scope("/foo"), module=dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -127,8 +130,8 @@ class SpreadConnectorTest(unittest.TestCase):
         s1 = Scope("/xxx")
         dummySpread = SpreadConnectorTest.DummySpread()
         connector = getConnector(s1,
-                                        clazz  = rsbspread.InConnector,
-                                        module = dummySpread)
+                                 clazz=rsbspread.InConnector,
+                                 module=dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
 
@@ -141,8 +144,8 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testSequencing(self):
         goodScope = Scope("/good")
-        inConnector  = getConnector(goodScope, clazz = rsbspread.InConnector)
-        outConnector = getConnector(goodScope, clazz = rsbspread.OutConnector)
+        inConnector = getConnector(goodScope, clazz=rsbspread.InConnector)
+        outConnector = getConnector(goodScope, clazz=rsbspread.OutConnector)
 
         receiver = SettingReceiver(goodScope)
         inConnector.setObserverAction(receiver)
@@ -150,7 +153,9 @@ class SpreadConnectorTest(unittest.TestCase):
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
-        event.data = "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for i in range(300502))
+        event.data = "".join(random.choice(
+            string.ascii_uppercase + string.ascii_lowercase + string.digits)
+            for i in range(300502))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
         outConnector.handle(event)
@@ -161,20 +166,26 @@ class SpreadConnectorTest(unittest.TestCase):
 
         with receiver.resultCondition:
             receiver.resultCondition.wait(10)
-            if receiver.resultEvent == None:
+            if receiver.resultEvent is None:
                 self.fail("Did not receive an event")
-            #self.assertEqual(receiver.resultEvent, event)
+            # self.assertEqual(receiver.resultEvent, event)
+
 
 class SpreadTransportTest(TransportTest):
 
     def _getInConnector(self, scope, activate=True):
-        return getConnector(scope, clazz=rsbspread.InConnector, activate=activate)
+        return getConnector(scope, clazz=rsbspread.InConnector,
+                            activate=activate)
 
     def _getOutConnector(self, scope, activate=True):
-        return getConnector(scope, clazz=rsbspread.OutConnector, activate=activate)
+        return getConnector(scope, clazz=rsbspread.OutConnector,
+                            activate=activate)
+
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadConnectorTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(SpreadTransportTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(SpreadConnectorTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(SpreadTransportTest))
     return suite

@@ -25,73 +25,74 @@
 import unittest
 import rsb
 from rsb import ParticipantConfig
-import time
 from threading import Condition
 
 inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
-    'introspection.enabled':        '0',
-    'transport.inprocess.enabled' : '1'
+    'introspection.enabled': '0',
+    'transport.inprocess.enabled': '1'
 })
 
-class LocalServerTest (unittest.TestCase):
+
+class LocalServerTest(unittest.TestCase):
+
     def testConstruction(self):
 
         # Test creating a server without methods
         with rsb.createLocalServer('/some/scope',
-                                   inProcessNoIntrospectionConfig) \
-            as server:
+                                   inProcessNoIntrospectionConfig) as server:
             self.assertEqual(server.methods, [])
 
         with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   inProcessNoIntrospectionConfig) \
-            as server:
+                                   inProcessNoIntrospectionConfig) as server:
             self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
         with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   methods = [ ('foo', lambda x: x, str, str) ],
-                                   config  = inProcessNoIntrospectionConfig) \
-            as server:
-            self.assertEqual([ m.name for m in server.methods ], [ 'foo' ])
+                                   methods=[('foo', lambda x: x, str, str)],
+                                   config=inProcessNoIntrospectionConfig) \
+                as server:
+            self.assertEqual([m.name for m in server.methods], ['foo'])
 
         # Test creating a server that exposes method of an existing
         # object
-        class SomeClass (object):
+        class SomeClass(object):
             def bar(x):
                 pass
 
         someObject = SomeClass()
         with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   object = someObject,
-                                   expose = [ ('bar', str, None) ],
-                                   config = inProcessNoIntrospectionConfig) \
-            as server:
-            self.assertEqual([ m.name for m in server.methods ], [ 'bar' ])
+                                   object=someObject,
+                                   expose=[('bar', str, None)],
+                                   config=inProcessNoIntrospectionConfig) \
+                as server:
+            self.assertEqual([m.name for m in server.methods], ['bar'])
 
             # Cannot supply expose without object
             self.assertRaises(ValueError,
                               rsb.createLocalServer,
                               '/some/scope',
-                              expose  = [ ('bar', str, None) ])
+                              expose=[('bar', str, None)])
 
             # Cannot supply these simultaneously
             self.assertRaises(ValueError,
                               rsb.createLocalServer,
                               '/some/scope',
-                              object  = someObject,
-                              expose  = [ ('bar', str, None) ],
-                              methods = [ ('foo', lambda x: x, str, str) ])
+                              object=someObject,
+                              expose=[('bar', str, None)],
+                              methods=[('foo', lambda x: x, str, str)])
+
 
 class RoundTripTest (unittest.TestCase):
+
     def testRoundTrip(self):
 
-        with rsb.createLocalServer('/roundtrip',
-                                   methods = [ ('addone', lambda x: long(x + 1), long, long) ],
-                                   config  = inProcessNoIntrospectionConfig) \
-            as localServer:
+        with rsb.createLocalServer(
+                '/roundtrip',
+                methods=[('addone', lambda x: long(x + 1), long, long)],
+                config=inProcessNoIntrospectionConfig) as localServer:
             with rsb.createRemoteServer('/roundtrip',
                                         inProcessNoIntrospectionConfig) \
-                as remoteServer:
+                    as remoteServer:
 
                 # Call synchronously
                 self.assertEqual(map(remoteServer.addone, range(100)),
@@ -99,20 +100,22 @@ class RoundTripTest (unittest.TestCase):
 
                 # Call asynchronously
                 self.assertEqual(map(lambda x: x.get(),
-                                     map(remoteServer.addone.async, range(100))),
+                                     map(remoteServer.addone.async,
+                                         range(100))),
                                  range(1, 101))
 
     def testVoidMethods(self):
 
         with rsb.createLocalServer('/void', inProcessNoIntrospectionConfig) \
-             as localServer:
+                as localServer:
+
             def nothing(e):
                 pass
             localServer.addMethod("nothing", nothing, str)
 
             with rsb.createRemoteServer('/void',
                                         inProcessNoIntrospectionConfig) \
-                 as remoteServer:
+                    as remoteServer:
                 future = remoteServer.nothing.async("test")
                 future.get(1)
 
@@ -121,12 +124,12 @@ class RoundTripTest (unittest.TestCase):
         methodName = 'non-identifier-method'
         with rsb.createLocalServer(serverScope,
                                    inProcessNoIntrospectionConfig) \
-            as localServer:
+                as localServer:
             localServer.addMethod(methodName, lambda x: x, str, str)
 
             with rsb.createRemoteServer(serverScope,
                                         inProcessNoIntrospectionConfig) \
-                as remoteServer:
+                    as remoteServer:
                 self.assertEqual(remoteServer.getMethod(methodName)('foo'),
                                  'foo')
 
@@ -138,7 +141,8 @@ class RoundTripTest (unittest.TestCase):
 
         with rsb.createLocalServer('/takesometime',
                                    inProcessNoIntrospectionConfig) \
-            as localServer:
+                as localServer:
+
             def takeSomeTime(e):
                 with callLock:
                     runningCalls[0] = runningCalls[0] + 1
@@ -151,12 +155,13 @@ class RoundTripTest (unittest.TestCase):
 
             with rsb.createRemoteServer('/takesometime',
                                         inProcessNoIntrospectionConfig) \
-                as remoteServer:
+                    as remoteServer:
 
                 results = [remoteServer.takeSomeTime.async('call{}'.format(x))
                            for x in range(numParallelCalls)]
                 for r in results:
                     r.get(10)
+
 
 def suite():
     suite = unittest.TestSuite()

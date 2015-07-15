@@ -24,15 +24,15 @@
 # ============================================================
 
 """
-This package contains all classes that form the high-level user interface of the
-RSB python implementation. It is the entry point for most users and only in
+This package contains all classes that form the high-level user interface of
+the RSB python implementation. It is the entry point for most users and only in
 advanced cases client programs need to use classes from other modules.
 
-In order to create basic objects have a look at the functions L{createInformer},
-L{createListener}, L{createServer} and L{createRemoteServer}.
+In order to create basic objects have a look at the functions
+L{createInformer}, L{createListener}, L{createServer} and
+L{createRemoteServer}.
 
-@author: jwienke
-@author: jmoringe
+@author: jwienke @author: jmoringe
 """
 
 import uuid
@@ -44,6 +44,7 @@ import re
 import os
 import platform
 import ConfigParser
+
 
 # prevent logging warnings about missing handlers as per:
 # https://docs.python.org/2.6/library/logging.html#configuring-logging-for-a-library
@@ -68,6 +69,7 @@ try:
 except ImportError:
     pass
 
+
 def haveSpread():
     """
     Indicates whether the installation of RSB has spread support.
@@ -78,6 +80,8 @@ def haveSpread():
 
 __defaultTransportsRegistered = False
 __transportRegistrationLock = threading.RLock()
+
+
 def __registerDefaultTransports():
     """
     Registers all available transports.
@@ -95,6 +99,7 @@ def __registerDefaultTransports():
             import rsb.transport.rsbspread
             rsb.transport.rsbspread.initialize()
 
+
 class QualityOfServiceSpec(object):
     """
     Specification of desired quality of service settings for sending
@@ -110,7 +115,8 @@ class QualityOfServiceSpec(object):
     Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
     Reliability = Enum("Reliability", ["UNRELIABLE", "RELIABLE"], [10, 20])
 
-    def __init__(self, ordering=Ordering.UNORDERED, reliability=Reliability.RELIABLE):
+    def __init__(self, ordering=Ordering.UNORDERED,
+                 reliability=Reliability.RELIABLE):
         """
         Constructs a new QoS specification with desired
         details. Defaults are unordered but reliable.
@@ -163,7 +169,8 @@ class QualityOfServiceSpec(object):
 
     def __eq__(self, other):
         try:
-            return other.__reliability == self.__reliability and other.__ordering == self.__ordering
+            return other.__reliability == self.__reliability \
+                and other.__ordering == self.__ordering
         except (AttributeError, TypeError):
             return False
 
@@ -171,7 +178,10 @@ class QualityOfServiceSpec(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "%s(%r, %r)" % (self.__class__.__name__, self.__ordering, self.__reliability)
+        return "%s(%r, %r)" % (self.__class__.__name__,
+                               self.__ordering,
+                               self.__reliability)
+
 
 def _configFileToDict(path, defaults={}):
     parser = ConfigParser.RawConfigParser()
@@ -182,17 +192,20 @@ def _configFileToDict(path, defaults={}):
             options[section + '.' + k] = v.split('#')[0].strip()
     return options
 
+
 def _configEnvironmentToDict(defaults={}):
     options = defaults
     for (key, value) in os.environ.items():
         if key.startswith('RSB_'):
             if value == '':
-                raise ValueError, 'The value of the environment variable %s is the empty string' % key
+                raise ValueError('The value of the environment variable '
+                                 '%s is the empty string' % key)
             options[key[4:].lower().replace('_', '.')] = value
     return options
 
+
 def _configDefaultSourcesToDict(defaults={}):
-    """
+    r"""
     Obtain configuration options from multiple sources, store them
     in a L{ParticipantConfig} object and return it. The following
     sources of configuration information will be consulted:
@@ -224,16 +237,19 @@ def _configDefaultSourcesToDict(defaults={}):
     else:
         partial = _configFileToDict("/etc/rsb.conf", defaults)
     partial = _configFileToDict("%s/etc/rsb.conf" % util.prefix(), partial)
-    partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"), partial)
+    partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"),
+                                partial)
     partial = _configFileToDict("rsb.conf", partial)
     return _configEnvironmentToDict(partial)
 
-_CONFIG_TRUE_VALUES = [ '1', 'true', 'yes' ]
+_CONFIG_TRUE_VALUES = ['1', 'true', 'yes']
+
 
 def _configValueIsTrue(value):
     return value in _CONFIG_TRUE_VALUES
 
-class ParticipantConfig (object):
+
+class ParticipantConfig(object):
     """
     Objects of this class describe desired configurations for newly
     created L{Participant}s with respect to:
@@ -248,7 +264,7 @@ class ParticipantConfig (object):
     @author: jmoringe
     """
 
-    class Transport (object):
+    class Transport(object):
         """
         Objects of this class describe configurations of transports
         connectors. These consist of
@@ -264,13 +280,16 @@ class ParticipantConfig (object):
             self.__enabled = _configValueIsTrue(options.get('enabled', '0'))
 
             # Extract freestyle options for the transport.
-            self.__options = dict([ (key, value) for (key, value) in options.items()
-                                   if not '.' in key and not key == 'enabled' ])
+            self.__options = dict([(key, value)
+                                   for (key, value) in options.items()
+                                   if '.' not in key and
+                                   not key == 'enabled'])
             # Find converter selection rules
             self.__converters = converters
-            self.__converterRules \
-                = dict([ (key[len("converter.python."):], value) for (key, value) in options.items()
-                         if key.startswith('converter.python') ])
+            self.__converterRules = dict(
+                [(key[len("converter.python."):], value)
+                 for (key, value) in options.items()
+                 if key.startswith('converter.python')])
 
         def getName(self):
             return self.__name
@@ -307,24 +326,27 @@ class ParticipantConfig (object):
         options = property(getOptions)
 
         def __deepcopy__(self, memo):
-            result                  = copy.copy(self)
-            result.__converters     = copy.deepcopy(self.__converters, memo)
-            result.__converterRules = copy.deepcopy(self.__converterRules, memo)
-            result.__options        = copy.deepcopy(self.__options, memo)
+            result = copy.copy(self)
+            result.__converters = copy.deepcopy(self.__converters, memo)
+            result.__converterRules = copy.deepcopy(
+                self.__converterRules, memo)
+            result.__options = copy.deepcopy(self.__options, memo)
             return result
 
         def __str__(self):
-            return ('ParticipantConfig.Transport[%s, enabled = %s, converters = %s, converterRules = %s, options = %s]'
-                    % (self.__name, self.__enabled, self.__converters, self.__converterRules, self.__options))
+            return ('ParticipantConfig.Transport[%s, enabled = %s, '
+                    'converters = %s, converterRules = %s, options = %s]'
+                    % (self.__name, self.__enabled, self.__converters,
+                       self.__converterRules, self.__options))
 
         def __repr__(self):
             return str(self)
 
     def __init__(self,
-                 transports    = None,
-                 options       = None,
-                 qos           = None,
-                 introspection = False):
+                 transports=None,
+                 options=None,
+                 qos=None,
+                 introspection=False):
         if transports is None:
             self.__transports = {}
         else:
@@ -343,8 +365,8 @@ class ParticipantConfig (object):
         self.__introspection = introspection
 
     def getTransports(self, includeDisabled=False):
-        return [ t for t in self.__transports.values()
-                 if includeDisabled or t.isEnabled() ]
+        return [t for t in self.__transports.values()
+                if includeDisabled or t.isEnabled()]
 
     transports = property(getTransports)
 
@@ -369,47 +391,61 @@ class ParticipantConfig (object):
     introspection = property(getIntrospection, setIntrospection)
 
     def __deepcopy__(self, memo):
-        result              = copy.copy(self)
+        result = copy.copy(self)
         result.__transports = copy.deepcopy(self.__transports, memo)
-        result.__options    = copy.deepcopy(self.__options, memo)
+        result.__options = copy.deepcopy(self.__options, memo)
         return result
 
     def __str__(self):
-        return 'ParticipantConfig[%s, options = %s, qos = %s, introspection = %s]' % (self.__transports.values(), self.__options, self.__qos, self.__introspection)
+        return 'ParticipantConfig[%s, options = %s, ' \
+               'qos = %s, introspection = %s]' \
+               % (self.__transports.values(), self.__options, self.__qos,
+                  self.__introspection)
 
     def __repr__(self):
         return str(self)
 
     @classmethod
-    def __fromDict(clazz, options):
+    def __fromDict(cls, options):
         def sectionOptions(section):
-            return [ (key[len(section) + 1:], value) for (key, value) in options.items()
-                     if key.startswith(section) ]
+            return [(key[len(section) + 1:], value)
+                    for (key, value) in options.items()
+                    if key.startswith(section)]
         result = ParticipantConfig()
 
         # Quality of service
         qosOptions = dict(sectionOptions('qualityofservice'))
-        result.__qos.setReliability(QualityOfServiceSpec.Reliability.fromString(qosOptions.get('reliability', QualityOfServiceSpec().getReliability().__str__())))
-        result.__qos.setOrdering(QualityOfServiceSpec.Ordering.fromString(qosOptions.get('ordering', QualityOfServiceSpec().getOrdering().__str__())))
+        result.__qos.setReliability(
+            QualityOfServiceSpec.Reliability.fromString(
+                qosOptions.get(
+                    'reliability',
+                    QualityOfServiceSpec().getReliability().__str__())))
+        result.__qos.setOrdering(
+            QualityOfServiceSpec.Ordering.fromString(
+                qosOptions.get(
+                    'ordering',
+                    QualityOfServiceSpec().getOrdering().__str__())))
 
         # Transport options
-        for transport in [ 'spread', 'socket', 'inprocess' ]:
+        for transport in ['spread', 'socket', 'inprocess']:
             transportOptions = dict(sectionOptions('transport.%s' % transport))
             if transportOptions:
-                result.__transports[transport] = clazz.Transport(transport, transportOptions)
+                result.__transports[transport] = cls.Transport(
+                    transport, transportOptions)
 
         # Introspection options
         introspectionOptions = dict(sectionOptions('introspection'))
-        result.__introspection = _configValueIsTrue(introspectionOptions.get('enabled', '1'))
+        result.__introspection = _configValueIsTrue(
+            introspectionOptions.get('enabled', '1'))
 
         return result
 
     @classmethod
-    def fromDict(clazz, options):
-        return clazz.__fromDict(options)
+    def fromDict(cls, options):
+        return cls.__fromDict(options)
 
     @classmethod
-    def fromFile(clazz, path, defaults={}):
+    def fromFile(cls, path, defaults={}):
         """
         Obtain configuration options from the configuration file
         B{path}, store them in a L{ParticipantConfig} object and
@@ -431,10 +467,10 @@ class ParticipantConfig (object):
 
         See also: L{fromEnvironment}, L{fromDefaultSources}
         """
-        return clazz.__fromDict(_configFileToDict(path, defaults))
+        return cls.__fromDict(_configFileToDict(path, defaults))
 
     @classmethod
-    def fromEnvironment(clazz, defaults={}):
+    def fromEnvironment(cls, defaults={}):
         """
         Obtain configuration options from environment variables, store
         them in a L{ParticipantConfig} object and return
@@ -452,10 +488,10 @@ class ParticipantConfig (object):
 
         See also: L{fromFile}, L{fromDefaultSources}
         """
-        return clazz.__fromDict(_configEnvironmentToDict(defaults))
+        return cls.__fromDict(_configEnvironmentToDict(defaults))
 
     @classmethod
-    def fromDefaultSources(clazz, defaults={}):
+    def fromDefaultSources(cls, defaults={}):
         """
         Obtain configuration options from multiple sources, store them
         in a L{ParticipantConfig} object and return it. The following
@@ -477,7 +513,8 @@ class ParticipantConfig (object):
         See also: L{fromFile}, L{fromEnvironment}
         """
 
-        return clazz.__fromDict(_configDefaultSourcesToDict(defaults))
+        return cls.__fromDict(_configDefaultSourcesToDict(defaults))
+
 
 def convertersFromTransportConfig(transport):
     """
@@ -518,15 +555,17 @@ def convertersFromTransportConfig(transport):
     converterMap = rsb.converter.UnambiguousConverterMap(wireType)
     # Try to add converters form global map
     globalMap = rsb.converter.getGlobalConverterMap(wireType)
-    for ((wireSchema, dataType), converter) in globalMap.getConverters().items():
+    for ((wireSchema, dataType), converter) \
+            in globalMap.getConverters().items():
         # Converter can be added if converterOptions does not
         # contain a disambiguation that gives precedence to a
         # different converter. map may still raise an
         # exception in case of ambiguity.
-        if not wireSchema in transport.converterRules \
+        if wireSchema not in transport.converterRules \
            or dataType.__name__ == transport.converterRules[wireSchema]:
             converterMap.addConverter(converter)
     return converterMap
+
 
 class Scope(object):
     """
@@ -557,13 +596,16 @@ class Scope(object):
         """
 
         if len(stringRep) == 0:
-            raise ValueError("The empty string does not designate a scope; Use '/' to designate the root scope.")
+            raise ValueError("The empty string does not designate a "
+                             "scope; Use '/' to designate the root scope.")
 
         if isinstance(stringRep, unicode):
             try:
                 stringRep = stringRep.encode('ASCII')
             except UnicodeEncodeError, e:
-                raise ValueError('Scope strings have be encodable as ASCII-strings, but the supplied scope string cannot be encoded as ASCII-string: %s'
+                raise ValueError('Scope strings have be encodable as '
+                                 'ASCII-strings, but the supplied scope '
+                                 'string cannot be encoded as ASCII-string: %s'
                                  % e)
 
         # append missing trailing slash
@@ -574,15 +616,18 @@ class Scope(object):
         if len(rawComponents) < 1:
             raise ValueError("Empty scope is not allowed.")
         if len(rawComponents[0]) != 0:
-            raise ValueError("Scope must start with a slash. Given was '%s'." % stringRep)
+            raise ValueError("Scope must start with a slash. "
+                             "Given was '%s'." % stringRep)
         if len(rawComponents[-1]) != 0:
-            raise ValueError("Scope must end with a slash. Given was '%s'." % stringRep)
+            raise ValueError("Scope must end with a slash. "
+                             "Given was '%s'." % stringRep)
 
         self.__components = rawComponents[1:-1]
 
         for com in self.__components:
             if not self.__COMPONENT_REGEX.match(com):
-                raise ValueError("Invalid character in component %s. Given was scope '%s'." % (com, stringRep))
+                raise ValueError("Invalid character in component %s. "
+                                 "Given was scope '%s'." % (com, stringRep))
 
     def getComponents(self):
         """
@@ -591,8 +636,8 @@ class Scope(object):
         list is the highest level of hierarchy. The scope '/' returns an empty
         list.
 
-        @return: components of the represented scope as ordered list with highest
-                 level as first entry
+        @return: components of the represented scope as ordered list with
+                 highest level as first entry
         @rtype: list
         """
         return copy.copy(self.__components)
@@ -621,8 +666,8 @@ class Scope(object):
         argument. E.g. C{"/this/is/".concat("/a/test/")} results in
         C{"/this/is/a/test"}.
 
-        @param childScope: child to concatenate to the current scope for forming a
-                           sub-scope
+        @param childScope: child to concatenate to the current scope for
+                           forming a sub-scope
         @type childScope: Scope
         @return: new scope instance representing the created sub-scope
         @rtype: Scope
@@ -640,15 +685,16 @@ class Scope(object):
 
         @param other: other scope to test
         @type other: Scope
-        @return: C{True} if this is a sub-scope of the other scope, equality gives
-                 C{False}, too
+        @return: C{True} if this is a sub-scope of the other scope, equality
+                 gives C{False}, too
         @rtype: Bool
         """
 
         if len(self.__components) <= len(other.__components):
             return False
 
-        return other.__components == self.__components[:len(other.__components)]
+        return other.__components == \
+            self.__components[:len(other.__components)]
 
     def isSuperScopeOf(self, other):
         """
@@ -656,8 +702,8 @@ class Scope(object):
 
         @param other: other scope to test
         @type other: Scope
-        @return: C{True} if this scope is a strict super scope of the other scope.
-                 equality also gives C{False}.
+        @return: C{True} if this scope is a strict super scope of the other
+                 scope. Equality also gives C{False}.
         @rtype: Bool
         """
 
@@ -723,7 +769,8 @@ class Scope(object):
     def __repr__(self):
         return '%s("%s")' % (self.__class__.__name__, self.toString())
 
-class MetaData (object):
+
+class MetaData(object):
     """
     Objects of this class store RSB-specific and user-supplied
     meta-data items such as timing information.
@@ -732,7 +779,8 @@ class MetaData (object):
     """
     def __init__(self,
                  senderId=None,
-                 createTime=None, sendTime=None, receiveTime=None, deliverTime=None,
+                 createTime=None, sendTime=None,
+                 receiveTime=None, deliverTime=None,
                  userTimes=None, userInfos=None):
         """
         Constructs a new L{MetaData} object.
@@ -761,11 +809,11 @@ class MetaData (object):
         self.__sendTime = sendTime
         self.__receiveTime = receiveTime
         self.__deliverTime = deliverTime
-        if userTimes == None:
+        if userTimes is None:
             self.__userTimes = {}
         else:
             self.__userTimes = userTimes
-        if userInfos == None:
+        if userInfos is None:
             self.__userInfos = {}
         else:
             self.__userInfos = userInfos
@@ -774,7 +822,7 @@ class MetaData (object):
         return self.__createTime
 
     def setCreateTime(self, createTime=None):
-        if createTime == None:
+        if createTime is None:
             self.__createTime = time.time()
         else:
             self.__createTime = createTime
@@ -785,7 +833,7 @@ class MetaData (object):
         return self.__sendTime
 
     def setSendTime(self, sendTime=None):
-        if sendTime == None:
+        if sendTime is None:
             self.__sendTime = time.time()
         else:
             self.__sendTime = sendTime
@@ -796,7 +844,7 @@ class MetaData (object):
         return self.__receiveTime
 
     def setReceiveTime(self, receiveTime=None):
-        if receiveTime == None:
+        if receiveTime is None:
             self.__receiveTime = time.time()
         else:
             self.__receiveTime = receiveTime
@@ -807,7 +855,7 @@ class MetaData (object):
         return self.__deliverTime
 
     def setDeliverTime(self, deliverTime=None):
-        if deliverTime == None:
+        if deliverTime is None:
             self.__deliverTime = time.time()
         else:
             self.__deliverTime = deliverTime
@@ -821,7 +869,7 @@ class MetaData (object):
         self.__userTimes = userTimes
 
     def setUserTime(self, key, timestamp=None):
-        if timestamp == None:
+        if timestamp is None:
             self.__userTimes[key] = time.time()
         else:
             self.__userTimes[key] = timestamp
@@ -841,7 +889,12 @@ class MetaData (object):
 
     def __eq__(self, other):
         try:
-            return (self.__createTime == other.__createTime) and (self.__sendTime == other.__sendTime) and (self.__receiveTime == other.__receiveTime) and (self.__deliverTime == other.__deliverTime) and (self.__userInfos == other.__userInfos) and (self.__userTimes == other.__userTimes)
+            return (self.__createTime == other.__createTime) and \
+                (self.__sendTime == other.__sendTime) and \
+                (self.__receiveTime == other.__receiveTime) and \
+                (self.__deliverTime == other.__deliverTime) and \
+                (self.__userInfos == other.__userInfos) and \
+                (self.__userTimes == other.__userTimes)
         except (TypeError, AttributeError):
             return False
 
@@ -849,13 +902,15 @@ class MetaData (object):
         return not self.__eq__(other)
 
     def __str__(self):
-        return '%s[create = %s, send = %s, receive = %s, deliver = %s, userTimes = %s, userInfos = %s]' \
+        return '%s[create = %s, send = %s, receive = %s, deliver = %s, ' \
+            'userTimes = %s, userInfos = %s]' \
             % ('MetaData',
-               self.__createTime, self.__sendTime, self.__receiveTime, self.__deliverTime,
-               self.__userTimes, self.__userInfos)
+               self.__createTime, self.__sendTime, self.__receiveTime,
+               self.__deliverTime, self.__userTimes, self.__userInfos)
 
     def __repr__(self):
         return self.__str__()
+
 
 class EventId(object):
     """
@@ -925,7 +980,8 @@ class EventId(object):
 
     def __eq__(self, other):
         try:
-            return (self.__sequenceNumber == other.__sequenceNumber) and (self.__participantId == other.__participantId)
+            return (self.__sequenceNumber == other.__sequenceNumber) and \
+                (self.__participantId == other.__participantId)
         except (TypeError, AttributeError):
             return False
 
@@ -933,35 +989,39 @@ class EventId(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "EventId(%r, %r)" % (self.__participantId, self.__sequenceNumber)
+        return "EventId(%r, %r)" % (self.__participantId,
+                                    self.__sequenceNumber)
 
     def __hash__(self):
-        prime = 31;
-        result = 1;
+        prime = 31
+        result = 1
         result = prime * result + hash(self.__participantId)
-        result = prime * result +  (self.__sequenceNumber ^ (self.__sequenceNumber >> 32))
-        return result;
+        result = prime * result + \
+            (self.__sequenceNumber ^ (self.__sequenceNumber >> 32))
+        return result
+
 
 class Event(object):
     """
     Basic event class.
 
     Events are often caused by other events, which e.g. means that their
-    contained payload was calculated on the payload of one or more other events.
+    contained payload was calculated on the payload of one or more other
+    events.
 
-    To express these relations each event contains a set of EventIds that express
-    the direct causes of the event. This means, transitive event causes are not
-    modeled.
+    To express these relations each event contains a set of EventIds that
+    express the direct causes of the event. This means, transitive event causes
+    are not modeled.
 
-    Cause handling is inspired by the ideas proposed in: David Luckham, The Power
-    of Events, Addison-Wessley, 2007
+    Cause handling is inspired by the ideas proposed in: David Luckham, The
+    Power of Events, Addison-Wessley, 2007
 
     @author: jwienke
     """
 
-    def __init__(self, id = None, scope = Scope("/"), method = None,
-                 data = None, type = object,
-                 metaData=None, userInfos=None, userTimes=None, causes = None):
+    def __init__(self, id=None, scope=Scope("/"), method=None,
+                 data=None, type=object,
+                 metaData=None, userInfos=None, userTimes=None, causes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
 
@@ -1002,13 +1062,13 @@ class Event(object):
             self.__metaData = MetaData()
         else:
             self.__metaData = metaData
-        if not userInfos is None:
+        if userInfos is not None:
             for (key, value) in userInfos.items():
                 self.__metaData.getUserInfos()[key] = value
-        if not userTimes is None:
+        if userTimes is not None:
             for (key, value) in userTimes.items():
                 self.__metaData.getUserTimes()[key] = value
-        if not causes is None:
+        if causes is not None:
             self.__causes = copy.copy(causes)
         else:
             self.__causes = []
@@ -1165,7 +1225,8 @@ class Event(object):
 
         @param theId: id to remove
         @type theId: EventId
-        @return: true if the id was remove, else false (because it did not exist)
+        @return: true if the id was remove, else false (because it did not
+                 exist)
         @rtype: bool
         """
         if theId in self.__causes:
@@ -1210,23 +1271,32 @@ class Event(object):
         printData = str(self.__data)
         if len(printData) > 100:
             printData = printData[:100] + '...'
-        printData = ''.join(['\\x%x' % ord(c) if ord(c) < 32 else c for c in printData])
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', method = '%s', metaData = %s, causes = %s]" \
-            % ("Event", self.__id, self.__scope, printData, self.__type, self.__method, self.__metaData, self.__causes)
+        printData = ''.join(['\\x%x' % ord(c)
+                             if ord(c) < 32 else c for c in printData])
+        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', " \
+            "method = '%s', metaData = %s, causes = %s]" \
+            % ("Event", self.__id, self.__scope, printData, self.__type,
+               self.__method, self.__metaData, self.__causes)
 
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
         try:
-            return (self.__id == other.__id) and (self.__scope == other.__scope) and (self.__type == other.__type) and (self.__data == other.__data) and (self.__metaData == other.__metaData) and (self.__causes == other.__causes)
+            return (self.__id == other.__id) and \
+                (self.__scope == other.__scope) and \
+                (self.__type == other.__type) and \
+                (self.__data == other.__data) and \
+                (self.__metaData == other.__metaData) and \
+                (self.__causes == other.__causes)
         except (TypeError, AttributeError):
             return False
 
     def __neq__(self, other):
         return not self.__eq__(other)
 
-class Hook (object):
+
+class Hook(object):
     """
     A mutable collection of callback functions that can be called
     together.
@@ -1235,7 +1305,7 @@ class Hook (object):
     """
 
     def __init__(self):
-        self.__lock     = threading.RLock()
+        self.__lock = threading.RLock()
         self.__handlers = []
 
     def run(self, *args, **kwargs):
@@ -1254,6 +1324,7 @@ class Hook (object):
 participantCreationHook = Hook()
 
 participantDestructionHook = Hook()
+
 
 class Participant(object):
     """
@@ -1319,12 +1390,12 @@ class Participant(object):
         self.deactivate()
 
     @classmethod
-    def getConnectors(clazz, direction, config):
-        if not direction in ('in', 'out'):
-            raise ValueError, 'Invalid direction: %s (valid directions are "in" and "out")' % direction
+    def getConnectors(cls, direction, config):
+        if direction not in ('in', 'out'):
+            raise ValueError('Invalid direction: %s (valid directions '
+                             'are "in" and "out")' % direction)
         if len(config.getTransports()) == 0:
-            raise ValueError, 'No transports specified (config is %s)' \
-                % config
+            raise ValueError('No transports specified (config is %s)' % config)
 
         transports = []
         for transport in config.getTransports():
@@ -1339,8 +1410,9 @@ class Participant(object):
                     factory.createOutConnector(converters,
                                                transport.getOptions()))
             else:
-                assert(False)
+                assert False
         return transports
+
 
 class Informer(Participant):
     """
@@ -1351,7 +1423,7 @@ class Informer(Participant):
     """
 
     def __init__(self, scope, config, dataType,
-                 configurator = None):
+                 configurator=None):
         """
         Constructs a new L{Informer} that publishes L{Event}s carrying
         payloads of type B{type} on B{scope}.
@@ -1379,21 +1451,24 @@ class Informer(Participant):
         # TODO check that type can be converted
         if dataType is None:
             raise ValueError("dataType must not be None")
-        self.__type           = dataType
+        self.__type = dataType
         self.__sequenceNumber = 0
-        self.__configurator   = None
+        self.__configurator = None
 
-        self.__active         = False
-        self.__mutex          = threading.Lock()
+        self.__active = False
+        self.__mutex = threading.Lock()
 
         if configurator:
             self.__configurator = configurator
         else:
             connectors = self.getConnectors('out', config)
             for connector in connectors:
-                connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.OutRouteConfigurator(connectors = connectors)
-        self.__configurator.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
+                connector.setQualityOfServiceSpec(
+                    config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.OutRouteConfigurator(
+                connectors=connectors)
+        self.__configurator.setQualityOfServiceSpec(
+            config.getQualityOfServiceSpec())
         self.__configurator.scope = self.scope
 
         self.__activate()
@@ -1416,9 +1491,9 @@ class Informer(Participant):
     def publishData(self, data, userInfos=None, userTimes=None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'", data)
-        event = Event(scope = self.scope,
-                      data = data, type = type(data),
-                      userInfos = userInfos, userTimes = userTimes)
+        event = Event(scope=self.scope,
+                      data=data, type=type(data),
+                      userInfos=userInfos, userTimes=userTimes)
         return self.publishEvent(event)
 
     def publishEvent(self, event):
@@ -1435,10 +1510,12 @@ class Informer(Participant):
 
         if not event.scope == self.scope \
                 and not event.scope.isSubScopeOf(self.scope):
-            raise ValueError("Scope %s of event %s is not a sub-scope of this informer's scope %s."
+            raise ValueError("Scope %s of event %s is not a sub-scope of "
+                             "this informer's scope %s."
                              % (event.scope, event, self.scope))
         if not isinstance(event.data, self.type):
-            raise ValueError("The payload %s of event %s does not match this informer's type %s."
+            raise ValueError("The payload %s of event %s does not match "
+                             "this informer's type %s."
                              % (event.data, event, self.type))
 
         with self.__mutex:
@@ -1451,7 +1528,8 @@ class Informer(Participant):
     def __activate(self):
         with self.__mutex:
             if self.__active:
-                raise RuntimeError, "Activate called even though informer was already active"
+                raise RuntimeError("Activate called even though informer "
+                                   "was already active")
 
             self.__logger.info("Activating informer")
 
@@ -1464,7 +1542,8 @@ class Informer(Participant):
     def deactivate(self):
         with self.__mutex:
             if not self.__active:
-                self.__logger.info("Deactivate called even though informer was not active")
+                self.__logger.info("Deactivate called even though informer "
+                                   "was not active")
 
             self.__logger.info("Deactivating informer")
 
@@ -1473,6 +1552,7 @@ class Informer(Participant):
             self.__configurator.deactivate()
 
         super(Informer, self).deactivate()
+
 
 class Listener(Participant):
     """
@@ -1483,8 +1563,8 @@ class Listener(Participant):
     """
 
     def __init__(self, scope, config,
-                 configurator      = None,
-                 receivingStrategy = None):
+                 configurator=None,
+                 receivingStrategy=None):
         """
         Create a new L{Listener} for B{scope}.
 
@@ -1503,20 +1583,22 @@ class Listener(Participant):
 
         self.__logger = getLoggerByClass(self.__class__)
 
-        self.__filters      = []
-        self.__handlers     = []
+        self.__filters = []
+        self.__handlers = []
         self.__configurator = None
-        self.__active       = False
-        self.__mutex        = threading.Lock()
+        self.__active = False
+        self.__mutex = threading.Lock()
 
         if configurator:
             self.__configurator = configurator
         else:
             connectors = self.getConnectors('in', config)
             for connector in connectors:
-                connector.setQualityOfServiceSpec(config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.InRouteConfigurator(connectors = connectors,
-                                                                          receivingStrategy = receivingStrategy)
+                connector.setQualityOfServiceSpec(
+                    config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.InRouteConfigurator(
+                connectors=connectors,
+                receivingStrategy=receivingStrategy)
         self.__configurator.setScope(self.scope)
 
         self.__activate()
@@ -1529,7 +1611,8 @@ class Listener(Participant):
         # TODO commonality with Informer... refactor
         with self.__mutex:
             if self.__active:
-                raise RuntimeError, "Activate called even though listener was already active"
+                raise RuntimeError("Activate called even though listener "
+                                   "was already active")
 
             self.__logger.info("Activating listener")
 
@@ -1542,7 +1625,8 @@ class Listener(Participant):
     def deactivate(self):
         with self.__mutex:
             if not self.__active:
-                raise RuntimeError, "Deactivate called even though listener was not active"
+                raise RuntimeError("Deactivate called even though listener "
+                                   "was not active")
 
             self.__logger.info("Deactivating listener")
 
@@ -1587,7 +1671,7 @@ class Listener(Participant):
         """
 
         with self.__mutex:
-            if not handler in self.__handlers:
+            if handler not in self.__handlers:
                 self.__handlers.append(handler)
                 self.__configurator.handlerAdded(handler, wait)
 
@@ -1619,13 +1703,16 @@ class Listener(Participant):
             return list(self.__handlers)
 
 __defaultConfigurationOptions = _configDefaultSourcesToDict()
-__defaultParticipantConfig = ParticipantConfig.fromDict(__defaultConfigurationOptions)
+__defaultParticipantConfig = ParticipantConfig.fromDict(
+    __defaultConfigurationOptions)
+
 
 def getDefaultParticipantConfig():
     """
     Returns the current default configuration for new objects.
     """
     return __defaultParticipantConfig
+
 
 def setDefaultParticipantConfig(config):
     """
@@ -1636,9 +1723,11 @@ def setDefaultParticipantConfig(config):
     global __defaultParticipantConfig
     __defaultParticipantConfig = config
 
-_introspectionDisplayName = __defaultConfigurationOptions.get('introspection.displayname')
+_introspectionDisplayName = __defaultConfigurationOptions.get(
+    'introspection.displayname')
 _introspectionInitialized = False
 _introspectionMutex = threading.RLock()
+
 
 def _initializeIntrospection():
     global _introspectionInitialized
@@ -1648,7 +1737,8 @@ def _initializeIntrospection():
             rsb.introspection.initialize(_introspectionDisplayName)
             _introspectionInitialized = True
 
-def createParticipant(clazz, scope, config, parent = None, **kwargs):
+
+def createParticipant(cls, scope, config, parent=None, **kwargs):
     if config is None:
         config = getDefaultParticipantConfig()
     __registerDefaultTransports()
@@ -1656,15 +1746,17 @@ def createParticipant(clazz, scope, config, parent = None, **kwargs):
     if config.introspection:
         _initializeIntrospection()
 
-    participant = clazz(scope, config = config, **kwargs)
-    participantCreationHook.run(participant, parent = parent)
+    participant = cls(scope, config=config, **kwargs)
+    participantCreationHook.run(participant, parent=parent)
     return participant
 
-def createListener(scope, config = None, parent = None, **kwargs):
+
+def createListener(scope, config=None, parent=None, **kwargs):
     """
     Creates and returns a new L{Listener} for B{scope}.
 
-    @param scope: the scope of the new L{Listener}. Can be a L{Scope} object or a string.
+    @param scope: the scope of the new L{Listener}. Can be a L{Scope} object
+                  or a string.
     @type scope: Scope or accepted by L{Scope} constructor
     @param config: The configuration that should be used by this
                    L{Listener}.
@@ -1677,7 +1769,8 @@ def createListener(scope, config = None, parent = None, **kwargs):
     return createParticipant(Listener, scope, config, parent,
                              **kwargs)
 
-def createInformer(scope, config = None, parent = None, dataType = object,
+
+def createInformer(scope, config=None, parent=None, dataType=object,
                    **kwargs):
     """
     Creates and returns a new L{Informer} for B{scope}.
@@ -1699,11 +1792,12 @@ def createInformer(scope, config = None, parent = None, dataType = object,
     @return: a new L{Informer} object.
     """
     return createParticipant(Informer, scope, config, parent,
-                             dataType = dataType,
+                             dataType=dataType,
                              **kwargs)
 
-def createLocalServer(scope, config = None, parent = None,
-                      object = None, expose = None, methods = None,
+
+def createLocalServer(scope, config=None, parent=None,
+                      object=None, expose=None, methods=None,
                       **kwargs):
     """
     Create and return a new L{LocalServer} object that exposes its
@@ -1738,11 +1832,11 @@ def createLocalServer(scope, config = None, parent = None,
     @rtype: rsb.patterns.LocalServer
     """
     # Check arguments
-    if not object is None and not expose is None and not methods is None:
-        raise ValueError, 'Supply either object and expose or methods'
-    if object is None and not expose is None \
-            or not object is None and expose is None:
-        raise ValueError, 'object and expose have to supplied together'
+    if object is not None and expose is not None and methods is not None:
+        raise ValueError('Supply either object and expose or methods')
+    if object is None and expose is not None \
+            or object is not None and expose is None:
+        raise ValueError('object and expose have to supplied together')
 
     # Create the server object and potentially add methods.
     import rsb.patterns
@@ -1750,14 +1844,15 @@ def createLocalServer(scope, config = None, parent = None,
                                scope, config, parent,
                                **kwargs)
     if object and expose:
-        methods = [ (name, getattr(object, name), requestType, replyType)
-                    for (name, requestType, replyType) in expose ]
+        methods = [(name, getattr(object, name), requestType, replyType)
+                   for (name, requestType, replyType) in expose]
     if methods:
         for (name, func, requestType, replyType) in methods:
             server.addMethod(name, func, requestType, replyType)
     return server
 
-def createRemoteServer(scope, config = None, parent = None, **kwargs):
+
+def createRemoteServer(scope, config=None, parent=None, **kwargs):
     """
     Create a new L{RemoteServer} object for a remote server that
     provides its methods under B{scope}.
@@ -1778,8 +1873,9 @@ def createRemoteServer(scope, config = None, parent = None, **kwargs):
     return createParticipant(rsb.patterns.RemoteServer, scope, config,
                              **kwargs)
 
-def createServer(scope, config = None, parent = None,
-                 object = None, expose = None, methods = None,
+
+def createServer(scope, config=None, parent=None,
+                 object=None, expose=None, methods=None,
                  **kwargs):
 
     """
@@ -1788,5 +1884,5 @@ def createServer(scope, config = None, parent = None,
     @deprecated: Use L{createLocalServer} instead.
     """
     return createLocalServer(scope, config, parent,
-                             object = object, expose = expose, methods = methods,
+                             object=object, expose=expose, methods=methods,
                              **kwargs)

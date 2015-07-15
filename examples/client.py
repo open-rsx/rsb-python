@@ -39,10 +39,11 @@ if __name__ == "__main__":
         # Call the method 'echo' on the remote server passing it a
         # string argument. The server's reply is returned from the call as
         # for a regular function call.
-        print 'server replied to synchronous call: "%s"' % server.echo('bla')
+        print('server replied to synchronous call: "%s"' % server.echo('bla'))
 
         # Call the method 'echo' again, this time asynchronously.
         future = server.echo.async('bla')
         # do other things
-        print 'server replied to asynchronous call: "%s"' % future.get(timeout = 10)
+        print('server replied to asynchronous call: "%s"'
+              % future.get(timeout=10))
 # mark-end::body

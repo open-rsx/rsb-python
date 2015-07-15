@@ -28,27 +28,33 @@ import uuid
 
 from rsb.introspection import ParticipantInfo, ProcessInfo, HostInfo
 
-class ParticipantInfoTest (unittest.TestCase):
+
+class ParticipantInfoTest(unittest.TestCase):
+
     def testConstructionWithoutParentId(self):
-        ParticipantInfo(kind  = 'listener',
-                        id    = uuid.uuid4(),
-                        scope = '/foo',
-                        type  = str)
+        ParticipantInfo(kind='listener',
+                        id=uuid.uuid4(),
+                        scope='/foo',
+                        type=str)
 
     def testConstructionWithParentId(self):
-        ParticipantInfo(kind     = 'listener',
-                        id       = uuid.uuid4(),
-                        scope    = '/foo',
-                        type     = str,
-                        parentId = uuid.uuid4())
+        ParticipantInfo(kind='listener',
+                        id=uuid.uuid4(),
+                        scope='/foo',
+                        type=str,
+                        parentId=uuid.uuid4())
 
-class ProcessInfoTest (unittest.TestCase):
+
+class ProcessInfoTest(unittest.TestCase):
+
     def testConstructionDefaults(self):
         info = ProcessInfo()
         self.assertTrue(isinstance(info.id, int))
         self.assertTrue(isinstance(info.rsbVersion, str))
 
-class HostInfoTest (unittest.TestCase):
+
+class HostInfoTest(unittest.TestCase):
+
     def testConstructionDefaults(self):
         info = HostInfo()
         self.assertTrue(isinstance(info.id, str) or info.id is None)
@@ -56,9 +62,13 @@ class HostInfoTest (unittest.TestCase):
         self.assertTrue(isinstance(info.softwareType, str))
         self.assertTrue(isinstance(info.softwareVersion, str))
 
+
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantInfoTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ProcessInfoTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(HostInfoTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ParticipantInfoTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ProcessInfoTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(HostInfoTest))
     return suite

@@ -29,7 +29,7 @@ from threading import Condition
 import time
 import random
 from rsb.util import OrderedQueueDispatcherPool
-import logging
+
 
 class EnumValueTest(unittest.TestCase):
 
@@ -58,6 +58,7 @@ class EnumValueTest(unittest.TestCase):
 
         self.assertEqual("TEST", str(rsb.util.Enum.EnumValue("TEST")))
 
+
 class EnumTest(unittest.TestCase):
 
     def testEnum(self):
@@ -79,17 +80,19 @@ class EnumTest(unittest.TestCase):
         self.assertEqual(rsb.util.Enum.EnumValue("C", 30), e.C)
 
     def testFromString(self):
-         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
-         self.assertEqual(e.fromString('A'), e.A)
-         self.assertEqual(e.fromString('B'), e.B)
-         self.assertEqual(e.fromString('C'), e.C)
-         self.assertRaises(ValueError, e.fromString, 'D')
+        e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
+        self.assertEqual(e.fromString('A'), e.A)
+        self.assertEqual(e.fromString('B'), e.B)
+        self.assertEqual(e.fromString('C'), e.C)
+        self.assertRaises(ValueError, e.fromString, 'D')
+
 
 class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
     class StubReciever(object):
 
         nextReceiverNum = 1
+
         @classmethod
         def nextNumber(cls):
             num = cls.nextReceiverNum
@@ -108,7 +111,8 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         with receiver.condition:
 
-            time.sleep(random.random() * 0.05 * float((receiver.receiverNum % 10)))
+            time.sleep(random.random() * 0.05 *
+                       float((receiver.receiverNum % 10)))
 
             receiver.messages.append(message)
             receiver.condition.notify_all()
@@ -161,7 +165,7 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
         def __call__(self, receiver, message):
             with self.condition:
                 self.rejectCalls = self.rejectCalls + 1
-                self.condition.notify_all();
+                self.condition.notify_all()
                 return False
 
     def testFilterExecution(self):
@@ -174,7 +178,7 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         pool.start()
 
-        numMessages = 10;
+        numMessages = 10
         for i in range(numMessages):
             pool.push(i)
 
@@ -206,9 +210,12 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         self.assertEqual(0, len(receiver.messages))
 
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EnumValueTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EnumTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OrderedQueueDispatcherPoolTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            OrderedQueueDispatcherPoolTest))
     return suite

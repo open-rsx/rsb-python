@@ -31,7 +31,7 @@ Various helper classes and methods.
 from threading import Lock, Condition, Thread
 from Queue import Queue
 import logging
-import time
+
 
 class Enum(object):
     """
@@ -45,14 +45,16 @@ class Enum(object):
         def __init__(self, name, value=None):
             self.__name = name
             self.__value = value
-            if self.__value == None:
+            if self.__value is None:
                 self.__value = name
 
         def __str__(self):
             return "%s" % (self.__name)
 
         def __repr__(self):
-            return "%s(%r, %r)" % (self.__class__.__name__, self.__name, self.__value)
+            return "%s(%r, %r)" % (self.__class__.__name__,
+                                   self.__name,
+                                   self.__value)
 
         def __eq__(self, other):
             try:
@@ -85,8 +87,10 @@ class Enum(object):
         @param keys: list of enum keys to generate
         """
 
-        if values != None and len(values) != len(keys):
-            raise ValueError("Length of enum key list must be the same as value list, keys: %s, values: %s" % (keys, values))
+        if values is not None and len(values) != len(keys):
+            raise ValueError("Length of enum key list must be the same "
+                             "as value list, keys: %s, values: %s"
+                             % (keys, values))
 
         self.__name = name
         self.__keys = keys
@@ -99,15 +103,18 @@ class Enum(object):
                 setattr(self, keys[i], Enum.EnumValue(keys[i]))
 
     def fromString(self, string):
-        if not string in self.__keys:
-            raise ValueError, "Invalid enum item `%s'" % string
+        if string not in self.__keys:
+            raise ValueError("Invalid enum item `%s'" % string)
         return getattr(self, string)
 
     def __str__(self):
         return "Enum %s: %s" % (self.__name, self.__keyString)
 
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (self.__class__.__name__, self.__keys, self.__values)
+        return '%s(%r, %r, %r)' % (self.__class__.__name__,
+                                   self.__keys,
+                                   self.__values)
+
 
 class InterruptedError(RuntimeError):
     """
@@ -118,13 +125,14 @@ class InterruptedError(RuntimeError):
     """
     pass
 
+
 class OrderedQueueDispatcherPool(object):
     """
-    A thread pool that dispatches messages to a list of receivers. The number of
-    threads is usually smaller than the number of receivers and for each
+    A thread pool that dispatches messages to a list of receivers. The number
+    of threads is usually smaller than the number of receivers and for each
     receiver it is guaranteed that messages arrive in the order they were
-    published. No guarantees are given between different receivers.
-    All methods except #start and #stop are reentrant.
+    published. No guarantees are given between different receivers.  All
+    methods except #start and #stop are reentrant.
 
     The pool can be stopped and restarted at any time during the processing but
     these calls must be single-threaded.
@@ -157,9 +165,9 @@ class OrderedQueueDispatcherPool(object):
         @type delFunc: callable with two arguments. First is the receiver
                        of a message, second is the message to deliver
         @param delFunc: the strategy used to deliver messages of type M to
-                       receivers of type R. This will most likely be a simple
-                       delegate function mapping to a concrete method call. Must
-                       be reentrant.
+                        receivers of type R. This will most likely be a simple
+                        delegate function mapping to a concrete method call.
+                        Must be reentrant.
         @type filterFunc: callable with two arguments. First is the receiver
                           of a message, second is the message to filter. Must
                           return a bool, true means to deliver the message,
@@ -171,11 +179,12 @@ class OrderedQueueDispatcherPool(object):
         self.__logger = getLoggerByClass(self.__class__)
 
         if threadPoolSize < 1:
-            raise ValueError("Thread pool size must be at least 1, %d was given." % threadPoolSize)
+            raise ValueError("Thread pool size must be at least 1,"
+                             "%d was given." % threadPoolSize)
         self.__threadPoolSize = int(threadPoolSize)
 
-        self.__delFunc = delFunc;
-        if filterFunc != None:
+        self.__delFunc = delFunc
+        if filterFunc is not None:
             self.__filterFunc = filterFunc
         else:
             self.__filterFunc = self.__trueFilter
@@ -197,10 +206,10 @@ class OrderedQueueDispatcherPool(object):
 
     def registerReceiver(self, receiver):
         """
-        Registers a new receiver at the pool. Multiple registrations of the same
-        receiver are possible resulting in being called multiple times for the
-        same message (but effectively this destroys the guarantee about ordering
-        given above because multiple message queues are used for every
+        Registers a new receiver at the pool. Multiple registrations of the
+        same receiver are possible resulting in being called multiple times for
+        the same message (but effectively this destroys the guarantee about
+        ordering given above because multiple message queues are used for every
         subscription).
 
         @param receiver: new receiver
@@ -232,7 +241,8 @@ class OrderedQueueDispatcherPool(object):
         if removed:
             with removed.processingCondition:
                 while removed.processing:
-                    self.__logger.info("Waiting for receiver %s to finish", receiver)
+                    self.__logger.info("Waiting for receiver %s to finish",
+                                       receiver)
                     removed.processingCondition.wait()
         return not (removed is None)
 
@@ -249,10 +259,11 @@ class OrderedQueueDispatcherPool(object):
             self.__jobsAvailable = True
             self.__condition.notify()
 
-        # XXX: This is disabled because it can trigger this bug for protocol buffers payloads:
+        # XXX: This is disabled because it can trigger this bug for protocol
+        # buffers payloads:
         # http://code.google.com/p/protobuf/issues/detail?id=454
         # See also #1331
-        #self.__logger.debug("Got new message to dispatch: %s", message)
+        # self.__logger.debug("Got new message to dispatch: %s", message)
 
     def __nextJob(self, workerNum):
         """
@@ -270,7 +281,8 @@ class OrderedQueueDispatcherPool(object):
             while not gotJob:
 
                 while (not self.__jobsAvailable) and (not self.__interrupted):
-                    self.__logger.debug("Worker %d: no jobs available, waiting", workerNum)
+                    self.__logger.debug(
+                        "Worker %d: no jobs available, waiting", workerNum)
                     self.__condition.wait()
 
                 if (self.__interrupted):
@@ -282,9 +294,10 @@ class OrderedQueueDispatcherPool(object):
                     self.__currentPosition = self.__currentPosition + 1
                     realPos = self.__currentPosition % len(self.__receivers)
 
-                    if (not self.__receivers[realPos].processing) and (not self.__receivers[realPos].queue.empty()):
+                    if (not self.__receivers[realPos].processing) and \
+                            (not self.__receivers[realPos].queue.empty()):
 
-                        receiver = self.__receivers[realPos];
+                        receiver = self.__receivers[realPos]
                         receiver.processing = True
                         gotJob = True
                         break
@@ -304,7 +317,8 @@ class OrderedQueueDispatcherPool(object):
                 receiver.processingCondition.notifyAll()
             if not receiver.queue.empty():
                 self.__jobsAvailable = True
-                self.__logger.debug("Worker %d: new jobs available, notifying one", workerNum)
+                self.__logger.debug("Worker %d: new jobs available, "
+                                    "notifying one", workerNum)
                 self.__condition.notify()
 
     def __worker(self, workerNum):
@@ -320,11 +334,17 @@ class OrderedQueueDispatcherPool(object):
 
                 receiver = self.__nextJob(workerNum)
                 message = receiver.queue.get(True, None)
-                self.__logger.debug("Worker %d: got message %s for receiver %s", workerNum, message, receiver.receiver)
+                self.__logger.debug(
+                    "Worker %d: got message %s for receiver %s",
+                    workerNum, message, receiver.receiver)
                 if self.__filterFunc(receiver.receiver, message):
-                    self.__logger.debug("Worker %d: delivering message %s for receiver %s", workerNum, message, receiver.receiver)
+                    self.__logger.debug(
+                        "Worker %d: delivering message %s for receiver %s",
+                        workerNum, message, receiver.receiver)
                     self.__delFunc(receiver.receiver, message)
-                    self.__logger.debug("Worker %d: delivery for receiver %s finished", workerNum, receiver.receiver)
+                    self.__logger.debug(
+                        "Worker %d: delivery for receiver %s finished",
+                        workerNum, receiver.receiver)
                 self.__finishedWork(receiver, workerNum)
 
         except InterruptedError:
@@ -352,14 +372,16 @@ class OrderedQueueDispatcherPool(object):
 
             self.__started = True
 
-        self.__logger.info("Started pool with %d threads", self.__threadPoolSize)
+        self.__logger.info("Started pool with %d threads",
+                           self.__threadPoolSize)
 
     def stop(self):
         """
         Blocking until every thread has stopped working.
         """
 
-        self.__logger.info("Starting to stop thread pool by wating for workers")
+        self.__logger.info(
+            "Starting to stop thread pool by wating for workers")
 
         with self.__condition:
             self.__interrupted = True
@@ -375,15 +397,17 @@ class OrderedQueueDispatcherPool(object):
 
         self.__logger.info("Stopped thread pool")
 
+
 def getLoggerByClass(klass):
     """
-    Get a python logger instance based on a class instance. The logger name will
-    be a dotted string containing python module and class name.
+    Get a python logger instance based on a class instance. The logger name
+    will be a dotted string containing python module and class name.
 
     @param klass: class instance
     @return: logger instance
     """
     return logging.getLogger(klass.__module__ + "." + klass.__name__)
+
 
 def timeToUnixMicroseconds(time):
     """
@@ -395,8 +419,10 @@ def timeToUnixMicroseconds(time):
     """
     return int(time * 1000000)
 
+
 def unixMicrosecondsToTime(value):
     return float(value) / 1000000.0
+
 
 def prefix():
     """

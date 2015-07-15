@@ -42,17 +42,17 @@ if __name__ == '__main__':
     # methods. This construction avoids adding the methods
     # individually.
     server = createServer(Scope('/example/server'),
-                          methods = [ ('echo2', lambda x: x, str, str) ])
+                          methods=[('echo2', lambda x: x, str, str)])
 
     # Finally, a LocalServer can be created by exposing some or all
     # methods of an ordinary Python object.
-    class MyObject:
+    class MyObject(object):
         def echo3(self, arg):
             return arg
 
     server = createServer(Scope('/example/server'),
-                          object = MyObject(),
-                          expose = [ ('echo3', str, str) ])
+                          object=MyObject(),
+                          expose=[('echo3', str, str)])
 
     # Note: the code above creates three servers, each of which
     # provides one method on the scope /example/server

@@ -38,20 +38,20 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # See ./registration.py.
-    converter = rsb.converter.ProtocolBufferConverter(messageClass = SimpleImage)
+    converter = rsb.converter.ProtocolBufferConverter(messageClass=SimpleImage)
     rsb.converter.registerGlobalConverter(converter)
 
-    rsb.__defaultParticipantConfig = rsb.ParticipantConfig.fromDefaultSources()
+    rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromDefaultSources())
 
     # Create an informer that will send the events carrying protocol
     # buffer payloads. See the informer.py example for a more detailed
     # explanation of informer creation.
     with rsb.createInformer("/example/converter",
-                            dataType = SimpleImage) as informer:
+                            dataType=SimpleImage) as informer:
 
         image = SimpleImage()
-        image.width  = 100
+        image.width = 100
         image.height = 100
-        image.data   = str('bla')
+        image.data = str('bla')
         informer.publishData(image)
 # mark-end::body

@@ -33,6 +33,7 @@ serialization overhead.
 from threading import RLock
 from rsb import transport
 
+
 class Bus(object):
     """
     Singleton-like representation of the local bus.
@@ -85,6 +86,7 @@ class Bus(object):
 
 globalBus = Bus()
 
+
 class OutConnector(transport.OutConnector):
     """
     In-process OutConnector.
@@ -108,6 +110,7 @@ class OutConnector(transport.OutConnector):
 
     def setQualityOfServiceSpec(self, qos):
         pass
+
 
 class InConnector(transport.InConnector):
     """
@@ -151,6 +154,7 @@ class InConnector(transport.InConnector):
         if action is not None:
             action(event)
 
+
 class TransportFactory(transport.TransportFactory):
     """
     L{TransportFactory} implementation for the local transport.
@@ -166,6 +170,7 @@ class TransportFactory(transport.TransportFactory):
 
     def createOutConnector(self, converters, options):
         return OutConnector(converters=converters, options=options)
+
 
 def initialize():
     try:

@@ -28,6 +28,7 @@ import rsb
 from rsb import Scope
 import rsb.filter
 
+
 class ScopeFilterTest(unittest.TestCase):
 
     def testMatch(self):
@@ -45,39 +46,47 @@ class ScopeFilterTest(unittest.TestCase):
         e.scope = Scope("/blubbbbbb")
         self.assertFalse(f.match(e))
 
-class OriginFilterTest (unittest.TestCase):
+
+class OriginFilterTest(unittest.TestCase):
+
     def testMatch(self):
         senderId1 = uuid.uuid1()
-        e1 = rsb.Event(id = rsb.EventId(participantId  = senderId1,
-                                        sequenceNumber = 0))
+        e1 = rsb.Event(id=rsb.EventId(participantId=senderId1,
+                                      sequenceNumber=0))
         senderId2 = uuid.uuid1()
-        e2 = rsb.Event(id = rsb.EventId(participantId  = senderId2,
-                                        sequenceNumber = 1))
+        e2 = rsb.Event(id=rsb.EventId(participantId=senderId2,
+                                      sequenceNumber=1))
 
-        f = rsb.filter.OriginFilter(origin = senderId1)
+        f = rsb.filter.OriginFilter(origin=senderId1)
         self.assertTrue(f.match(e1))
         self.assertFalse(f.match(e2))
 
-        f = rsb.filter.OriginFilter(origin = senderId1, invert = True)
+        f = rsb.filter.OriginFilter(origin=senderId1, invert=True)
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
 
-class MethodFilterTest (unittest.TestCase):
+
+class MethodFilterTest(unittest.TestCase):
+
     def testMatch(self):
-        e1 = rsb.Event(method = 'foo')
+        e1 = rsb.Event(method='foo')
         e2 = rsb.Event()
 
-        f = rsb.filter.MethodFilter(method = 'foo')
+        f = rsb.filter.MethodFilter(method='foo')
         self.assertTrue(f.match(e1))
         self.assertFalse(f.match(e2))
 
-        f = rsb.filter.MethodFilter(method = 'foo', invert = True)
+        f = rsb.filter.MethodFilter(method='foo', invert=True)
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
+
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OriginFilterTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MethodFilterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(OriginFilterTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(MethodFilterTest))
     return suite

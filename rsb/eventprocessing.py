@@ -24,8 +24,8 @@
 # ============================================================
 
 """
-A module with classes maintaining the processing of events between the transport
-layer and the client interface.
+A module with classes maintaining the processing of events between the
+transport layer and the client interface.
 
 @author: jwienke
 @author: jmoringe
@@ -38,7 +38,8 @@ import Queue
 import rsb.util
 import rsb.filter
 
-class BroadcastProcessor (object):
+
+class BroadcastProcessor(object):
     """
     This event processor implements synchronous broadcast dispatch to
     a list of handlers.
@@ -80,6 +81,7 @@ class BroadcastProcessor (object):
                len(self.handlers),
                id(self))
 
+
 class EventReceivingStrategy(object):
     """
     Superclass for event receiving strategies.
@@ -116,7 +118,9 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
 
     def __init__(self, numThreads=5):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
-        self.__pool = rsb.util.OrderedQueueDispatcherPool(threadPoolSize=numThreads, delFunc=self.__deliver, filterFunc=self.__filter)
+        self.__pool = rsb.util.OrderedQueueDispatcherPool(
+            threadPoolSize=numThreads, delFunc=self.__deliver,
+            filterFunc=self.__filter)
         self.__pool.start()
         self.__filters = []
         self.__filtersMutex = threading.RLock()
@@ -167,6 +171,7 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
     def addFilter(self, theFilter):
         with self.__filtersMutex:
             self.__filters.append(theFilter)
+
 
 class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     """
@@ -233,6 +238,7 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__mutex:
             self.__filters.append(f)
 
+
 class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     """
     An L{EventReceivingStrategy} that dispatches events to multiple
@@ -297,7 +303,7 @@ class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
             self.__filters.append(f)
 
 
-class EventSendingStrategy (object):
+class EventSendingStrategy(object):
     def getConnectors(self):
         raise NotImplementedError
 
@@ -312,7 +318,8 @@ class EventSendingStrategy (object):
     def handle(self, event):
         raise NotImplementedError
 
-class DirectEventSendingStrategy (EventSendingStrategy):
+
+class DirectEventSendingStrategy(EventSendingStrategy):
     def __init__(self):
         self.__connectors = []
 
@@ -329,7 +336,8 @@ class DirectEventSendingStrategy (EventSendingStrategy):
         for connector in self.__connectors:
             connector.handle(event)
 
-class Configurator (object):
+
+class Configurator(object):
     """
     Superclass for in- and out-direction Configurator classes. Manages
     the basic aspects like the connector list and (de)activation that
@@ -383,7 +391,7 @@ class Configurator (object):
 
     def activate(self):
         if self.__active:
-            raise RuntimeError, "Configurator is already active"
+            raise RuntimeError("Configurator is already active")
 
         self.__logger.info("Activating configurator")
         for connector in self.connectors:
@@ -393,7 +401,7 @@ class Configurator (object):
 
     def deactivate(self):
         if not self.__active:
-            raise RuntimeError, "Configurator is not active"
+            raise RuntimeError("Configurator is not active")
 
         self.__logger.info("Deactivating configurator")
         for connector in self.connectors:
@@ -404,6 +412,7 @@ class Configurator (object):
     def setQualityOfServiceSpec(self, qos):
         for connector in self.connectors:
             connector.setQualityOfServiceSpec(qos)
+
 
 class InRouteConfigurator(Configurator):
     """
@@ -457,6 +466,7 @@ class InRouteConfigurator(Configurator):
         for connector in self.connectors:
             connector.filterNotify(theFilter, rsb.filter.FilterAction.ADD)
 
+
 class OutRouteConfigurator(Configurator):
     """
     Instances of this class manage the sending of events via one or
@@ -475,12 +485,13 @@ class OutRouteConfigurator(Configurator):
         else:
             self.__sendingStrategy = sendingStrategy
 
-        if not connectors is None:
+        if connectors is not None:
             map(self.__sendingStrategy.addConnector, connectors)
 
     def handle(self, event):
         if not self.active:
-            raise RuntimeError, "Trying to publish event on Configurator which is not active."
+            raise RuntimeError("Trying to publish event on Configurator "
+                               "which is not active.")
 
         self.__logger.debug("Publishing event: %s", event)
         self.__sendingStrategy.handle(event)

@@ -52,7 +52,8 @@ _displayName = None
 
 # Model
 
-class ParticipantInfo (object):
+
+class ParticipantInfo(object):
     """
     Instances of this class store information about a participant.
 
@@ -62,11 +63,11 @@ class ParticipantInfo (object):
     @author: jmoringe
     """
 
-    def __init__(self, kind, id, scope, type, parentId = None):
-        self.__kind  = kind
-        self.__id    = id
+    def __init__(self, kind, id, scope, type, parentId=None):
+        self.__kind = kind
+        self.__id = id
         self.__scope = rsb.Scope.ensureScope(scope)
-        self.__type  = type
+        self.__type = type
         self.__parentId = parentId
 
     def getKind(self):
@@ -141,6 +142,7 @@ class ParticipantInfo (object):
 
 __processStartTime = None
 
+
 def processStartTime():
     """
     Return the start time of the current process (or an approximation)
@@ -152,7 +154,7 @@ def processStartTime():
     global __processStartTime
 
     # Used cached value, if there is one.
-    if not __processStartTime is None:
+    if __processStartTime is not None:
         return __processStartTime
 
     # Try to determine the start time of the current process in a
@@ -164,14 +166,15 @@ def processStartTime():
             import re
 
             procStatContent = open('/proc/stat').read()
-            btimeEntry = re.match('(?:.|\n)*btime ([0-9]+)', procStatContent).group(1)
+            btimeEntry = re.match('(?:.|\n)*btime ([0-9]+)',
+                                  procStatContent).group(1)
             bootTimeUNIXSeconds = int(btimeEntry)
 
             selfStatContent = open('/proc/self/stat').read()
             startTimeBootJiffies = int(selfStatContent.split(' ')[21])
 
-            __processStartTime = (  float(bootTimeUNIXSeconds)
-                                  + float(startTimeBootJiffies) / 100.0)
+            __processStartTime = float(bootTimeUNIXSeconds) \
+                + float(startTimeBootJiffies) / 100.0
         except:
             pass
 
@@ -182,6 +185,7 @@ def processStartTime():
 
     return __processStartTime
 
+
 def programName():
     import __main__
     if hasattr(__main__, '__file__'):
@@ -189,7 +193,8 @@ def programName():
     else:
         return '<no script>'
 
-class ProcessInfo (object):
+
+class ProcessInfo(object):
     """
     Instances of this class store information about operating system
     processes.
@@ -201,26 +206,26 @@ class ProcessInfo (object):
     """
 
     def __init__(self,
-                 id            = os.getpid(),
-                 programName   = ('python%d.%d %s'
-                                  % (sys.version_info.major,
-                                     sys.version_info.minor,
-                                     programName())),
-                 arguments     = sys.argv,
-                 startTime     = processStartTime(),
-                 executingUser = None,
-                 rsbVersion    = rsb.version.getVersion()):
-        self.__id            = id
-        self.__programName   = programName
-        self.__arguments     = arguments
-        self.__startTime     = startTime
+                 id=os.getpid(),
+                 programName='python%d.%d %s'
+                             % (sys.version_info.major,
+                                sys.version_info.minor,
+                                programName()),
+                 arguments=sys.argv,
+                 startTime=processStartTime(),
+                 executingUser=None,
+                 rsbVersion=rsb.version.getVersion()):
+        self.__id = id
+        self.__programName = programName
+        self.__arguments = arguments
+        self.__startTime = startTime
         self.__executingUser = executingUser
         if not self.__executingUser:
             try:
                 self.__executingUser = os.getlogin()
             except OSError:
                 pass
-        self.__rsbVersion    = rsbVersion
+        self.__rsbVersion = rsbVersion
 
     def getId(self):
         """
@@ -301,6 +306,7 @@ class ProcessInfo (object):
     def __repr__(self):
         return str(self)
 
+
 def hostId():
     """
     Returns a unique id string for the current host.
@@ -317,18 +323,21 @@ def hostId():
         except:
             return None
 
-    return ('linux' in sys.platform and maybeRead('/var/lib/dbus/machine-id')) \
-        or ('linux' in sys.platform and maybeRead('/ect/machine-id'))          \
+    return \
+        ('linux' in sys.platform and maybeRead('/var/lib/dbus/machine-id')) \
+        or ('linux' in sys.platform and maybeRead('/ect/machine-id')) \
         or None
+
 
 def machineType():
     result = platform.machine().lower()
-    if result in [ 'i368', 'i586', 'i686' ]:
+    if result in ['i368', 'i586', 'i686']:
         return 'x86'
-    elif result in [ 'x86_64', 'amd64' ]:
+    elif result in ['x86_64', 'amd64']:
         return 'x86_64'
     else:
         return result
+
 
 def machineVersion():
     if 'linux' in sys.platform:
@@ -336,11 +345,13 @@ def machineVersion():
 
         try:
             cpuInfo = open('/proc/cpuinfo').read()
-            return re.match('(?:.|\n)*model name\t: ([^\n]+)', cpuInfo).group(1)
+            return re.match('(?:.|\n)*model name\t: ([^\n]+)',
+                            cpuInfo).group(1)
         except:
             return None
 
-class HostInfo (object):
+
+class HostInfo(object):
     """
     Instances of this class store information about a host.
 
@@ -351,17 +362,17 @@ class HostInfo (object):
     """
 
     def __init__(self,
-                 id              = hostId(),
-                 hostname        = platform.node().split('.')[0],
-                 machineType     = machineType(),
-                 machineVersion  = machineVersion(),
-                 softwareType    = platform.system().lower(),
-                 softwareVersion = platform.release()):
-        self.__id              = id
-        self.__hostname        = hostname
-        self.__machineType     = machineType
-        self.__machineVersion  = machineVersion
-        self.__softwareType    = softwareType
+                 id=hostId(),
+                 hostname=platform.node().split('.')[0],
+                 machineType=machineType(),
+                 machineVersion=machineVersion(),
+                 softwareType=platform.system().lower(),
+                 softwareVersion=platform.release()):
+        self.__id = id
+        self.__hostname = hostname
+        self.__machineType = machineType
+        self.__machineVersion = machineVersion
+        self.__softwareType = softwareType
         self.__softwareVersion = softwareVersion
 
     def getId(self):
@@ -444,19 +455,22 @@ class HostInfo (object):
 
 # IntrospectionSender
 
-baseScope         = rsb.Scope('/__rsb/introspection/')
+baseScope = rsb.Scope('/__rsb/introspection/')
 participantsScope = baseScope.concat(rsb.Scope('/participants/'))
-hostsScope        = baseScope.concat(rsb.Scope('/hosts/'))
+hostsScope = baseScope.concat(rsb.Scope('/hosts/'))
 
-def participantScope(participantId, baseScope = participantsScope):
+
+def participantScope(participantId, baseScope=participantsScope):
     return baseScope.concat(rsb.Scope('/' + str(participantId)))
 
-def processScope(hostId, processId, baseScope = hostsScope):
+
+def processScope(hostId, processId, baseScope=hostsScope):
     return (baseScope
             .concat(rsb.Scope('/' + hostId))
             .concat(rsb.Scope('/' + processId)))
 
-class IntrospectionSender (object):
+
+class IntrospectionSender(object):
     """
     Instances of this class (usually zero or one per process) send
     information about participants in the current process, the current
@@ -476,33 +490,37 @@ class IntrospectionSender (object):
         self.__participants = []
 
         self.__process = ProcessInfo()
-        self.__host    = HostInfo()
+        self.__host = HostInfo()
 
         self.__informer = rsb.createInformer(participantsScope)
         self.__listener = rsb.createListener(participantsScope)
+
         def handle(event):
-            if not event.method in [ 'REQUEST', 'SURVEY' ]: # TODO use filter when we get conjunction filter
+            # TODO use filter when we get conjunction filter
+            if event.method not in ['REQUEST', 'SURVEY']:
                 return
 
-            id          = None
+            id = None
             participant = None
             if len(event.scope.components) > len(participantsScope.components):
                 try:
                     id = uuid.UUID(event.scope.components[-1])
-                    if not id is None:
-                        for p in self.__participants: # TODO there has to be a better way
+                    if id is not None:
+                        # TODO there has to be a better way
+                        for p in self.__participants:
                             if p.id == id:
                                 participant = p
                             break
                 except Exception, e:
-                    self.__logger.warn('Query event %s does not properly address a participant: %s',
+                    self.__logger.warn('Query event %s does not '
+                                       'properly address a participant: %s',
                                        event, e)
 
             def process(thunk):
-                if not participant is None and event.method == 'REQUEST':
-                    thunk(query = event, participant = participant)
+                if participant is not None and event.method == 'REQUEST':
+                    thunk(query=event, participant=participant)
                 elif participant is None and event.method == 'SURVEY':
-                    map(lambda p: thunk(query = event, participant = p),
+                    map(lambda p: thunk(query=event, participant=p),
                         self.__participants)
                 else:
                     self.__logger.warn('Query event %s not understood' % event)
@@ -516,16 +534,18 @@ class IntrospectionSender (object):
 
         self.__listener.addHandler(handle)
 
-        self.__server = rsb.createServer(processScope(self.__host.id or self.__host.hostname,
-                                                      str(self.__process.id)))
+        self.__server = rsb.createServer(
+            processScope(self.__host.id or self.__host.hostname,
+                         str(self.__process.id)))
+
         def echo(event):
             metaData = event.metaData
-            metaData.setUserTime('request.send',    metaData.sendTime)
+            metaData.setUserTime('request.send', metaData.sendTime)
             metaData.setUserTime('request.receive', metaData.receiveTime)
             return event
         self.__server.addMethod('echo', echo,
-                                requestType = rsb.Event,
-                                replyType   = rsb.Event)
+                                requestType=rsb.Event,
+                                replyType=rsb.Event)
 
     def deactivate(self):
         self.__listener.deactivate()
@@ -542,7 +562,7 @@ class IntrospectionSender (object):
 
     host = property(getHost)
 
-    def addParticipant(self, participant, parent = None):
+    def addParticipant(self, participant, parent=None):
         parentId = None
         if parent:
             parentId = parent.id
@@ -555,11 +575,12 @@ class IntrospectionSender (object):
                 result.append(c.lower())
             return ''.join(result)
 
-        info = ParticipantInfo(kind     = camelCaseToDashSeperated(type(participant).__name__ ),
-                               id       = participant.id,
-                               parentId = parentId,
-                               scope    = participant.scope,
-                               type     = object) # TODO
+        info = ParticipantInfo(
+            kind=camelCaseToDashSeperated(type(participant).__name__),
+            id=participant.id,
+            parentId=parentId,
+            scope=participant.scope,
+            type=object)  # TODO
 
         self.__participants.append(info)
 
@@ -572,16 +593,16 @@ class IntrospectionSender (object):
                 removed = p
                 break
 
-        if not removed is None:
+        if removed is not None:
             self.__participants.remove(removed)
             self.sendBye(removed)
 
         return bool(self.__participants)
 
-    def sendHello(self, participant, query = None):
+    def sendHello(self, participant, query=None):
         hello = Hello()
-        hello.kind  = participant.kind
-        hello.id    = participant.id.get_bytes()
+        hello.kind = participant.kind
+        hello.id = participant.id.get_bytes()
         hello.scope = participant.scope.toString()
         if participant.parentId:
             hello.parent = participant.parentId.get_bytes()
@@ -593,25 +614,25 @@ class IntrospectionSender (object):
             host.id = self.host.id
         host.hostname = self.host.hostname
         host.machine_type = self.host.machineType
-        if not self.host.machineVersion is None:
+        if self.host.machineVersion is not None:
             host.machine_version = self.host.machineVersion
         host.software_type = self.host.softwareType
         host.software_version = self.host.softwareVersion
 
         process = hello.process
-        process.id             = str(self.process.id)
-        process.program_name   = self.process.programName
+        process.id = str(self.process.id)
+        process.program_name = self.process.programName
         map(process.commandline_arguments.append, self.process.arguments)
-        process.start_time     = int(self.process.startTime * 1000000.0)
+        process.start_time = int(self.process.startTime * 1000000.0)
         if self.process.executingUser:
             process.executing_user = self.process.executingUser
-        process.rsb_version    = self.process.rsbVersion
+        process.rsb_version = self.process.rsbVersion
         if _displayName:
             process.display_name = _displayName
         scope = participantScope(participant.id, self.__informer.scope)
-        helloEvent = rsb.Event(scope = scope,
-                               data  = hello,
-                               type  = type(hello))
+        helloEvent = rsb.Event(scope=scope,
+                               data=hello,
+                               type=type(hello))
         if query:
             helloEvent.addCause(query.id)
         self.__informer.publishEvent(helloEvent)
@@ -621,23 +642,24 @@ class IntrospectionSender (object):
         bye.id = participant.id.get_bytes()
 
         scope = participantScope(participant.id, self.__informer.scope)
-        byeEvent = rsb.Event(scope = scope,
-                             data  = bye,
-                             type  = type(bye))
+        byeEvent = rsb.Event(scope=scope,
+                             data=bye,
+                             type=type(bye))
         self.__informer.publishEvent(byeEvent)
 
-    def sendPong(self, participant, query = None):
+    def sendPong(self, participant, query=None):
         scope = participantScope(participant.id, self.__informer.scope)
-        pongEvent = rsb.Event(scope = scope,
-                              data  = 'pong',
-                              type  = str)
+        pongEvent = rsb.Event(scope=scope,
+                              data='pong',
+                              type=str)
         if query:
             pongEvent.addCause(query.id)
         self.__informer.publishEvent(pongEvent)
 
 __sender = None
 
-def handleParticipantCreation(participant, parent = None):
+
+def handleParticipantCreation(participant, parent=None):
     """
     This function is intended to be connected to
     L{rsb.participantCreationHook} and calls
@@ -652,7 +674,8 @@ def handleParticipantCreation(participant, parent = None):
 
     if __sender is None:
         __sender = IntrospectionSender()
-    __sender.addParticipant(participant, parent = parent)
+    __sender.addParticipant(participant, parent=parent)
+
 
 def handleParticipantDestruction(participant):
     """
@@ -672,6 +695,7 @@ def handleParticipantDestruction(participant):
         __sender.deactivate()
         __sender = None
 
+
 def initialize(displayName=None):
     """
     Initializes the introspection module. Clients need to ensure that this
@@ -685,9 +709,9 @@ def initialize(displayName=None):
     _displayName = displayName
 
     # Register converters for introspection messages
-    for clazz in [ Hello, Bye ]:
-        converter = rsb.converter.ProtocolBufferConverter(messageClass = clazz)
-        rsb.converter.registerGlobalConverter(converter, replaceExisting = True)
+    for clazz in [Hello, Bye]:
+        converter = rsb.converter.ProtocolBufferConverter(messageClass=clazz)
+        rsb.converter.registerGlobalConverter(converter, replaceExisting=True)
 
     rsb.participantCreationHook.addHandler(handleParticipantCreation)
     rsb.participantDestructionHook.addHandler(handleParticipantDestruction)

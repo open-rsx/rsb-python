@@ -30,9 +30,9 @@ import copy
 import unittest
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, Event, \
-    Informer, EventId, setDefaultParticipantConfig, getDefaultParticipantConfig,\
-    Participant
+from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, \
+    Event, Informer, EventId, setDefaultParticipantConfig, \
+    getDefaultParticipantConfig, Participant
 import time
 from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
@@ -44,15 +44,16 @@ inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
 })
 socketConfig = ParticipantConfig.fromFile('test/with-socket.conf')
 
-class ParticipantConfigTest (unittest.TestCase):
+
+class ParticipantConfigTest(unittest.TestCase):
 
     def testConstruction(self):
         ParticipantConfig()
 
     def testCopy(self):
         transport = ParticipantConfig.Transport('socket',
-                                                options = { 'enabled': '1' })
-        config = ParticipantConfig(transports = { 'socket': transport })
+                                                options={'enabled': '1'})
+        config = ParticipantConfig(transports={'socket': transport})
         config.introspection = True
 
         copied = copy.deepcopy(config)
@@ -62,7 +63,6 @@ class ParticipantConfigTest (unittest.TestCase):
         # Assert source object is unmodified.
         self.assertTrue(config.introspection)
         self.assertTrue(config.transports[0].enabled)
-
 
     def testFromFile(self):
         config = ParticipantConfig.fromFile('test/smoke-test.conf')
@@ -86,8 +86,8 @@ class ParticipantConfigTest (unittest.TestCase):
 
     def testFromEnvironment(self):
         # Clear RSB-specific variables from environment
-        os.environ = dict( (key, value) for (key, value) in os.environ.items()
-                           if not 'RSB' in key )
+        os.environ = dict((key, value) for (key, value) in os.environ.items()
+                          if 'RSB' not in key)
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
         os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'
@@ -116,8 +116,8 @@ class ParticipantConfigTest (unittest.TestCase):
         self.assertTrue(config.introspection)
 
     def testOverwritingDefaults(self):
-        defaults = { 'transport.spread.enabled':     'yes',
-                     'qualityofservice.reliability': 'UNRELIABLE' }
+        defaults = {'transport.spread.enabled': 'yes',
+                    'qualityofservice.reliability': 'UNRELIABLE'}
         config = ParticipantConfig.fromDict(defaults)
         self.assertEqual(config.getQualityOfServiceSpec().getReliability(),
                          QualityOfServiceSpec.Reliability.UNRELIABLE)
@@ -144,6 +144,7 @@ class ParticipantConfigTest (unittest.TestCase):
         config.setIntrospection(False)
         self.assertFalse(config.introspection)
 
+
 class QualityOfServiceSpecTest(unittest.TestCase):
 
     def testConstruction(self):
@@ -156,9 +157,11 @@ class QualityOfServiceSpecTest(unittest.TestCase):
 
     def testComparison(self):
 
-        self.assertEqual(QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED,
-                                              QualityOfServiceSpec.Reliability.RELIABLE),
-                         QualityOfServiceSpec())
+        self.assertEqual(
+            QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED,
+                                 QualityOfServiceSpec.Reliability.RELIABLE),
+            QualityOfServiceSpec())
+
 
 class ScopeTest(unittest.TestCase):
 
@@ -209,10 +212,14 @@ class ScopeTest(unittest.TestCase):
 
     def testConcat(self):
 
-        self.assertEqual(rsb.Scope("/"), rsb.Scope("/").concat(rsb.Scope("/")))
-        self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/").concat(rsb.Scope("/a/test/")))
-        self.assertEqual(rsb.Scope("/a/test/"), rsb.Scope("/a/test/").concat(rsb.Scope("/")))
-        self.assertEqual(rsb.Scope("/a/test/example"), rsb.Scope("/a/test/").concat(rsb.Scope("/example/")))
+        self.assertEqual(rsb.Scope("/"),
+                         rsb.Scope("/").concat(rsb.Scope("/")))
+        self.assertEqual(rsb.Scope("/a/test/"),
+                         rsb.Scope("/").concat(rsb.Scope("/a/test/")))
+        self.assertEqual(rsb.Scope("/a/test/"),
+                         rsb.Scope("/a/test/").concat(rsb.Scope("/")))
+        self.assertEqual(rsb.Scope("/a/test/example"),
+                         rsb.Scope("/a/test/").concat(rsb.Scope("/example/")))
 
     def testComparison(self):
 
@@ -238,15 +245,20 @@ class ScopeTest(unittest.TestCase):
         self.assertTrue(rsb.Scope("/a/").isSubScopeOf(rsb.Scope("/")))
         self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/")))
         self.assertTrue(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/")))
-        self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/")))
-        self.assertFalse(rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/d/")))
+        self.assertFalse(
+            rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(
+            rsb.Scope("/a/b/c/").isSubScopeOf(rsb.Scope("/a/b/c/d/")))
         self.assertFalse(rsb.Scope("/a/x/c/").isSubScopeOf(rsb.Scope("/a/b/")))
 
         self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/")))
         self.assertTrue(rsb.Scope("/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
-        self.assertTrue(rsb.Scope("/a/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
-        self.assertFalse(rsb.Scope("/a/b/c/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
-        self.assertFalse(rsb.Scope("/a/b/c/d/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertTrue(
+            rsb.Scope("/a/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(
+            rsb.Scope("/a/b/c/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
+        self.assertFalse(
+            rsb.Scope("/a/b/c/d/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
         self.assertFalse(rsb.Scope("/b/").isSuperScopeOf(rsb.Scope("/a/b/c/")))
 
     def testHash(self):
@@ -278,6 +290,7 @@ class ScopeTest(unittest.TestCase):
         self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
         self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
 
+
 class EventIdTest(unittest.TestCase):
 
     def testHashing(self):
@@ -303,6 +316,7 @@ class EventIdTest(unittest.TestCase):
         self.assertNotEqual(id1.getAsUUID(), id3.getAsUUID())
         self.assertNotEqual(id1.getAsUUID(), id4.getAsUUID())
         self.assertNotEqual(id3.getAsUUID(), id4.getAsUUID())
+
 
 class EventTest(unittest.TestCase):
 
@@ -363,6 +377,7 @@ class EventTest(unittest.TestCase):
         e2.addCause(cause)
         self.assertEqual(e1, e2)
 
+
 class FactoryTest(unittest.TestCase):
 
     def setUp(self):
@@ -377,11 +392,12 @@ class FactoryTest(unittest.TestCase):
     def testCreateInformer(self):
         self.assert_(rsb.createInformer("/"))
 
+
 class MetaDataTest(unittest.TestCase):
 
     def testConstruction(self):
 
-        before = time.time();
+        before = time.time()
         meta = MetaData()
         after = time.time()
 
@@ -397,14 +413,14 @@ class MetaDataTest(unittest.TestCase):
 
         meta = MetaData()
 
-        before = time.time();
+        before = time.time()
 
         meta.setCreateTime(None)
         meta.setSendTime(None)
         meta.setReceiveTime(None)
         meta.setDeliverTime(None)
 
-        after = time.time();
+        after = time.time()
 
         self.assertNotEquals(None, meta.getCreateTime())
         self.assertNotEquals(None, meta.getSendTime())
@@ -425,9 +441,9 @@ class MetaDataTest(unittest.TestCase):
 
         meta = MetaData()
 
-        before = time.time();
+        before = time.time()
         meta.setUserTime("foo")
-        after = time.time();
+        after = time.time()
 
         self.assertNotEquals(None, meta.userTimes["foo"])
         self.assertTrue(meta.userTimes["foo"] >= before)
@@ -470,6 +486,7 @@ class MetaDataTest(unittest.TestCase):
         meta2.setUserInfo("foox", meta1.getUserInfos()["foox"])
         self.assertEquals(meta1, meta2)
 
+
 class InformerTest(unittest.TestCase):
 
     def setUp(self):
@@ -477,29 +494,29 @@ class InformerTest(unittest.TestCase):
         self.defaultScope = Scope("/a/test")
         self.informer = Informer(self.defaultScope,
                                  rsb.getDefaultParticipantConfig(),
-                                 dataType = str)
+                                 dataType=str)
 
     def tearDown(self):
         self.informer.deactivate()
 
     def testSendEventWrongScope(self):
         # Error: unrelated scope
-        e = Event(scope = Scope("/blubb"), data = 'foo', type = self.informer.type)
+        e = Event(scope=Scope("/blubb"), data='foo', type=self.informer.type)
         self.assertRaises(ValueError, self.informer.publishEvent, e)
 
         # OK: identical scope
-        e = Event(scope = self.defaultScope, data = 'foo', type = self.informer.type)
+        e = Event(scope=self.defaultScope, data='foo', type=self.informer.type)
         self.informer.publishEvent(e)
 
         # OK: sub-scope
-        e = Event(scope = self.defaultScope.concat(Scope('/sub')),
-                  data  = 'foo',
-                  type  = self.informer.type)
+        e = Event(scope=self.defaultScope.concat(Scope('/sub')),
+                  data='foo',
+                  type=self.informer.type)
         self.informer.publishEvent(e)
 
     def testSendEventWrongType(self):
         # Wrong type
-        e = Event(scope = self.defaultScope, data = 5)
+        e = Event(scope=self.defaultScope, data=5)
         self.assertRaises(ValueError, self.informer.publishEvent, e)
 
         # Wrong type
@@ -507,6 +524,7 @@ class InformerTest(unittest.TestCase):
 
         # OK
         self.informer.publishData('bla')
+
 
 class IntegrationTest(unittest.TestCase):
 
@@ -525,10 +543,13 @@ class IntegrationTest(unittest.TestCase):
             """
 
         class FooTypeConverter(Converter):
+
             def __init__(self):
                 Converter.__init__(self, bytearray, FooType, "footype")
+
             def serialize(self, inp):
                 return bytearray(), self.wireSchema
+
             def deserialize(self, inp, wireSchema):
                 return FooType()
 
@@ -537,7 +558,12 @@ class IntegrationTest(unittest.TestCase):
         config = getDefaultParticipantConfig()
         # this will raise an exception if the converter is not available.
         # This assumes that socket transport is enabled as the only transport
-        self.assertTrue(isinstance(Participant.getConnectors('out', config)[0].getConverterForDataType(FooType), FooTypeConverter))
+        self.assertTrue(
+            isinstance(
+                Participant.getConnectors(
+                    'out', config)[0].getConverterForDataType(FooType),
+                FooTypeConverter))
+
 
 class ContextManagerTest(unittest.TestCase):
 
@@ -577,20 +603,25 @@ class ContextManagerTest(unittest.TestCase):
             server.addMethod(methodName, lambda x: x, str, str)
             self.assertEqual(data, client.test(data))
 
+
 class HookTest(unittest.TestCase):
 
     def setUp(self):
         setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
 
         self.creationCalls = []
-        def handleCreation(participant, parent = None):
+
+        def handleCreation(participant, parent=None):
             self.creationCalls.append((participant, parent))
+
         self.creationHandler = handleCreation
         rsb.participantCreationHook.addHandler(self.creationHandler)
 
         self.destructionCalls = []
+
         def handleDestruction(participant):
             self.destructionCalls.append(participant)
+
         self.destructionHandler = handleDestruction
         rsb.participantDestructionHook.addHandler(self.destructionHandler)
 
@@ -602,22 +633,22 @@ class HookTest(unittest.TestCase):
         participant = None
         with rsb.createInformer('/') as informer:
             participant = informer
-            self.assertEqual(self.creationCalls, [ (participant, None) ])
-        self.assertEqual(self.destructionCalls, [ participant ])
+            self.assertEqual(self.creationCalls, [(participant, None)])
+        self.assertEqual(self.destructionCalls, [participant])
 
     def testListener(self):
         participant = None
         with rsb.createListener('/') as listener:
             participant = listener
-            self.assertEqual(self.creationCalls, [ (participant, None) ])
-        self.assertEqual(self.destructionCalls, [ participant ])
+            self.assertEqual(self.creationCalls, [(participant, None)])
+        self.assertEqual(self.destructionCalls, [participant])
 
     def testLocalServer(self):
         server = None
         method = None
         with rsb.createLocalServer('/') as participant:
             server = participant
-            self.assertEqual(self.creationCalls, [ (server, None) ])
+            self.assertEqual(self.creationCalls, [(server, None)])
 
             method = server.addMethod('echo', lambda x: x)
             self.assertTrue((method, server) in self.creationCalls)
@@ -630,7 +661,7 @@ class HookTest(unittest.TestCase):
         method = None
         with rsb.createRemoteServer('/') as participant:
             server = participant
-            self.assertEqual(self.creationCalls, [ (server, None) ])
+            self.assertEqual(self.creationCalls, [(server, None)])
 
             method = server.echo
             self.assertTrue((method, server) in self.creationCalls)
@@ -638,10 +669,13 @@ class HookTest(unittest.TestCase):
         self.assertTrue(server in self.destructionCalls)
         self.assertTrue(method in self.destructionCalls)
 
+
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventIdTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
@@ -649,6 +683,7 @@ def suite():
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ContextManagerTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(ContextManagerTest))
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(HookTest))
     return suite

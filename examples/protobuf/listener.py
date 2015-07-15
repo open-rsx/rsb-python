@@ -38,10 +38,10 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # See ./registration.py
-    converter = rsb.converter.ProtocolBufferConverter(messageClass = SimpleImage)
+    converter = rsb.converter.ProtocolBufferConverter(messageClass=SimpleImage)
     rsb.converter.registerGlobalConverter(converter)
 
-    rsb.__defaultParticipantConfig = rsb.ParticipantConfig.fromDefaultSources()
+    rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromDefaultSources())
 
     # Create a listener that will receive the events carrying protocol
     # buffer payloads. See the listener.py example for a more detailed

@@ -33,6 +33,7 @@ import rsb.eventprocessing
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 import time
 
+
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testMatchingProcess(self):
@@ -47,6 +48,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             with mc1Cond:
                 matchingCalls1.append(event)
                 mc1Cond.notifyAll()
+
         def matchingAction2(event):
             with mc2Cond:
                 matchingCalls2.append(event)
@@ -147,6 +149,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             ep.removeHandler(h2, wait=True)
             ep.removeHandler(h1, wait=True)
 
+
 class MockConnector(object):
     def activate(self):
         pass
@@ -162,6 +165,7 @@ class MockConnector(object):
 
     def setObserverAction(self, action):
         pass
+
 
 # TODO(jmoringe): could be useful in all tests for active objects
 class ActivateCountingMockConnector(MockConnector):
@@ -180,11 +184,13 @@ class ActivateCountingMockConnector(MockConnector):
         self.__case.assertEqual(activations, self.activations)
         self.__case.assertEqual(deactivations, self.deactivations)
 
+
 class OutRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ connector ])
+        configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[connector])
 
         # Cannot deactivate inactive configurator
         self.assertRaises(RuntimeError, configurator.deactivate)
@@ -211,7 +217,8 @@ class OutRouteConfiguratorTest(unittest.TestCase):
             def handle(self, event):
                 RecordingOutConnector.lastEvent = event
 
-        configurator = rsb.eventprocessing.OutRouteConfigurator(connectors=[ RecordingOutConnector() ])
+        configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[RecordingOutConnector()])
 
         event = 42
 
@@ -233,11 +240,13 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         self.assertRaises(RuntimeError, configurator.handle, event)
         self.assertEqual(None, RecordingOutConnector.lastEvent)
 
+
 class InRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ connector ])
+        configurator = rsb.eventprocessing.InRouteConfigurator(
+            connectors=[connector])
 
         # Cannot deactivate inactive configurator
         self.assertRaises(RuntimeError, configurator.deactivate)
@@ -267,13 +276,15 @@ class InRouteConfiguratorTest(unittest.TestCase):
 
             def expect(self1, calls):
                 self.assertEqual(len(calls), len(self1.calls))
-                for (expFilter, expAction), (filter, action) in zip(calls, self1.calls):
+                for (expFilter, expAction), (filter, action) in \
+                        zip(calls, self1.calls):
                     self.assertEqual(expFilter, filter)
                     if expAction == 'add':
                         self.assertEquals(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
-        configurator = rsb.eventprocessing.InRouteConfigurator(connectors=[ connector ])
+        configurator = rsb.eventprocessing.InRouteConfigurator(
+            connectors=[connector])
         configurator.activate()
         connector.expect(())
 
@@ -287,12 +298,15 @@ class InRouteConfiguratorTest(unittest.TestCase):
         configurator.filterAdded(f3)
         connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add')))
 
+
 class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
 
     class CollectingHandler(object):
+
         def __init__(self):
             self.condition = Condition()
             self.event = None
+
         def __call__(self, event):
             with self.condition:
                 self.event = event
@@ -354,12 +368,15 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         callLock = Condition()
 
         class Receiver(object):
+
             def __init__(self, counter):
                 self.counter = counter
+
             def __call__(self, message):
                 with callLock:
                     currentCalls.append(message)
-                    self.counter.value = max(self.counter.value, len(currentCalls))
+                    self.counter.value = max(self.counter.value,
+                                             len(currentCalls))
                     callLock.notifyAll()
                 time.sleep(2)
                 with callLock:
@@ -389,8 +406,14 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ParallelEventReceivingStrategyTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(OutRouteConfiguratorTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InRouteConfiguratorTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FullyParallelEventReceivingStrategyTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            ParallelEventReceivingStrategyTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(OutRouteConfiguratorTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(InRouteConfiguratorTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(
+            FullyParallelEventReceivingStrategyTest))
     return suite
