@@ -31,6 +31,7 @@ from rsb.converter import Converter, NoneConverter, StringConverter, \
     EventsByScopeMapConverter
 from rsb import Scope, Event, EventId
 from uuid import uuid4
+from nose.tools import assert_equals
 
 
 class ConflictingStringConverter(Converter):
@@ -204,39 +205,15 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
             self.assertEqual(orig.causes, converted.causes)
 
 
-def makeStructBasedConverterTest(name, values):
-    class NewTest(unittest.TestCase):
-        def testRoundtrip(self):
-            converter = rsb.converter.__dict__[name]()
-            for value in values:
-                self.assertEquals(value,
-                                  converter.deserialize(
-                                      *converter.serialize(value)))
-    testName = name + 'Test'
-    NewTest.__name__ = testName
-    globals()[testName] = NewTest
-    return NewTest
+def checkStructureBasedRountrip(converterName, values):
+    converter = rsb.converter.__dict__[converterName]()
+    for value in values:
+        assert_equals(value,
+                      converter.deserialize(*converter.serialize(value)))
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ConverterMapTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            UnambiguousConverterMapTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            PredicateConverterListTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(NoneConverterTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(StringConverterTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            EventsByScopeMapConverterTest))
-
-    for args in [
+def test_structureBaseConverters():
+    for converterName, values in [
             ('DoubleConverter', [0.0, -1.0, 1.0]),
             ('FloatConverter', [0.0, -1.0, 1.0]),
             ('Int32Converter', [0L, -1L, 1L, -24378L, ((1L << 31L) - 1L)]),
@@ -244,8 +221,4 @@ def suite():
             ('Uint32Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
             ('Uint64Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
             ('BoolConverter', [True, False])]:
-        suite.addTest(
-            unittest.TestLoader().loadTestsFromTestCase(
-                makeStructBasedConverterTest(*args)))
-
-    return suite
+        yield checkStructureBasedRountrip, converterName, values

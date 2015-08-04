@@ -402,18 +402,3 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
                 self.fail("Impossible to be called in parallel again")
             else:
                 self.assertEqual(3, maxParallelCalls.value)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            ParallelEventReceivingStrategyTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(OutRouteConfiguratorTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(InRouteConfiguratorTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(
-            FullyParallelEventReceivingStrategyTest))
-    return suite

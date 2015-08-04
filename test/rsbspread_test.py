@@ -29,12 +29,43 @@ import threading
 import hashlib
 import random
 import string
+import subprocess
+import time
 import uuid
+
+from distutils.spawn import find_executable
+
+from testconfig import config
 
 from rsb.transport import rsbspread
 from rsb import Event, Scope, EventId, ParticipantConfig
-from test.transporttest import SettingReceiver, TransportTest
+from test.transporttest import SettingReceiver, TransportCheck
 import rsb
+
+_spreadProcess = None
+
+
+def setup_module():
+    # pylint: disable=global-statement
+    global _spreadProcess
+
+    try:
+        spread = config['spread']['daemon']
+    except KeyError:
+        spread = find_executable('spread')
+    assert spread, 'Spread executable not found. Is it on PATH? ' \
+        'Or specify it via the nose test config ' \
+        'as daemon in the [spread] section.'
+    _spreadProcess = subprocess.Popen([spread,
+                                       '-n', 'localhost',
+                                       '-c', 'test/spread.conf'])
+    time.sleep(5)
+    assert _spreadProcess.poll() is None, 'Spread could not be started'
+
+
+def teardown_module():
+    _spreadProcess.terminate()
+    _spreadProcess.wait()
 
 
 def getConnector(scope,
@@ -75,7 +106,6 @@ class SpreadConnectorTest(unittest.TestCase):
             self.disconnectCalls = 0
 
         def join(self, group):
-            print("Join called with group %s" % group)
             self.joinCalls.append(group)
 
         def leave(self, group):
@@ -91,7 +121,6 @@ class SpreadConnectorTest(unittest.TestCase):
             msg = self.__lastMessage
             self.__lastMessage = None
             self.__cond.release()
-            print("Returning message with groups: %s" % (msg.groups))
             return msg
 
         def multicast(self, type, group, message):
@@ -171,7 +200,7 @@ class SpreadConnectorTest(unittest.TestCase):
             # self.assertEqual(receiver.resultEvent, event)
 
 
-class SpreadTransportTest(TransportTest):
+class SpreadTransportTest(TransportCheck, unittest.TestCase):
 
     def _getInConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.InConnector,
@@ -180,12 +209,3 @@ class SpreadTransportTest(TransportTest):
     def _getOutConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.OutConnector,
                             activate=activate)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(SpreadConnectorTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(SpreadTransportTest))
-    return suite

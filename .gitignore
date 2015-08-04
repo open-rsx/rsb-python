@@ -2,9 +2,10 @@
 setup.cfg
 /*.egg
 /build
-/rsb_python.egg-info
-/coverage*
-/test-reports
+*.egg-info
+/cover*
+/.coverage
+/nosetests.xml
 /rsb/protocol
 /rsb/rsbspread/rsb/protocol
 /rsb/version.py

@@ -61,14 +61,3 @@ class HostInfoTest(unittest.TestCase):
         self.assertTrue(isinstance(info.machineType, str))
         self.assertTrue(isinstance(info.softwareType, str))
         self.assertTrue(isinstance(info.softwareVersion, str))
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ParticipantInfoTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ProcessInfoTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(HostInfoTest))
-    return suite

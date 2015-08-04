@@ -668,22 +668,3 @@ class HookTest(unittest.TestCase):
 
         self.assertTrue(server in self.destructionCalls)
         self.assertTrue(method in self.destructionCalls)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ParticipantConfigTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(QualityOfServiceSpecTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(ScopeTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventIdTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(EventTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(FactoryTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(MetaDataTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(InformerTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(IntegrationTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ContextManagerTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(HookTest))
-    return suite

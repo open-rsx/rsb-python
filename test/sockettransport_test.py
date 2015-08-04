@@ -28,7 +28,7 @@ from rsb import ParticipantConfig
 from rsb.converter import getGlobalConverterMap
 from rsb.transport.socket import OutConnector, InPushConnector
 
-from transporttest import TransportTest
+from test.transporttest import TransportCheck
 
 
 def getConnector(clazz, scope, activate=True):
@@ -42,17 +42,10 @@ def getConnector(clazz, scope, activate=True):
     return connector
 
 
-class SocketTransportTest(TransportTest):
+class SocketTransportTest(TransportCheck, unittest.TestCase):
 
     def _getInConnector(self, scope, activate=True):
         return getConnector(InPushConnector, scope, activate=activate)
 
     def _getOutConnector(self, scope, activate=True):
         return getConnector(OutConnector, scope, activate=activate)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(SocketTransportTest))
-    return suite

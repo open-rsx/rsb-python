@@ -79,14 +79,3 @@ class MethodFilterTest(unittest.TestCase):
         f = rsb.filter.MethodFilter(method='foo', invert=True)
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(ScopeFilterTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(OriginFilterTest))
-    suite.addTest(
-        unittest.TestLoader().loadTestsFromTestCase(MethodFilterTest))
-    return suite

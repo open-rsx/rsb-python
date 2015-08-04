@@ -161,10 +161,3 @@ class RoundTripTest (unittest.TestCase):
                            for x in range(numParallelCalls)]
                 for r in results:
                     r.get(10)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(LocalServerTest))
-    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(RoundTripTest))
-    return suite

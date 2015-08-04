@@ -49,7 +49,7 @@ class SettingReceiver(object):
         return "%s(%r)" % (self.__class__.__name__, self.scope)
 
 
-class TransportTest(unittest.TestCase):
+class TransportCheck(object):
     '''
     An abstract base class for ensuring interface assumptions about transports.
 

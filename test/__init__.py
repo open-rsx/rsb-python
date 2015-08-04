@@ -23,59 +23,54 @@
 #
 # ============================================================
 
-import sys
-import logging
-
-import unittest
-
 import rsb
 
-import coretest
-import eventprocessingtest
-import filtertest
-import transporttest
-import convertertest
-import utiltest
-import patternstest
-import localtransporttest
-import sockettransporttest
-import introspectiontest
-from rsb import haveSpread
+from testconfig import config
 
 
-logging.basicConfig(level=logging.INFO)
+def setup_package():
+    try:
+        spreadPort = config['spread']['port']
+    except KeyError:
+        spreadPort = 4569
+    try:
+        socketPort = config['socket']['port']
+    except KeyError:
+        socketPort = 55666
+    # generate config files
+    for name, socketenabled, spreadenabled, inprocessenabled in \
+            [('spread', '0', '1', '0'),
+             ('socket', '1', '0', '0'),
+             ('inprocess', '0', '0', '1')]:
+        with open('test/with-{}.conf'.format(name), 'w') as f:
+            f.write('''[introspection]
+enabled = 0
 
-import rsb.transport.local
-rsb.transport.local.initialize()
-import rsb.transport.socket
-rsb.transport.socket.initialize()
-if haveSpread():
-    import rsb.transport.rsbspread
-    rsb.transport.rsbspread.initialize()
+[transport.inprocess]
+enabled = {inprocessenabled}
 
+[transport.spread]
+enabled = {spreadenabled}
+port    = {spreadport}
 
-class ConfigSettingTestSuite(unittest.TestSuite):
-    def run(self, *args):
-        rsb.getDefaultParticipantConfig()
-        rsb.setDefaultParticipantConfig(
-            rsb.ParticipantConfig.fromFile('test/with-spread.conf'))
+[transport.socket]
+enabled = {socketenabled}
+port    = {socketport}'''
+                    .format(inprocessenabled=inprocessenabled,
+                            spreadenabled=spreadenabled,
+                            spreadport=spreadPort,
+                            socketenabled=socketenabled,
+                            socketport=socketPort))
 
-        super(ConfigSettingTestSuite, self).run(*args)
+    with open('test/spread.conf', 'w') as f:
+        f.write('''Spread_Segment 127.0.0.255:{spreadport} {{
+localhost 127.0.0.1
+}}
+SocketPortReuse = ON
+                '''
+                .format(spreadport=spreadPort))
 
-
-def suite():
-    suite = ConfigSettingTestSuite()
-    suite.addTest(utiltest.suite())
-    suite.addTest(coretest.suite())
-    suite.addTest(eventprocessingtest.suite())
-    suite.addTest(filtertest.suite())
-    suite.addTest(convertertest.suite())
-    suite.addTest(patternstest.suite())
-    if haveSpread():
-        import rsbspreadtest
-        suite.addTest(rsbspreadtest.suite())
-    suite.addTest(localtransporttest.suite())
-    suite.addTest(sockettransporttest.suite())
-    suite.addTest(introspectiontest.suite())
-
-    return suite
+    # initialize participant config
+    rsb.getDefaultParticipantConfig()
+    rsb.setDefaultParticipantConfig(
+        rsb.ParticipantConfig.fromFile('test/with-socket.conf'))
