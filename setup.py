@@ -85,6 +85,7 @@ class FetchProtocol(Command):
         shutil.copytree(os.path.join(protoRoot, 'rsb/protocol'),
                         fetchedProtocolDir)
 
+
 class BuildProtocol(Command):
     '''
     Distutils command to build the protocol buffers.
@@ -166,6 +167,7 @@ class BDist_egg(bdist_egg):
         self.run_command('build_proto')
         bdist_egg.run(self)
 
+
 class Build(build):
     '''
     Simple wrapper around the normal build command to require protobuf build
@@ -177,6 +179,7 @@ class Build(build):
     def run(self):
         self.run_command('build_proto')
         build.run(self)
+
 
 class Sdist(sdist):
     '''
@@ -208,9 +211,9 @@ def defineProjectVersion(majorMinor):
 
     def checkedProgramOutput(commandLine, filename):
         '''
-        Tries to get the stdout of a program and writes it to the specified file
-        in cases where the execution of the program succeeded. Otherwise the
-        file remains untouched.
+        Tries to get the stdout of a program and writes it to the specified
+        file in cases where the execution of the program succeeded. Otherwise
+        the file remains untouched.
         '''
 
         try:
@@ -276,6 +279,7 @@ def defineProjectVersion(majorMinor):
 
     return ('{}.{}'.format(majorMinor, patchVersion), str(lastCommit))
 
+
 def determineProtocVersion():
     '''
     Determines the protoc version available to compile the protocol to python
@@ -292,6 +296,7 @@ def determineProtocVersion():
         raise RuntimeError(
             "Unexpected version out from protoc: '{}'".format(versionOutput))
     return protocVersionParts[1]
+
 
 def generateVersionFile(version, commit):
     '''

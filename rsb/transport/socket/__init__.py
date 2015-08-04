@@ -368,7 +368,7 @@ class Bus(object):
     connectors = property(getConnectors)
 
     def handleIncoming(self, connectionAndNotification):
-        (connection, notification) = connectionAndNotification
+        _, notification = connectionAndNotification
         self.__logger.debug('Trying to distribute notification to connectors')
         with self.lock:
             self.__logger.debug(
