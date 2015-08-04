@@ -38,10 +38,6 @@ from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
 from threading import Condition
 
-inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
-    "introspection.enabled":       "0",
-    "transport.inprocess.enabled": "1"
-})
 socketConfig = ParticipantConfig.fromFile('test/with-socket.conf')
 
 
@@ -380,9 +376,6 @@ class EventTest(unittest.TestCase):
 
 class FactoryTest(unittest.TestCase):
 
-    def setUp(self):
-        setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
-
     def testDefaultParticipantConfig(self):
         self.assert_(rsb.getDefaultParticipantConfig())
 
@@ -490,7 +483,6 @@ class MetaDataTest(unittest.TestCase):
 class InformerTest(unittest.TestCase):
 
     def setUp(self):
-        setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
         self.defaultScope = Scope("/a/test")
         self.informer = Informer(self.defaultScope,
                                  rsb.getDefaultParticipantConfig(),
@@ -528,14 +520,18 @@ class InformerTest(unittest.TestCase):
 
 class IntegrationTest(unittest.TestCase):
 
+    def setUp(self):
+        self._previousConfig = getDefaultParticipantConfig()
+        setDefaultParticipantConfig(socketConfig)
+
+    def tearDown(self):
+        setDefaultParticipantConfig(self._previousConfig)
+
     def testLazyConverterRegistration(self):
         """
         Test that converters can be added to the global converter map without
         requiring a completely new instance of the default participant config.
         """
-
-        # prevent changes to the configuration from other tests
-        setDefaultParticipantConfig(socketConfig)
 
         class FooType(object):
             """
@@ -568,7 +564,6 @@ class IntegrationTest(unittest.TestCase):
 class ContextManagerTest(unittest.TestCase):
 
     def setUp(self):
-        setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
         self.scope = rsb.Scope('/one/test')
         self.receivedCondition = Condition()
         self.receivedData = None
@@ -607,8 +602,6 @@ class ContextManagerTest(unittest.TestCase):
 class HookTest(unittest.TestCase):
 
     def setUp(self):
-        setDefaultParticipantConfig(inProcessNoIntrospectionConfig)
-
         self.creationCalls = []
 
         def handleCreation(participant, parent=None):

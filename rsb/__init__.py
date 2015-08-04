@@ -45,6 +45,8 @@ import os
 import platform
 import ConfigParser
 
+_logger = logging.getLogger('rsb')
+
 
 # prevent logging warnings about missing handlers as per:
 # https://docs.python.org/2.6/library/logging.html#configuring-logging-for-a-library
@@ -56,7 +58,7 @@ class _NullHandler(logging.Handler):
     """
     def emit(self, record):
         pass
-logging.getLogger('rsb').addHandler(_NullHandler())
+_logger.addHandler(_NullHandler())
 
 from rsb.util import getLoggerByClass, Enum
 import rsb.eventprocessing
@@ -1719,6 +1721,7 @@ def setDefaultParticipantConfig(config):
     @param config: A ParticipantConfig object which contains the new defaults.
     """
     global __defaultParticipantConfig
+    _logger.debug('Setting default participant config to %s', config)
     __defaultParticipantConfig = config
 
 _introspectionDisplayName = __defaultConfigurationOptions.get(
