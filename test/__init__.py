@@ -73,4 +73,4 @@ SocketPortReuse = ON
     # initialize participant config
     rsb.getDefaultParticipantConfig()
     rsb.setDefaultParticipantConfig(
-        rsb.ParticipantConfig.fromFile('test/with-socket.conf'))
+        rsb.ParticipantConfig.fromFile('test/with-inprocess.conf'))
