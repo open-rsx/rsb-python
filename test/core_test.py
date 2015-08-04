@@ -38,8 +38,6 @@ from uuid import uuid4
 from rsb.converter import Converter, registerGlobalConverter
 from threading import Condition
 
-socketConfig = ParticipantConfig.fromFile('test/with-socket.conf')
-
 
 class ParticipantConfigTest(unittest.TestCase):
 
@@ -522,7 +520,8 @@ class IntegrationTest(unittest.TestCase):
 
     def setUp(self):
         self._previousConfig = getDefaultParticipantConfig()
-        setDefaultParticipantConfig(socketConfig)
+        setDefaultParticipantConfig(
+            ParticipantConfig.fromFile('test/with-socket.conf'))
 
     def tearDown(self):
         setDefaultParticipantConfig(self._previousConfig)
