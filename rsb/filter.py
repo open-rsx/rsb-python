@@ -26,8 +26,8 @@
 Contains filters which can be used to restrict the amount of events received by
 clients.
 
-@author: jwienke
-@author: jmoringe
+.. codeauthor:: jwienke
+.. codeauthor:: jmoringe
 """
 
 import rsb.util
@@ -40,17 +40,19 @@ class AbstractFilter(object):
     """
     Interface for concrete filters.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def match(self, event):
         """
         Matches this filter against a given event.
 
-        @type event: rsb.RSBEvent
-        @param event: event to match against
-        @rtype: bool
-        @return: True if this filter matches the event, else False
+        Args:
+            event:
+                event to match against
+
+        Returns:
+            True if this filter matches the event, else False
         """
         pass
 
@@ -59,14 +61,16 @@ class ScopeFilter(AbstractFilter):
     """
     A filter to restrict the scope for events.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, scope):
         """
         Constructs a new scope filter with a given scope to restrict to.
 
-        @param scope: top-level scope to accept and al child scopes
+        Args:
+            scope:
+                top-level scope to accept and al child scopes
         """
         self.__scope = scope
 
@@ -74,7 +78,8 @@ class ScopeFilter(AbstractFilter):
         """
         Returns the top-level scope this filter matches for.
 
-        @return: scope
+        Returns:
+            scope
         """
         return self.__scope
 
@@ -87,17 +92,18 @@ class OriginFilter(AbstractFilter):
     """
     Matching events have to originate at a particular participant.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, origin, invert=False):
         """
-        @param origin: The id of the L{Participant} from which
-                       matching events should originate.
-        @param invert: Controls whether matching results should
-                       inverted (i.e. matching events B{not}
-                       originating form B{origin}).
-        @type invert: bool
+        Args:
+            origin:
+                The id of the :obj:`Participant` from which matching events
+                should originate.
+            invert (bool):
+                Controls whether matching results should inverted (i.e.
+                matching events ``not`` originating form ``origin``).
         """
         self.__origin = origin
         self.__invert = invert
@@ -138,19 +144,19 @@ class MethodFilter(AbstractFilter):
     Matching events have (not) have a particular value in their method
     field.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, method, invert=False):
         """
-        @param method: The method string that matching events have to
-                       have in their method field.
-        @type method: str
-        @param invert: Controls whether matching results should
-                       inverted (i.e. matching events B{not}
-                       having  B{method} in their method field).
-        @type invert: bool
-
+        Args:
+            method (str):
+                The method string that matching events have to have in their
+                method field.
+            invert (bool):
+                Controls whether matching results should inverted (i.e.
+                matching events ``not`` having  ``method`` in their method
+                field).
         """
         self.__method = method
         self.__invert = invert

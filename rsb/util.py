@@ -25,7 +25,7 @@
 """
 Various helper classes and methods.
 
-@author: jwienke
+.. codeauthor:: jwienke
 """
 
 from threading import Lock, Condition, Thread
@@ -37,7 +37,7 @@ class Enum(object):
     """
     Generates enum-like classes in python with proper printing support.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     class EnumValue(object):
@@ -81,10 +81,13 @@ class Enum(object):
         """
         Generates a new enum.
 
-        @param name: name of the enum to create. Will normally be the name of
-                     the variable this constructor call is assigned to. For
-                     Used for printing.
-        @param keys: list of enum keys to generate
+        Args:
+            name:
+                name of the enum to create. Will normally be the name of the
+                variable this constructor call is assigned to. For Used for
+                printing.
+            keys:
+                list of enum keys to generate
         """
 
         if values is not None and len(values) != len(keys):
@@ -118,10 +121,7 @@ class Enum(object):
 
 class InterruptedError(RuntimeError):
     """
-    Exception class indicating the interruption of a blocking or long-running
-    method.
-
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
     pass
 
@@ -141,7 +141,7 @@ class OrderedQueueDispatcherPool(object):
      - same subscriptions for multiple receivers unlikely, hence filtering done
        per receiver thread
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     class __Receiver(object):
@@ -161,20 +161,21 @@ class OrderedQueueDispatcherPool(object):
         """
         Constructs a new pool.
 
-        @type threadPoolSize: int >= 1
-        @param threadPoolSize: number of threads for this pool
-        @type delFunc: callable with two arguments. First is the receiver
-                       of a message, second is the message to deliver
-        @param delFunc: the strategy used to deliver messages of type M to
-                        receivers of type R. This will most likely be a simple
-                        delegate function mapping to a concrete method call.
-                        Must be reentrant.
-        @type filterFunc: callable with two arguments. First is the receiver
-                          of a message, second is the message to filter. Must
-                          return a bool, true means to deliver the message,
-                          false rejects it.
-        @param filterFunc: Reentrant function used to filter messages per
-                          receiver. Default accepts every message.
+        Args:
+            threadPoolSize (int >= 1):
+                number of threads for this pool
+            delFunc (callable):
+                the strategy used to deliver messages of type M to receivers of
+                type R. This will most likely be a simple delegate function
+                mapping to a concrete method call.  Must be reentrant. callable
+                with two arguments. First is the receiver of a message, second
+                is the message to deliver
+            filterFunc (callable):
+                Reentrant function used to filter messages per receiver.
+                Default accepts every message. callable with two arguments.
+                First is the receiver of a message, second is the message to
+                filter. Must return a bool, true means to deliver the message,
+                false rejects it.
         """
 
         self.__logger = getLoggerByClass(self.__class__)
@@ -213,7 +214,9 @@ class OrderedQueueDispatcherPool(object):
         ordering given above because multiple message queues are used for every
         subscription).
 
-        @param receiver: new receiver
+        Args:
+            receiver:
+                new receiver
         """
 
         with self.__condition:
@@ -225,9 +228,12 @@ class OrderedQueueDispatcherPool(object):
         """
         Unregisters all registration of one receiver.
 
-        @param receiver: receiver to unregister
-        @rtype: bool
-        @return: True if one or more receivers were unregistered, else False
+        Args:
+            receiver:
+                receiver to unregister
+
+        Returns:
+            True if one or more receivers were unregistered, else False
         """
 
         removed = None
@@ -251,7 +257,9 @@ class OrderedQueueDispatcherPool(object):
         """
         Pushes a new message to be dispatched to all receivers in this pool.
 
-        @param message: message to dispatch
+        Args:
+            message:
+                message to dispatch
         """
 
         with self.__condition:
@@ -271,8 +279,12 @@ class OrderedQueueDispatcherPool(object):
         Returns the next job to process for worker threads and blocks if there
         is no job.
 
-        @param workerNum: number of the worker requesting a new job
-        @return the receiver to work on
+        Args:
+            workerNum:
+                number of the worker requesting a new job
+
+        Returns:
+            the receiver to work on
         """
 
         receiver = None
@@ -326,7 +338,9 @@ class OrderedQueueDispatcherPool(object):
         """
         Threaded worker method.
 
-        @param workerNum: number of this worker thread
+        Args:
+            workerNum:
+                number of this worker thread
         """
 
         try:
@@ -355,7 +369,9 @@ class OrderedQueueDispatcherPool(object):
         """
         Non-blocking start.
 
-        @raise RuntimeError: if the pool was already started and is running
+        Raises:
+            RuntimeError:
+                if the pool was already started and is running
         """
 
         with self.__condition:
@@ -404,8 +420,12 @@ def getLoggerByClass(klass):
     Get a python logger instance based on a class instance. The logger name
     will be a dotted string containing python module and class name.
 
-    @param klass: class instance
-    @return: logger instance
+    Args:
+        klass:
+            class instance
+
+    Returns:
+        logger instance
     """
     return logging.getLogger(klass.__module__ + "." + klass.__name__)
 
@@ -415,8 +435,12 @@ def timeToUnixMicroseconds(time):
     Converts a floating point, seconds based time to a unix timestamp in
     microseconds precision.
 
-    @param time: time since epoch in seconds + fractional part.
-    @return: time as integer with microseconds precision.
+    Args:
+        time:
+            time since epoch in seconds + fractional part.
+
+    Returns:
+        time as integer with microseconds precision.
     """
     return int(time * 1000000)
 
@@ -430,9 +454,11 @@ def prefix():
     Tries to return the prefix that this code was installed into by guessing
     the install location from some rules.
 
-    Adapted from http://ttboj.wordpress.com/2012/09/20/finding-your-software-install-prefix-from-inside-python/
+    Adapted from
+    http://ttboj.wordpress.com/2012/09/20/finding-your-software-install-prefix-from-inside-python/
 
-    @return: string path with the install prefix or empty string if not known
+    Returns:
+        string path with the install prefix or empty string if not known
     """
 
     import os

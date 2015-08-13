@@ -22,6 +22,12 @@
 #
 # ============================================================
 
+"""
+Contains an implementation of the future pattern.
+
+.. codeauthor:: jmoringe
+"""
+
 import threading
 
 
@@ -49,15 +55,19 @@ class Future(object):
     operation, waiting for the operation to finish and retrieving the
     result of the operation.
 
-    @todo: Support Python's native future protocol?
-    See U{http://docs.python.org/dev/library/concurrent.futures.html}
+    .. todo::
 
-    @author: jmoringe
+       Support Python's native future protocol?
+
+    .. codeauthor:: jmoringe
+
+    See Also:
+        <http://docs.python.org/dev/library/concurrent.futures.html>_
     """
 
     def __init__(self):
         """
-        Create a new L{Future} object that represents an in-progress
+        Create a new :obj:`Future` object that represents an in-progress
         operation for which a result is not yet available.
         """
         self.__error = False
@@ -70,9 +80,10 @@ class Future(object):
         """
         Check whether the represented operation is still in progress.
 
-        @return: C{True} is the represented operation finished
-                 successfully or failed.
-        @rtype: bool
+        Returns:
+            bool:
+                ``True`` is the represented operation finished successfully or
+                failed.
         """
         with self.__lock:
             return self.__result is not None
@@ -87,16 +98,20 @@ class Future(object):
         If necessary, wait for the operation to complete, and then
         retrieve its result.
 
-        @param timeout: The amount of time in seconds in which the
-                        operation has to complete.
-        @type timeout: float
-        @return: The result of the operation if it did complete
-                 successfully.
-        @raise FutureExecutionException: If the operation represented
-                                         by the Future object failed.
-        @raise FutureTimeoutException: If the result does not become
-                                       available within the amount of
-                                       time specified via B{timeout}.
+        Args:
+            timeout (float, optional):
+                The amount of time in seconds in which the operation has to
+                complete.
+
+        Returns:
+            The result of the operation if it did complete successfully.
+
+        Raises:
+            FutureExecutionException:
+                If the operation represented by the Future object failed.
+            FutureTimeoutException:
+                If the result does not become available within the amount of
+                time specified via ``timeout``.
         """
         with self.__lock:
             while self.__result is None:
@@ -119,10 +134,12 @@ class Future(object):
 
     def set(self, result):
         """
-        Set the result of the L{Future} to B{result} and wake all
+        Set the result of the :obj:`Future` to ``result`` and wake all
         threads waiting for the result.
 
-        @param result: The result of the L{Future} object.
+        Args:
+            result:
+                The result of the :obj:`Future` object.
         """
         with self.__lock:
             self.__result = result
@@ -130,13 +147,13 @@ class Future(object):
 
     def setError(self, message):
         """
-        Mark the operation represented by the L{Future} object as
-        failed, set B{message} as the error message and notify all
+        Mark the operation represented by the :obj:`Future` object as
+        failed, set ``message`` as the error message and notify all
         threads waiting for the result.
 
-        @param message: An error message that explains why/how the
-                        operation failed.
-        @type message: str
+        Args:
+            message (str):
+                An error message that explains why/how the operation failed.
         """
         with self.__lock:
             self.__result = message
@@ -159,11 +176,11 @@ class Future(object):
 
 class DataFuture(Future):
     """
-    Instances of this class are like ordinary L{Future}s, the only
-    difference being that the L{get} method returns the payload of an
-    L{Event} object.
+    Instances of this class are like ordinary :obj:`Future`s, the only
+    difference being that the :obj:`get` method returns the payload of an
+    :obj:`Event` object.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def get(self, timeout=0):
         return super(DataFuture, self).get(timeout=timeout).data

@@ -29,10 +29,11 @@ the RSB python implementation. It is the entry point for most users and only in
 advanced cases client programs need to use classes from other modules.
 
 In order to create basic objects have a look at the functions
-L{createInformer}, L{createListener}, L{createServer} and
-L{createRemoteServer}.
+:obj:`createInformer`, :obj:`createListener`, :obj:`createServer` and
+:obj:`createRemoteServer`.
 
-@author: jwienke @author: jmoringe
+.. codeauthor:: jwienke
+.. codeauthor:: jmoringe
 """
 
 import uuid
@@ -76,7 +77,8 @@ def haveSpread():
     """
     Indicates whether the installation of RSB has spread support.
 
-    @return: True if spread is available, else False
+    Returns:
+        True if spread is available, else False
     """
     return _spreadAvailable
 
@@ -111,7 +113,7 @@ class QualityOfServiceSpec(object):
     is decided by the integer value of the specification enums. Higher
     values mean better services.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
@@ -123,8 +125,11 @@ class QualityOfServiceSpec(object):
         Constructs a new QoS specification with desired
         details. Defaults are unordered but reliable.
 
-        @param ordering: desired ordering type
-        @param reliability: desired reliability type
+        Args:
+            ordering:
+                desired ordering type
+            reliability:
+                desired reliability type
         """
         self.__ordering = ordering
         self.__reliability = reliability
@@ -133,7 +138,8 @@ class QualityOfServiceSpec(object):
         """
         Returns the desired ordering settings.
 
-        @return: ordering settings
+        Returns:
+            ordering settings
         """
 
         return self.__ordering
@@ -142,7 +148,8 @@ class QualityOfServiceSpec(object):
         """
         Sets the desired ordering settings
 
-        @param ordering: ordering to set
+        Args:
+            ordering: ordering to set
         """
 
         self.__ordering = ordering
@@ -153,7 +160,8 @@ class QualityOfServiceSpec(object):
         """
         Returns the desired reliability settings.
 
-        @return: reliability settings
+        Returns:
+            reliability settings
         """
 
         return self.__reliability
@@ -162,7 +170,8 @@ class QualityOfServiceSpec(object):
         """
         Sets the desired reliability settings
 
-        @param reliability: reliability to set
+        Args:
+            reliability: reliability to set
         """
 
         self.__reliability = reliability
@@ -209,23 +218,26 @@ def _configEnvironmentToDict(defaults={}):
 def _configDefaultSourcesToDict(defaults={}):
     r"""
     Obtain configuration options from multiple sources, store them
-    in a L{ParticipantConfig} object and return it. The following
+    in a :obj:`ParticipantConfig` object and return it. The following
     sources of configuration information will be consulted:
 
-     1. C{/etc/rsb.conf}
-     2. C{$prefix/etc/rsb.conf}
-     3. C{~/.config/rsb.conf}
-     4. C{\$(PWD)/rsb.conf}
+     1. ``/etc/rsb.conf``
+     2. ``$prefix/etc/rsb.conf``
+     3. ``~/.config/rsb.conf``
+     4. ``\$(PWD)/rsb.conf``
      5. Environment Variables
 
-    @param defaults: dictionary with default options
-    @type defaults: dict of str -> str
-    @return: A dictionary object that contains the
-             merged configuration options from the sources
-             mentioned above.
-    @rtype: dict of str -> str
+    Args:
+        defaults (dict of str -> str):
+            dictionary with default options
 
-    See also: L{_configFileToDict}, L{_configEnvironmentToDict}
+    Returns:
+        dict of str -> str:
+            A dictionary object that contains the merged configuration options
+            from the sources mentioned above.
+
+    See Also:
+        :obj:`_configFileToDict`, :obj:`_configEnvironmentToDict`:
     """
 
     if 'transport.socket.enabled' not in defaults:
@@ -252,28 +264,32 @@ def _configValueIsTrue(value):
 class ParticipantConfig(object):
     """
     Objects of this class describe desired configurations for newly
-    created L{Participant}s with respect to:
-     - Quality of service settings
-     - Error handling strategies (not currently used)
-     - Employed transport mechanisms
-       - Their configurations (e.g. port numbers)
-       - Associated converters
-     - Whether introspection should be enabled for the participant
-       (enabled by default)
+    created :obj:`Participant` instances with respect to:
 
-    @author: jmoringe
+    * Quality of service settings
+    * Error handling strategies (not currently used)
+    * Employed transport mechanisms
+
+      * Their configurations (e.g. port numbers)
+      * Associated converters
+
+    * Whether introspection should be enabled for the participant
+      (enabled by default)
+
+    .. codeauthor:: jmoringe
     """
 
     class Transport(object):
         """
         Objects of this class describe configurations of transports
         connectors. These consist of
-         - Transport name
-         - Enabled vs. Disabled
-         - Optional converter selection
-         - Transport-specific options
 
-        @author: jmoringe
+        * Transport name
+        * Enabled vs. Disabled
+        * Optional converter selection
+        * Transport-specific options
+
+        .. codeauthor:: jmoringe
         """
         def __init__(self, name, options={}, converters=None):
             self.__name = name
@@ -448,24 +464,30 @@ class ParticipantConfig(object):
     def fromFile(cls, path, defaults={}):
         """
         Obtain configuration options from the configuration file
-        B{path}, store them in a L{ParticipantConfig} object and
+        ``path``, store them in a :obj:`ParticipantConfig` object and
         return it.
 
         A simple configuration file may look like this::
 
-        [transport.spread]
-        host = azurit # default type is string
-        port = 5301 # types can be specified in angle brackets
-        # A comment
+            [transport.spread]
+            host = azurit # default type is string
+            port = 5301 # types can be specified in angle brackets
+            # A comment
 
-        @param path: File of path
-        @param defaults: dictionary with default options
-        @type defaults: dict of str -> str
-        @return: A new L{ParticipantConfig} object containing the
-                 options read from B{path}.
-        @rtype: ParticipantConfig
+        Args:
+            path:
+                File of path
+            defaults (dict of str -> str):
+                dictionary with default options
 
-        See also: L{fromEnvironment}, L{fromDefaultSources}
+        Returns:
+            ParticipantConfig:
+                A new :obj:`ParticipantConfig` object containing the options
+                read from ``path``.
+
+
+        See Also:
+            :obj:`fromEnvironment`, :obj:`fromDefaultSources`
         """
         return cls.__fromDict(_configFileToDict(path, defaults))
 
@@ -473,20 +495,24 @@ class ParticipantConfig(object):
     def fromEnvironment(cls, defaults={}):
         """
         Obtain configuration options from environment variables, store
-        them in a L{ParticipantConfig} object and return
+        them in a :obj:`ParticipantConfig` object and return
         it. Environment variable names are mapped to RSB option names
         as illustrated in the following example::
 
-        RSB_TRANSPORT_SPREAD_PORT -> transport spread port
+           RSB_TRANSPORT_SPREAD_PORT -> transport spread port
 
-        @param defaults: dictionary with default options
-        @type defaults: dict of str -> str
-        @return: L{ParticipantConfig} object that contains the merged
-                 configuration options from B{defaults} and relevant
-                 environment variables.
-        @rtype: ParticipantConfig
+        Args:
+            defaults (dict of str -> str):
+                dictionary with default options
 
-        See also: L{fromFile}, L{fromDefaultSources}
+        Returns:
+            ParticipantConfig:
+                :obj:`ParticipantConfig` object that contains the merged
+                configuration options from ``defaults`` and relevant
+                environment variables.
+
+        See Also:
+            :obj:`fromFile`, :obj:`fromDefaultSources`
         """
         return cls.__fromDict(_configEnvironmentToDict(defaults))
 
@@ -494,23 +520,26 @@ class ParticipantConfig(object):
     def fromDefaultSources(cls, defaults={}):
         r"""
         Obtain configuration options from multiple sources, store them
-        in a L{ParticipantConfig} object and return it. The following
+        in a :obj:`ParticipantConfig` object and return it. The following
         sources of configuration information will be consulted:
 
-         1. C{/etc/rsb.conf}
-         2. C{$prefix/etc/rsb.conf}
-         3. C{~/.config/rsb.conf}
-         4. C{\$(PWD)/rsb.conf}
+         1. ``/etc/rsb.conf``
+         2. ``$prefix/etc/rsb.conf``
+         3. ``~/.config/rsb.conf``
+         4. ``$(PWD)/rsb.conf``
          5. Environment Variables
 
-        @param defaults: dictionary with default options
-        @type defaults: dict of str -> str
-        @return: A L{ParticipantConfig} object that contains the
-                 merged configuration options from the sources
-                 mentioned above.
-        @rtype: ParticipantConfig
+        Args:
+            defaults (dict of str -> str):
+                dictionary with default options
 
-        See also: L{fromFile}, L{fromEnvironment}
+        Returns:
+            ParticipantConfig:
+                A :obj:`ParticipantConfig` object that contains the merged
+                configuration options from the sources mentioned above.
+
+        See Also:
+            :obj:`fromFile`, :obj:`fromEnvironment`
         """
 
         return cls.__fromDict(_configDefaultSourcesToDict(defaults))
@@ -519,15 +548,17 @@ class ParticipantConfig(object):
 def convertersFromTransportConfig(transport):
     """
     Returns an object implementing the
-    L{rsb.converter.ConverterSelectionStrategy} protocol suitable for
-    B{transport}.
+    :obj:`rsb.converter.ConverterSelectionStrategy` protocol suitable for
+    ``transport``.
 
-    If C{transport.converters} is not C{None}, it is used
+    If ``transport.converters`` is not ``None``, it is used
     unmodified. Otherwise the specification in
-    C{transport.converterRules} is used.
+    ``transport.converterRules`` is used.
 
-    @return: The constructed ConverterSelectionStrategy object.
-    @rtype: ConverterSelectionStrategy
+    Returns:
+        ConverterSelectionStrategy:
+            The constructed ConverterSelectionStrategy object.
+
     """
 
     # There are two possible ways to configure converters:
@@ -570,9 +601,9 @@ def convertersFromTransportConfig(transport):
 class Scope(object):
     """
     A scope defines a channel of the hierarchical unified bus covered by RSB.
-    It is defined by a surface syntax like C{"/a/deep/scope"}.
+    It is defined by a surface syntax like ``"/a/deep/scope"``.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     __COMPONENT_SEPARATOR = "/"
@@ -589,10 +620,12 @@ class Scope(object):
         """
         Parses a scope from a string representation.
 
-        @param stringRep: string representation of the scope
-        @type stringRep: str or unicode
-        @raise ValueError: if B{stringRep} does not have the right
-                           syntax
+        Args:
+            stringRep (str or unicode):
+                string representation of the scope
+        Raises:
+            ValueError:
+                if ``stringRep`` does not have the right syntax
         """
 
         if len(stringRep) == 0:
@@ -636,9 +669,10 @@ class Scope(object):
         list is the highest level of hierarchy. The scope '/' returns an empty
         list.
 
-        @return: components of the represented scope as ordered list with
-                 highest level as first entry
-        @rtype: list
+        Returns:
+            list:
+                components of the represented scope as ordered list with
+                highest level as first entry
         """
         return copy.copy(self.__components)
 
@@ -649,8 +683,9 @@ class Scope(object):
         Reconstructs a fully formal string representation of the scope with
         leading an trailing slashes.
 
-        @return: string representation of the scope
-        @rtype: str
+        Returns:
+            str:
+                string representation of the scope
         """
 
         string = self.__COMPONENT_SEPARATOR
@@ -663,14 +698,17 @@ class Scope(object):
         """
         Creates a new scope that is a sub-scope of this one with the
         subordinated scope described by the given
-        argument. E.g. C{"/this/is/".concat("/a/test/")} results in
-        C{"/this/is/a/test"}.
+        argument. E.g. ``"/this/is/".concat("/a/test/")`` results in
+        ``"/this/is/a/test"``.
 
-        @param childScope: child to concatenate to the current scope for
-                           forming a sub-scope
-        @type childScope: Scope
-        @return: new scope instance representing the created sub-scope
-        @rtype: Scope
+        Args:
+            childScope (Scope):
+                child to concatenate to the current scope for forming a
+                sub-scope
+
+        Returns:
+            Scope:
+                new scope instance representing the created sub-scope
         """
         newScope = Scope("/")
         newScope.__components = copy.copy(self.__components)
@@ -683,11 +721,14 @@ class Scope(object):
         means that the other scope is a prefix of this scope. E.g. "/a/b/" is a
         sub-scope of "/a/".
 
-        @param other: other scope to test
-        @type other: Scope
-        @return: C{True} if this is a sub-scope of the other scope, equality
-                 gives C{False}, too
-        @rtype: Bool
+        Args:
+            other (Scope):
+                other scope to test
+
+        Returns:
+            Bool:
+                ``True`` if this is a sub-scope of the other scope, equality
+                gives ``False``, too
         """
 
         if len(self.__components) <= len(other.__components):
@@ -698,13 +739,17 @@ class Scope(object):
 
     def isSuperScopeOf(self, other):
         """
-        Inverse operation of L{isSubScopeOf}.
+        Inverse operation of :obj:`isSubScopeOf`.
 
-        @param other: other scope to test
-        @type other: Scope
-        @return: C{True} if this scope is a strict super scope of the other
-                 scope. Equality also gives C{False}.
-        @rtype: Bool
+        Args:
+            other (Scope):
+                other scope to test
+
+        Returns:
+            Bool:
+                ``True`` if this scope is a strict super scope of the other
+                scope. Equality also gives ``False``.
+
         """
 
         if len(self.__components) >= len(other.__components):
@@ -718,14 +763,14 @@ class Scope(object):
         scope "/".  The returned list of scopes is ordered by
         hierarchy with "/" being the first entry.
 
-        @param includeSelf: if set to C{True}, this scope is also
-                            included as last element of the returned
-                            list
+        Args:
+            includeSelf (Bool):
+                if set to ``True``, this scope is also included as last element
+                of the returned list
 
-        @type includeSelf: Bool
-        @return: list of all super scopes ordered by hierarchy, "/"
-                 being first
-        @rtype: list of Scopes
+        Returns:
+            list of Scopes:
+                list of all super scopes ordered by hierarchy, "/" being first
         """
 
         supers = []
@@ -775,7 +820,7 @@ class MetaData(object):
     Objects of this class store RSB-specific and user-supplied
     meta-data items such as timing information.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self,
                  senderId=None,
@@ -783,24 +828,26 @@ class MetaData(object):
                  receiveTime=None, deliverTime=None,
                  userTimes=None, userInfos=None):
         """
-        Constructs a new L{MetaData} object.
+        Constructs a new :obj:`MetaData` object.
 
-        @param createTime: A timestamp designating the time at which
-                           the associated event was created.
-        @param sendTime: A timestamp designating the time at which the
-                         associated event was sent onto the bus.
-        @param receiveTime: A timestamp designating the time at which
-                            the associated event was received from the
-                            bus.
-        @param deliverTime: A timestamp designating the time at which
-                            the associated event was delivered to the
-                            user-level handler by RSB.
-        @param userTimes: A dictionary of user-supplied timestamps.
-        @type userTimes: dict from string name to double value as seconds since
-                         unix epoche
-        @param userInfos: A dictionary of user-supplied meta-data
-                          items.
-        @type userInfos: dict from string to string
+        Args:
+            createTime:
+                A timestamp designating the time at which the associated event
+                was created.
+            sendTime:
+                A timestamp designating the time at which the associated event
+                was sent onto the bus.
+            receiveTime:
+                A timestamp designating the time at which the associated event
+                was received from the bus.
+            deliverTime:
+                A timestamp designating the time at which the associated event
+                was delivered to the user-level handler by RSB.
+            userTimes (dict of str -> float):
+                A dictionary of user-supplied timestamps. dict from string name
+                to double value as seconds since unix epoche
+            userInfos (dict of str -> str):
+                A dictionary of user-supplied meta-data items.
         """
         if createTime is None:
             self.__createTime = time.time()
@@ -917,7 +964,7 @@ class EventId(object):
     Uniquely identifies an Event by the sending participants ID and a sequence
     number within this participant. Optional conversion to uuid is possible.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, participantId, sequenceNumber):
@@ -929,8 +976,9 @@ class EventId(object):
         """
         Return the sender id of this id.
 
-        @return: sender id
-        @rtype: uuid.UUID
+        Returns:
+            uuid.UUID:
+                sender id
         """
         return self.__participantId
 
@@ -938,8 +986,9 @@ class EventId(object):
         """
         Sets the participant id of this event.
 
-        @param participantId: sender id to set.
-        @type participantId: uuid.UUID
+        Args:
+            participantId (uuid.UUID):
+                sender id to set.
         """
         self.__participantId = participantId
 
@@ -949,8 +998,8 @@ class EventId(object):
         """
         Return the sequence number of this id.
 
-        @return: sequence number of the id.
-        @rtype: int
+        Returns:
+            int: sequence number of the id.
         """
         return self.__sequenceNumber
 
@@ -958,8 +1007,9 @@ class EventId(object):
         """
         Sets the sequence number of this id.
 
-        @param sequenceNumber: new sequence number of the id.
-        @type sequenceNumber: int
+        Args:
+            sequenceNumber (int):
+                new sequence number of the id.
         """
         self.__sequenceNumber = sequenceNumber
 
@@ -969,8 +1019,9 @@ class EventId(object):
         """
         Returns a UUID encoded version of this id.
 
-        @return: id of the event as UUID
-        @rtype: uuid.uuid
+        Returns:
+            uuid.uuid:
+                id of the event as UUID
         """
 
         if self.__id is None:
@@ -1016,7 +1067,7 @@ class Event(object):
     Cause handling is inspired by the ideas proposed in: David Luckham, The
     Power of Events, Addison-Wessley, 2007
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, id=None, scope=Scope("/"), method=None,
@@ -1025,30 +1076,32 @@ class Event(object):
         """
         Constructs a new event with undefined type, root scope and no data.
 
-        @param id: The id of this event
-        @type id: EventId
-        @param scope: A L{Scope} designating the channel on which the
-                      event will be published.
-        @type scope: Scope or accepted by Scope constructor
-        @param method: A string designating the "method category"
-                       which identifies the role of the event in some
-                       communication patters. Examples are
-                       C{"REQUEST"} and C{"REPLY"}.
-        @type method: str
-        @param data: data contained in this event
-        @param type: python data type of the contained data
-        @type type: type
-        @param metaData: meta data to use for the new event
-        @type metaData: MetaData
-        @param userInfos: key-value like store of user infos to add to the meta
-                          data of this event
-        @type userInfos: dict from string to string
-        @param userTimes: additional timestamps to add to the meta data
-        @type userTimes: dict from string timestamp name to value of timestamp
-                         as dobule of seconds unix epoch
-        @param causes: A list of L{EventId}s of events which causes the
-                       newly constructed events.
-        @type causes: list
+        Args:
+            id (EventId):
+                The id of this event
+            scope (Scope or accepted by Scope constructor):
+                A :obj:`Scope` designating the channel on which the event will
+                be published.
+            method (str):
+                A string designating the "method category" which identifies the
+                role of the event in some communication patters. Examples are
+                ``"REQUEST"`` and ``"REPLY"``.
+            data:
+                data contained in this event
+            type (types.TypeType):
+                python data type of the contained data
+            metaData (MetaData):
+                meta data to use for the new event
+            userInfos (dict of str -> str):
+                key-value like store of user infos to add to the meta data of
+                this event
+            userTimes (dict of str -> str):
+                additional timestamps to add to the meta data. dict from string
+                timestamp name to value of timestamp as dobule of seconds unix
+                epoch
+            causes (list):
+                A list of :obj:`EventId` instances of events which causes the
+                newly constructed events.
         """
 
         self.__id = id
@@ -1077,9 +1130,12 @@ class Event(object):
         """
         Return the sequence number of this event.
 
-        @return: sequence number of the event.
-        @rtype: int
-        @deprecated: use #getId instead
+        .. deprecated:: 0.13
+           use :meth:`getId` instead
+
+        Returns:
+            int:
+                sequence number of the event.
         """
         return self.getId().getSequenceNumber()
 
@@ -1089,9 +1145,13 @@ class Event(object):
         """
         Returns the id of this event.
 
-        @return: id of the event
-        @rtype: int
-        @raise RuntimeError: if the event does not have an id so far
+        Returns:
+            int:
+                id of the event
+
+        Raises:
+            RuntimeError:
+                if the event does not have an id so far
         """
 
         if self.__id is None:
@@ -1107,8 +1167,9 @@ class Event(object):
         """
         Returns the scope of this event.
 
-        @return: scope
-        @rtype: Scope
+        Returns:
+            Scope:
+                scope
         """
 
         return self.__scope
@@ -1117,8 +1178,9 @@ class Event(object):
         """
         Sets the scope of this event.
 
-        @param scope: scope to set
-        @type scope: Scope
+        Args:
+            scope (Scope):
+                scope to set
         """
 
         self.__scope = scope
@@ -1129,9 +1191,13 @@ class Event(object):
         """
         Return the sender id of this event.
 
-        @return: sender id
-        @rtype: uuid.UUID
-        @deprecated: use #getId instead
+        .. deprecated:: 0.13
+
+           use :func:`getId` instead
+
+        Returns:
+            uuid.UUID:
+                sender id
         """
         return self.getId().getParticipantId()
 
@@ -1141,8 +1207,10 @@ class Event(object):
         """
         Return the method of this event.
 
-        @return: A string designating the method of this event of
-                 C{None} if this event does not have a method.
+        Returns:
+            str:
+                A string designating the method of this event of ``None`` if
+                this event does not have a method.
         """
         return self.__method
 
@@ -1150,7 +1218,9 @@ class Event(object):
         """
         Sets the method of this event.
 
-        @param method: The new method. C{None} is allowed.
+        Args:
+            method (str):
+                The new method. ``None`` is allowed.
         """
         self.__method = method
 
@@ -1160,7 +1230,8 @@ class Event(object):
         """
         Returns the user data of this event.
 
-        @return: user data
+        Returns:
+            user data
         """
 
         return self.__data
@@ -1169,7 +1240,9 @@ class Event(object):
         """
         Sets the user data of this event
 
-        @param data: user data
+        Args:
+            data:
+                user data
         """
 
         self.__data = data
@@ -1180,7 +1253,9 @@ class Event(object):
         """
         Returns the type of the user data of this event.
 
-        @return: user data type
+        Returns:
+            user data type
+
         """
 
         return self.__type
@@ -1189,7 +1264,9 @@ class Event(object):
         """
         Sets the type of the user data of this event
 
-        @param theType: user data type
+        Args:
+            theType:
+                user data type
         """
 
         self.__type = theType
@@ -1208,10 +1285,13 @@ class Event(object):
         """
         Adds a causing EventId to the causes of this event.
 
-        @param theId: id to add
-        @type theId: EventId
-        @return: true if the id was newly added, else false
-        @rtype: bool
+        Args:
+            theId (EventId):
+                id to add
+
+        Returns:
+            bool:
+                True if the id was newly added, else False
         """
         if theId in self.__causes:
             return False
@@ -1223,11 +1303,14 @@ class Event(object):
         """
         Removes a causing EventId from the causes of this event.
 
-        @param theId: id to remove
-        @type theId: EventId
-        @return: true if the id was remove, else false (because it did not
-                 exist)
-        @rtype: bool
+        Args:
+            theId (EventId):
+                id to remove
+
+        Returns:
+            bool:
+                True if the id was remove, else False (because it did not
+                exist)
         """
         if theId in self.__causes:
             self.__causes.remove(theId)
@@ -1240,10 +1323,13 @@ class Event(object):
         Checks whether a given id of an event is marked as a cause for this
         event.
 
-        @param theId: id to check
-        @type theId: EventId
-        @return: true if the id is a cause of this event, else false
-        @rtype: bool
+        Args:
+            theId (EventId):
+                id to check
+
+        Returns:
+            bool:
+                True if the id is a cause of this event, else False
         """
         return theId in self.__causes
 
@@ -1251,8 +1337,9 @@ class Event(object):
         """
         Returns all causes of this event.
 
-        @return: causing event ids
-        @rtype: list of EventIds
+        Returns:
+            list of EventIds:
+                causing event ids
         """
         return self.__causes
 
@@ -1260,8 +1347,9 @@ class Event(object):
         """
         Overwrites the cause vector of this event with the given one.
 
-        @param causes: new cause vector
-        @type causes: list of EventId
+        Args:
+            causes (list of EventId):
+                new cause vector
         """
         self.__causes = causes
 
@@ -1301,7 +1389,7 @@ class Hook(object):
     A mutable collection of callback functions that can be called
     together.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self):
@@ -1331,21 +1419,22 @@ class Participant(object):
     Base class for specialized bus participant classes. Has a unique
     id and a scope.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, config):
         """
         Constructs a new Participant. This should not be done by
         clients.
 
-        @param scope: scope of the bus channel.
-        @type scope: Scope or accepted by Scope constructor
+        Args:
+            scope (Scope or accepted by Scope constructor):
+                scope of the bus channel.
+            config (ParticipantConfig):
+                Configuration that the participant should use
 
-        @param config: Configuration that the participant should use
-        @type config: ParticipantConfig
-
-        See L{createListener}, L{createInformer}, L{createServer},
-        L{createRemoteServer}
+        See Also:
+            :obj:`createListener`, :obj:`createInformer`, :obj:`createServer`,
+            :obj:`createRemoteServer`
         """
         self.__id = uuid.uuid4()
         self.__scope = Scope.ensureScope(scope)
@@ -1418,31 +1507,36 @@ class Informer(Participant):
     """
     Event-sending part of the communication pattern.
 
-    @author: jwienke
-    @author: jmoringe
+    .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, scope, config, dataType,
                  configurator=None):
         """
-        Constructs a new L{Informer} that publishes L{Event}s carrying
-        payloads of type B{type} on B{scope}.
+        Constructs a new :obj:`Informer` that publishes :obj:`Events <Event>`
+        carrying payloads of type ``type`` on ``scope``.
 
-        @param scope: scope of the informer
-        @type scope: Scope or accepted by Scope constructor
-        @param config: The configuration that should be used by this
-                       L{Informer}.
-        @type config: ParticipantConfig
-        @param dataType: A Python object designating the type of
-                         objects that will be sent via the new
-                         L{Informer}. Instances of subtypes are
-                         permitted as well.
-        @type dataType: type
-        @param configurator: Out route configurator to manage sending
-                             of events through out connectors.
-        @todo: maybe provide an automatic type identifier deduction for default
-               types?
-        @see: L{createInformer}
+        Args:
+            scope (Scope or accepted by Scope constructor):
+                scope of the informer
+            config (ParticipantConfig):
+                The configuration that should be used by this :obj:`Informer`.
+            dataType (types.TypeType):
+                A Python object designating the type of objects that will be
+                sent via the new :obj:`Informer`. Instances of subtypes are
+                permitted as well.
+            configurator:
+                Out route configurator to manage sending of events through out
+                connectors.
+
+        .. todo::
+
+           maybe provide an automatic type identifier deduction for default
+           types?
+
+        See Also:
+            :obj:`createInformer`
         """
         super(Informer, self).__init__(scope, config)
 
@@ -1482,7 +1576,8 @@ class Informer(Participant):
         """
         Returns the type of data sent by this informer.
 
-        @return: type of sent data
+        Returns:
+            type of sent data
         """
         return self.__type
 
@@ -1500,11 +1595,11 @@ class Informer(Participant):
         """
         Publishes a predefined event. The caller must ensure that the
         event has the appropriate scope and type according to the
-        L{Informer}'s settings.
+        :obj:`Informer`'s settings.
 
-        @param event: the event to send
-        @type event: Event
-        @rtype: Event
+        Args:
+            event (Event):
+                the event to send
         """
         # TODO check activation
 
@@ -1558,26 +1653,28 @@ class Listener(Participant):
     """
     Event-receiving part of the communication pattern
 
-    @author: jwienke
-    @author: jmoringe
+    .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, scope, config,
                  configurator=None,
                  receivingStrategy=None):
         """
-        Create a new L{Listener} for B{scope}.
+        Create a new :obj:`Listener` for ``scope``.
 
-        @param scope: The scope of the channel in which the new
-                      listener should participate.
-        @type scope: Scopeor or accepted by Scope constructor
-        @param config: The configuration that should be used by this
-                        L{Listener}.
-        @type config: ParticipantConfig
-        @param configurator: An in route configurator to manage the
-                             receiving of events from in connectors
-                             and their filtering and dispatching.
-        @see: L{createListener}
+        Args:
+            scope (Scope or accepted by Scope constructor):
+                The scope of the channel in which the new listener should
+                participate.
+            config (ParticipantConfig):
+                The configuration that should be used by this :obj:`Listener`.
+            configurator:
+                An in route configurator to manage the receiving of events from
+                in connectors and their filtering and dispatching.
+
+        See Also:
+            :obj:`createListener`
         """
         super(Listener, self).__init__(scope, config)
 
@@ -1640,7 +1737,9 @@ class Listener(Participant):
         """
         Appends a filter to restrict the events received by this listener.
 
-        @param filter: filter to add
+        Args:
+            theFilter:
+                filter to add
         """
 
         with self.__mutex:
@@ -1651,7 +1750,8 @@ class Listener(Participant):
         """
         Returns all registered filters of this listener.
 
-        @return: list of filters
+        Returns:
+            list of filters
         """
 
         with self.__mutex:
@@ -1659,15 +1759,16 @@ class Listener(Participant):
 
     def addHandler(self, handler, wait=True):
         """
-        Adds B{handler} to the list of handlers this listener invokes
+        Adds ``handler`` to the list of handlers this listener invokes
         for received events.
 
-        @param handler: Handler to add. callable with one argument,
-                        the event.
-        @param wait: If set to C{True}, this method will return only
-                     after the handler has completely been installed
-                     and will receive the next available
-                     message. Otherwise it may return earlier.
+        Args:
+            handler:
+                Handler to add. callable with one argument, the event.
+            wait:
+                If set to ``True``, this method will return only after the
+                handler has completely been installed and will receive the next
+                available message. Otherwise it may return earlier.
         """
 
         with self.__mutex:
@@ -1677,14 +1778,16 @@ class Listener(Participant):
 
     def removeHandler(self, handler, wait=True):
         """
-        Removes B{handler} from the list of handlers this listener
+        Removes ``handler`` from the list of handlers this listener
         invokes for received events.
 
-        @param handler: Handler to remove.
-        @param wait: If set to C{True}, this method will return only
-                     after the handler has been completely removed
-                     from the event processing and will not be called
-                     anymore from this listener.
+        Args:
+            handler:
+                Handler to remove.
+            wait:
+                If set to ``True``, this method will return only after the
+                handler has been completely removed from the event processing
+                and will not be called anymore from this listener.
         """
 
         with self.__mutex:
@@ -1696,8 +1799,9 @@ class Listener(Participant):
         """
         Returns the list of all registered handlers.
 
-        @return: list of handlers to execute on matches
-        @rtype: list of callables accepting an L{Event}.
+        Returns:
+            list of callables accepting an Event:
+                list of handlers to execute on matches
         """
         with self.__mutex:
             return list(self.__handlers)
@@ -1718,7 +1822,9 @@ def setDefaultParticipantConfig(config):
     """
     Replaces the default configuration for new objects.
 
-    @param config: A ParticipantConfig object which contains the new defaults.
+    Args:
+        config (ParticipantConfig):
+            A ParticipantConfig object which contains the new defaults.
     """
     global __defaultParticipantConfig
     _logger.debug('Setting default participant config to %s', config)
@@ -1754,18 +1860,21 @@ def createParticipant(cls, scope, config, parent=None, **kwargs):
 
 def createListener(scope, config=None, parent=None, **kwargs):
     """
-    Creates and returns a new L{Listener} for B{scope}.
+    Creates and returns a new :obj:`Listener` for ``scope``.
 
-    @param scope: the scope of the new L{Listener}. Can be a L{Scope} object
-                  or a string.
-    @type scope: Scope or accepted by L{Scope} constructor
-    @param config: The configuration that should be used by this
-                   L{Listener}.
-    @type config: ParticipantConfig
-    @param parent: C{None} or the L{Participant} which should be
-                   considered the parent of the new L{Listener}.
-    @type  parent: Participant or NoneType
-    @return: a new L{Listener} object.
+    Args:
+        scope (Scope or accepted by :obj:`Scope` constructor):
+            the scope of the new :obj:`Listener`. Can be a :obj:`Scope` object
+            or a string.
+        config (ParticipantConfig):
+            The configuration that should be used by this :obj:`Listener`.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new :obj:`Listener`.
+
+    Returns:
+        Listener:
+            a new :obj:`Listener` object.
     """
     return createParticipant(Listener, scope, config, parent,
                              **kwargs)
@@ -1774,23 +1883,25 @@ def createListener(scope, config=None, parent=None, **kwargs):
 def createInformer(scope, config=None, parent=None, dataType=object,
                    **kwargs):
     """
-    Creates and returns a new L{Informer} for B{scope}.
+    Creates and returns a new :obj:`Informer` for ``scope``.
 
-    @param scope: The scope of the new L{Informer}. Can be a L{Scope}
-                  object or a string.
-    @type scope: Scope or accepted by L{Scope} constructor
-    @param config: The configuration that should be used by this
-                   L{Informer}.
-    @type config: ParticipantConfig
-    @param parent: C{None} or the L{Participant} which should be
-                   considered the parent of the new L{Informer}.
-    @type  parent: Participant or NoneType
-    @param dataType: A Python object designating the type of
-                     objects that will be sent via the new
-                     L{Informer}. Instances of subtypes are
-                     permitted as well.
-    @type dataType: type
-    @return: a new L{Informer} object.
+    Args:
+        scope (Scope or accepted by :obj:`Scope` constructor):
+            The scope of the new :obj:`Informer`. Can be a :obj:`Scope` object
+            or a string.
+        config (ParticipantConfig):
+            The configuration that should be used by this :obj:`Informer`.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new :obj:`Informer`.
+        dataType (types.TypeType):
+            A Python object designating the type of objects that will be sent
+            via the new :obj:`Informer`. Instances of subtypes are permitted as
+            well.
+
+    Returns:
+        Informer:
+            a new :obj:`Informer` object.
     """
     return createParticipant(Informer, scope, config, parent,
                              dataType=dataType,
@@ -1801,36 +1912,41 @@ def createLocalServer(scope, config=None, parent=None,
                       object=None, expose=None, methods=None,
                       **kwargs):
     """
-    Create and return a new L{LocalServer} object that exposes its
-    methods under B{scope}.
+    Create and return a new :obj:`LocalServer` object that exposes its
+    methods under ``scope``.
 
     The keyword parameters object, expose and methods can be used to
     associate an initial set of methods with the newly created server
     object.
 
-    @param scope: The scope under which the newly created server
-                  should expose its methods.
-    @type scope: Scope or accepted by L{Scope} constructor
-    @param config: The configuration that should be used by this
-                   server.
-    @type config: ParticipantConfig
-    @param parent: C{None} or the L{Participant} which should be
-                   considered the parent of the new server.
-    @type  parent: Participant or NoneType
-    @param object: An object the methods of which should be exposed
-                   via the newly created server. Has to be supplied in
-                   combination with the expose keyword parameter.
-    @param expose: A list of names of attributes of object that should
-                   be expose as methods of the newly created
-                   server. Has to be supplied in combination with the
-                   object keyword parameter.
-    @param methods: A list or tuple of lists or tuples of the length four:
-                    a method name,
-                    a callable implementing the method,
-                    a type designating the request type of the method and
-                    a type designating the reply type of the method.
-    @return: A newly created L{LocalServer} object.
-    @rtype: rsb.patterns.LocalServer
+    Args:
+        scope (Scope or accepted by :obj:`Scope` constructor):
+            The scope under which the newly created server should expose its
+            methods.
+        config (ParticipantConfig):
+            The configuration that should be used by this server.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new server.
+        object:
+            An object the methods of which should be exposed via the newly
+            created server. Has to be supplied in combination with the expose
+            keyword parameter.
+        expose:
+            A list of names of attributes of object that should be expose as
+            methods of the newly created server. Has to be supplied in
+            combination with the object keyword parameter.
+        methods:
+            A list or tuple of lists or tuples of the length four:
+
+            * a method name,
+            * a callable implementing the method,
+            * a type designating the request type of the method and
+            * a type designating the reply type of the method.
+
+    Returns:
+        rsb.patterns.LocalServer:
+            A newly created :obj:`LocalServer` object.
     """
     # Check arguments
     if object is not None and expose is not None and methods is not None:
@@ -1855,20 +1971,22 @@ def createLocalServer(scope, config=None, parent=None,
 
 def createRemoteServer(scope, config=None, parent=None, **kwargs):
     """
-    Create a new L{RemoteServer} object for a remote server that
-    provides its methods under B{scope}.
+    Create a new :obj:`RemoteServer` object for a remote server that
+    provides its methods under ``scope``.
 
-    @param scope: The scope under which the remote server provides its
-                  methods.
-    @type scope: Scope or accepted by Scope constructor
-    @return: A newly created L{RemoteServer} object.
-    @param config: The transport configuration that should be used
-                   for communication performed by this server.
-    @type config: ParticipantConfig
-    @param parent: C{None} or the L{Participant} which should be
-                   considered the parent of the new server.
-    @type  parent: Participant or NoneType
-    @rtype: rsb.patterns.RemoteServer
+    Args:
+        scope (Scope or accepted by Scope constructor):
+            The scope under which the remote server provides its methods.
+        config (ParticipantConfig):
+            The transport configuration that should be used for communication
+            performed by this server.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new server.
+
+    Returns:
+        rsb.patterns.RemoteServer:
+            A newly created :obj:`RemoteServer` object.
     """
     import rsb.patterns as patterns
     return createParticipant(patterns.RemoteServer, scope, config,
@@ -1880,9 +1998,11 @@ def createServer(scope, config=None, parent=None,
                  **kwargs):
 
     """
-    Like L{createLocalServer}.
+    Like :obj:`createLocalServer`.
 
-    @deprecated: Use L{createLocalServer} instead.
+    .. deprecated:: 0.12
+
+       Use :obj:`createLocalServer` instead.
     """
     return createLocalServer(scope, config, parent,
                              object=object, expose=expose, methods=methods,

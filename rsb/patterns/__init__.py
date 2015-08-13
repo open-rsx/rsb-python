@@ -24,10 +24,10 @@
 
 """
 Package containing pattern implementations like RPC based on the basic
-participants L{rsb.Listener} and L{rsb.Informer}.
+participants :obj:`rsb.Listener` and :obj:`rsb.Informer`.
 
-@author: jmoringe
-@author: jwienke
+.. codeauthor:: jmoringe
+.. codeauthor:: jwienke
 """
 
 import uuid
@@ -46,7 +46,7 @@ class RemoteCallError(RuntimeError):
     Errors of this class are raised when a call to a remote method
     fails for some reason.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, method, message=None):
         super(RemoteCallError, self).__init__(message)
@@ -86,25 +86,24 @@ class Method(rsb.Participant):
     This class is primarily intended as a superclass for local and
     remote method classes.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     # TODO scope and name are redundant
     def __init__(self, scope, config,
                  server, name, requestType, replyType):
         """
-        Create a new L{Method} object for the method named B{name}
-        provided by B{server}.
+        Create a new :obj:`Method` object for the method named ``name``
+        provided by ``server``.
 
-        @param server: The remote or local server to which the method
-                       is associated.
-        @param name: The name of the method. Unique within a server.
-        @type  name: str
-        @param requestType: The type of the request argument accepted
-                            by the method.
-        @type  requestType: type
-        @param replyType: The type of the replies produced by the
-                          method.
-        @type  replyType: type
+        Args:
+            server:
+                The remote or local server to which the method is associated.
+            name (str):
+                The name of the method. Unique within a server.
+            requestType (types.TypeType):
+                The type of the request argument accepted by the method.
+            replyType (types.TypeType):
+                The type of the replies produced by the method.
         """
         super(Method, self).__init__(scope, config)
 
@@ -175,20 +174,20 @@ class Server(rsb.Participant):
     This class is primarily intended as a superclass for local and
     remote server classes.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, scope, config):
         """
-        Create a new L{Server} object that provides its methods under the
-        L{rsb.Scope} B{scope}.
+        Create a new :obj:`Server` object that provides its methods under the
+        :obj:`rsb.Scope` ``scope``.
 
-        @param scope: The under which methods of the server are
-                      provided.
-        @type  scope: rsb.Scope
-        @param config: The transport configuration that should be used
-                       for communication performed by this server.
-        @type  config: rsb.ParticipantConfig
+        Args:
+            scope (rsb.Scope):
+                The under which methods of the server are provided.
+            config (rsb.ParticipantConfig):
+                The transport configuration that should be used for
+                communication performed by this server.
         """
         super(Server, self).__init__(scope, config)
 
@@ -259,7 +258,7 @@ class LocalMethod(Method):
     The actual behavior of methods is implemented by invoking
     arbitrary user-supplied callables.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, config,
                  server, name, func, requestType, replyType,
@@ -344,49 +343,50 @@ class LocalServer(Server):
     which are implemented by callback functions with a scope under
     which these methods are exposed for remote clients.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, config):
         """
-        Creates a new L{LocalServer} object that exposes methods under
-        the L{rsb.Scope} B{scope}.
+        Creates a new :obj:`LocalServer` object that exposes methods under
+        the :obj:`rsb.Scope` ``scope``.
 
-        @param scope: The scope under which the methods of the newly
-                      created server should be provided.
-        @type scope: rsb.Scope
-        @param config: The transport configuration that should be used
-                       for communication performed by this server.
-        @type config: rsb.ParticipantConfig
+        Args:
+            scope (rsb.Scope):
+                The scope under which the methods of the newly created server
+                should be provided.
+            config (rsb.ParticipantConfig):
+                The transport configuration that should be used for
+                communication performed by this server.
 
-        See also: L{rsb.createServer}
+        See Also:
+            :obj:`rsb.createServer`
         """
         super(LocalServer, self).__init__(scope, config)
 
     def addMethod(self, name, func, requestType=object, replyType=object,
                   allowParallelExecution=False):
         """
-        Add a method named B{name} that is implemented by B{func}.
+        Add a method named ``name`` that is implemented by ``func``.
 
-        @param name: The name of of the new method.
-        @type name: str
-        @param func: A callable object or a single argument that
-                     implements the desired behavior of the new
-                     method.
-        @param requestType: A type object indicating the type of
-                            request data passed to the method.
-        @type requestType: type
-        @param replyType: A type object indicating the type of reply
-                          data of the method.
-        @param allowParallelExecution: if set to True, the method will be
-                                       called fully asynchronously and even
-                                       multiple calls may enter the method in
-                                       parallel. Also, no ordering is
-                                       guaranteed anymore.
-                                       Default: False
-        @type allowParallelExecution: bool
-        @type replyType: type
-        @return: The newly created method.
-        @rtype: LocalMethod
+        Args:
+            name (str):
+                The name of of the new method.
+            func:
+                A callable object or a single argument that implements the
+                desired behavior of the new method.
+            requestType (types.TypeType):
+                A type object indicating the type of request data passed to the
+                method.
+            replyType:
+                A type object indicating the type of reply data of the method.
+            allowParallelExecution(bool):
+                if set to True, the method will be called fully asynchronously
+                and even multiple calls may enter the method in parallel. Also,
+                no ordering is guaranteed anymore.
+
+        Returns:
+            LocalMethod:
+                The newly created method.
         """
         scope = self.scope.concat(rsb.Scope('/' + name))
         method = rsb.createParticipant(
@@ -419,7 +419,7 @@ class RemoteMethod(Method):
     server. Method objects are callable like regular bound method
     objects.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, config, server, name, requestType, replyType):
         super(RemoteMethod, self).__init__(scope, config,
@@ -462,68 +462,83 @@ class RemoteMethod(Method):
 
     def __call__(self, arg=None):
         """
-        Call the method synchronously with argument B{arg}, returning
+        Call the method synchronously with argument ``arg``, returning
         the value returned by the remote method.
 
-        If B{arg} is an instance of L{Event}, an L{Event} containing
+        If ``arg`` is an instance of :obj:`Event`, an :obj:`Event` containing
         the object returned by the remote method as payload is
-        returned. If B{arg} is of any other type, return the object
+        returned. If ``arg`` is of any other type, return the object
         that was returned by the remote method.
 
         The call to this method blocks until a result is available or
         an error occurs.
 
         Examples:
-        >>> myServer.echo('bla')
-        'bla'
-        >>> myServer.echo(Event(scope=myServer.scope, data='bla', type=str))
-        Event[id = ..., data = 'bla', ...]
+            >>> myServer.echo('bla')
+            'bla'
+            >>> myServer.echo(Event(scope=myServer.scope, data='bla',
+            >>>                     type=str))
+            Event[id = ..., data = 'bla', ...]
 
-        @param arg: The argument object that should be passed to the
-                    remote method. A converter has to be available for
-                    the type of B{arg}.
-        @return: The object that was returned by the remote method.
-        @raise RemoteCallError: If invoking the remote method fails or
-                                the remote method itself produces an
-                                error.
-        @see: L{async}
+        Args:
+            arg:
+                The argument object that should be passed to the remote method.
+                A converter has to be available for the type of ``arg``.
+
+        Returns:
+            The object that was returned by the remote method.
+
+        Raises:
+            RemoteCallError:
+                If invoking the remote method fails or the remote method itself
+                produces an error.
+
+        See Also:
+            :obj:`async`
         """
         return self.async(arg).get()
 
     def async(self, arg=None):
         """
-        Call the method asynchronously with argument B{arg}, returning
-        a L{Future} instance that can be used to retrieve the result.
+        Call the method asynchronously with argument ``arg``, returning
+        a :obj:`Future` instance that can be used to retrieve the result.
 
-        If B{arg} is an instance of L{Event}, the result of the method
-        call is an L{Event} containing the object returned by the
-        remote method as payload. If B{arg} is of any other type, the
+        If ``arg`` is an instance of :obj:`Event`, the result of the method
+        call is an :obj:`Event` containing the object returned by the
+        remote method as payload. If ``arg`` is of any other type, the
         result is the payload of the method call is the object that
         was returned by the remote method.
 
         The call to this method returns immediately, even if the
-        remote method did produce a result yet. The returned L{Future}
+        remote method did produce a result yet. The returned :obj:`Future`
         instance has to be used to retrieve the result.
 
-        Examples:
-        >>> myServer.echo.async('bla')
-        <Future running at 3054cd0>
-        >>> myServer.echo.async('bla').get()
-        'bla'
-        >>> myServer.echo.async(Event(scope=myServer.scope,
-        ...                           data='bla', type=str)).get()
-        Event[id = ..., data = 'bla', ...]
+        Args:
+            arg:
+                The argument object that should be passed to the remote method.
+                A converter has to be available for the type of ``arg``.
 
-        @param arg: The argument object that should be passed to the
-                    remote method. A converter has to be available for
-                    the type of B{arg}.
-        @return: A L{Future} or L{DataFuture} instance that can be
-                 used to check the success of the method call, wait
-                 for the result and retrieve the result.
-        @rtype: L{Future} or L{DataFuture}
-        @raise RemoteCallError: If an error occurs before the remote
-                                was invoked.
-        @see: L{__call__}
+        Returns:
+            Future or DataFuture:
+                A :obj:`Future` or :obj:`DataFuture` instance that can be used
+                to check the success of the method call, wait for the result
+                and retrieve the result.
+
+        Raises:
+            RemoteCallError:
+                If an error occurs before the remote was invoked.
+
+        See Also:
+            :obj:`__call__`
+
+        Examples:
+            >>> myServer.echo.async('bla')
+            <Future running at 3054cd0>
+            >>> myServer.echo.async('bla').get()
+            'bla'
+            >>> myServer.echo.async(Event(scope=myServer.scope,
+            ...                           data='bla', type=str)).get()
+            Event[id = ..., data = 'bla', ...]
         """
         self.listener  # Force listener creation
 
@@ -566,20 +581,22 @@ class RemoteServer(Server):
     Objects of this class represent remote servers in a way that
     allows calling methods on them as if they were local.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, scope, config):
         """
-        Create a new L{RemoteServer} object that provides its methods
-        under the scope B{scope}.
+        Create a new :obj:`RemoteServer` object that provides its methods
+        under the scope ``scope``.
 
-        @param scope: The common super-scope under which the methods
-                      of the remote created server are provided.
-        @type scope: rsb.Scope
-        @param config: The configuration that should be used by this
-                       server.
-        @type config: rsb.ParticipantConfig
-        @see: L{rsb.createRemoteServer}
+        Args:
+            scope (rsb.Scope):
+                The common super-scope under which the methods of the remote
+                created server are provided.
+            config (rsb.ParticipantConfig):
+                The configuration that should be used by this server.
+
+        See Also:
+            :obj:`rsb.createRemoteServer`
         """
         super(RemoteServer, self).__init__(scope, config)
 

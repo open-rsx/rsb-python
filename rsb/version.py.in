@@ -1,3 +1,9 @@
+"""
+Provides runtime information about the version of RSB being currently used.
+
+.. codeauthor:: jwienke
+"""
+
 __version__ = '@VERSION@'
 __commit__ = '@COMMIT@'
 

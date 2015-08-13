@@ -53,7 +53,7 @@ class TransportCheck(object):
     '''
     An abstract base class for ensuring interface assumptions about transports.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     def _getInConnector(self, scope, activate=True):

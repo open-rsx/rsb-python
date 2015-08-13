@@ -27,8 +27,8 @@
 This package contains a transport implementation based on the spread toolkit
 which uses a multicased-based daemon network.
 
-@author: jmoringe
-@author: jwienke
+.. codeauthor:: jmoringe
+.. codeauthor:: jwienke
 """
 
 import threading
@@ -64,7 +64,7 @@ class Assembly(object):
     A class that maintains a collection of fragments of one fragmented
     notification and assembles them if all fragments are received.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, fragment):
@@ -103,7 +103,7 @@ class AssemblyPool(object):
     Maintains the parallel joining of notification fragments that are
     received in an interleaved fashion.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self):
@@ -129,7 +129,7 @@ class SpreadConnection(object):
     """
     A wrapper around a spread mailbox for some convenience.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, daemonName, spreadModule=spread):
@@ -184,16 +184,20 @@ class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, mailbox, observerAction, converterMap):
         """
         Constructor.
 
-        @param mailbox: spread mailbox to receive from
-        @param observerAction: callable to execute if a new event is received
-        @param converterMap: converters for data
+        Args:
+            mailbox:
+                spread mailbox to receive from
+            observerAction:
+                callable to execute if a new event is received
+            converterMap:
+                converters for data
         """
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -317,7 +321,7 @@ class Connector(rsb.transport.Connector,
     the direction-independent aspects like the Spread connection and
     (de)activation.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     MAX_MSG_LENGTH = 100000
@@ -502,9 +506,9 @@ class OutConnector(Connector,
 
 class TransportFactory(rsb.transport.TransportFactory):
     """
-    L{TransportFactory} implementation for the spread transport.
+    :obj:`TransportFactory` implementation for the spread transport.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self):

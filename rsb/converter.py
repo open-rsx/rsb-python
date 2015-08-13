@@ -27,9 +27,9 @@
 A module containing various converter implementations as well as logic for
 registering and selecting them.
 
-@author: jmoringe
-@author: jwienke
-@author: plueckin
+.. codeauthor:: jmoringe
+.. codeauthor:: jwienke
+.. codeauthor:: plueckin
 """
 
 from numbers import Integral, Real
@@ -44,24 +44,22 @@ class Converter(object):
     """
     Base class for converters to a certain target type.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, wireType, dataType, wireSchema):
         """
         Constructor.
 
-        @param wireType: Python type to/from which the converter
-                         serializes/deserializes
-        @type wireType: type
-        @param dataType: Python type of data accepted by the converter
-                         for serialization (also Python type of
-                         deserialized data)
-        @type dataType: type
-        @param wireSchema: Wire-schema understood by the converter
-                           when deserializing (also wire-schema of
-                           data serialized with the converter)
-        @type wireSchema: str
+        Args:
+            wireType (types.TypeType):
+                Python type to/from which the converter serializes/deserializes
+            dataType (types.TypeType):
+                Python type of data accepted by the converter for serialization
+                (also Python type of deserialized data)
+            wireSchema (str):
+                Wire-schema understood by the converter when deserializing
+                (also wire-schema of data serialized with the converter)
         """
         self.__wireType = wireType
         self.__dataType = dataType
@@ -72,8 +70,9 @@ class Converter(object):
         Returns the type of the wire-type to/from this converter
         serializes/deserializes.
 
-        @return: A type object.
-        @rtype: type
+        Returns:
+            types.TypeType:
+                A type object.
         """
         return self.__wireType
 
@@ -83,8 +82,9 @@ class Converter(object):
         """
         Returns the data type this converter is applicable for.
 
-        @return: A type object.
-        @rtype: type
+        Returns:
+            types.TypeType:
+                A type object.
         """
         return self.__dataType
 
@@ -92,12 +92,13 @@ class Converter(object):
 
     def getWireSchema(self):
         """
-        Returns the name of the wire schema this converter can
-        (de)serialize from/to.
+        Returns the name of the wire schema this converter can (de)serialize
+        from/to.
 
-        @return: A string designating the wire schema from/to this
-                 converter can (de)serialize
-        @rtype: str
+        Returns:
+            str:
+                A string designating the wire schema from/to this converter can
+                (de)serialize
         """
         return self.__wireSchema
 
@@ -112,9 +113,7 @@ class Converter(object):
 
 class UnknownConverterError(KeyError):
     """
-    Raised if a converter for a target type is not available.
-
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, sourceType, wireSchema):
@@ -129,7 +128,7 @@ class ConverterSelectionStrategy(object):
     This class defines the interface for converter selection strategy
     classes.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def hasConverterForWireSchema(self, wireSchema):
         if self._getConverterForWireSchema(wireSchema):
@@ -160,7 +159,7 @@ class ConverterMap(ConverterSelectionStrategy):
     """
     A class managing converters for for a certain target type.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, wireType):
@@ -222,7 +221,7 @@ class PredicateConverterList(ConverterMap):
     associated predicate of which matches the query wire-schema or
     data-type.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, wireType):
         super(PredicateConverterList, self).__init__(wireType)
@@ -283,14 +282,15 @@ __globalConverterMaps = {}
 
 def registerGlobalConverter(converter, replaceExisting=False):
     """
-    Register B{converter} as a globally available converter.
+    Register ``converter`` as a globally available converter.
 
-    @param converter: converter to register
-    @param replaceExisting: controls whether an existing converter for
-                            the same data-type and/or wire-type should
-                            be replaced by the new converter. If this
-                            is C{False} and such a converter exists,
-                            an error is raised.
+    Args:
+        converter:
+            converter to register
+        replaceExisting:
+            controls whether an existing converter for the same data-type
+            and/or wire-type should be replaced by the new converter. If this
+            is ``False`` and such a converter exists, an error is raised.
     """
     mapForWireType = getGlobalConverterMap(converter.getWireType())
     mapForWireType.addConverter(converter, replaceExisting)
@@ -298,11 +298,14 @@ def registerGlobalConverter(converter, replaceExisting=False):
 
 def getGlobalConverterMap(wireType):
     """
-    Get a map with all globally known converters for the B{wireType}.
+    Get a map with all globally known converters for the ``wireType``.
 
-    @param wireType: Python type for designating the wire-type.
-    @type wireType: type
-    @return: converter map constantly updated
+    Args:
+        wireType (types.TypeType):
+            Python type for designating the wire-type.
+
+    Returns:
+        converter map constantly updated
     """
 
     with __globalConverterMapsLock:
@@ -318,7 +321,7 @@ class IdentityConverter(Converter):
     This converter does nothing. Use it in combination with the
     "AlwaysApplicable"-wireSchema.
 
-    @author: plueckin
+    .. codeauthor:: plueckin
     """
     def __init__(self):
         super(IdentityConverter, self).__init__(bytearray, type(None), 'void')
@@ -336,12 +339,12 @@ class IdentityConverter(Converter):
 class NoneConverter(Converter):
     """
     This converter produces a serialized value that represents
-    instances of C{NoneType}.
+    instances of ``NoneType``.
 
     Such a converter is required for serializing "results" of RPC
     calls that do not return a value.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self):
         super(NoneConverter, self).__init__(bytearray, type(None), 'void')
@@ -372,7 +375,7 @@ def makeStructBasedConverter(name, dataType, wireSchema, fmt, size):
     # A converter that serializes %(dataType)s to bytearrays with
     # %(wireSchema)s wire-schema.
     #
-    # @author: jmoringe
+    # .. codeauthor:: jmoringe
     # """ % {
     #     "dataType":   dataType,
     #     "wireSchema": wireSchema
@@ -395,7 +398,7 @@ class BytesConverter(Converter):
     """
     Handles byte arrays.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, wireSchema="bytes", dataType=bytearray):
@@ -414,7 +417,7 @@ class StringConverter(Converter):
     A converter that serializes strings to bytearrays with a specified
     encoding
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self,
@@ -441,7 +444,7 @@ class ByteArrayConverter(Converter):
     """
     A converter which just passes through the original byte array of a message.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
     def __init__(self):
         super(ByteArrayConverter, self).__init__(bytearray, bytearray, '.*')
@@ -458,7 +461,7 @@ class SchemaAndByteArrayConverter(Converter):
     A converter which passes through the wireSchema as well as the original
     byte array of a message.
 
-    @author: nkoester
+    .. codeauthor:: nkoester
     """
     def __init__(self):
         super(SchemaAndByteArrayConverter, self).__init__(
@@ -479,7 +482,7 @@ class ProtocolBufferConverter(Converter):
     These data-holder classes are generated by the protocol buffer
     compiler protoc.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, messageClass):
         super(ProtocolBufferConverter, self).__init__(
@@ -521,7 +524,7 @@ class EventsByScopeMapConverter(Converter):
     scope. As a client data type dictionaries are used. Think about this when
     you register the converter and also have other dictionaries to transmit.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, converterRepository=getGlobalConverterMap(bytearray)):

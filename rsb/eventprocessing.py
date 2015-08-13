@@ -27,8 +27,8 @@
 A module with classes maintaining the processing of events between the
 transport layer and the client interface.
 
-@author: jwienke
-@author: jmoringe
+.. codeauthor:: jwienke
+.. codeauthor:: jmoringe
 """
 
 import copy
@@ -44,7 +44,7 @@ class BroadcastProcessor(object):
     This event processor implements synchronous broadcast dispatch to
     a list of handlers.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, handlers=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -86,7 +86,7 @@ class EventReceivingStrategy(object):
     """
     Superclass for event receiving strategies.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def addFilter(self, theFilter):
         raise NotImplementedError
@@ -106,11 +106,11 @@ class EventReceivingStrategy(object):
 
 class ParallelEventReceivingStrategy(EventReceivingStrategy):
     """
-    An L{EventReceivingStrategy} that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler is called only
     sequentially but potentially from different threads.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, numThreads=5):
@@ -149,8 +149,9 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         """
         Dispatches the event to all registered listeners.
 
-        @type event: Event
-        @param event: event to dispatch
+        Args:
+            event:
+                event to dispatch
         """
         self.__logger.debug("Processing event %s", event)
         event.metaData.setDeliverTime()
@@ -173,11 +174,11 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
 
 class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     """
-    An L{EventReceivingStrategy} that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler can be called
     in parallel for different requests.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self):
@@ -209,8 +210,9 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
         """
         Dispatches the event to all registered listeners.
 
-        @type event: Event
-        @param event: event to dispatch
+        Args:
+            event:
+                event to dispatch
         """
         self.__logger.debug("Processing event %s", event)
         event.metaData.setDeliverTime()
@@ -239,14 +241,14 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
 
 class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     """
-    An L{EventReceivingStrategy} that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers using a single thread and without queuing. Only a single buffer
     is used to decouple the transport from the registered handlers. In case
     the handler processing is slower than the transport, the transport will
     block on inserting events into this strategy. Callers must ensure that they
     are in no active call for #handle when deactivating this instance.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self):
@@ -341,8 +343,8 @@ class Configurator(object):
     the basic aspects like the connector list and (de)activation that
     are not direction-specific.
 
-    @author: jwienke
-    @author: jmoringe
+    .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
     def __init__(self, connectors=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -367,8 +369,9 @@ class Configurator(object):
         Defines the scope the in route has to be set up. This will be called
         before calling #activate.
 
-        @param scope: the scope of the in route
-        @type scope: rsb.Scope
+        Args:
+            scope (rsb.Scope):
+                the scope of the in route
         """
         self.__scope = scope
         self.__logger.debug("Got new scope %s", scope)
@@ -415,24 +418,24 @@ class Configurator(object):
 class InRouteConfigurator(Configurator):
     """
     Instances of this class manage the receiving, filtering and
-    dispatching of events via one or more L{rsb.transport.Connector} s
-    and an L{EventReceivingStrategy}.
+    dispatching of events via one or more :obj:`rsb.transport.Connector` s
+    and an :obj:`EventReceivingStrategy`.
 
-    @author: jwienke
-    @author: jmoringe
+    .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, connectors=None, receivingStrategy=None):
         """
-        Creates a new configurator which manages B{connectors} and
-        B{receivingStrategy}.
+        Creates a new configurator which manages ``connectors`` and
+        ``receivingStrategy``.
 
-        @param connectors: Connectors through which events are received.
-
-        @param receivingStrategy: The event receiving strategy
-                                  according to which the filtering and
-                                  dispatching of incoming events
-                                  should be performed.
+        Args:
+            connectors:
+                Connectors through which events are received.
+            receivingStrategy:
+                The event receiving strategy according to which the filtering
+                and dispatching of incoming events should be performed.
         """
         super(InRouteConfigurator, self).__init__(connectors)
 
@@ -468,9 +471,9 @@ class InRouteConfigurator(Configurator):
 class OutRouteConfigurator(Configurator):
     """
     Instances of this class manage the sending of events via one or
-    more L{rsb.transport.Connector} s and an L{EventSendingStrategy}.
+    more :obj:`rsb.transport.Connector` s and an :obj:`EventSendingStrategy`.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, connectors=None, sendingStrategy=None):

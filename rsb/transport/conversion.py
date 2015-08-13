@@ -24,11 +24,11 @@
 
 """
 A module containing serialization methods used by several transports which
-convert L{rsb.Event} instances to protocol buffers based data types and vice
-versa.
+convert :obj:`rsb.Event` instances to protocol buffers based data types and
+vice versa.
 
-@author: jmoringe
-@author: jwienke
+.. codeauthor:: jmoringe
+.. codeauthor:: jwienke
 """
 
 import itertools

@@ -31,7 +31,7 @@ and thus built on top of "ordinary" RSB communication.
 This package implements the "local introspection" (i.e. introspection
 sender) part of the introspection architecture.
 
-@author: jmoringe
+.. codeauthor:: jmoringe
 """
 
 import sys
@@ -60,7 +60,7 @@ class ParticipantInfo(object):
     The participant can reside in the current process or in a remote
     process.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, kind, id, scope, type, parentId=None):
@@ -76,9 +76,10 @@ class ParticipantInfo(object):
 
         Examples include "listener", "informer" and "local-server".
 
-        @return: A lower-case, hyphen-separated string identifying the
-                 kind of participant.
-        @rtype: str
+        Returns:
+            str:
+                A lower-case, hyphen-separated string identifying the kind of
+                participant.
         """
         return self.__kind
 
@@ -88,8 +89,9 @@ class ParticipantInfo(object):
         """
         Returns the unique id of the participant.
 
-        @return: The unique id of the participant.
-        @rtype: uuid.uuid
+        Returns:
+            uuid.uuid:
+                The unique id of the participant.
         """
         return self.__id
 
@@ -99,8 +101,9 @@ class ParticipantInfo(object):
         """
         Returns the scope of the participant.
 
-        @return: The scope of the participant.
-        @rtype: rsb.Scope
+        Returns:
+            rsb.Scope:
+                The scope of the participant.
         """
         return self.__scope
 
@@ -114,8 +117,9 @@ class ParticipantInfo(object):
         Note that this is a temporary solution and will change in
         future versions.
 
-        @return: A representation of the type.
-        @rtype: type or tuple
+        Returns:
+            type or tuple:
+                A representation of the type.
         """
         return self.__type
 
@@ -124,10 +128,11 @@ class ParticipantInfo(object):
     def getParentId(self):
         """
         Return the unique id of the parent participant of the participant,
-        or C{None}, if the participant does not have a parent.
+        or ``None``, if the participant does not have a parent.
 
-        @return: C{None} or the unique id of the participant's parent.
-        @rtype: uuid.uuid or NoneType
+        Returns:
+            uuid.uuid or NoneType:
+                ``None`` or the unique id of the participant's parent.
         """
         return self.__parentId
 
@@ -148,8 +153,9 @@ def processStartTime():
     Return the start time of the current process (or an approximation)
     in fractional seconds since UNIX epoch.
 
-    @return: Start time in factional seconds since UNIX epoch.
-    @rtype: float
+    Returns:
+        float:
+            Start time in factional seconds since UNIX epoch.
     """
     global __processStartTime
 
@@ -202,7 +208,7 @@ class ProcessInfo(object):
     The stored information can describe the current process, a
     different process on the local machine or a remote process.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self,
@@ -231,8 +237,9 @@ class ProcessInfo(object):
         """
         Returns the numeric id of the process.
 
-        @return: The numeric id of the process.
-        @rtype: int
+        Returns:
+            int:
+                The numeric id of the process.
         """
         return self.__id
 
@@ -242,8 +249,9 @@ class ProcessInfo(object):
         """
         Returns the name of the program being executed in the process.
 
-        @return: The name of the program.
-        @rtype: str
+        Returns:
+            str:
+                The name of the program.
         """
         return self.__programName
 
@@ -254,8 +262,9 @@ class ProcessInfo(object):
         Returns the list of commandline argument the process has been
         started with.
 
-        @return: A list of commandline argument strings
-        @rtype: list
+        Returns:
+            list:
+                A list of commandline argument strings
         """
         return self.__arguments
 
@@ -266,8 +275,9 @@ class ProcessInfo(object):
         Returns the start time of the process in fractional seconds
         since UNIX epoch.
 
-        @return: start time in fractional seconds since UNIX epoch.
-        @rtype: float
+        Returns:
+            float:
+                start time in fractional seconds since UNIX epoch.
         """
         return self.__startTime
 
@@ -278,9 +288,10 @@ class ProcessInfo(object):
         Return the login- or account-name of the user executing the
         process.
 
-        @return: login- or account-name of the user executing the
-                 process or None if not determinable
-        @rtype: str
+        Returns:
+            str:
+                login- or account-name of the user executing the process or
+                None if not determinable
         """
         return self.__executingUser
 
@@ -290,10 +301,11 @@ class ProcessInfo(object):
         """
         Return the version of the RSB implementation used in this process.
 
-        @return: Version string of the form::
+        Returns:
+            str:
+                Version string of the form::
 
                    MAJOR.MINOR.REVISION[-COMMIT]
-        @rtype: str
         """
         return self.__rsbVersion
 
@@ -311,10 +323,10 @@ def hostId():
     """
     Returns a unique id string for the current host.
 
-    @return: A platform-dependent, string (hopefully) uniquely
-             identifying the current host or C{None} if such an id
-             cannot be obtained.
-    @rtype: str or NoneType
+    Returns:
+        str or NoneType:
+            A platform-dependent, string (hopefully) uniquely identifying the
+            current host or ``None`` if such an id cannot be obtained.
     """
     def maybeRead(filename):
         try:
@@ -358,7 +370,7 @@ class HostInfo(object):
     The stored information can describe the local host or a remote
     host.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self,
@@ -379,8 +391,9 @@ class HostInfo(object):
         """
         Return the unique id string for the host.
 
-        @return: The platform-dependent, (hopefully) unique id string.
-        @rtype: str or None
+        Returns:
+            str or None:
+                The platform-dependent, (hopefully) unique id string.
         """
         return self.__id
 
@@ -390,8 +403,9 @@ class HostInfo(object):
         """
         Returns the hostname of the host.
 
-        @return: The hostname.
-        @rtype: str
+        Returns:
+            str:
+                The hostname.
         """
         return self.__hostname
 
@@ -401,8 +415,9 @@ class HostInfo(object):
         """
         Return the type of the machine, usually CPU architecture.
 
-        @return: The machine type when known.
-        @rtype: str or NoneType
+        Returns:
+            str or NoneType:
+                The machine type when known.
         """
         return self.__machineType
 
@@ -413,8 +428,9 @@ class HostInfo(object):
         Returns the version of the machine within its type, usually
         the CPU identification string.
 
-        @return: The machine version when known.
-        @rtype: str or NoneType
+        Returns:
+            str or NoneType:
+                The machine version when known.
         """
         return self.__machineVersion
 
@@ -425,8 +441,9 @@ class HostInfo(object):
         Returns the type of the operating system running on the host,
         usually the kernel name.
 
-        @return: The software type when known.
-        @rtype: str or NoneType
+        Returns:
+            str or NoneType:
+                The software type when known.
         """
         return self.__softwareType
 
@@ -437,8 +454,9 @@ class HostInfo(object):
         Returns the version of the operating system within its type,
         usually the kernel version string.
 
-        @return: The software version when known.
-        @rtype: str or NoneType
+        Returns:
+            str or NoneType:
+                The software version when known.
         """
         return self.__softwareVersion
 
@@ -478,10 +496,10 @@ class IntrospectionSender(object):
     information.
 
     Instances need to be notified of created and destroyed
-    participants via calls of the L{addParticipant} and
-    L{removeParticipant} methods.
+    participants via calls of the :obj:`addParticipant` and
+    :obj:`removeParticipant` methods.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self):
@@ -502,7 +520,8 @@ class IntrospectionSender(object):
 
             id = None
             participant = None
-            if len(event.scope.components) > len(PARTICIPANTS_SCOPE.components):
+            if len(event.scope.components) > \
+                    len(PARTICIPANTS_SCOPE.components):
                 try:
                     id = uuid.UUID(event.scope.components[-1])
                     if id is not None:
@@ -662,9 +681,9 @@ __sender = None
 def handleParticipantCreation(participant, parent=None):
     """
     This function is intended to be connected to
-    L{rsb.participantCreationHook} and calls
-    L{IntrospectionSender.addParticipant} when appropriate, first
-    creating the L{IntrospectionSender} instance, if necessary.
+    :obj:`rsb.participantCreationHook` and calls
+    :obj:`IntrospectionSender.addParticipant` when appropriate, first
+    creating the :obj:`IntrospectionSender` instance, if necessary.
     """
     global __sender
 
@@ -680,9 +699,9 @@ def handleParticipantCreation(participant, parent=None):
 def handleParticipantDestruction(participant):
     """
     This function is intended to be connected to
-    L{rsb.participantDestructionHook} and calls
-    L{IntrospectionSender.removeParticipant} when appropriate,
-    potentially deleting the L{IntrospectionSender} instance
+    :obj:`rsb.participantDestructionHook` and calls
+    :obj:`IntrospectionSender.removeParticipant` when appropriate,
+    potentially deleting the :obj:`IntrospectionSender` instance
     afterwards.
     """
     global __sender
@@ -701,8 +720,9 @@ def initialize(displayName=None):
     Initializes the introspection module. Clients need to ensure that this
     method is called only once.
 
-    @param displayName: a user-defined process name to use in the introspection
-    @type displayName: str or NoneType if not set
+    Args:
+        displayName (str or NoneType if not set, optional):
+            a user-defined process name to use in the introspection
     """
     global _displayName
 

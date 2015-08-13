@@ -26,7 +26,7 @@
 This package contains a transport implementation that uses multiple
 point-to-point socket connections to simulate a bus.
 
-@author: jmoringe
+.. codeauthor:: jmoringe
 """
 
 import copy
@@ -48,36 +48,45 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     bus.
 
     The basic operations provided by this class are receiving an event
-    by calling L{receiveNotification} and submitting an event to the bus by
-    calling L{sendNotification}.
+    by calling :obj:`receiveNotification` and submitting an event to the bus by
+    calling :obj:`sendNotification`.
 
     In a process which act as a client for a particular bus, a single
     instance of this class is connected to the bus server and provides
     access to the bus for the process.
 
     A process which acts as the server for a particular bus, manages
-    (via the L{BusServer} class) one L{BusConnection} object for each
+    (via the :obj:`BusServer` class) one :obj:`BusConnection` object for each
     client (remote process) connected to the bus.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self,
                  host=None, port=None, socket_=None,
                  isServer=False, tcpnodelay=True):
         """
-        @param host: Hostname or address of the bus server.
-        @type host: str or None
-        @param port: Port of the bus server.
-        @type port: int or None
-        @param socket_: A socket object through which the new
-                        connection should access the bus.
-        @param isServer: if True, the created object will perform the server
-                         part of the handshake protocol.
-        @type isServer: bool
-        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
-        @type tcpnodelay: bool
-        @see: L{getBusClientFor}, L{getBusServerFor}.
+        Args:
+            host (str or None):
+                Hostname or address of the bus server.
+            port (int or None):
+                Port of the bus server.
+            socket_:
+                A socket object through which the new connection should access
+                the bus.
+            isServer (bool):
+                if True, the created object will perform the server part of the
+                handshake protocol.
+            tcpnodelay (bool):
+                If True, the socket will be set to TCP_NODELAY.
+
+        See Also:
+            :obj:`getBusClientFor`, :obj:`getBusServerFor`.
         """
         super(BusConnection, self).__init__()
 
@@ -254,12 +263,12 @@ class Bus(object):
     server as a client.
 
     In-direction connectors add themselves as event sinks using the
-    L{addConnector} method.
+    :obj:`addConnector` method.
 
     Out-direction connectors submit events to the bus using the
-    L{handleOutgoing} method.
+    :obj:`handleOutgoing` method.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -277,20 +286,22 @@ class Bus(object):
 
     def getConnections(self):
         """
-        @return: A list of all connections to the bus.
-        @rtype: list
+        Returns:
+            list:
+                A list of all connections to the bus.
         """
         return self.__connections
 
     def addConnection(self, connection):
         """
-        Add B{connection} to the list of connections of this bus. This
+        Add ``connection`` to the list of connections of this bus. This
         cause notifications send over this bus to be send through
-        B{connection} and notifications received via B{connection} to
+        ``connection`` and notifications received via ``connection`` to
         be dispatched to connectors of this bus.
 
-        @param connection: The connection that should be added to this
-                           bus.
+        Args:
+            connection:
+                The connection that should be added to this bus.
         """
         with self.lock:
             self.__connections.append(connection)
@@ -317,10 +328,11 @@ class Bus(object):
 
     def removeConnection(self, connection):
         """
-        Remove B{connection} from the list of connections of this bus.
+        Remove ``connection`` from the list of connections of this bus.
 
-        @param connection: The connection that should be removed from
-                           this bus.
+        Args:
+            connection:
+                The connection that should be removed from this bus.
         """
         self.__logger.info('Removing connection %s', connection)
 
@@ -337,13 +349,14 @@ class Bus(object):
 
     def addConnector(self, connector):
         """
-        Add B{connector} to the list of connectors of this
-        bus. Depending on the direction of B{connector}, this causes
-        B{connector} to either receive or broadcast notifications via
+        Add ``connector`` to the list of connectors of this
+        bus. Depending on the direction of ``connector``, this causes
+        ``connector`` to either receive or broadcast notifications via
         this bus.
 
-        @param connector: The connector that should be added to this
-                          bus.
+        Args:
+            connector:
+                The connector that should be added to this bus.
         """
         self.__logger.info('Adding connector %s', connector)
         with self.lock:
@@ -351,10 +364,11 @@ class Bus(object):
 
     def removeConnector(self, connector):
         """
-        Remove B{connector} from the list of connectors of this bus.
+        Remove ``connector`` from the list of connectors of this bus.
 
-        @param connector: The connector that should be removed from
-                          this bus.
+        Args:
+            connector:
+                The connector that should be removed from this bus.
         """
         self.__logger.info('Removing connector %s', connector)
         with self.lock:
@@ -480,21 +494,21 @@ __busClientsLock = threading.Lock()
 
 def getBusClientFor(host, port, tcpnodelay, connector):
     """
-    Return (creating it if necessary), a L{BusClient} for the endpoint
-    designated by B{host} and B{port} and attach B{connector} to
-    it. Attaching B{connector} marks the bus client as being in use
+    Return (creating it if necessary), a :obj:`BusClient` for the endpoint
+    designated by ``host`` and ``port`` and attach ``connector`` to
+    it. Attaching ``connector`` marks the bus client as being in use
     and protects it from being destroyed in a race condition
     situation.
 
-    @param host: A hostname or address of the node on which the bus
-                 server listens.
-    @type host: str
-    @param port: The port on which the bus server listens.
-    @type port: int
-    @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
-    @type tcpnodelay: bool
-    @param connector: A connector that should be attached to the bus
-                      client.
+    Args:
+        host (str):
+            A hostname or address of the node on which the bus server listens.
+        port (int):
+            The port on which the bus server listens.
+        tcpnodelay (bool):
+            If True, the socket will be set to TCP_NODELAY.
+        connector:
+            A connector that should be attached to the bus client.
     """
     key = (host, port, tcpnodelay)
     with __busClientsLock:
@@ -514,17 +528,18 @@ class BusClient(Bus):
     Instances of this class provide access to a bus by means of a
     client socket.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
     def __init__(self, host, port, tcpnodelay):
         """
-        @param host: A hostname or address of the node on which the
-                     bus server listens.
-        @type host: str
-        @param port: The port on which the new bus server listens.
-        @type port: int
-        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
-        @type tcpnodelay: bool
+        Args:
+            host (str):
+                A hostname or address of the node on which the bus server
+                listens.
+            port (int):
+                The port on which the new bus server listens.
+            tcpnodelay (bool):
+                If True, the socket will be set to TCP_NODELAY.
         """
         super(BusClient, self).__init__()
 
@@ -536,23 +551,23 @@ __busServersLock = threading.Lock()
 
 def getBusServerFor(host, port, tcpnodelay, connector):
     """
-    Return (creating it if necessary), a L{BusServer} for the endpoint
-    designated by B{host} and B{port} and attach B{connector} to
-    it. Attaching B{connector} marks the bus server as being in use
+    Return (creating it if necessary), a :obj:`BusServer` for the endpoint
+    designated by ``host`` and ``port`` and attach ``connector`` to
+    it. Attaching ``connector`` marks the bus server as being in use
     and protects it from being destroyed in a race condition
     situation.
 
-    @param host: A hostname or address identifying the interface to
-                 which the listen socket of the new bus server should
-                 be bound.
-    @type host: str
-    @param port: The port to which the listen socket of the new bus
-                 server should be bound.
-    @type port: int
-    @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
-    @type tcpnodelay: bool
-    @param connector: A connector that should be attached to the bus
-                      server.
+    Args:
+        host (str):
+            A hostname or address identifying the interface to which the listen
+            socket of the new bus server should be bound.
+        port (int):
+            The port to which the listen socket of the new bus server should be
+            bound.
+        tcpnodelay (bool):
+            If True, the socket will be set to TCP_NODELAY.
+        connector:
+            A connector that should be attached to the bus server.
     """
     key = (host, port, tcpnodelay)
     with __busServersLock:
@@ -575,27 +590,26 @@ class BusServer(Bus):
     Remote clients can connect to a server socket in order to send and
     receive events through the resulting socket connection.
 
-    Local clients (connectors) use the usual L{Bus} interface to
+    Local clients (connectors) use the usual :obj:`Bus` interface to
     receive events submitted by remote clients and submit events which
-    will be distributed to remote clients by the L{BusServer}.
+    will be distributed to remote clients by the :obj:`BusServer`.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, host, port, tcpnodelay, backlog=5):
         """
-        @param host: A hostname or address identifying the interface
-                     to which the listen socket of the new bus server
-                     should be bound.
-        @type host: str
-        @param port: The port to which the listen socket of the new
-                     bus server should be bound.
-        @type port: int
-        @param tcpnodelay: If True, the socket will be set to TCP_NODELAY.
-        @type tcpnodelay: bool
-        @param backlog: The maximum number of queued connection
-                        attempts.
-        @type backlog: int
+        Args:
+            host (str):
+                A hostname or address identifying the interface to which the
+                listen socket of the new bus server should be bound.
+            port (int):
+                The port to which the listen socket of the new bus server
+                should be bound.
+            tcpnodelay (bool):
+                If True, the socket will be set to TCP_NODELAY.
+            backlog (int):
+                The maximum number of queued connection attempts.
         """
         super(BusServer, self).__init__()
 
@@ -717,10 +731,10 @@ class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
     """
     Instances of subclasses of this class receive events from a bus
-    (represented by a L{Bus} object) that is accessed via a socket
+    (represented by a :obj:`Bus` object) that is accessed via a socket
     connection.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, converters, options={}, **kwargs):
@@ -815,15 +829,15 @@ class InPushConnector(Connector,
                       rsb.transport.InConnector):
     """
     Instances of this class receive events from a bus (represented by
-    a L{Bus} object) that is accessed via a socket connection.
+    a :obj:`Bus` object) that is accessed via a socket connection.
 
     The receiving and dispatching of events is done in push mode: each
-    instance has a L{Bus} which pushes appropriate events into the
+    instance has a :obj:`Bus` which pushes appropriate events into the
     instance. The connector deserializes event payloads and pushes the
     events into handlers (usually objects which implement some event
     processing strategy).
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, **kwargs):
@@ -854,9 +868,9 @@ class OutConnector(Connector,
                    rsb.transport.OutConnector):
     """
     Instance of this class send events to a bus (represented by a
-    L{Bus} object) that is accessed via a socket connection.
+    :obj:`Bus` object) that is accessed via a socket connection.
 
-    @author: jmoringe
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, **kwargs):
@@ -877,9 +891,9 @@ class OutConnector(Connector,
 
 class TransportFactory(rsb.transport.TransportFactory):
     """
-    L{TransportFactory} implementation for the socket transport.
+    :obj:`TransportFactory` implementation for the socket transport.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def getName(self):

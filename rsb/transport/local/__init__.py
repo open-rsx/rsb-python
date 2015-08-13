@@ -27,7 +27,7 @@ This package contains a highly efficient in-process transport implementation
 which allows participants inside one python process to communicate without
 serialization overhead.
 
-@author: jwienke
+.. codeauthor:: jwienke
 """
 
 from threading import RLock
@@ -38,7 +38,7 @@ class Bus(object):
     """
     Singleton-like representation of the local bus.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self):
@@ -49,7 +49,9 @@ class Bus(object):
         """
         Adds a sink for events pushed to the Bus.
 
-        @param sink: the sink to add
+        Args:
+            sink:
+                the sink to add
         """
         with self.__mutex:
             # ensure that there is a list of sinks for the given scope
@@ -61,7 +63,9 @@ class Bus(object):
         """
         Removes a sink to not be notified anymore.
 
-        @param sink: sink to remove
+        Args:
+            sink:
+                sink to remove
         """
         with self.__mutex:
             # return immediately if there is no such scope known for sinks
@@ -73,8 +77,9 @@ class Bus(object):
         """
         Dispatches the provided event to all sinks of the appropriate scope.
 
-        @param event: event to dispatch
-        @type event: rsb.Event
+        Args:
+            event (rsb.Event):
+                event to dispatch
         """
 
         with self.__mutex:
@@ -91,7 +96,7 @@ class OutConnector(transport.OutConnector):
     """
     In-process OutConnector.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
@@ -117,7 +122,7 @@ class InConnector(transport.InConnector):
     """
     InConnector for the local transport.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
@@ -159,9 +164,9 @@ class InConnector(transport.InConnector):
 
 class TransportFactory(transport.TransportFactory):
     """
-    L{TransportFactory} implementation for the local transport.
+    :obj:`TransportFactory` implementation for the local transport.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     """
 
     def getName(self):

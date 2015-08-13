@@ -53,7 +53,7 @@ class FetchProtocol(Command):
     '''
     A command which fetches the protocol files into this project
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     user_options = [('protocolroot=', 'p',
@@ -90,7 +90,7 @@ class BuildProtocol(Command):
     '''
     Distutils command to build the protocol buffers.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     user_options = [('protocolroot=', 'p',
@@ -160,7 +160,7 @@ class BDist_egg(bdist_egg):
     Simple wrapper around the normal bdist_egg command to require protobuf build
     before normal build.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     def run(self):
@@ -173,7 +173,7 @@ class Build(build):
     Simple wrapper around the normal build command to require protobuf build
     before normal build.
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     def run(self):
@@ -186,7 +186,7 @@ class Sdist(sdist):
     Simple wrapper around the normal sdist command to require protobuf build
     before generating the source distribution..
 
-    @author: jwienke
+    .. codeauthor:: jwienke
     '''
 
     def run(self):
