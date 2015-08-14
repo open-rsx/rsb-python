@@ -348,7 +348,6 @@ setup(name='rsb-python',
       setup_requires=['nose>=1.3',
                       'coverage',
                       'nose-testconfig',
-                      'setuptools-epydoc',
                       'setuptools-lint'],
 
       tests_require=['SpreadModule>=1.5spread4'],
