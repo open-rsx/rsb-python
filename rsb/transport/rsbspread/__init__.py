@@ -366,7 +366,7 @@ class Connector(rsb.transport.Connector,
             self.__connection.activate()
         except Exception, e:
             raise RuntimeError('Could not connect SpreadConnection "%s": %s' %
-                               (self._connection, e))
+                               (self.__connection, e))
 
         self.__active = True
 
