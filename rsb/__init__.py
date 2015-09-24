@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2013, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2013, 2014, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -1461,6 +1461,18 @@ class Participant(object):
 
     config = property(getConfig)
 
+    def getTransportURLs(self):
+        """
+        Returns of list transport URLs describing transport used by
+        the participant.
+
+        Returns:
+            list:
+                List of transport URLs."""
+        return []
+
+    transportURLs = property(getTransportURLs)
+
     def activate(self):
         pass
 
@@ -1571,6 +1583,9 @@ class Informer(Participant):
         self.__logger.debug("Destructing Informer")
         if self.__active:
             self.deactivate()
+
+    def getTransportURLs(self):
+        return self.__configurator.getTransportURLs()
 
     def getType(self):
         """
@@ -1703,6 +1718,9 @@ class Listener(Participant):
     def __del__(self):
         if self.__active:
             self.deactivate()
+
+    def getTransportURLs(self):
+        return self.__configurator.getTransportURLs()
 
     def __activate(self):
         # TODO commonality with Informer... refactor

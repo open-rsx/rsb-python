@@ -117,6 +117,9 @@ class OutConnector(transport.OutConnector):
     def setQualityOfServiceSpec(self, qos):
         pass
 
+    def getTransportURL(self):
+        return 'inprocess:'
+
 
 class InConnector(transport.InConnector):
     """
@@ -160,6 +163,9 @@ class InConnector(transport.InConnector):
         action = self.__observerAction
         if action is not None:
             action(event)
+
+    def getTransportURL(self):
+        return 'inprocess:'
 
 
 class TransportFactory(transport.TransportFactory):

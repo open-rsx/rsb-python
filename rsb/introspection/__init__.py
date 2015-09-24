@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2014, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -63,12 +63,14 @@ class ParticipantInfo(object):
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, kind, id, scope, type, parentId=None):
+    def __init__(self, kind, id, scope, type, parentId=None,
+                 transportURLs=None):
         self.__kind = kind
         self.__id = id
         self.__scope = rsb.Scope.ensureScope(scope)
         self.__type = type
         self.__parentId = parentId
+        self.__transportURLs = transportURLs or []
 
     def getKind(self):
         """
@@ -137,6 +139,19 @@ class ParticipantInfo(object):
         return self.__parentId
 
     parentId = property(getParentId)
+
+    def getTransportURLs(self):
+        """
+        Return list of transport URLs.
+
+        Returns:
+            list:
+                List of transport URLs describing the transports used
+                by the participant.
+        """
+        return self.__transportURLs
+
+    transportURLs = property(getTransportURLs)
 
     def __str__(self):
         return '<%s %s %s at 0x%0x>' \
@@ -599,7 +614,8 @@ class IntrospectionSender(object):
             id=participant.id,
             parentId=parentId,
             scope=participant.scope,
-            type=object)  # TODO
+            type=object, # TODO
+            transportURLs=participant.transportURLs)
 
         self.__participants.append(info)
 
@@ -625,6 +641,7 @@ class IntrospectionSender(object):
         hello.scope = participant.scope.toString()
         if participant.parentId:
             hello.parent = participant.parentId.get_bytes()
+        map(hello.transport.append, participant.transportURLs)
 
         host = hello.host
         if self.host.id is None:

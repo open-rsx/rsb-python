@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -384,6 +384,20 @@ class Configurator(object):
         return self.__connectors
 
     connectors = property(getConnectors)
+
+    def getTransportURLs(self):
+        """
+        Return list of transport URLs describing the connectors
+        managed by the configurator.
+
+        Returns:
+            list:
+                List of transport URLs.
+        """
+        print self.__connectors
+        return [x.getTransportURL() for x in self.__connectors]
+
+    transportURLs = property(getTransportURLs)
 
     def isActive(self):
         return self.__active

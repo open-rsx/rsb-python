@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -156,6 +156,12 @@ class SpreadConnection(object):
         if self.__mailbox is None:
             raise ValueError("Not activated")
         return getattr(self.__mailbox, name)
+
+    def getHost(self):
+        return self.__daemonName.split('@')[1]
+
+    def getPort(self):
+        return int(self.__daemonName.split('@')[0])
 
 
 class RefCountingSpreadConnection(SpreadConnection):
@@ -405,6 +411,10 @@ class Connector(rsb.transport.Connector,
         else:
             assert(False)
 
+    def getTransportURL(self):
+        return 'spread://' \
+            + self.__connection.getHost()  \
+            + ':' + str(self.__connection.getPort())
 
 class InConnector(Connector,
                   rsb.transport.InConnector):

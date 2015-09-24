@@ -824,6 +824,9 @@ class Connector(rsb.transport.Connector,
     def setQualityOfServiceSpec(self, qos):
         pass
 
+    def getTransportURL(self):
+        return 'socket://' + self.__host + ':' + str(self.__port)
+
 
 class InPushConnector(Connector,
                       rsb.transport.InConnector):
