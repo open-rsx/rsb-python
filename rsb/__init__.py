@@ -194,18 +194,24 @@ class QualityOfServiceSpec(object):
                                self.__reliability)
 
 
-def _configFileToDict(path, defaults={}):
+def _configFileToDict(path, defaults=None):
     parser = ConfigParser.RawConfigParser()
     parser.read(path)
-    options = defaults
+    if defaults is None:
+        options = {}
+    else:
+        options = defaults
     for section in parser.sections():
         for (k, v) in parser.items(section):
             options[section + '.' + k] = v.split('#')[0].strip()
     return options
 
 
-def _configEnvironmentToDict(defaults={}):
-    options = defaults
+def _configEnvironmentToDict(defaults=None):
+    if defaults is None:
+        options = {}
+    else:
+        options = defaults
     for (key, value) in os.environ.items():
         if key.startswith('RSB_'):
             if value == '':
@@ -215,7 +221,7 @@ def _configEnvironmentToDict(defaults={}):
     return options
 
 
-def _configDefaultSourcesToDict(defaults={}):
+def _configDefaultSourcesToDict(defaults=None):
     r"""
     Obtain configuration options from multiple sources, store them
     in a :obj:`ParticipantConfig` object and return it. The following
@@ -240,14 +246,17 @@ def _configDefaultSourcesToDict(defaults={}):
         :obj:`_configFileToDict`, :obj:`_configEnvironmentToDict`:
     """
 
+    if defaults is None:
+        defaults = {}
     if 'transport.socket.enabled' not in defaults:
         defaults['transport.socket.enabled'] = '1'
     if 'introspection.enabled' not in defaults:
         defaults['introspection.enabled'] = '1'
     if platform.system() == 'Windows':
-        partial = _configFileToDict("c:\\rsb.conf", defaults)
+        systemConfigFile = "c:\\rsb.conf"
     else:
-        partial = _configFileToDict("/etc/rsb.conf", defaults)
+        systemConfigFile = "/etc/rsb.conf"
+    partial = _configFileToDict(systemConfigFile, defaults)
     partial = _configFileToDict("%s/etc/rsb.conf" % rsb.util.prefix(), partial)
     partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"),
                                 partial)
@@ -291,15 +300,18 @@ class ParticipantConfig(object):
 
         .. codeauthor:: jmoringe
         """
-        def __init__(self, name, options={}, converters=None):
+        def __init__(self, name, options=None, converters=None):
             self.__name = name
             self.__enabled = _configValueIsTrue(options.get('enabled', '0'))
 
             # Extract freestyle options for the transport.
-            self.__options = dict([(key, value)
-                                   for (key, value) in options.items()
-                                   if '.' not in key and
-                                   not key == 'enabled'])
+            if options is None:
+                self.__options = {}
+            else:
+                self.__options = dict([(key, value)
+                                       for (key, value) in options.items()
+                                       if '.' not in key and
+                                       not key == 'enabled'])
             # Find converter selection rules
             self.__converters = converters
             self.__converterRules = dict(
@@ -461,7 +473,7 @@ class ParticipantConfig(object):
         return cls.__fromDict(options)
 
     @classmethod
-    def fromFile(cls, path, defaults={}):
+    def fromFile(cls, path, defaults=None):
         """
         Obtain configuration options from the configuration file
         ``path``, store them in a :obj:`ParticipantConfig` object and
@@ -492,7 +504,7 @@ class ParticipantConfig(object):
         return cls.__fromDict(_configFileToDict(path, defaults))
 
     @classmethod
-    def fromEnvironment(cls, defaults={}):
+    def fromEnvironment(cls, defaults=None):
         """
         Obtain configuration options from environment variables, store
         them in a :obj:`ParticipantConfig` object and return
@@ -517,7 +529,7 @@ class ParticipantConfig(object):
         return cls.__fromDict(_configEnvironmentToDict(defaults))
 
     @classmethod
-    def fromDefaultSources(cls, defaults={}):
+    def fromDefaultSources(cls, defaults=None):
         r"""
         Obtain configuration options from multiple sources, store them
         in a :obj:`ParticipantConfig` object and return it. The following
@@ -823,7 +835,6 @@ class MetaData(object):
     .. codeauthor:: jmoringe
     """
     def __init__(self,
-                 senderId=None,
                  createTime=None, sendTime=None,
                  receiveTime=None, deliverTime=None,
                  userTimes=None, userInfos=None):
@@ -2012,7 +2023,7 @@ def createRemoteServer(scope, config=None, parent=None, **kwargs):
     """
     import rsb.patterns as patterns
     return createParticipant(patterns.RemoteServer, scope, config,
-                             **kwargs)
+                             parent=parent, **kwargs)
 
 
 def createServer(scope, config=None, parent=None,

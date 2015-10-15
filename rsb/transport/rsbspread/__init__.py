@@ -397,18 +397,26 @@ class Connector(rsb.transport.Connector,
 
     def setQualityOfServiceSpec(self, qos):
         self.__logger.debug("Adapting service type for QoS %s", qos)
-        if qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
+        if qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE \
+           and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.UNRELIABLE_MESS
-            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
+            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s",
+                                self.__msgType)
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE \
+             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s",
+                                self.__msgType)
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE \
+             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
             self.__msgType = spread.RELIABLE_MESS
-            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s", self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
+            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s",
+                                self.__msgType)
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE \
+             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
             self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s", self.__msgType)
+            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s",
+                                self.__msgType)
         else:
             assert(False)
 

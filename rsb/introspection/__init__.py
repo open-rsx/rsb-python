@@ -38,6 +38,7 @@ import sys
 import os
 import platform
 
+import copy
 import uuid
 
 import rsb
@@ -229,10 +230,10 @@ class ProcessInfo(object):
     def __init__(self,
                  id=os.getpid(),
                  programName='python%d.%d %s'
-                             % (sys.version_info.major,
-                                sys.version_info.minor,
-                                programName()),
-                 arguments=sys.argv,
+                 % (sys.version_info.major,
+                    sys.version_info.minor,
+                    programName()),
+                 arguments=copy.copy(sys.argv),
                  startTime=processStartTime(),
                  executingUser=None,
                  rsbVersion=rsb.version.getVersion()):
@@ -533,16 +534,16 @@ class IntrospectionSender(object):
             if event.method not in ['REQUEST', 'SURVEY']:
                 return
 
-            id = None
+            participantId = None
             participant = None
             if len(event.scope.components) > \
                     len(PARTICIPANTS_SCOPE.components):
                 try:
-                    id = uuid.UUID(event.scope.components[-1])
-                    if id is not None:
+                    participantId = uuid.UUID(event.scope.components[-1])
+                    if participantId is not None:
                         # TODO there has to be a better way
                         for p in self.__participants:
-                            if p.id == id:
+                            if p.id == participantId:
                                 participant = p
                             break
                 except Exception, e:
@@ -554,17 +555,17 @@ class IntrospectionSender(object):
                 if participant is not None and event.method == 'REQUEST':
                     thunk(query=event, participant=participant)
                 elif participant is None and event.method == 'SURVEY':
-                    map(lambda p: thunk(query=event, participant=p),
-                        self.__participants)
+                    for p in self.__participants:
+                        thunk(query=event, participant=p)
                 else:
-                    self.__logger.warn('Query event %s not understood' % event)
+                    self.__logger.warn('Query event %s not understood', event)
 
             if event.data is None:
                 process(self.sendHello)
             elif event.data == 'ping':
                 process(self.sendPong)
             else:
-                self.__logger.warn('Query event %s not understood' % event)
+                self.__logger.warn('Query event %s not understood', event)
 
         self.__listener.addHandler(handle)
 
@@ -614,7 +615,7 @@ class IntrospectionSender(object):
             id=participant.id,
             parentId=parentId,
             scope=participant.scope,
-            type=object, # TODO
+            type=object,  # TODO
             transportURLs=participant.transportURLs)
 
         self.__participants.append(info)
@@ -641,7 +642,8 @@ class IntrospectionSender(object):
         hello.scope = participant.scope.toString()
         if participant.parentId:
             hello.parent = participant.parentId.get_bytes()
-        map(hello.transport.append, participant.transportURLs)
+        for url in participant.transportURLs:
+            hello.transport.append(url)
 
         host = hello.host
         if self.host.id is None:
@@ -658,7 +660,8 @@ class IntrospectionSender(object):
         process = hello.process
         process.id = str(self.process.id)
         process.program_name = self.process.programName
-        map(process.commandline_arguments.append, self.process.arguments)
+        for argument in self.process.arguments:
+            process.commandline_arguments.append(argument)
         process.start_time = int(self.process.startTime * 1000000.0)
         if self.process.executingUser:
             process.executing_user = self.process.executingUser

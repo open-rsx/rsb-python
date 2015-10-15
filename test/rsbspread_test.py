@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -78,7 +78,7 @@ def getConnector(scope,
     options = ParticipantConfig.fromFile(
         'test/with-spread.conf').getTransport("spread").options
     daemon = '{port}@{host}'.format(port=options['port'],
-                                    host=options['host'] or 'localhost')
+                                    host=options.get('host', 'localhost'))
     connector = clazz(connection=rsbspread.SpreadConnection(daemon, **kwargs),
                       converters=rsb.converter.getGlobalConverterMap(
                           bytearray))

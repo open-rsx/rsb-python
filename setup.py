@@ -40,6 +40,7 @@ import re
 import subprocess
 import shutil
 
+
 def findRsbPackages(ignoreProtocol=False):
     excludes = ['test', 'examples', 'build']
     if ignoreProtocol:
@@ -64,13 +65,14 @@ class FetchProtocol(Command):
         self.protocolroot = None
 
     def finalize_options(self):
-        if self.protocolroot == None:
+        if self.protocolroot is None:
             raise RuntimeError('No protocolroot specified. '
                                'Use the config file or command line option.')
 
     def run(self):
 
-        # if it does not exist, create the target directory for the copied files
+        # if it does not exist, create the target directory for the
+        # copied files
         fetchedProtocolDir = 'rsb/protocol'
         try:
             # in cases of source distributions this would kill also the fetched
@@ -103,9 +105,9 @@ class BuildProtocol(Command):
         self.protoc = None
 
     def finalize_options(self):
-        if self.protoc == None:
+        if self.protoc is None:
             self.protoc = find_executable('protoc')
-        if self.protoc == None:
+        if self.protoc is None:
             raise RuntimeError('No protoc compiler specified or found. '
                                'Use the config file or command line option.')
 
@@ -157,10 +159,11 @@ class BuildProtocol(Command):
 
 class BDist_egg(bdist_egg):
     '''
-    Simple wrapper around the normal bdist_egg command to require protobuf build
-    before normal build.
+    Simple wrapper around the normal bdist_egg command to require
+    protobuf build before normal build.
 
     .. codeauthor:: jwienke
+
     '''
 
     def run(self):
@@ -195,9 +198,9 @@ class Sdist(sdist):
         # with his own protobuf version
         self.run_command('proto')
 
-        # reinitialize the list of packages for the distribution to include the
-        # precompiled protocol results from protoc which might conflict with the
-        # user's version
+        # reinitialize the list of packages for the distribution to
+        # include the precompiled protocol results from protoc which
+        # might conflict with the user's version
         self.distribution.packages = findRsbPackages(ignoreProtocol=True)
 
         sdist.run(self)
@@ -221,8 +224,8 @@ def defineProjectVersion(majorMinor):
             versionOutput, _ = proc.communicate()
             if proc.returncode != 0:
                 raise RuntimeError(
-                    'Git process terminated with return code {}'.format(
-                    proc.returncode))
+                    'Git process terminated with return code {}'
+                    .format(proc.returncode))
             if len(versionOutput.strip()) == 0:
                 raise RuntimeError('Git process did not produce output')
 
@@ -365,8 +368,7 @@ setup(name='rsb-python',
       cmdclass={
           'proto':       FetchProtocol,
           'build_proto': BuildProtocol,
-          'sdist' :      Sdist,
-          'build' :      Build,
+          'sdist':       Sdist,
+          'build':       Build,
           'bdist_egg':   BDist_egg,
-      }
-  )
+      })

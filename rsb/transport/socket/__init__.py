@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -737,11 +737,14 @@ class Connector(rsb.transport.Connector,
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, converters, options={}, **kwargs):
+    def __init__(self, converters, options=None, **kwargs):
         super(Connector, self).__init__(wireType=bytearray,
                                         converters=converters,
                                         **kwargs)
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        if options is None:
+            options = {}
 
         self.__active = False
 
@@ -849,7 +852,7 @@ class InPushConnector(Connector,
 
         super(InPushConnector, self).__init__(**kwargs)
 
-    def filterNotify(self, filter, action):
+    def filterNotify(self, theFilter, action):
         pass
 
     def setObserverAction(self, action):
