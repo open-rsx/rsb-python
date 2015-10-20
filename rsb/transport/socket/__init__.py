@@ -825,7 +825,8 @@ class Connector(rsb.transport.Connector,
         pass
 
     def getTransportURL(self):
-        return 'socket://' + self.__host + ':' + str(self.__port)
+        query = '?tcpnodelay=' + ('1' if self.__tcpnodelay else '0')
+        return 'socket://' + self.__host + ':' + str(self.__port) + query
 
 
 class InPushConnector(Connector,

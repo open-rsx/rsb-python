@@ -30,7 +30,10 @@ serialization overhead.
 .. codeauthor:: jwienke
 """
 
+import os
+import platform
 from threading import RLock
+
 from rsb import transport
 
 
@@ -89,6 +92,11 @@ class Bus(object):
                     for sink in sinkList:
                         sink.handle(event)
 
+    def getTransportURL(self):
+        hostname = platform.node().split('.')[0]
+        pid = os.getpid()
+        return 'inprocess://' + hostname + ':' + str(pid)
+
 globalBus = Bus()
 
 
@@ -118,7 +126,7 @@ class OutConnector(transport.OutConnector):
         pass
 
     def getTransportURL(self):
-        return 'inprocess:'
+        return self.__bus.getTransportURL()
 
 
 class InConnector(transport.InConnector):
@@ -165,7 +173,7 @@ class InConnector(transport.InConnector):
             action(event)
 
     def getTransportURL(self):
-        return 'inprocess:'
+        return self.__bus.getTransportURL()
 
 
 class TransportFactory(transport.TransportFactory):

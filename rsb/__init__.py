@@ -1467,9 +1467,9 @@ class Participant(object):
         the participant.
 
         Returns:
-            list:
-                List of transport URLs."""
-        return []
+            set:
+                Set of transport URLs."""
+        return set()
 
     transportURLs = property(getTransportURLs)
 
@@ -1586,6 +1586,8 @@ class Informer(Participant):
 
     def getTransportURLs(self):
         return self.__configurator.getTransportURLs()
+
+    transportURLs = property(getTransportURLs)
 
     def getType(self):
         """
@@ -1721,6 +1723,8 @@ class Listener(Participant):
 
     def getTransportURLs(self):
         return self.__configurator.getTransportURLs()
+
+    transportURLs = property(getTransportURLs)
 
     def __activate(self):
         # TODO commonality with Informer... refactor

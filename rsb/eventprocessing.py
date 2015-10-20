@@ -395,7 +395,7 @@ class Configurator(object):
                 List of transport URLs.
         """
         print self.__connectors
-        return [x.getTransportURL() for x in self.__connectors]
+        return set(x.getTransportURL() for x in self.__connectors)
 
     transportURLs = property(getTransportURLs)
 
