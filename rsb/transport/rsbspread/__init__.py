@@ -158,7 +158,8 @@ class SpreadConnection(object):
         return getattr(self.__mailbox, name)
 
     def getHost(self):
-        return self.__daemonName.split('@')[1]
+        name = self.__daemonName.split('@')
+        return name[1] if '@' in name else 'localhost'
 
     def getPort(self):
         return int(self.__daemonName.split('@')[0])
