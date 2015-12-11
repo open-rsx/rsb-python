@@ -573,11 +573,15 @@ class IntrospectionSender(object):
             processScope(self.__host.id or self.__host.hostname,
                          str(self.__process.id)))
 
-        def echo(event):
-            metaData = event.metaData
-            metaData.setUserTime('request.send', metaData.sendTime)
-            metaData.setUserTime('request.receive', metaData.receiveTime)
-            return event
+        def echo(request):
+            reply = rsb.Event(scope=request.scope,
+                              data=request.data,
+                              type=type(request.data))
+            reply.metaData.setUserTime('request.send',
+                                       request.metaData.sendTime)
+            reply.metaData.setUserTime('request.receive',
+                                       request.metaData.receiveTime)
+            return reply
         self.__server.addMethod('echo', echo,
                                 requestType=rsb.Event,
                                 replyType=rsb.Event)
