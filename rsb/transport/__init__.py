@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -235,6 +235,17 @@ class TransportFactory(object):
         Returns:
             str:
                 name of the transport, non-empty
+        """
+        pass
+
+    @abc.abstractmethod
+    def getRemote(self):
+        """
+        Returns true is the transport performs remote communication.
+
+        Returns:
+            bool:
+                does the transport perform remote communication?
         """
         pass
 

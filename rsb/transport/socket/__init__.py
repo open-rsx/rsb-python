@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -905,6 +905,9 @@ class TransportFactory(rsb.transport.TransportFactory):
 
     def getName(self):
         return "socket"
+
+    def getRemote(self):
+        return True
 
     def createInPushConnector(self, converters, options):
         return InPushConnector(converters=converters, options=options)

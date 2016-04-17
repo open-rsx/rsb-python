@@ -186,6 +186,9 @@ class TransportFactory(transport.TransportFactory):
     def getName(self):
         return "inprocess"
 
+    def getRemote(self):
+        return False
+
     def createInPushConnector(self, converters, options):
         return InConnector(converters=converters, options=options)
 
