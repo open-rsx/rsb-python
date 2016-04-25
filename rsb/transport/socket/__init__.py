@@ -906,7 +906,7 @@ class TransportFactory(rsb.transport.TransportFactory):
     def getName(self):
         return "socket"
 
-    def getRemote(self):
+    def isRemote(self):
         return True
 
     def createInPushConnector(self, converters, options):

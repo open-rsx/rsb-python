@@ -537,7 +537,7 @@ class TransportFactory(rsb.transport.TransportFactory):
     def getName(self):
         return "spread"
 
-    def getRemote(self):
+    def isRemote(self):
         return True
 
     @staticmethod

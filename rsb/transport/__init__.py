@@ -239,7 +239,7 @@ class TransportFactory(object):
         pass
 
     @abc.abstractmethod
-    def getRemote(self):
+    def isRemote(self):
         """
         Returns true is the transport performs remote communication.
 
