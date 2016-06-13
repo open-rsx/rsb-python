@@ -65,6 +65,22 @@ class OriginFilterTest(unittest.TestCase):
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
 
+class CauseFilterTest(unittest.TestCase):
+
+    def testMatch(self):
+        id1 = rsb.EventId(participantId=uuid.uuid1(), sequenceNumber=0)
+        e1 = rsb.Event(causes=[ id1 ])
+        id2 = rsb.EventId(participantId=uuid.uuid1(), sequenceNumber=1)
+        e2 = rsb.Event(causes=[ id2 ])
+
+        f = rsb.filter.CauseFilter(cause=id1)
+        self.assertTrue(f.match(e1))
+        self.assertFalse(f.match(e2))
+
+        f = rsb.filter.CauseFilter(cause=id1, invert=True)
+        self.assertFalse(f.match(e1))
+        self.assertTrue(f.match(e2))
+
 
 class MethodFilterTest(unittest.TestCase):
 

@@ -138,6 +138,55 @@ class OriginFilter(AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.origin, self.invert)
 
+class CauseFilter(AbstractFilter):
+    """
+    Filter events based on their cause vectors.
+
+    .. codeauthor:: jmoringe
+    """
+
+    def __init__(self, cause, invert=False):
+        """
+        Args:
+            cause:
+                The id of the :obj:`Event` that should be in the cause
+                vector of matching events.
+            invert (bool):
+                Controls whether matching results should inverted
+                (i.e.  matching events that do ``not`` have the
+                specified event id in their cause vector).
+        """
+        self.__cause = cause
+        self.__invert = invert
+
+    def getCause(self):
+        return self.__cause
+
+    cause = property(getCause)
+
+    def getInvert(self):
+        return self.__invert
+
+    invert = property(getInvert)
+
+    def match(self, event):
+        result = self.cause in event.causes
+        if self.invert:
+            return not result
+        else:
+            return result
+
+    def __str__(self):
+        inverted = ''
+        if self.invert:
+            inverted = 'not '
+        return '<%s %scaused-by %s at 0x%x>' \
+            % (type(self).__name__, inverted, self.cause, id(self))
+
+    def __repr__(self):
+        return '%s("%s", invert = %s)' \
+            % (type(self).__name__, self.cause, self.invert)
+
 
 class MethodFilter(AbstractFilter):
     """
