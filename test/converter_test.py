@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2013 Jan Moringen
+# Copyright (C) 2011-2016 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -28,7 +28,7 @@ import re
 import rsb.converter
 from rsb.converter import Converter, NoneConverter, StringConverter, \
     ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
-    EventsByScopeMapConverter
+    ScopeConverter, EventsByScopeMapConverter
 from rsb import Scope, Event, EventId
 from uuid import uuid4
 from nose.tools import assert_equals
@@ -157,6 +157,20 @@ class StringConverterTest(unittest.TestCase):
                           asciiConverter.serialize, u"test"+unichr(266))
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
                           bytearray(range(133)), 'ascii-string')
+
+
+class ScopeConverterTest(unittest.TestCase):
+
+    def testRoundTrip(self):
+        converter = ScopeConverter()
+
+        root = Scope('/foo/bar')
+        self.assertEqual(root,
+                         converter.deserialize(*converter.serialize(root)))
+
+        someScope = Scope('/foo/bar')
+        self.assertEqual(someScope,
+                         converter.deserialize(*converter.serialize(someScope)))
 
 
 class EventsByScopeMapConverterTest(unittest.TestCase):

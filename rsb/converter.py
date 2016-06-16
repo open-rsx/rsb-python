@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -517,6 +517,25 @@ class ProtocolBufferConverter(Converter):
     def __repr__(self):
         return str(self)
 
+
+class ScopeConverter(Converter):
+    """
+    (De)serializes :obj:`Scope` objects.
+
+    .. codeauthor:: jmoringe
+    """
+
+    def __init__(self):
+        super(ScopeConverter, self).__init__(bytearray, Scope, 'scope')
+
+    def serialize(self, inp):
+        return bytearray(inp.toString().encode(encoding='ascii')), \
+            self.wireSchema
+
+    def deserialize(self, inp, wireSchema):
+        assert wireSchema == self.wireSchema
+
+        return Scope(str(inp))
 
 class EventsByScopeMapConverter(Converter):
     """
