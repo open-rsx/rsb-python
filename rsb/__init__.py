@@ -196,6 +196,18 @@ class QualityOfServiceSpec(object):
 
 CONFIG_DEBUG_VARIABLE = 'RSB_CONFIG_DEBUG'
 
+CONFIG_FILES_VARIABLE = 'RSB_CONFIG_FILES'
+
+CONFIG_FILE_KEY_SYSTEM = '%system'
+CONFIG_FILE_KEY_PREFIX = '%prefix'
+CONFIG_FILE_KEY_USER = '%user'
+CONFIG_FILE_KEY_PWD = '%pwd'
+
+DEFAULT_CONFIG_FILES = [CONFIG_FILE_KEY_SYSTEM,
+                        CONFIG_FILE_KEY_PREFIX,
+                        CONFIG_FILE_KEY_USER,
+                        CONFIG_FILE_KEY_PWD]
+
 
 def _configFileToDict(path, defaults=None):
     parser = ConfigParser.RawConfigParser()
@@ -221,7 +233,7 @@ def _configEnvironmentToDict(defaults=None, debug=False):
             if debug:
                 empty = False
                 print('     %s -> %s' % (key, value))
-            if value == '':
+            if not key == CONFIG_FILES_VARIABLE and value == '':
                 raise ValueError('The value of the environment variable '
                                  '%s is the empty string' % key)
             options[key[4:].lower().replace('_', '.')] = value
@@ -230,11 +242,20 @@ def _configEnvironmentToDict(defaults=None, debug=False):
     return options
 
 
-def _configDefaultSourcesToDict(defaults=None):
+def _configDefaultConfigFiles():
+    if CONFIG_FILES_VARIABLE in os.environ:
+        return [f for f in os.environ[CONFIG_FILES_VARIABLE].split(':') if f]
+    else:
+        return DEFAULT_CONFIG_FILES
+
+
+def _configDefaultSourcesToDict(defaults=None,
+                                files=_configDefaultConfigFiles()):
     r"""
     Obtain configuration options from multiple sources, store them
-    in a :obj:`ParticipantConfig` object and return it. The following
-    sources of configuration information will be consulted:
+    in a :obj:`ParticipantConfig` object and return it. By default,
+    the following sources of configuration information will be
+    consulted:
 
      1. ``/etc/rsb.conf``
      2. ``$prefix/etc/rsb.conf``
@@ -245,6 +266,11 @@ def _configDefaultSourcesToDict(defaults=None):
     Args:
         defaults (dict of str -> str):
             dictionary with default options
+        files (list of str)
+            filenames and placeholders for configuration files
+
+            The placeholders ``%system``, ``%prefix``, ``%user`` and
+            ``%pwd`` can be used to refer to the sources 1-4 above.
 
     Returns:
         dict of str -> str:
@@ -290,15 +316,21 @@ def _configDefaultSourcesToDict(defaults=None):
             print('  2. Environment variables with prefix RSB_')
         return _configEnvironmentToDict(partial, debug=debug)
 
-    sources = [fromFile(systemConfigFile,
-                        'System wide config file'),
-               fromFile('%s/etc/rsb.conf' % rsb.util.prefix(),
-                        'Prefix wide config file'),
-               fromFile(os.path.expanduser('~/.config/rsb.conf'),
-                        'User config file'),
-               fromFile('rsb.conf',
-                        'Current directory file'),
-               processEnvironment]
+    def processSpec(spec):
+        if spec == CONFIG_FILE_KEY_SYSTEM:
+            return fromFile(systemConfigFile,
+                            'System wide config file')
+        elif spec == CONFIG_FILE_KEY_PREFIX:
+            return fromFile('%s/etc/rsb.conf' % rsb.util.prefix(),
+                            'Prefix wide config file')
+        elif spec == CONFIG_FILE_KEY_USER:
+            return fromFile(os.path.expanduser('~/.config/rsb.conf'),
+                            'User config file')
+        elif spec == CONFIG_FILE_KEY_PWD:
+            return fromFile('rsb.conf', 'Current directory file')
+        else:
+            return fromFile(spec, 'User specified config file')
+    sources = [processSpec(f) for f in files] + [processEnvironment]
 
     # Merge sources and defaults.
     if debug:
