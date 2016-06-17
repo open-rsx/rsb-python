@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2013, 2014, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -194,6 +194,9 @@ class QualityOfServiceSpec(object):
                                self.__reliability)
 
 
+CONFIG_DEBUG_VARIABLE = 'RSB_CONFIG_DEBUG'
+
+
 def _configFileToDict(path, defaults=None):
     parser = ConfigParser.RawConfigParser()
     parser.read(path)
@@ -207,17 +210,23 @@ def _configFileToDict(path, defaults=None):
     return options
 
 
-def _configEnvironmentToDict(defaults=None):
+def _configEnvironmentToDict(defaults=None, debug=False):
     if defaults is None:
         options = {}
     else:
         options = defaults
+    empty = True
     for (key, value) in os.environ.items():
         if key.startswith('RSB_'):
+            if debug:
+                empty = False
+                print('     %s -> %s' % (key, value))
             if value == '':
                 raise ValueError('The value of the environment variable '
                                  '%s is the empty string' % key)
             options[key[4:].lower().replace('_', '.')] = value
+    if debug and empty:
+        print('     <none>')
     return options
 
 
@@ -246,6 +255,7 @@ def _configDefaultSourcesToDict(defaults=None):
         :obj:`_configFileToDict`, :obj:`_configEnvironmentToDict`:
     """
 
+    # Prepare defaults.
     if defaults is None:
         defaults = {}
     if 'transport.socket.enabled' not in defaults:
@@ -256,12 +266,44 @@ def _configDefaultSourcesToDict(defaults=None):
         systemConfigFile = "c:\\rsb.conf"
     else:
         systemConfigFile = "/etc/rsb.conf"
-    partial = _configFileToDict(systemConfigFile, defaults)
-    partial = _configFileToDict("%s/etc/rsb.conf" % rsb.util.prefix(), partial)
-    partial = _configFileToDict(os.path.expanduser("~/.config/rsb.conf"),
-                                partial)
-    partial = _configFileToDict("rsb.conf", partial)
-    return _configEnvironmentToDict(partial)
+
+    # Configure sources.
+    debug = CONFIG_DEBUG_VARIABLE in os.environ
+
+    fileIndex = [1]
+
+    def fromFile(configFile, description):
+        def processFile(partial):
+            if debug:
+                if fileIndex[0] == 1:
+                    print('  1. Configuration files')
+                print('     %d. %s "%s" %s'
+                      % (fileIndex[0], description, configFile,
+                         'exists' if os.path.exists(configFile)
+                         else 'does not exist'))
+                fileIndex[0] += 1
+            return _configFileToDict(configFile, partial)
+        return processFile
+
+    def processEnvironment(partial):
+        if debug:
+            print('  2. Environment variables with prefix RSB_')
+        return _configEnvironmentToDict(partial, debug=debug)
+
+    sources = [fromFile(systemConfigFile,
+                        'System wide config file'),
+               fromFile('%s/etc/rsb.conf' % rsb.util.prefix(),
+                        'Prefix wide config file'),
+               fromFile(os.path.expanduser('~/.config/rsb.conf'),
+                        'User config file'),
+               fromFile('rsb.conf',
+                        'Current directory file'),
+               processEnvironment]
+
+    # Merge sources and defaults.
+    if debug:
+        print('Configuring with sources (lowest priority first)')
+    return reduce(lambda partial, source: source(partial), sources, defaults)
 
 _CONFIG_TRUE_VALUES = ['1', 'true', 'yes']
 
