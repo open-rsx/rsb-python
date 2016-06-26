@@ -33,11 +33,13 @@ registering and selecting them.
 """
 
 from numbers import Integral, Real
+from threading import RLock
 import struct
+import abc
+
 from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
 from rsb.transport.conversion import notificationToEvent, eventToNotification
 from rsb import Scope
-from threading import RLock
 
 
 class Converter(object):
@@ -131,10 +133,7 @@ class ConverterSelectionStrategy(object):
     .. codeauthor:: jmoringe
     """
     def hasConverterForWireSchema(self, wireSchema):
-        if self._getConverterForWireSchema(wireSchema):
-            return True
-        else:
-            return False
+        return bool(self._getConverterForWireSchema(wireSchema))
 
     def getConverterForWireSchema(self, wireSchema):
         converter = self._getConverterForWireSchema(wireSchema)
@@ -143,16 +142,21 @@ class ConverterSelectionStrategy(object):
         raise KeyError(wireSchema)
 
     def hasConverterForDataType(self, dataType):
-        if self._getConverterForDataType(dataType):
-            return True
-        else:
-            return False
+        return bool(self._getConverterForDataType(dataType))
 
     def getConverterForDataType(self, dataType):
         converter = self._getConverterForDataType(dataType)
         if converter:
             return converter
         raise KeyError(dataType)
+
+    @abc.abstractmethod
+    def _getConverterForWireSchema(self, wireSchma):
+        pass
+
+    @abc.abstractmethod
+    def _getConverterForDataType(self, dataType):
+        pass
 
 
 class ConverterMap(ConverterSelectionStrategy):
@@ -536,6 +540,7 @@ class ScopeConverter(Converter):
         assert wireSchema == self.wireSchema
 
         return Scope(str(inp))
+
 
 class EventsByScopeMapConverter(Converter):
     """

@@ -99,11 +99,11 @@ class Enum(object):
         self.__keys = keys
         self.__values = values
         self.__keyString = ", ".join(keys)
-        for i in range(len(keys)):
+        for (i, key)in enumerate(keys):
             if values:
-                setattr(self, keys[i], Enum.EnumValue(keys[i], values[i]))
+                setattr(self, key, Enum.EnumValue(key, values[i]))
             else:
-                setattr(self, keys[i], Enum.EnumValue(keys[i]))
+                setattr(self, key, Enum.EnumValue(key))
 
     def fromString(self, string):
         if string not in self.__keys:
@@ -114,9 +114,9 @@ class Enum(object):
         return "Enum %s: %s" % (self.__name, self.__keyString)
 
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (self.__class__.__name__,
-                                   self.__keys,
-                                   self.__values)
+        return '%s(%r, %r)' % (self.__class__.__name__,
+                               self.__keys,
+                               self.__values)
 
 
 class InterruptedError(RuntimeError):
