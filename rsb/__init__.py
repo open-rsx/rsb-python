@@ -1034,11 +1034,11 @@ class MetaData(object):
         return not self.__eq__(other)
 
     def __str__(self):
-        return '%s[create = %s, send = %s, receive = %s, deliver = %s, ' \
-            'userTimes = %s, userInfos = %s]' \
-            % ('MetaData',
-               self.__createTime, self.__sendTime, self.__receiveTime,
-               self.__deliverTime, self.__userTimes, self.__userInfos)
+        return ('%s[createTime= %s, sendTime = %s, receiveTime = %s, '
+                'deliverTime = %s, userTimes = %s, userInfos = %s]'
+                % ('MetaData',
+                   self.__createTime, self.__sendTime, self.__receiveTime,
+                   self.__deliverTime, self.__userTimes, self.__userInfos))
 
     def __repr__(self):
         return self.__str__()
