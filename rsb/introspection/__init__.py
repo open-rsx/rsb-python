@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2014, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2014, 2015, 2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -37,6 +37,7 @@ sender) part of the introspection architecture.
 import sys
 import os
 import platform
+import getpass
 
 import copy
 import uuid
@@ -244,7 +245,7 @@ class ProcessInfo(object):
         self.__executingUser = executingUser
         if not self.__executingUser:
             try:
-                self.__executingUser = os.getlogin()
+                self.__executingUser = getpass.getuser()
             except OSError:
                 pass
         self.__rsbVersion = rsbVersion
