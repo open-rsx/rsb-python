@@ -608,3 +608,4 @@ registerGlobalConverter(BytesConverter())
 registerGlobalConverter(StringConverter(wireSchema="utf-8-string",
                                         dataType=str, encoding="utf_8"))
 registerGlobalConverter(ByteArrayConverter())
+registerGlobalConverter(ScopeConverter())
