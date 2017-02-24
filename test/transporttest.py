@@ -71,6 +71,7 @@ class TransportCheck(object):
     def _getOutConnector(self, scope, activate=True):
         raise NotImplementedError()
 
+    @timed(5)
     def testRoundtrip(self):
 
         goodScope = Scope("/good")
@@ -105,6 +106,7 @@ class TransportCheck(object):
         inconnector.deactivate()
         outconnector.deactivate()
 
+    @timed(5)
     def testPullNonBlocking(self):
         try:
             inconnector = self._getInPullConnector(Scope("/somewhere"))
@@ -116,6 +118,7 @@ class TransportCheck(object):
 
         inconnector.deactivate()
 
+    @timed(5)
     def testPullRoundtrip(self):
 
         goodScope = Scope("/good")
@@ -147,6 +150,7 @@ class TransportCheck(object):
         inconnector.deactivate()
         outconnector.deactivate()
 
+    @timed(5)
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
         inConnector = self._getInPushConnector(scope, activate=False)
@@ -197,6 +201,7 @@ class TransportCheck(object):
         listener.deactivate()
         publisher.deactivate()
 
+    @timed(5)
     def testUserPullRoundtrip(self):
         scope = Scope("/test/it/pull")
         try:
@@ -241,6 +246,7 @@ class TransportCheck(object):
         reader.deactivate()
         publisher.deactivate()
 
+    @timed(5)
     def testHierarchySending(self):
 
         sendScope = Scope("/this/is/a/test")
