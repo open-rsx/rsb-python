@@ -206,6 +206,10 @@ class SpreadTransportTest(TransportCheck, unittest.TestCase):
         return getConnector(scope, clazz=rsbspread.InPushConnector,
                             activate=activate)
 
+    def _getInPullConnector(self, scope, activate=True):
+        return getConnector(scope, clazz=rsbspread.InPullConnector,
+                            activate=activate)
+
     def _getOutConnector(self, scope, activate=True):
         return getConnector(scope, clazz=rsbspread.OutConnector,
                             activate=activate)
