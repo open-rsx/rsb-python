@@ -23,8 +23,14 @@
 # ============================================================
 
 import unittest
+from nose.tools import timed
 
-from rsb import Scope, Event, EventId, createInformer, createListener
+from rsb import (Scope,
+                 Event,
+                 EventId,
+                 createInformer,
+                 createListener,
+                 createReader)
 import threading
 import uuid
 import rsb
@@ -189,6 +195,50 @@ class TransportCheck(object):
             self.assertEqual(sentEvent, receiver.resultEvent)
 
         listener.deactivate()
+        publisher.deactivate()
+
+    def testUserPullRoundtrip(self):
+        scope = Scope("/test/it/pull")
+        try:
+            inConnector = self._getInPullConnector(scope, activate=False)
+        except NotImplementedError:
+            return
+        outConnector = self._getOutConnector(scope, activate=False)
+
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[outConnector])
+        inConfigurator = rsb.eventprocessing.InPullRouteConfigurator(
+            connectors=[inConnector])
+
+        publisher = createInformer(scope,
+                                   dataType=str,
+                                   configurator=outConfigurator)
+        reader = createReader(scope, configurator=inConfigurator)
+
+        data1 = "a string to test"
+        sentEvent = Event(EventId(uuid.uuid4(), 0))
+        sentEvent.setData(data1)
+        sentEvent.setType(str)
+        sentEvent.setScope(scope)
+        sentEvent.getMetaData().setUserInfo("test", "it")
+        sentEvent.getMetaData().setUserInfo("test again", "it works?")
+        sentEvent.getMetaData().setUserTime("blubb", 234234)
+        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
+        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
+        sentEvent.addCause(EventId(uuid.uuid4(), 42))
+
+        publisher.publishEvent(sentEvent)
+
+        resultEvent = reader.read(True)
+        self.assertTrue(resultEvent.metaData.createTime <=
+                        resultEvent.metaData.sendTime <=
+                        resultEvent.metaData.receiveTime <=
+                        resultEvent.metaData.deliverTime)
+        sentEvent.metaData.receiveTime = resultEvent.metaData.receiveTime
+        sentEvent.metaData.deliverTime = resultEvent.metaData.deliverTime
+        self.assertEqual(sentEvent, resultEvent)
+
+        reader.deactivate()
         publisher.deactivate()
 
     def testHierarchySending(self):

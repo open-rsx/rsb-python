@@ -31,6 +31,7 @@ transport layer and the client interface.
 .. codeauthor:: jmoringe
 """
 
+import abc
 import copy
 import threading
 import Queue
@@ -82,26 +83,87 @@ class BroadcastProcessor(object):
                id(self))
 
 
-class PushEventReceivingStrategy(object):
+class EventReceivingStrategy(object):
     """
     Superclass for event receiving strategies.
 
-    .. codeauthor:: jmoringe
+    .. codeauthor:: jwienke
     """
-    def addFilter(self, theFilter):
-        raise NotImplementedError
+    __metaclass__ = abc.ABCMeta
 
-    def removeFilter(self, theFilter):
-        raise NotImplementedError
 
+class PushEventReceivingStrategy(EventReceivingStrategy):
+    """
+    Superclass for push-based event receiving strategies.
+
+    .. codeauthor:: jmoringe
+    .. codeauthor:: jwienke
+    """
+
+    @abc.abstractmethod
     def addHandler(self, handler, wait):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def removeHandler(self, handler, wait):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
+    def addFilter(self, theFilter):
+        pass
+
+    @abc.abstractmethod
+    def removeFilter(self, theFilter):
+        pass
+
+    @abc.abstractmethod
     def handle(self, event):
-        raise NotImplementedError
+        pass
+
+
+class PullEventReceivingStrategy(EventReceivingStrategy):
+    """
+    Superclass for pull-based event receiving.
+
+    .. codeauthor:: jwienke
+    """
+
+    @abc.abstractmethod
+    def setConnectors(self, connectors):
+        pass
+
+    @abc.abstractmethod
+    def raiseEvent(self, block):
+        """
+        Receives the next event.
+
+        Args:
+            block (bool):
+                if ``True``, wait for the next event. Else, immediately return,
+                potentially a ``None``.
+        """
+        pass
+
+
+class FirstConnectorPullEventReceivingStrategy(PullEventReceivingStrategy):
+    """
+    Directly receives events only from the first provided connector.
+
+    .. codeauthor:: jwienke
+    """
+
+    def setConnectors(self, connectors):
+        if not connectors:
+            raise ValueError("There must be at least on connector")
+        self.__connectors = connectors
+
+    def raiseEvent(self, block):
+        assert self.__connectors
+
+        event = self.__connectors[0].raiseEvent(block)
+        if event:
+            event.metaData.setDeliverTime()
+        return event
 
 
 class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
@@ -496,6 +558,41 @@ class InPushRouteConfigurator(Configurator):
         self.__receivingStrategy.removeFilter(theFilter)
         for connector in self.connectors:
             connector.filterNotify(theFilter, rsb.filter.FilterAction.REMOVE)
+
+
+class InPullRouteConfigurator(Configurator):
+    """
+    Instances of this class manage the pull-based receiving of events via one
+    or more :obj:`rsb.transport.Connector` s and an
+    :obj:`PullEventReceivingStrategy`.
+
+    .. codeauthor:: jwienke
+    """
+
+    def __init__(self, connectors=None, receivingStrategy=None):
+        """
+        Creates a new configurator which manages ``connectors`` and
+        ``receivingStrategy``.
+
+        Args:
+            connectors:
+                Connectors through which events are received.
+            receivingStrategy:
+                The event receiving strategy according to which the dispatching
+                of incoming events should be performed.
+        """
+        super(InPullRouteConfigurator, self).__init__(connectors)
+
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        if receivingStrategy is None:
+            self.__receivingStrategy = FirstConnectorPullEventReceivingStrategy()
+        else:
+            self.__receivingStrategy = receivingStrategy
+        self.__receivingStrategy.setConnectors(connectors)
+
+    def getReceivingStrategy(self):
+        return self.__receivingStrategy
 
 
 class OutRouteConfigurator(Configurator):

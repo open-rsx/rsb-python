@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -1917,6 +1917,110 @@ class Listener(Participant):
         with self.__mutex:
             return list(self.__handlers)
 
+
+class Reader(Participant):
+    """
+    Receives events by manually pulling them from the wire instead of
+    asynchronous notifications.
+
+    Clients need to continuously call the :meth:`read` method to receive
+    events. Being too slow to receive events will usually terminate the
+    connection and is fatal.
+
+    .. codeauthor:: jwienke
+    """
+
+    def __init__(self, scope, config, configurator=None,
+                 receivingStrategy=None):
+        """
+        Create a new :obj:`Reader` for ``scope``.
+
+        Args:
+            scope (Scope or accepted by Scope constructor):
+                The scope of the channel in which the new reader should
+                participate.
+            config (ParticipantConfig):
+                The configuration that should be used by this :obj:`Reader`.
+            configurator:
+                An in route configurator to manage the receiving of events from
+                in connectors and their filtering and dispatching.
+
+        See Also:
+            :obj:`createReader`
+        """
+        super(Reader, self).__init__(scope, config)
+
+        self.__logger = getLoggerByClass(self.__class__)
+
+        self.__filters = []
+        self.__configurator = None
+        self.__active = False
+        self.__mutex = threading.Lock()
+
+        if configurator:
+            self.__configurator = configurator
+        else:
+            connectors = self.getConnectors('in-pull', config)
+            for connector in connectors:
+                connector.setQualityOfServiceSpec(
+                    config.getQualityOfServiceSpec())
+            self.__configurator = rsb.eventprocessing.InPullRouteConfigurator(
+                connectors=connectors, receivingStrategy=receivingStrategy)
+        self.__configurator.setScope(self.scope)
+
+        self.__activate()
+
+    def __del__(self):
+        if self.__active:
+            self.deactivate()
+
+    def getTransportURLs(self):
+        return self.__configurator.getTransportURLs()
+
+    transportURLs = property(getTransportURLs)
+
+    def __activate(self):
+        with self.__mutex:
+            if self.__active:
+                raise RuntimeError("Activate called even though listener "
+                                   "was already active")
+
+            self.__logger.info("Activating listener")
+
+            self.__configurator.activate()
+
+            self.__active = True
+
+        self.activate()
+
+    def deactivate(self):
+        with self.__mutex:
+            if not self.__active:
+                raise RuntimeError("Deactivate called even though listener "
+                                   "was not active")
+
+            self.__logger.info("Deactivating listener")
+
+            self.__configurator.deactivate()
+
+            self.__active = False
+
+        super(Reader, self).deactivate()
+
+    def read(self, block=True):
+        """
+        Reads the next event from the wire. Blocks until one is received.
+
+        Args:
+            block (bool):
+                If ``True``, block until the next event is received.
+
+        Returns:
+            rsb.Event
+                the received event
+        """
+        return self.__configurator.getReceivingStrategy().raiseEvent(block)
+
 __defaultConfigurationOptions = _configDefaultSourcesToDict()
 __defaultParticipantConfig = ParticipantConfig.fromDict(
     __defaultConfigurationOptions)
@@ -1988,6 +2092,28 @@ def createListener(scope, config=None, parent=None, **kwargs):
             a new :obj:`Listener` object.
     """
     return createParticipant(Listener, scope, config, parent,
+                             **kwargs)
+
+
+def createReader(scope, config=None, parent=None, **kwargs):
+    """
+    Creates and returns a new :obj:`Reader` for ``scope``.
+
+    Args:
+        scope (Scope or accepted by :obj:`Scope` constructor):
+            the scope of the new :obj:`Reader`. Can be a :obj:`Scope` object
+            or a string.
+        config (ParticipantConfig):
+            The configuration that should be used by this :obj:`Reader`.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new :obj:`Reader`.
+
+    Returns:
+        Reader:
+            a new :obj:`Reader` object.
+    """
+    return createParticipant(Reader, scope, config, parent,
                              **kwargs)
 
 
