@@ -24,7 +24,10 @@
 
 import unittest
 
-from rsb.transport.local import Bus, OutConnector, InConnector
+from rsb.transport.local import (Bus,
+                                 OutConnector,
+                                 InPushConnector,
+                                 InPullConnector)
 from rsb import Scope, Event
 import time
 from test.transporttest import TransportCheck
@@ -127,6 +130,13 @@ class LocalTransportTest(TransportCheck, unittest.TestCase):
 
     def _getInPushConnector(self, scope, activate=True):
         connector = InPushConnector()
+        connector.setScope(scope)
+        if activate:
+            connector.activate()
+        return connector
+
+    def _getInPullConnector(self, scope, activate=True):
+        connector = InPullConnector()
         connector.setScope(scope)
         if activate:
             connector.activate()
