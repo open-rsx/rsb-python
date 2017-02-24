@@ -99,17 +99,17 @@ class OutConnectorTest(unittest.TestCase):
         self.assertTrue(e.metaData.sendTime <= after)
 
 
-class InConnectorTest(unittest.TestCase):
+class InPushConnectorTest(unittest.TestCase):
 
     def testConstruction(self):
-        InConnector()
+        InPushConnector()
 
     def testPassToAction(self):
 
         scope = Scope("/lets/go")
 
         bus = Bus()
-        connector = InConnector(bus=bus)
+        connector = InPushConnector(bus=bus)
         connector.setScope(scope)
         connector.activate()
 
@@ -125,8 +125,8 @@ class InConnectorTest(unittest.TestCase):
 
 class LocalTransportTest(TransportCheck, unittest.TestCase):
 
-    def _getInConnector(self, scope, activate=True):
-        connector = InConnector()
+    def _getInPushConnector(self, scope, activate=True):
+        connector = InPushConnector()
         connector.setScope(scope)
         if activate:
             connector.activate()

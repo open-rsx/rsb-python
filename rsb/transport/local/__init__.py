@@ -129,16 +129,16 @@ class OutConnector(transport.OutConnector):
         return self.__bus.getTransportURL()
 
 
-class InConnector(transport.InConnector):
+class InPushConnector(transport.InPushConnector):
     """
-    InConnector for the local transport.
+    InPushConnector for the local transport.
 
     .. codeauthor:: jwienke
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
         # pylint: disable=unused-argument
-        transport.InConnector.__init__(self, wireType=object, **kwargs)
+        transport.InPushConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         self.__scope = None
         self.__observerAction = None
@@ -190,7 +190,7 @@ class TransportFactory(transport.TransportFactory):
         return False
 
     def createInPushConnector(self, converters, options):
-        return InConnector(converters=converters, options=options)
+        return InPushConnector(converters=converters, options=options)
 
     def createOutConnector(self, converters, options):
         return OutConnector(converters=converters, options=options)

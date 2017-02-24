@@ -1795,7 +1795,7 @@ class Listener(Participant):
             for connector in connectors:
                 connector.setQualityOfServiceSpec(
                     config.getQualityOfServiceSpec())
-            self.__configurator = rsb.eventprocessing.InRouteConfigurator(
+            self.__configurator = rsb.eventprocessing.InPushRouteConfigurator(
                 connectors=connectors,
                 receivingStrategy=receivingStrategy)
         self.__configurator.setScope(self.scope)

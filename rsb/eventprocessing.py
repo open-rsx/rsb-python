@@ -82,7 +82,7 @@ class BroadcastProcessor(object):
                id(self))
 
 
-class EventReceivingStrategy(object):
+class PushEventReceivingStrategy(object):
     """
     Superclass for event receiving strategies.
 
@@ -104,9 +104,9 @@ class EventReceivingStrategy(object):
         raise NotImplementedError
 
 
-class ParallelEventReceivingStrategy(EventReceivingStrategy):
+class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler is called only
     sequentially but potentially from different threads.
 
@@ -176,9 +176,9 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
             self.__filters = [f for f in self.__filters if f != theFilter]
 
 
-class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
+class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler can be called
     in parallel for different requests.
 
@@ -247,9 +247,9 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
             self.__filters = [f for f in self.__filters if f != theFilter]
 
 
-class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
+class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers using a single thread and without queuing. Only a single buffer
     is used to decouple the transport from the registered handlers. In case
     the handler processing is slower than the transport, the transport will
@@ -440,11 +440,11 @@ class Configurator(object):
             connector.setQualityOfServiceSpec(qos)
 
 
-class InRouteConfigurator(Configurator):
+class InPushRouteConfigurator(Configurator):
     """
     Instances of this class manage the receiving, filtering and
     dispatching of events via one or more :obj:`rsb.transport.Connector` s
-    and an :obj:`EventReceivingStrategy`.
+    and an :obj:`PushEventReceivingStrategy`.
 
     .. codeauthor:: jwienke
     .. codeauthor:: jmoringe
@@ -462,7 +462,7 @@ class InRouteConfigurator(Configurator):
                 The event receiving strategy according to which the filtering
                 and dispatching of incoming events should be performed.
         """
-        super(InRouteConfigurator, self).__init__(connectors)
+        super(InPushRouteConfigurator, self).__init__(connectors)
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -475,7 +475,7 @@ class InRouteConfigurator(Configurator):
             connector.setObserverAction(self.__receivingStrategy.handle)
 
     def deactivate(self):
-        super(InRouteConfigurator, self).deactivate()
+        super(InPushRouteConfigurator, self).deactivate()
 
         for connector in self.connectors:
             connector.setObserverAction(None)

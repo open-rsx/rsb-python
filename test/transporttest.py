@@ -56,7 +56,7 @@ class TransportCheck(object):
     .. codeauthor:: jwienke
     '''
 
-    def _getInConnector(self, scope, activate=True):
+    def _getInPushConnector(self, scope, activate=True):
         raise NotImplementedError()
 
     def _getOutConnector(self, scope, activate=True):
@@ -66,7 +66,7 @@ class TransportCheck(object):
 
         goodScope = Scope("/good")
 
-        inconnector = self._getInConnector(goodScope)
+        inconnector = self._getInPushConnector(goodScope)
         outconnector = self._getOutConnector(goodScope)
 
         receiver = SettingReceiver(goodScope)
@@ -98,12 +98,12 @@ class TransportCheck(object):
 
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
-        inConnector = self._getInConnector(scope, activate=False)
+        inConnector = self._getInPushConnector(scope, activate=False)
         outConnector = self._getOutConnector(scope, activate=False)
 
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[outConnector])
-        inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+        inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[inConnector])
 
         publisher = createInformer(scope,
@@ -163,8 +163,8 @@ class TransportCheck(object):
         receivers = []
         for scope in superScopes:
 
-            inConnector = self._getInConnector(scope, activate=False)
-            inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+            inConnector = self._getInPushConnector(scope, activate=False)
+            inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
                 connectors=[inConnector])
 
             listener = createListener(scope, configurator=inConfigurator)

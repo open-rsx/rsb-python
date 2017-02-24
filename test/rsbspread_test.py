@@ -159,7 +159,7 @@ class SpreadConnectorTest(unittest.TestCase):
         s1 = Scope("/xxx")
         dummySpread = SpreadConnectorTest.DummySpread()
         connector = getConnector(s1,
-                                 clazz=rsbspread.InConnector,
+                                 clazz=rsbspread.InPushConnector,
                                  module=dummySpread)
         self.assertEqual(1, len(dummySpread.returnedConnections))
         connection = dummySpread.returnedConnections[0]
@@ -173,7 +173,7 @@ class SpreadConnectorTest(unittest.TestCase):
 
     def testSequencing(self):
         goodScope = Scope("/good")
-        inConnector = getConnector(goodScope, clazz=rsbspread.InConnector)
+        inConnector = getConnector(goodScope, clazz=rsbspread.InPushConnector)
         outConnector = getConnector(goodScope, clazz=rsbspread.OutConnector)
 
         receiver = SettingReceiver(goodScope)
@@ -202,8 +202,8 @@ class SpreadConnectorTest(unittest.TestCase):
 
 class SpreadTransportTest(TransportCheck, unittest.TestCase):
 
-    def _getInConnector(self, scope, activate=True):
-        return getConnector(scope, clazz=rsbspread.InConnector,
+    def _getInPushConnector(self, scope, activate=True):
+        return getConnector(scope, clazz=rsbspread.InPushConnector,
                             activate=activate)
 
     def _getOutConnector(self, scope, activate=True):

@@ -425,8 +425,9 @@ class Connector(rsb.transport.Connector,
             + self.__connection.getHost()  \
             + ':' + str(self.__connection.getPort())
 
-class InConnector(Connector,
-                  rsb.transport.InConnector):
+
+class InPushConnector(Connector,
+                      rsb.transport.InPushConnector):
     def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -436,14 +437,14 @@ class InConnector(Connector,
 
         self.__scope = None
 
-        super(InConnector, self).__init__(**kwargs)
+        super(InPushConnector, self).__init__(**kwargs)
 
     def setScope(self, scope):
         self.__logger.debug("Got new scope %s", scope)
         self.__scope = scope
 
     def activate(self):
-        super(InConnector, self).activate()
+        super(InPushConnector, self).activate()
 
         assert self.__scope is not None
         self.connection.join(self._groupName(self.__scope))
@@ -461,7 +462,7 @@ class InConnector(Connector,
         self.__receiveThread = None
         self.__receiveTask = None
 
-        super(InConnector, self).deactivate()
+        super(InPushConnector, self).deactivate()
 
     def filterNotify(self, theFilter, action):
         self.__logger.debug("Ignoring filter %s with action %s",
@@ -558,7 +559,7 @@ class TransportFactory(rsb.transport.TransportFactory):
             return self.__connectionByDaemon[daemonName]
 
     def createInPushConnector(self, converters, options):
-        return InConnector(connection=SpreadConnection(
+        return InPushConnector(connection=SpreadConnection(
             self.__createDaemonName(options)), converters=converters)
 
     def createOutConnector(self, converters, options):

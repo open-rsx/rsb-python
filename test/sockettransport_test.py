@@ -44,7 +44,7 @@ def getConnector(clazz, scope, activate=True):
 
 class SocketTransportTest(TransportCheck, unittest.TestCase):
 
-    def _getInConnector(self, scope, activate=True):
+    def _getInPushConnector(self, scope, activate=True):
         return getConnector(InPushConnector, scope, activate=activate)
 
     def _getOutConnector(self, scope, activate=True):

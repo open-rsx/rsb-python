@@ -110,7 +110,7 @@ class Connector(object):
         pass
 
 
-class InConnector(Connector):
+class InPushConnector(Connector):
     """
     Superclass for in-direction (that is, dealing with incoming
     events) connector implementations.
@@ -258,7 +258,7 @@ class TransportFactory(object):
     @abc.abstractmethod
     def createInPushConnector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InConnector` for the represented
+        Creates a new instance of an :obj:`InPushConnector` for the represented
         transport.
 
         Args:
@@ -267,7 +267,7 @@ class TransportFactory(object):
                 options for the new connector
 
         Returns:
-            rsb.transport.InConnector:
+            rsb.transport.InPushConnector:
                 the new connector instance
         """
         pass

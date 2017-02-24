@@ -246,11 +246,11 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         self.assertEqual(None, RecordingOutConnector.lastEvent)
 
 
-class InRouteConfiguratorTest(unittest.TestCase):
+class InPushRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.InRouteConfigurator(
+        configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
 
         # Cannot deactivate inactive configurator
@@ -288,7 +288,7 @@ class InRouteConfiguratorTest(unittest.TestCase):
                         self.assertEquals(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
-        configurator = rsb.eventprocessing.InRouteConfigurator(
+        configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
         configurator.activate()
         connector.expect(())

@@ -833,7 +833,7 @@ class Connector(rsb.transport.Connector,
 
 
 class InPushConnector(Connector,
-                      rsb.transport.InConnector):
+                      rsb.transport.InPushConnector):
     """
     Instances of this class receive events from a bus (represented by
     a :obj:`Bus` object) that is accessed via a socket connection.
