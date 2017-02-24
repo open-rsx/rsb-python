@@ -45,6 +45,7 @@ class Connector(object):
 
     .. codeauthor:: jwienke
     """
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, wireType=None, **kwargs):
         """
@@ -96,14 +97,17 @@ class Connector(object):
 
     scope = property(getScope, setScope)
 
+    @abc.abstractmethod
     def activate(self):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def deactivate(self):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def setQualityOfServiceSpec(self, qos):
-        raise NotImplementedError()
+        pass
 
 
 class InConnector(Connector):
@@ -114,9 +118,11 @@ class InConnector(Connector):
     .. codeauthor:: jmoringe
     """
 
+    @abc.abstractmethod
     def filterNotify(self, filter, action):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def setObserverAction(self, action):
         """
         Sets the action used by the connector to notify about incoming
