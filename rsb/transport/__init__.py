@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -132,6 +132,29 @@ class InPushConnector(Connector):
             action:
                 action called if a new message is received from the connector.
                 Must accept an :obj:`Event` as parameter.
+        """
+        pass
+
+
+class InPullConnector(Connector):
+    """
+    Superclass for connectors that receive events using a pull style.
+
+    .. codeauthor:: jwienke
+    """
+
+    @abc.abstractmethod
+    def raiseEvent(self, block):
+        """
+        Returns the next received event.
+
+        Args:
+            block (bool):
+                If ``True``, wait for the next event, else immediately return,
+                possibly ``None``.
+        Returns:
+            rsb.Event or ``None``
+                The next event or ``None`` if ``block`` is ``False``.
         """
         pass
 
@@ -268,6 +291,24 @@ class TransportFactory(object):
 
         Returns:
             rsb.transport.InPushConnector:
+                the new connector instance
+        """
+        pass
+
+    @abc.abstractmethod
+    def createInPullConnector(self, converters, options):
+        """
+        Creates a new instance of an :obj:`InPullConnector` for the represented
+        transport.
+
+        Args:
+            converters (ConverterSelectionStrategy):
+                the converters to use for this type
+            options (dict of str):
+                options for the new connector
+
+        Returns:
+            rsb.transport.InPullConnector:
                 the new connector instance
         """
         pass

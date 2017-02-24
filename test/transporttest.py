@@ -59,6 +59,9 @@ class TransportCheck(object):
     def _getInPushConnector(self, scope, activate=True):
         raise NotImplementedError()
 
+    def _getInPullConnector(self, scope, activate=True):
+        raise NotImplementedError()
+
     def _getOutConnector(self, scope, activate=True):
         raise NotImplementedError()
 
@@ -92,6 +95,48 @@ class TransportCheck(object):
             event.setMetaData(None)
             receiver.resultEvent.setMetaData(None)
             self.assertEqual(receiver.resultEvent, event)
+
+        inconnector.deactivate()
+        outconnector.deactivate()
+
+    def testPullNonBlocking(self):
+        try:
+            inconnector = self._getInPullConnector(Scope("/somewhere"))
+        except NotImplementedError:
+            return
+
+        received = inconnector.raiseEvent(False)
+        self.assertIsNone(received)
+
+        inconnector.deactivate()
+
+    def testPullRoundtrip(self):
+
+        goodScope = Scope("/good")
+
+        try:
+            inconnector = self._getInPullConnector(goodScope)
+        except NotImplementedError:
+            return
+        outconnector = self._getOutConnector(goodScope)
+
+        # first an event that we do not want
+        event = Event(EventId(uuid.uuid4(), 0))
+        event.scope = Scope("/notGood")
+        event.data = "dummy data"
+        event.type = str
+        event.metaData.senderId = uuid.uuid4()
+        outconnector.handle(event)
+
+        # and then a desired event
+        event.scope = goodScope
+        outconnector.handle(event)
+
+        received = inconnector.raiseEvent(True)
+        # ignore meta data here
+        event.setMetaData(None)
+        received.setMetaData(None)
+        self.assertEqual(received, event)
 
         inconnector.deactivate()
         outconnector.deactivate()

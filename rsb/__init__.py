@@ -1577,9 +1577,9 @@ class Participant(object):
 
     @classmethod
     def getConnectors(cls, direction, config):
-        if direction not in ('in', 'out'):
+        if direction not in ('in', 'in-pull', 'out'):
             raise ValueError('Invalid direction: %s (valid directions '
-                             'are "in" and "out")' % direction)
+                             'are "in", "in-pull" and "out")' % direction)
         if len(config.getTransports()) == 0:
             raise ValueError('No transports specified (config is %s)' % config)
 
@@ -1590,6 +1590,10 @@ class Participant(object):
             if direction == 'in':
                 transports.append(
                     factory.createInPushConnector(converters,
+                                                  transport.getOptions()))
+            elif direction == 'in-pull':
+                transports.append(
+                    factory.createInPullConnector(converters,
                                                   transport.getOptions()))
             elif direction == 'out':
                 transports.append(

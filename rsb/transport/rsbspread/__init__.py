@@ -562,6 +562,9 @@ class TransportFactory(rsb.transport.TransportFactory):
         return InPushConnector(connection=SpreadConnection(
             self.__createDaemonName(options)), converters=converters)
 
+    def createInPullConnector(self, converters, options):
+        raise NotImplementedError()
+
     def createOutConnector(self, converters, options):
         return OutConnector(connection=self.__getSharedConnection(
             self.__createDaemonName(options)), converters=converters)

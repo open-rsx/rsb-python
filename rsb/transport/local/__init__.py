@@ -192,6 +192,9 @@ class TransportFactory(transport.TransportFactory):
     def createInPushConnector(self, converters, options):
         return InPushConnector(converters=converters, options=options)
 
+    def createInPullConnector(self, converters, options):
+        raise NotImplementedError()
+
     def createOutConnector(self, converters, options):
         return OutConnector(converters=converters, options=options)
 
