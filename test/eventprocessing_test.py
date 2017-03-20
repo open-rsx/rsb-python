@@ -99,6 +99,9 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             self.assertTrue(event1 in matchingCalls2)
             self.assertTrue(event2 in matchingCalls2)
 
+        ep.removeFilter(matchingRecordingFilter2)
+        ep.removeFilter(matchingRecordingFilter1)
+
     def testNotMatchingProcess(self):
 
         ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
@@ -130,6 +133,8 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             self.assertTrue(event3 in noMatchRecordingFilter.events)
 
         self.assertEqual(0, len(noMatchingCalls))
+
+        ep.removeFilter(noMatchRecordingFilter)
 
     def testAddRemove(self):
         for size in xrange(2, 10):
@@ -241,11 +246,11 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         self.assertEqual(None, RecordingOutConnector.lastEvent)
 
 
-class InRouteConfiguratorTest(unittest.TestCase):
+class InPushRouteConfiguratorTest(unittest.TestCase):
 
     def testActivation(self):
         connector = ActivateCountingMockConnector(self)
-        configurator = rsb.eventprocessing.InRouteConfigurator(
+        configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
 
         # Cannot deactivate inactive configurator
@@ -283,7 +288,7 @@ class InRouteConfiguratorTest(unittest.TestCase):
                         self.assertEquals(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
-        configurator = rsb.eventprocessing.InRouteConfigurator(
+        configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
         configurator.activate()
         connector.expect(())
@@ -297,6 +302,10 @@ class InRouteConfiguratorTest(unittest.TestCase):
 
         configurator.filterAdded(f3)
         connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add')))
+
+        configurator.filterRemoved(f3)
+        connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add'),
+                          (f3, 'remove')))
 
 
 class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
@@ -357,6 +366,8 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
 
         with handler.condition:
             self.assertEqual(None, handler.event)
+
+        strategy.removeFilter(falseFilter)
 
     def testParallelCallOfOneHandler(self):
 

@@ -33,6 +33,7 @@ serialization overhead.
 import os
 import platform
 from threading import RLock
+import Queue
 
 from rsb import transport
 
@@ -129,16 +130,16 @@ class OutConnector(transport.OutConnector):
         return self.__bus.getTransportURL()
 
 
-class InConnector(transport.InConnector):
+class InPushConnector(transport.InPushConnector):
     """
-    InConnector for the local transport.
+    InPushConnector for the local transport.
 
     .. codeauthor:: jwienke
     """
 
     def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
         # pylint: disable=unused-argument
-        transport.InConnector.__init__(self, wireType=object, **kwargs)
+        transport.InPushConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         self.__scope = None
         self.__observerAction = None
@@ -176,6 +177,42 @@ class InConnector(transport.InConnector):
         return self.__bus.getTransportURL()
 
 
+class InPullConnector(transport.InPullConnector):
+
+    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
+        # pylint: disable=unused-argument
+        transport.InPullConnector.__init__(self, wireType=object, **kwargs)
+        self.__bus = bus
+        self.__scope = None
+        self.__eventQueue = Queue.Queue()
+
+    def setScope(self, scope):
+        self.__scope = scope
+
+    def getScope(self):
+        return self.__scope
+
+    def activate(self):
+        assert self.__scope is not None
+        self.__bus.addSink(self)
+
+    def deactivate(self):
+        self.__bus.removeSink(self)
+
+    def setQualityOfServiceSpec(self, qos):
+        pass
+
+    def handle(self, event):
+        event.metaData.setReceiveTime()
+        self.__eventQueue.put(event)
+
+    def raiseEvent(self, block):
+        try:
+            return self.__eventQueue.get(block)
+        except Queue.Empty:
+            return None
+
+
 class TransportFactory(transport.TransportFactory):
     """
     :obj:`TransportFactory` implementation for the local transport.
@@ -190,7 +227,10 @@ class TransportFactory(transport.TransportFactory):
         return False
 
     def createInPushConnector(self, converters, options):
-        return InConnector(converters=converters, options=options)
+        return InPushConnector(converters=converters, options=options)
+
+    def createInPullConnector(self, converters, options):
+        return InPullConnector(converters=converters, options=options)
 
     def createOutConnector(self, converters, options):
         return OutConnector(converters=converters, options=options)

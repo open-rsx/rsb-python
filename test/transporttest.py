@@ -23,8 +23,14 @@
 # ============================================================
 
 import unittest
+from nose.tools import timed
 
-from rsb import Scope, Event, EventId, createInformer, createListener
+from rsb import (Scope,
+                 Event,
+                 EventId,
+                 createInformer,
+                 createListener,
+                 createReader)
 import threading
 import uuid
 import rsb
@@ -56,17 +62,21 @@ class TransportCheck(object):
     .. codeauthor:: jwienke
     '''
 
-    def _getInConnector(self, scope, activate=True):
+    def _getInPushConnector(self, scope, activate=True):
+        raise NotImplementedError()
+
+    def _getInPullConnector(self, scope, activate=True):
         raise NotImplementedError()
 
     def _getOutConnector(self, scope, activate=True):
         raise NotImplementedError()
 
+    @timed(5)
     def testRoundtrip(self):
 
         goodScope = Scope("/good")
 
-        inconnector = self._getInConnector(goodScope)
+        inconnector = self._getInPushConnector(goodScope)
         outconnector = self._getOutConnector(goodScope)
 
         receiver = SettingReceiver(goodScope)
@@ -96,14 +106,59 @@ class TransportCheck(object):
         inconnector.deactivate()
         outconnector.deactivate()
 
+    @timed(5)
+    def testPullNonBlocking(self):
+        try:
+            inconnector = self._getInPullConnector(Scope("/somewhere"))
+        except NotImplementedError:
+            return
+
+        received = inconnector.raiseEvent(False)
+        self.assertIsNone(received)
+
+        inconnector.deactivate()
+
+    @timed(5)
+    def testPullRoundtrip(self):
+
+        goodScope = Scope("/good")
+
+        try:
+            inconnector = self._getInPullConnector(goodScope)
+        except NotImplementedError:
+            return
+        outconnector = self._getOutConnector(goodScope)
+
+        # first an event that we do not want
+        event = Event(EventId(uuid.uuid4(), 0))
+        event.scope = Scope("/notGood")
+        event.data = "dummy data"
+        event.type = str
+        event.metaData.senderId = uuid.uuid4()
+        outconnector.handle(event)
+
+        # and then a desired event
+        event.scope = goodScope
+        outconnector.handle(event)
+
+        received = inconnector.raiseEvent(True)
+        # ignore meta data here
+        event.setMetaData(None)
+        received.setMetaData(None)
+        self.assertEqual(received, event)
+
+        inconnector.deactivate()
+        outconnector.deactivate()
+
+    @timed(5)
     def testUserRoundtrip(self):
         scope = Scope("/test/it")
-        inConnector = self._getInConnector(scope, activate=False)
+        inConnector = self._getInPushConnector(scope, activate=False)
         outConnector = self._getOutConnector(scope, activate=False)
 
         outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[outConnector])
-        inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+        inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[inConnector])
 
         publisher = createInformer(scope,
@@ -146,6 +201,52 @@ class TransportCheck(object):
         listener.deactivate()
         publisher.deactivate()
 
+    @timed(5)
+    def testUserPullRoundtrip(self):
+        scope = Scope("/test/it/pull")
+        try:
+            inConnector = self._getInPullConnector(scope, activate=False)
+        except NotImplementedError:
+            return
+        outConnector = self._getOutConnector(scope, activate=False)
+
+        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[outConnector])
+        inConfigurator = rsb.eventprocessing.InPullRouteConfigurator(
+            connectors=[inConnector])
+
+        publisher = createInformer(scope,
+                                   dataType=str,
+                                   configurator=outConfigurator)
+        reader = createReader(scope, configurator=inConfigurator)
+
+        data1 = "a string to test"
+        sentEvent = Event(EventId(uuid.uuid4(), 0))
+        sentEvent.setData(data1)
+        sentEvent.setType(str)
+        sentEvent.setScope(scope)
+        sentEvent.getMetaData().setUserInfo("test", "it")
+        sentEvent.getMetaData().setUserInfo("test again", "it works?")
+        sentEvent.getMetaData().setUserTime("blubb", 234234)
+        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
+        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
+        sentEvent.addCause(EventId(uuid.uuid4(), 42))
+
+        publisher.publishEvent(sentEvent)
+
+        resultEvent = reader.read(True)
+        self.assertTrue(resultEvent.metaData.createTime <=
+                        resultEvent.metaData.sendTime <=
+                        resultEvent.metaData.receiveTime <=
+                        resultEvent.metaData.deliverTime)
+        sentEvent.metaData.receiveTime = resultEvent.metaData.receiveTime
+        sentEvent.metaData.deliverTime = resultEvent.metaData.deliverTime
+        self.assertEqual(sentEvent, resultEvent)
+
+        reader.deactivate()
+        publisher.deactivate()
+
+    @timed(5)
     def testHierarchySending(self):
 
         sendScope = Scope("/this/is/a/test")
@@ -163,8 +264,8 @@ class TransportCheck(object):
         receivers = []
         for scope in superScopes:
 
-            inConnector = self._getInConnector(scope, activate=False)
-            inConfigurator = rsb.eventprocessing.InRouteConfigurator(
+            inConnector = self._getInPushConnector(scope, activate=False)
+            inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
                 connectors=[inConnector])
 
             listener = createListener(scope, configurator=inConfigurator)

@@ -187,6 +187,38 @@ class RefCountingSpreadConnection(SpreadConnection):
                 SpreadConnection.deactivate(self)
 
 
+__handleLogger = logging.getLogger("rsb.rsbspread.handleReceivedRegularMsg")
+def handleReceivedRegularMsg(message, assemblyPool, converterMap):
+    try:
+        fragment = FragmentedNotification()
+        fragment.ParseFromString(message.message)
+    except DecodeError:
+        __handleLogger.exception("Error decoding notification")
+        return None
+
+    if __handleLogger.isEnabledFor(logging.DEBUG):
+        __handleLogger.debug(
+            "Received notification fragment "
+            "from bus (%s/%s), data length: %s",
+            fragment.data_part,
+            fragment.num_data_parts,
+            len(fragment.notification.data))
+
+    assembled = assemblyPool.add(fragment)
+    if assembled:
+        notification, joinedData, wireSchema = assembled
+        # Create event from (potentially assembled)
+        # notification(s)
+        converter = converterMap.getConverterForWireSchema(wireSchema)
+        try:
+            return conversion.notificationToEvent(
+                notification, joinedData, wireSchema, converter)
+        except Exception:
+            __handleLogger.exception("Unable to decode event. "
+                                     "Ignoring and continuing.")
+            return None
+
+
 class SpreadReceiverTask(object):
     """
     Thread used to receive messages from a spread connection.
@@ -255,42 +287,10 @@ class SpreadReceiverTask(object):
                     if self.__wakeupGroup in message.groups:
                         continue
 
-                    try:
-                        fragment = FragmentedNotification()
-                        fragment.ParseFromString(message.message)
-                    except DecodeError:
-                        self.__logger.exception("Error decoding notification")
-                        continue
+                    event = handleReceivedRegularMsg(
+                        message, self.__assemblyPool, self.__converterMap)
 
-                    if self.__logger.isEnabledFor(logging.DEBUG):
-                        self.__logger.debug(
-                            "Received notification fragment "
-                            "from bus (%s/%s), data length: %s",
-                            fragment.data_part,
-                            fragment.num_data_parts,
-                            len(fragment.notification.data))
-
-                    assembled = self.__assemblyPool.add(fragment)
-                    if assembled:
-                        notification, joinedData, wireSchema = assembled
-                        # Create event from (potentially assembled)
-                        # notification(s)
-                        converter = \
-                            self.__converterMap.getConverterForWireSchema(
-                                wireSchema)
-                        try:
-                            event = conversion.notificationToEvent(
-                                notification, joinedData, wireSchema,
-                                converter)
-                        except Exception:
-                            self.__logger.exception(
-                                "Unable to decode event. "
-                                "Ignoring and continuing.")
-                            continue
-
-                        self.__logger.debug(
-                            "Sending event to dispatch task: %s", event)
-
+                    if event:
                         with self.__observerActionLock:
                             if self.__observerAction:
                                 self.__observerAction(event)
@@ -425,8 +425,9 @@ class Connector(rsb.transport.Connector,
             + self.__connection.getHost()  \
             + ':' + str(self.__connection.getPort())
 
-class InConnector(Connector,
-                  rsb.transport.InConnector):
+
+class InPushConnector(Connector,
+                      rsb.transport.InPushConnector):
     def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -436,14 +437,14 @@ class InConnector(Connector,
 
         self.__scope = None
 
-        super(InConnector, self).__init__(**kwargs)
+        super(InPushConnector, self).__init__(**kwargs)
 
     def setScope(self, scope):
         self.__logger.debug("Got new scope %s", scope)
         self.__scope = scope
 
     def activate(self):
-        super(InConnector, self).activate()
+        super(InPushConnector, self).activate()
 
         assert self.__scope is not None
         self.connection.join(self._groupName(self.__scope))
@@ -461,7 +462,7 @@ class InConnector(Connector,
         self.__receiveThread = None
         self.__receiveTask = None
 
-        super(InConnector, self).deactivate()
+        super(InPushConnector, self).deactivate()
 
     def filterNotify(self, theFilter, action):
         self.__logger.debug("Ignoring filter %s with action %s",
@@ -476,6 +477,53 @@ class InConnector(Connector,
         else:
             self.__logger.debug("Storing observer %s until activation",
                                 observerAction)
+
+
+class InPullConnector(Connector,
+                      rsb.transport.InPullConnector):
+    def __init__(self, **kwargs):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__scope = None
+
+        self.__assemblyPool = AssemblyPool()
+
+        super(InPullConnector, self).__init__(**kwargs)
+
+    def setScope(self, scope):
+        self.__logger.debug("Got new scope %s", scope)
+        self.__scope = scope
+
+    def activate(self):
+        super(InPullConnector, self).activate()
+
+        assert self.__scope is not None
+        self.connection.join(self._groupName(self.__scope))
+
+    def deactivate(self):
+        self.connection.leave(self._groupName(self.__scope))
+
+        super(InPullConnector, self).deactivate()
+
+    def raiseEvent(self, block):
+        self.__logger.debug("raiseEvent starts")
+
+        event = None
+        while not event:
+            self.__logger.debug("next loop iteration")
+            if not block:
+                if self.connection.poll() <= 0:
+                    return None
+            message = self.connection.receive()
+            if not isinstance(message, spread.RegularMsgType):
+                continue
+            event = handleReceivedRegularMsg(
+                message, self.__assemblyPool, self.converterMap)
+            self.__logger.debug("handleReceivedRegularMsg retuned type %s",
+                                type(event))
+
+        self.__logger.debug("Receive loop exits")
+
+        return event
 
 
 class OutConnector(Connector,
@@ -558,7 +606,11 @@ class TransportFactory(rsb.transport.TransportFactory):
             return self.__connectionByDaemon[daemonName]
 
     def createInPushConnector(self, converters, options):
-        return InConnector(connection=SpreadConnection(
+        return InPushConnector(connection=SpreadConnection(
+            self.__createDaemonName(options)), converters=converters)
+
+    def createInPullConnector(self, converters, options):
+        return InPullConnector(connection=SpreadConnection(
             self.__createDaemonName(options)), converters=converters)
 
     def createOutConnector(self, converters, options):

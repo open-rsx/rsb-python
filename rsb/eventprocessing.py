@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -31,6 +31,7 @@ transport layer and the client interface.
 .. codeauthor:: jmoringe
 """
 
+import abc
 import copy
 import threading
 import Queue
@@ -86,27 +87,88 @@ class EventReceivingStrategy(object):
     """
     Superclass for event receiving strategies.
 
+    .. codeauthor:: jwienke
+    """
+    __metaclass__ = abc.ABCMeta
+
+
+class PushEventReceivingStrategy(EventReceivingStrategy):
+    """
+    Superclass for push-based event receiving strategies.
+
     .. codeauthor:: jmoringe
+    .. codeauthor:: jwienke
     """
-    def addFilter(self, theFilter):
-        raise NotImplementedError
 
-    def removeFilter(self, theFilter):
-        raise NotImplementedError
-
+    @abc.abstractmethod
     def addHandler(self, handler, wait):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def removeHandler(self, handler, wait):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
+    def addFilter(self, theFilter):
+        pass
+
+    @abc.abstractmethod
+    def removeFilter(self, theFilter):
+        pass
+
+    @abc.abstractmethod
     def handle(self, event):
-        raise NotImplementedError
+        pass
 
 
-class ParallelEventReceivingStrategy(EventReceivingStrategy):
+class PullEventReceivingStrategy(EventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    Superclass for pull-based event receiving.
+
+    .. codeauthor:: jwienke
+    """
+
+    @abc.abstractmethod
+    def setConnectors(self, connectors):
+        pass
+
+    @abc.abstractmethod
+    def raiseEvent(self, block):
+        """
+        Receives the next event.
+
+        Args:
+            block (bool):
+                if ``True``, wait for the next event. Else, immediately return,
+                potentially a ``None``.
+        """
+        pass
+
+
+class FirstConnectorPullEventReceivingStrategy(PullEventReceivingStrategy):
+    """
+    Directly receives events only from the first provided connector.
+
+    .. codeauthor:: jwienke
+    """
+
+    def setConnectors(self, connectors):
+        if not connectors:
+            raise ValueError("There must be at least on connector")
+        self.__connectors = connectors
+
+    def raiseEvent(self, block):
+        assert self.__connectors
+
+        event = self.__connectors[0].raiseEvent(block)
+        if event:
+            event.metaData.setDeliverTime()
+        return event
+
+
+class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
+    """
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler is called only
     sequentially but potentially from different threads.
 
@@ -171,10 +233,14 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__filtersMutex:
             self.__filters.append(theFilter)
 
+    def removeFilter(self, theFilter):
+        with self.__filtersMutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
 
-class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
+
+class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler can be called
     in parallel for different requests.
 
@@ -238,10 +304,14 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__mutex:
             self.__filters.append(f)
 
+    def removeFilter(self, theFilter):
+        with self.__mutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
 
-class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
+
+class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
-    An :obj:`EventReceivingStrategy` that dispatches events to multiple
+    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers using a single thread and without queuing. Only a single buffer
     is used to decouple the transport from the registered handlers. In case
     the handler processing is slower than the transport, the transport will
@@ -301,6 +371,10 @@ class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     def addFilter(self, f):
         with self.__mutex:
             self.__filters.append(f)
+
+    def removeFilter(self, theFilter):
+        with self.__mutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
 
 
 class EventSendingStrategy(object):
@@ -428,11 +502,11 @@ class Configurator(object):
             connector.setQualityOfServiceSpec(qos)
 
 
-class InRouteConfigurator(Configurator):
+class InPushRouteConfigurator(Configurator):
     """
     Instances of this class manage the receiving, filtering and
     dispatching of events via one or more :obj:`rsb.transport.Connector` s
-    and an :obj:`EventReceivingStrategy`.
+    and an :obj:`PushEventReceivingStrategy`.
 
     .. codeauthor:: jwienke
     .. codeauthor:: jmoringe
@@ -450,7 +524,7 @@ class InRouteConfigurator(Configurator):
                 The event receiving strategy according to which the filtering
                 and dispatching of incoming events should be performed.
         """
-        super(InRouteConfigurator, self).__init__(connectors)
+        super(InPushRouteConfigurator, self).__init__(connectors)
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -463,7 +537,7 @@ class InRouteConfigurator(Configurator):
             connector.setObserverAction(self.__receivingStrategy.handle)
 
     def deactivate(self):
-        super(InRouteConfigurator, self).deactivate()
+        super(InPushRouteConfigurator, self).deactivate()
 
         for connector in self.connectors:
             connector.setObserverAction(None)
@@ -479,6 +553,46 @@ class InRouteConfigurator(Configurator):
         self.__receivingStrategy.addFilter(theFilter)
         for connector in self.connectors:
             connector.filterNotify(theFilter, rsb.filter.FilterAction.ADD)
+
+    def filterRemoved(self, theFilter):
+        self.__receivingStrategy.removeFilter(theFilter)
+        for connector in self.connectors:
+            connector.filterNotify(theFilter, rsb.filter.FilterAction.REMOVE)
+
+
+class InPullRouteConfigurator(Configurator):
+    """
+    Instances of this class manage the pull-based receiving of events via one
+    or more :obj:`rsb.transport.Connector` s and an
+    :obj:`PullEventReceivingStrategy`.
+
+    .. codeauthor:: jwienke
+    """
+
+    def __init__(self, connectors=None, receivingStrategy=None):
+        """
+        Creates a new configurator which manages ``connectors`` and
+        ``receivingStrategy``.
+
+        Args:
+            connectors:
+                Connectors through which events are received.
+            receivingStrategy:
+                The event receiving strategy according to which the dispatching
+                of incoming events should be performed.
+        """
+        super(InPullRouteConfigurator, self).__init__(connectors)
+
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        if receivingStrategy is None:
+            self.__receivingStrategy = FirstConnectorPullEventReceivingStrategy()
+        else:
+            self.__receivingStrategy = receivingStrategy
+        self.__receivingStrategy.setConnectors(connectors)
+
+    def getReceivingStrategy(self):
+        return self.__receivingStrategy
 
 
 class OutRouteConfigurator(Configurator):

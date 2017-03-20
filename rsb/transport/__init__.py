@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -45,6 +45,7 @@ class Connector(object):
 
     .. codeauthor:: jwienke
     """
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, wireType=None, **kwargs):
         """
@@ -96,17 +97,20 @@ class Connector(object):
 
     scope = property(getScope, setScope)
 
+    @abc.abstractmethod
     def activate(self):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def deactivate(self):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def setQualityOfServiceSpec(self, qos):
-        raise NotImplementedError()
+        pass
 
 
-class InConnector(Connector):
+class InPushConnector(Connector):
     """
     Superclass for in-direction (that is, dealing with incoming
     events) connector implementations.
@@ -114,9 +118,11 @@ class InConnector(Connector):
     .. codeauthor:: jmoringe
     """
 
+    @abc.abstractmethod
     def filterNotify(self, filter, action):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def setObserverAction(self, action):
         """
         Sets the action used by the connector to notify about incoming
@@ -126,6 +132,29 @@ class InConnector(Connector):
             action:
                 action called if a new message is received from the connector.
                 Must accept an :obj:`Event` as parameter.
+        """
+        pass
+
+
+class InPullConnector(Connector):
+    """
+    Superclass for connectors that receive events using a pull style.
+
+    .. codeauthor:: jwienke
+    """
+
+    @abc.abstractmethod
+    def raiseEvent(self, block):
+        """
+        Returns the next received event.
+
+        Args:
+            block (bool):
+                If ``True``, wait for the next event, else immediately return,
+                possibly ``None``.
+        Returns:
+            rsb.Event or ``None``
+                The next event or ``None`` if ``block`` is ``False``.
         """
         pass
 
@@ -252,7 +281,7 @@ class TransportFactory(object):
     @abc.abstractmethod
     def createInPushConnector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InConnector` for the represented
+        Creates a new instance of an :obj:`InPushConnector` for the represented
         transport.
 
         Args:
@@ -261,7 +290,25 @@ class TransportFactory(object):
                 options for the new connector
 
         Returns:
-            rsb.transport.InConnector:
+            rsb.transport.InPushConnector:
+                the new connector instance
+        """
+        pass
+
+    @abc.abstractmethod
+    def createInPullConnector(self, converters, options):
+        """
+        Creates a new instance of an :obj:`InPullConnector` for the represented
+        transport.
+
+        Args:
+            converters (ConverterSelectionStrategy):
+                the converters to use for this type
+            options (dict of str):
+                options for the new connector
+
+        Returns:
+            rsb.transport.InPullConnector:
                 the new connector instance
         """
         pass
