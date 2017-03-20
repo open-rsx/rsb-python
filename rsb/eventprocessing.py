@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -171,6 +171,10 @@ class ParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__filtersMutex:
             self.__filters.append(theFilter)
 
+    def removeFilter(self, theFilter):
+        with self.__filtersMutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
+
 
 class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     """
@@ -238,6 +242,10 @@ class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
         with self.__mutex:
             self.__filters.append(f)
 
+    def removeFilter(self, theFilter):
+        with self.__mutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
+
 
 class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     """
@@ -301,6 +309,10 @@ class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     def addFilter(self, f):
         with self.__mutex:
             self.__filters.append(f)
+
+    def removeFilter(self, theFilter):
+        with self.__mutex:
+            self.__filters = [f for f in self.__filters if f != theFilter]
 
 
 class EventSendingStrategy(object):
@@ -479,6 +491,11 @@ class InRouteConfigurator(Configurator):
         self.__receivingStrategy.addFilter(theFilter)
         for connector in self.connectors:
             connector.filterNotify(theFilter, rsb.filter.FilterAction.ADD)
+
+    def filterRemoved(self, theFilter):
+        self.__receivingStrategy.removeFilter(theFilter)
+        for connector in self.connectors:
+            connector.filterNotify(theFilter, rsb.filter.FilterAction.REMOVE)
 
 
 class OutRouteConfigurator(Configurator):
