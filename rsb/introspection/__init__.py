@@ -354,7 +354,7 @@ def hostId():
 
     return \
         ('linux' in sys.platform and maybeRead('/var/lib/dbus/machine-id')) \
-        or ('linux' in sys.platform and maybeRead('/ect/machine-id')) \
+        or ('linux' in sys.platform and maybeRead('/etc/machine-id')) \
         or None
 
 
