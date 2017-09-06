@@ -324,9 +324,7 @@ print('I will request a protobuf library of version {version}'.format(
 
 setup(name='rsb-python',
       version=version,
-      description='''
-                  Fully event-driven Robotics Service Bus
-                  ''',
+      description="Fully event-driven Robotics Service Bus",
       author='Johannes Wienke',
       author_email='jwienke@techfak.uni-bielefeld.de',
       license='LGPLv3+',
