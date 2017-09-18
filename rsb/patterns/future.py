@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -118,8 +118,6 @@ class Future(object):
                 if timeout <= 0:
                     self.__condition.wait()
                 else:
-                    # TODO(jmoringe): this is probably wrong since there
-                    #                 may be spurious wakeups
                     self.__condition.wait(timeout=timeout)
                     if self.__result is None:
                         raise FutureTimeout(
