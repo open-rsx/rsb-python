@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -265,18 +265,15 @@ class UnambiguousConverterMap(ConverterMap):
 
     def addConverter(self, converter, replaceExisting=False):
         for (wireSchema, dataType) in self.getConverters().keys():
-            if wireSchema == converter.getWireSchema():
-                if dataType == converter.getDataType():
-                    super(UnambiguousConverterMap, self).addConverter(
-                        converter, replaceExisting)
-                else:
-                    raise RuntimeError(
-                        "Trying to register ambiguous converter "
-                        "with data type `%s' for wire-schema `%s' "
-                        "(present converter is for data type `%s')."
-                        % (converter.getDataType(),
-                           wireSchema,
-                           dataType))
+            if wireSchema == converter.getWireSchema() \
+               and not dataType == converter.getDataType():
+                raise RuntimeError(
+                    "Trying to register ambiguous converter "
+                    "with data type `%s' for wire-schema `%s' "
+                    "(present converter is for data type `%s')."
+                    % (converter.getDataType(),
+                       wireSchema,
+                       dataType))
         super(UnambiguousConverterMap, self).addConverter(
             converter, replaceExisting)
 
