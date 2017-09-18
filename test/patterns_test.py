@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -89,7 +89,7 @@ class RoundTripTest (unittest.TestCase):
         with rsb.createLocalServer(
                 '/roundtrip',
                 methods=[('addone', lambda x: long(x + 1), long, long)],
-                config=inProcessNoIntrospectionConfig) as localServer:
+                config=inProcessNoIntrospectionConfig):
             with rsb.createRemoteServer('/roundtrip',
                                         inProcessNoIntrospectionConfig) \
                     as remoteServer:
