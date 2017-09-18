@@ -98,6 +98,11 @@ class RoundTripTest (unittest.TestCase):
                 self.assertEqual(map(remoteServer.addone, range(100)),
                                  range(1, 101))
 
+                # Call synchronously with timeout
+                self.assertEqual([remoteServer.addone(x, timeout=10)
+                                  for x in range(100)],
+                                 range(1, 101))
+
                 # Call asynchronously
                 self.assertEqual(map(lambda x: x.get(),
                                      map(remoteServer.addone.async,

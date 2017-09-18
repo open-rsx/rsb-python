@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -460,7 +460,7 @@ class RemoteMethod(Method):
         else:
             result.set(event)
 
-    def __call__(self, arg=None):
+    def __call__(self, arg=None, timeout=0):
         """
         Call the method synchronously with argument ``arg``, returning
         the value returned by the remote method.
@@ -484,6 +484,9 @@ class RemoteMethod(Method):
             arg:
                 The argument object that should be passed to the remote method.
                 A converter has to be available for the type of ``arg``.
+            timeout:
+                The amount of time in seconds in which the operation has to
+                complete.
 
         Returns:
             The object that was returned by the remote method.
@@ -492,11 +495,15 @@ class RemoteMethod(Method):
             RemoteCallError:
                 If invoking the remote method fails or the remote method itself
                 produces an error.
+            FutureTimeout
+                If ``timeout`` is non-zero and the remote method does
+                not respond within the specified time frame.
 
         See Also:
             :obj:`async`
+
         """
-        return self.async(arg).get()
+        return self.async(arg).get(timeout=timeout)
 
     def async(self, arg=None):
         """
