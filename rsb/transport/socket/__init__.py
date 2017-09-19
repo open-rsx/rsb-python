@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -545,6 +545,7 @@ class BusClient(Bus):
 
         self.addConnection(BusConnection(host, port, tcpnodelay=tcpnodelay))
 
+
 __busServers = {}
 __busServersLock = threading.Lock()
 
@@ -771,10 +772,10 @@ class Connector(rsb.transport.Connector,
     def __getBus(self, host, port, tcpnodelay, server):
         self.__logger.info('Requested server role: %s', server)
 
-        if server == True:
+        if server is True:
             self.__logger.info('Getting bus server %s:%d', host, port)
             self.__bus = getBusServerFor(host, port, tcpnodelay, self)
-        elif server == False:
+        elif server is False:
             self.__logger.info('Getting bus client %s:%d', host, port)
             self.__bus = getBusClientFor(host, port, tcpnodelay, self)
         elif server == 'auto':
