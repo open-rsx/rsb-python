@@ -32,11 +32,9 @@ common base classes and utility functions.
 """
 
 import abc
-import copy
 import threading
 
 from rsb.util import getLoggerByClass
-import logging
 
 
 class Connector(object):
