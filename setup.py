@@ -313,7 +313,7 @@ def generateVersionFile(version, commit):
                     '@VERSION@', version).replace(
                         '@COMMIT@', commit))
 
-version, commit = defineProjectVersion('0.17')
+version, commit = defineProjectVersion('0.18')
 print('This is version {version}-{commit}'.format(version=version,
                                                   commit=commit))
 generateVersionFile(version, commit)
