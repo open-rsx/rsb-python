@@ -301,7 +301,7 @@ def determineProtocVersion():
     # Only use the first two version components as the patch part seems to be
     # unrelated to breaking changes.
     # See: https://github.com/google/protobuf/issues/3602
-    return '.'.join(protocVersionParts[1].split('.')[:2])
+    return [int(x) for x in protocVersionParts[1].split('.')[:2]]
 
 
 def generateVersionFile(version, commit):
@@ -322,7 +322,7 @@ print('This is version {version}-{commit}'.format(version=version,
 generateVersionFile(version, commit)
 
 protocVersion = determineProtocVersion()
-print('I will request a protobuf library of version {version}'.format(
+print('Determined protobuf version to be {version}'.format(
     version=protocVersion))
 
 setup(name='rsb-python',
@@ -348,7 +348,11 @@ setup(name='rsb-python',
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
 
-      install_requires=['protobuf=={}'.format(protocVersion)],
+      install_requires=['protobuf>={}.{},<{}.{}'.format(
+          protocVersion[0],
+          protocVersion[1],
+          protocVersion[0],
+          protocVersion[1] + 1)],
       setup_requires=['nose>=1.3',
                       'coverage',
                       'nose-testconfig',
