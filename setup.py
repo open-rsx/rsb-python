@@ -298,7 +298,10 @@ def determineProtocVersion():
     if len(protocVersionParts) != 2:
         raise RuntimeError(
             "Unexpected version out from protoc: '{}'".format(versionOutput))
-    return protocVersionParts[1]
+    # Only use the first two version components as the patch part seems to be
+    # unrelated to breaking changes.
+    # See: https://github.com/google/protobuf/issues/3602
+    return '.'.join(protocVersionParts[1].split('.')[:2])
 
 
 def generateVersionFile(version, commit):
