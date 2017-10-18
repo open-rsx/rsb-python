@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2014, 2015, 2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2014, 2015, 2016, 2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -161,6 +161,7 @@ class ParticipantInfo(object):
 
     def __repr__(self):
         return str(self)
+
 
 __processStartTime = None
 
@@ -490,6 +491,7 @@ class HostInfo(object):
 
 # IntrospectionSender
 
+
 BASE_SCOPE = rsb.Scope('/__rsb/introspection/')
 PARTICIPANTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/participants/'))
 HOSTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/hosts/'))
@@ -542,11 +544,9 @@ class IntrospectionSender(object):
                 try:
                     participantId = uuid.UUID(event.scope.components[-1])
                     if participantId is not None:
-                        # TODO there has to be a better way
-                        for p in self.__participants:
-                            if p.id == participantId:
-                                participant = p
-                            break
+                        participant = next((p for p in self.__participants
+                                            if p.id == participantId),
+                                           None)
                 except Exception, e:
                     self.__logger.warn('Query event %s does not '
                                        'properly address a participant: %s',
@@ -699,6 +699,7 @@ class IntrospectionSender(object):
         if query:
             pongEvent.addCause(query.id)
         self.__informer.publishEvent(pongEvent)
+
 
 __sender = None
 
