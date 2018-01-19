@@ -79,7 +79,10 @@ def getConnector(scope,
         'test/with-spread.conf').getTransport("spread").options
     daemon = '{port}@{host}'.format(port=options['port'],
                                     host=options.get('host', 'localhost'))
-    connector = clazz(connection=rsbspread.SpreadConnection(daemon, **kwargs),
+    connection = rsbspread.SpreadConnection(daemon, **kwargs)
+    bus = rsbspread.Bus(connection)
+    bus.activate()
+    connector = clazz(bus=bus,
                       converters=rsb.converter.getGlobalConverterMap(
                           bytearray))
     connector.setScope(scope)

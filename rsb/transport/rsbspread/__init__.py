@@ -32,6 +32,7 @@ which uses a multicased-based daemon network.
 """
 
 import threading
+import Queue
 import uuid
 import hashlib
 
@@ -44,6 +45,45 @@ import rsb.transport
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
 
 import rsb.transport.conversion as conversion
+
+
+class Notification(object):
+    """
+    Superclass for incoming and outgoing notifications.
+
+    .. codeauthor:: jmoringe
+    """
+
+    def __init__(self, scope, wireSchema, serializedPayload, notification):
+        self.scope = scope
+        self.wireSchema = wireSchema
+        self.serializedPayload = serializedPayload
+        self.notification = notification
+
+
+class IncomingNotification(Notification):
+    """
+    Specialized class for representing incoming notifications.
+
+    .. codeauthor:: jmoringe
+    """
+    pass
+
+
+class OutgoingNotification(Notification):
+    """
+    Specialized class for representing outgoing notifications.
+
+    .. codeauthor:: jmoringe
+    """
+
+    def __init__(self, scope, wireSchema, serializedPayload, notification,
+                 serviceType, groups, fragments):
+        super(OutgoingNotification, self) \
+            .__init__(scope, wireSchema, serializedPayload, notification)
+        self.serviceType = serviceType
+        self.groups = groups
+        self.fragments = fragments
 
 
 def makeKey(notification):
@@ -220,7 +260,12 @@ class DeserializingHandler(object):
             fragment.num_data_parts,
             len(fragment.notification.data))
 
-        return self.__assemblyPool.add(fragment)
+        result = self.__assemblyPool.add(fragment)
+        if result is not None:
+            notification, wireData, wireSchema = result
+            return IncomingNotification(
+                rsb.Scope(notification.scope),
+                wireSchema, wireData, notification)
 
 
 class SpreadReceiverTask(object):
@@ -276,7 +321,8 @@ class SpreadReceiverTask(object):
             try:
                 notification \
                     = self.__deserializingHandler.handleMessage(message)
-                self.__observerAction(notification)
+                if notification is not None:
+                    self.__observerAction(notification)
             except Exception, e:
                 self.__logger.exception("Error processing new event")
                 raise e
@@ -344,6 +390,149 @@ class Memberships(object):
             self.__groups[group] = count - 1
 
 
+class Bus(object):
+    """
+    Manages a Spread connection and connectors, distributing
+    notifications.
+
+    Notifications received via the Spread connection are dispatched to
+    :class:`InPushConnectors <InPushConnector>` and
+    :class:`InPullConnectors <InPullConnector>` with matching scopes.
+
+    Notifications sent through :class:`OutConnectors <OutConnector>`
+    are sent via the Spread connection and dispatched to in-direction
+    connectors with matching scopes.
+
+    ..  codeauthor:: jmoringe
+    """
+
+    def __init__(self, connection):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__active = False
+        self.__refs = 1
+
+        self.__connection = connection
+        self.__memberships = Memberships(connection)
+
+        self.__receiverTask = None
+        self.__receiverThread = None
+
+        self.__dispatcher = rsb.eventprocessing.ScopeDispatcher()
+
+        self.__lock = threading.Lock()
+
+    def isActive(self):
+        return self.__active
+
+    active = property(isActive)
+
+    def activate(self):
+        self.__logger.info("Activating")
+
+        self.__connection.activate()
+
+        self.__receiveTask = SpreadReceiverTask(self.__connection,
+                                                self._handleIncomingNotification)
+        self.__receiveThread = threading.Thread(target=self.__receiveTask)
+        self.__receiveThread.start()
+
+        self.__active = True
+
+    def deactivate(self):
+        self.__logger.info("Deactivating")
+
+        self.__active = False
+
+        self.__receiveTask.interrupt()
+        self.__receiveThread.join(timeout=1)
+        self.__receiveThread = None
+        self.__receiveTask = None
+
+        self.__connection.deactivate()
+
+    def ref(self):
+        """
+        Increases the reference count by 1, keeping the object alive at
+        least until the corresponding :meth:`unref` call.
+        """
+        with self.__lock:
+            self.__logger.info("Incrementing reference count %d -> %d",
+                               self.__refs, self.__refs + 1)
+
+            if self.__refs == 0:
+                return False
+            self.__refs += 1
+            return True
+
+    def unref(self):
+        """
+        Decreases the reference count by 1 after a previous
+        :meth:`ref` call.
+
+        If this causes the reference count to reach 0, the object
+        deactivates itself.
+        """
+        with self.__lock:
+            self.__logger.info("Decrementing reference count %d -> %d",
+                               self.__refs, self.__refs - 1)
+
+            self.__refs -= 1
+            if self.__refs == 0:
+                self.deactivate()
+
+    def addSink(self, scope, sink):
+        """
+        Register `sink` for events matching `scope`.
+
+        Incoming and outgoing events matching `scope` will be
+        dispatched to `sink`.
+        """
+        with self.__lock:
+            self.__dispatcher.addSink(scope, sink)
+
+            self.__memberships.join(GroupNameCache.groupName(scope))
+
+    def removeSink(self, scope, sink):
+        """
+        Unregister `sink` for events matching `scope`.
+
+        Incoming and outgoing events matching `scope` will no longer
+        be dispatched to `sink`.
+        """
+        with self.__lock:
+            self.__memberships.leave(GroupNameCache.groupName(scope))
+
+            self.__dispatcher.addSink(scope, sink)
+
+    def _handleIncomingNotification(self, notification):
+        with self.__lock:
+            scope = notification.scope
+            for sink in self.__dispatcher.matchingSinks(scope):
+                sink.handleNotification(notification)
+
+    def handleOutgoingNotification(self, notification):
+        """
+        Send `notification` via the bus object.
+
+        Transmits `notification` through the Spread connection managed
+        by the bus object and dispatches `notification` to connectors
+        attaches to the bus object.
+        """
+        with self.__lock:
+            for fragment in notification.fragments:
+                self.__connection.send(
+                    notification.serviceType,
+                    notification.groups,
+                    fragment.SerializeToString())
+            for sink in self.__dispatcher.matchingSinks(notification.scope):
+                sink.handleNotification(notification)
+
+    def getTransportURL(self):
+        return 'spread://' \
+            + self.__connection.host + ':' + str(self.__connection.port)
+
+
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
     """
@@ -356,11 +545,11 @@ class Connector(rsb.transport.Connector,
 
     MAX_MSG_LENGTH = 100000
 
-    def __init__(self, connection, **kwargs):
+    def __init__(self, bus, **kwargs):
         super(Connector, self).__init__(wireType=bytearray, **kwargs)
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
-        self.__connection = connection
+        self.__bus = bus
 
         self.__active = False
 
@@ -371,10 +560,10 @@ class Connector(rsb.transport.Connector,
     def setQualityOfServiceSpec(self, qos):
         pass
 
-    def getConnection(self):
-        return self.__connection
+    def getBus(self):
+        return self.__bus
 
-    connection = property(getConnection)
+    bus = property(getBus)
 
     def isActive(self):
         return self.__active
@@ -385,14 +574,7 @@ class Connector(rsb.transport.Connector,
         if self.__active:
             raise RuntimeError('Trying to activate active Connector')
 
-        self.__logger.info("Activating spread connector with connection %s",
-                           self.__connection)
-
-        try:
-            self.__connection.activate()
-        except Exception, e:
-            raise RuntimeError('Could not connect SpreadConnection "%s": %s' %
-                               (self.__connection, e))
+        self.__logger.info('Activating')
 
         self.__active = True
 
@@ -400,18 +582,16 @@ class Connector(rsb.transport.Connector,
         if not self.__active:
             raise RuntimeError('Trying to deactivate inactive Connector')
 
-        self.__logger.info("Deactivating spread connector")
+        self.__logger.info('Deactivating')
+
+        self.bus.unref()
 
         self.__active = False
 
-        self.__connection.deactivate()
-
-        self.__logger.debug("SpreadConnector deactivated")
+        self.__logger.debug('Deactivated')
 
     def getTransportURL(self):
-        return 'spread://' \
-            + self.__connection.getHost()  \
-            + ':' + str(self.__connection.getPort())
+        return self.__bus.getTransportURL()
 
 
 class InConnector(Connector):
@@ -419,7 +599,6 @@ class InConnector(Connector):
         super(InConnector, self).__init__(**kwargs)
 
         self.__scope = None
-        self.__memberships = Memberships(self.connection)
 
     def setScope(self, scope):
         assert not self.active
@@ -429,27 +608,26 @@ class InConnector(Connector):
         super(InConnector, self).activate()
 
         assert self.__scope is not None
-        self.__memberships.join(GroupNameCache.groupName(self.__scope))
+        self.bus.addSink(self.__scope, self)
 
     def deactivate(self):
-        self.__memberships.leave(GroupNameCache.groupName(self.__scope))
+        self.bus.removeSink(self.__scope, self)
 
         super(InConnector, self).deactivate()
 
     def notificationToEvent(self, notification):
-        if notification is None:
-            return None
-
-        notification, joinedData, wireSchema = notification
-
         # Create event from (potentially assembled) notification(s)
-        converter = self.converterMap.getConverterForWireSchema(wireSchema)
+        converter = self.converterMap.getConverterForWireSchema(
+            notification.wireSchema)
         try:
             return conversion.notificationToEvent(
-                notification, joinedData, wireSchema, converter)
+                notification.notification,
+                notification.serializedPayload,
+                notification.wireSchema,
+                converter)
         except Exception:
-            __handleLogger.exception("Unable to decode event. "
-                                     "Ignoring and continuing.")
+            self.__logger.exception("Unable to decode event. "
+                                    "Ignoring and continuing.")
             return None
 
 
@@ -458,28 +636,9 @@ class InPushConnector(InConnector,
     def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__receiveThread = None
-        self.__receiveTask = None
-
         self.__observerAction = None
 
         super(InPushConnector, self).__init__(**kwargs)
-
-    def activate(self):
-        super(InPushConnector, self).activate()
-
-        self.__receiveTask = SpreadReceiverTask(self.connection,
-                                                self._handleIncomingNotification)
-        self.__receiveThread = threading.Thread(target=self.__receiveTask)
-        self.__receiveThread.start()
-
-    def deactivate(self):
-        self.__receiveTask.interrupt()
-        self.__receiveThread.join(timeout=1)
-        self.__receiveThread = None
-        self.__receiveTask = None
-
-        super(InPushConnector, self).deactivate()
 
     def filterNotify(self, theFilter, action):
         self.__logger.debug("Ignoring filter %s with action %s",
@@ -488,7 +647,7 @@ class InPushConnector(InConnector,
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
 
-    def _handleIncomingNotification(self, notification):
+    def handleNotification(self, notification):
         event = self.notificationToEvent(notification)
         if event is not None and self.__observerAction:
             self.__observerAction(event)
@@ -501,31 +660,26 @@ class InPullConnector(InConnector,
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__deserializingHandler = DeserializingHandler()
+        self.__queue = Queue.Queue()
 
     def raiseEvent(self, block):
         self.__logger.debug("raiseEvent starts")
 
         event = None
         while event is None:
-            self.__logger.debug("next loop iteration")
-            if not block:
-                if self.connection._SpreadConnection__mailbox.poll() <= 0:
-                    return None
-
-            message = self.connection.receive()
-            if not hasattr(message, 'msg_type'):
-                continue
-
-            notification = self.__deserializingHandler.handleMessage(message)
-            if notification is None:
-                continue
+            try:
+                notification = self.__queue.get(block=block)
+            except Queue.Empty:
+                return
 
             event = self.notificationToEvent(notification)
 
         self.__logger.debug("Receive loop exits")
 
         return event
+
+    def handleNotification(self, notification):
+        self.__queue.put(notification)
 
 
 class OutConnector(Connector,
@@ -551,30 +705,26 @@ class OutConnector(Connector,
 
         # Create one or more notification fragments for the event
         event.getMetaData().setSendTime()
+
+        #
+        groups = self.__groupNameCache.scopeToGroups(event.scope)
+
+        #
         converter = self.getConverterForDataType(event.type)
-        fragments = conversion.eventToNotifications(
-            event, converter, self.MAX_MSG_LENGTH)
+        wireData, wireSchema = converter.serialize(event.data)
+        fragments = conversion.eventAndWireDataToNotifications(
+            event, wireData, wireSchema, self.MAX_MSG_LENGTH)
 
-        # Send fragments
-        self.__logger.debug("Sending %u fragments", len(fragments))
-        for (i, fragment) in enumerate(fragments):
-            serialized = fragment.SerializeToString()
-            self.__logger.debug("Sending fragment %u of length %u",
-                                i + 1, len(serialized))
+        notification = OutgoingNotification(
+            event.scope,
+            wireSchema,
+            wireData,
+            fragments[0].notification,
+            self.__serviceType,
+            groups,
+            fragments)
 
-            groupNames = self.__groupNameCache.scopeToGroups(event.scope)
-            self.__logger.debug("Sending to groupNames %s", groupNames)
-
-            sent = self.connection.send(self.__serviceType,
-                                        groupNames,
-                                        serialized)
-            if (sent > 0):
-                self.__logger.debug("Message sent successfully (bytes = %i)",
-                                    sent)
-            else:
-                # TODO(jmoringe): propagate error
-                self.__logger.warning(
-                    "Error sending message, status code = %s", sent)
+        self.bus.handleOutgoingNotification(notification)
 
     def computeServiceType(self, qos):
         self.__logger.debug("Adapting service type for QoS %s", qos)
@@ -599,7 +749,14 @@ class TransportFactory(rsb.transport.TransportFactory):
     :obj:`TransportFactory` implementation for the spread transport.
 
     .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
+
+    def __init__(self):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__buses = dict()
+        self.__lock = threading.Lock()
 
     def getName(self):
         return "spread"
@@ -617,17 +774,45 @@ class TransportFactory(rsb.transport.TransportFactory):
         else:
             return port
 
+    def obtainBus(self, options):
+        daemonName = self.__createDaemonName(options)
+        self.__logger.debug("Obtaining bus for daemon name '%s'",
+                            daemonName)
+        with self.__lock:
+            # Try to find an existing bus for the given Spread daemon
+            # name.
+            bus = self.__buses.get(daemonName)
+            if bus is not None:
+                # If there is a bus, try to atomically test and
+                # increment the reference count. If this fails, the
+                # bus became unreferenced and deactivate in the
+                # meantime and cannot be used.
+                if not bus.ref():
+                    bus = None
+                self.__logger.debug("Found bus %s", bus)
+            # If there was not existing bus or we lost the race to
+            # reference it, create and store a new one. The bus is
+            # created with a reference count of 1 so we don't have to
+            # ref() it here.
+            if bus is None:
+                self.__logger.info("Creating new bus for daemon name '%s'",
+                                   daemonName)
+                bus = Bus(SpreadConnection(daemonName))
+                bus.activate()
+                self.__buses[daemonName] = bus
+            return bus
+
     def createInPushConnector(self, converters, options):
-        return InPushConnector(connection=SpreadConnection(
-            self.__createDaemonName(options)), converters=converters)
+        return InPushConnector(bus=self.obtainBus(options),
+                               converters=converters)
 
     def createInPullConnector(self, converters, options):
-        return InPullConnector(connection=SpreadConnection(
-            self.__createDaemonName(options)), converters=converters)
+        return InPullConnector(bus=self.obtainBus(options),
+                               converters=converters)
 
     def createOutConnector(self, converters, options):
-        return OutConnector(connection=SpreadConnection(
-            self.__createDaemonName(options)), converters=converters)
+        return OutConnector(bus=self.obtainBus(options),
+                            converters=converters)
 
 
 def initialize():
