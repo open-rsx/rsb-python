@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011, 2012, 2015 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -176,28 +176,32 @@ class SpreadConnectorTest(unittest.TestCase):
         inConnector = getConnector(goodScope, clazz=rsbspread.InPushConnector)
         outConnector = getConnector(goodScope, clazz=rsbspread.OutConnector)
 
-        receiver = SettingReceiver(goodScope)
-        inConnector.setObserverAction(receiver)
+        try:
+            receiver = SettingReceiver(goodScope)
+            inConnector.setObserverAction(receiver)
 
-        # first an event that we do not want
-        event = Event(EventId(uuid.uuid4(), 0))
-        event.scope = Scope("/notGood")
-        event.data = "".join(random.choice(
-            string.ascii_uppercase + string.ascii_lowercase + string.digits)
-            for i in range(300502))
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
-        outConnector.handle(event)
+            # first an event that we do not want
+            event = Event(EventId(uuid.uuid4(), 0))
+            event.scope = Scope("/notGood")
+            event.data = "".join(random.choice(
+                string.ascii_uppercase + string.ascii_lowercase + string.digits)
+                for i in range(300502))
+            event.type = str
+            event.metaData.senderId = uuid.uuid4()
+            outConnector.handle(event)
 
-        # and then a desired event
-        event.scope = goodScope
-        outConnector.handle(event)
+            # and then a desired event
+            event.scope = goodScope
+            outConnector.handle(event)
 
-        with receiver.resultCondition:
-            receiver.resultCondition.wait(10)
-            if receiver.resultEvent is None:
-                self.fail("Did not receive an event")
-            # self.assertEqual(receiver.resultEvent, event)
+            with receiver.resultCondition:
+                receiver.resultCondition.wait(10)
+                if receiver.resultEvent is None:
+                    self.fail("Did not receive an event")
+                # self.assertEqual(receiver.resultEvent, event)
+        finally:
+            inConnector.deactivate()
+            outConnector.deactivate()
 
 
 class SpreadTransportTest(TransportCheck, unittest.TestCase):
