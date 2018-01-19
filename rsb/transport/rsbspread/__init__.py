@@ -241,19 +241,16 @@ class SpreadReceiverTask(object):
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__interrupted = False
-        self.__interruptionLock = threading.RLock()
-
         self.__mailbox = mailbox
+
         self.__observerAction = observerAction
         self.__observerActionLock = RLock()
 
         self.__converterMap = converterMap
         assert(converterMap.getWireType() == bytearray)
 
-        self.__taskId = uuid.uuid1()
-        # narf, spread groups are 32 chars long but 0-terminated... truncate id
-        self.__wakeupGroup = str(self.__taskId).replace("-", "")[:-1]
+        # Spread groups are 32 chars long and 0-terminated.
+        self.__wakeupGroup = str(uuid.uuid1()).replace("-", "")[:-1]
 
         self.__assemblyPool = AssemblyPool()
 
@@ -268,14 +265,6 @@ class SpreadReceiverTask(object):
 
         while True:
 
-            # check interruption
-            self.__interruptionLock.acquire()
-            interrupted = self.__interrupted
-            self.__interruptionLock.release()
-
-            if interrupted:
-                break
-
             self.__logger.debug("waiting for new messages")
             message = self.__mailbox.receive()
             self.__logger.debug("received message %s", message)
@@ -285,7 +274,7 @@ class SpreadReceiverTask(object):
                 if hasattr(message, 'msg_type'):
                     # Break out of receive loop if deactivating.
                     if self.__wakeupGroup in message.groups:
-                        continue
+                        break
 
                     event = handleReceivedRegularMsg(
                         message, self.__assemblyPool, self.__converterMap)
@@ -295,12 +284,6 @@ class SpreadReceiverTask(object):
                             if self.__observerAction:
                                 self.__observerAction(event)
 
-                # Process membership message
-                elif isinstance(message, spread.MembershipMsgType):
-                    self.__logger.info(
-                        "Received membership message for group `%s'",
-                        message.group)
-
             except Exception, e:
                 self.__logger.exception("Error processing new event")
                 raise e
@@ -309,11 +292,8 @@ class SpreadReceiverTask(object):
         self.__mailbox.leave(self.__wakeupGroup)
 
     def interrupt(self):
-        self.__interruptionLock.acquire()
-        self.__interrupted = True
-        self.__interruptionLock.release()
-
-        # send the interruption message to wake up receive as mentioned above
+        # send the interruption message to make the
+        # __mailbox.receive() call in __call__ return.
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
 
     def setObserverAction(self, action):
