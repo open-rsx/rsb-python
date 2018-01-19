@@ -290,6 +290,10 @@ class TransportCheck(object):
                         % receiver.scope)
                 self.assertEqual(receiver.resultEvent.data, data)
 
+        for listener in listeners:
+            listener.deactivate()
+        informer.deactivate()
+
     def testSendTimeAdaption(self):
         scope = Scope("/notGood")
         connector = self._getOutConnector(scope)
