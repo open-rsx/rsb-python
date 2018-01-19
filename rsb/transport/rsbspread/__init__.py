@@ -282,8 +282,8 @@ class SpreadReceiverTask(object):
             try:
 
                 # Process regular message
-                if isinstance(message, spread.RegularMsgType):
-                    # ignore the deactivate wakeup message
+                if hasattr(message, 'msg_type'):
+                    # Break out of receive loop if deactivating.
                     if self.__wakeupGroup in message.groups:
                         continue
 
@@ -453,7 +453,6 @@ class InPushConnector(Connector,
                                                 self.__observerAction,
                                                 self.converterMap)
         self.__receiveThread = threading.Thread(target=self.__receiveTask)
-        self.__receiveThread.setDaemon(True)
         self.__receiveThread.start()
 
     def deactivate(self):

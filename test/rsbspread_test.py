@@ -91,7 +91,8 @@ def getConnector(scope,
 class SpreadConnectorTest(unittest.TestCase):
 
     class DummyMessage(object):
-        pass
+        def __init__(self):
+            self.msg_type = 42
 
     class DummyConnection(object):
 
