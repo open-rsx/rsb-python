@@ -244,7 +244,6 @@ class SpreadReceiverTask(object):
         self.__mailbox = mailbox
 
         self.__observerAction = observerAction
-        self.__observerActionLock = RLock()
 
         self.__converterMap = converterMap
         assert(converterMap.getWireType() == bytearray)
@@ -280,9 +279,7 @@ class SpreadReceiverTask(object):
                         message, self.__assemblyPool, self.__converterMap)
 
                     if event:
-                        with self.__observerActionLock:
-                            if self.__observerAction:
-                                self.__observerAction(event)
+                        self.__observerAction(event)
 
             except Exception, e:
                 self.__logger.exception("Error processing new event")
@@ -295,10 +292,6 @@ class SpreadReceiverTask(object):
         # send the interruption message to make the
         # __mailbox.receive() call in __call__ return.
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
-
-    def setObserverAction(self, action):
-        with self.__observerActionLock:
-            self.__observerAction = action
 
 
 class Connector(rsb.transport.Connector,
@@ -430,7 +423,7 @@ class InPushConnector(Connector,
         self.connection.join(self._groupName(self.__scope))
 
         self.__receiveTask = SpreadReceiverTask(self.connection,
-                                                self.__observerAction,
+                                                self._handleIncomingEvent,
                                                 self.converterMap)
         self.__receiveThread = threading.Thread(target=self.__receiveTask)
         self.__receiveThread.start()
@@ -449,13 +442,10 @@ class InPushConnector(Connector,
 
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
-        if self.__receiveTask is not None:
-            self.__logger.debug("Passing observer %s to receive task",
-                                observerAction)
-            self.__receiveTask.setObserverAction(observerAction)
-        else:
-            self.__logger.debug("Storing observer %s until activation",
-                                observerAction)
+
+    def _handleIncomingEvent(self, event):
+        if self.__observerAction:
+            self.__observerAction(event)
 
 
 class InPullConnector(Connector,
