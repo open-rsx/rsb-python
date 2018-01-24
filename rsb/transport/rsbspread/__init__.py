@@ -370,7 +370,29 @@ class Connector(rsb.transport.Connector,
             + ':' + str(self.__connection.getPort())
 
 
-class InPushConnector(Connector,
+class InConnector(Connector):
+    def __init__(self, **kwargs):
+        self.__scope = None
+
+        super(InConnector, self).__init__(**kwargs)
+
+    def setScope(self, scope):
+        assert not self.active
+        self.__scope = scope
+
+    def activate(self):
+        super(InConnector, self).activate()
+
+        assert self.__scope is not None
+        self.connection.join(self._groupName(self.__scope))
+
+    def deactivate(self):
+        self.connection.leave(self._groupName(self.__scope))
+
+        super(InConnector, self).deactivate()
+
+
+class InPushConnector(InConnector,
                       rsb.transport.InPushConnector):
     def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -379,19 +401,10 @@ class InPushConnector(Connector,
         self.__receiveTask = None
         self.__observerAction = None
 
-        self.__scope = None
-
         super(InPushConnector, self).__init__(**kwargs)
-
-    def setScope(self, scope):
-        self.__logger.debug("Got new scope %s", scope)
-        self.__scope = scope
 
     def activate(self):
         super(InPushConnector, self).activate()
-
-        assert self.__scope is not None
-        self.connection.join(self._groupName(self.__scope))
 
         self.__receiveTask = SpreadReceiverTask(self.connection,
                                                 self._handleIncomingEvent,
@@ -419,30 +432,14 @@ class InPushConnector(Connector,
             self.__observerAction(event)
 
 
-class InPullConnector(Connector,
+class InPullConnector(InConnector,
                       rsb.transport.InPullConnector):
     def __init__(self, **kwargs):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
-        self.__scope = None
 
         self.__assemblyPool = AssemblyPool()
 
         super(InPullConnector, self).__init__(**kwargs)
-
-    def setScope(self, scope):
-        self.__logger.debug("Got new scope %s", scope)
-        self.__scope = scope
-
-    def activate(self):
-        super(InPullConnector, self).activate()
-
-        assert self.__scope is not None
-        self.connection.join(self._groupName(self.__scope))
-
-    def deactivate(self):
-        self.connection.leave(self._groupName(self.__scope))
-
-        super(InPullConnector, self).deactivate()
 
     def raiseEvent(self, block):
         self.__logger.debug("raiseEvent starts")
