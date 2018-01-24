@@ -451,7 +451,7 @@ class InPullConnector(InConnector,
                 if self.connection.poll() <= 0:
                     return None
             message = self.connection.receive()
-            if not isinstance(message, spread.RegularMsgType):
+            if not hasattr(message, 'msg_type'):
                 continue
             event = handleReceivedRegularMsg(
                 message, self.__assemblyPool, self.converterMap)
