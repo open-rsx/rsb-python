@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2016 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -314,11 +314,12 @@ class Connector(rsb.transport.Connector,
 
         self.__active = False
 
-        self.setQualityOfServiceSpec(rsb.QualityOfServiceSpec())
-
     def __del__(self):
         if self.__active:
             self.deactivate()
+
+    def setQualityOfServiceSpec(self, qos):
+        pass
 
     def getConnection(self):
         return self.__connection
@@ -329,11 +330,6 @@ class Connector(rsb.transport.Connector,
         return self.__active
 
     active = property(isActive)
-
-    def _getMsgType(self):
-        return self.__msgType
-
-    _msgType = property(_getMsgType)
 
     def activate(self):
         if self.__active:
@@ -367,31 +363,6 @@ class Connector(rsb.transport.Connector,
         hashSum = hashlib.md5()
         hashSum.update(scope.toString())
         return hashSum.hexdigest()[:-1]
-
-    def setQualityOfServiceSpec(self, qos):
-        self.__logger.debug("Adapting service type for QoS %s", qos)
-        if qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE \
-           and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
-            self.__msgType = spread.UNRELIABLE_MESS
-            self.__logger.debug("Chosen service type is UNRELIABLE_MESS,  value = %s",
-                                self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE \
-             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
-            self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s",
-                                self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE \
-             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
-            self.__msgType = spread.RELIABLE_MESS
-            self.__logger.debug("Chosen service type is RELIABLE_MESS,  value = %s",
-                                self.__msgType)
-        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE \
-             and qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
-            self.__msgType = spread.FIFO_MESS
-            self.__logger.debug("Chosen service type is FIFO_MESS,  value = %s",
-                                self.__msgType)
-        else:
-            assert(False)
 
     def getTransportURL(self):
         return 'spread://' \
@@ -502,6 +473,11 @@ class OutConnector(Connector,
 
         super(OutConnector, self).__init__(**kwargs)
 
+        self.__serviceType = spread.FIFO_MESS
+
+    def setQualityOfServiceSpec(self, qos):
+        self.__serviceType = self.computeServiceType(qos)
+
     def handle(self, event):
         self.__logger.debug("Sending event: %s", event)
 
@@ -522,13 +498,12 @@ class OutConnector(Connector,
             self.__logger.debug("Sending fragment %u of length %u",
                                 i + 1, len(serialized))
 
-            # TODO respect QoS
             scopes = event.scope.superScopes(True)
             groupNames = [self._groupName(scope) for scope in scopes]
             self.__logger.debug("Sending to scopes %s which are groupNames %s",
                                 scopes, groupNames)
 
-            sent = self.connection.multigroup_multicast(self._msgType,
+            sent = self.connection.multigroup_multicast(self.__serviceType,
                                                         tuple(groupNames),
                                                         serialized)
             if (sent > 0):
@@ -538,6 +513,23 @@ class OutConnector(Connector,
                 # TODO(jmoringe): propagate error
                 self.__logger.warning(
                     "Error sending message, status code = %s", sent)
+
+    def computeServiceType(self, qos):
+        self.__logger.debug("Adapting service type for QoS %s", qos)
+
+        if qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.UNRELIABLE:
+            if qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
+                serviceType = spread.UNRELIABLE_MESS
+            elif qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
+                serviceType = spread.FIFO_MESS
+        elif qos.getReliability() == rsb.QualityOfServiceSpec.Reliability.RELIABLE:
+            if qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.UNORDERED:
+                serviceType = spread.RELIABLE_MESS
+            elif qos.getOrdering() == rsb.QualityOfServiceSpec.Ordering.ORDERED:
+                serviceType = spread.FIFO_MESS
+
+        self.__logger.debug("Service type for %s is %s", qos, serviceType)
+        return serviceType
 
 
 class TransportFactory(rsb.transport.TransportFactory):
