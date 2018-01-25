@@ -32,23 +32,17 @@ which uses a multicased-based daemon network.
 """
 
 import threading
-from threading import RLock
 import uuid
 import hashlib
-import math
 import logging
-import time
 
 import spread
 
 import rsb
 import rsb.util
-import rsb.filter
 import rsb.transport
-import rsb.converter
 
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
-from google.protobuf.message import DecodeError
 
 import rsb.transport.conversion as conversion
 
