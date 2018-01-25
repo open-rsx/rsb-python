@@ -181,36 +181,47 @@ class RefCountingSpreadConnection(SpreadConnection):
                 SpreadConnection.deactivate(self)
 
 
-__handleLogger = logging.getLogger("rsb.rsbspread.handleReceivedRegularMsg")
-def handleReceivedRegularMsg(message, assemblyPool, converterMap):
-    try:
+class DeserializingHandler(object):
+    """
+    Assembles notification fragments into complete Notifications.
+
+    .. codeauthor:: jmoringe
+    """
+    def __init__(self):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__assemblyPool = AssemblyPool()
+
+    def handleMessage(self, message):
+        """
+        Maybe returns notification extracted from `message`.
+
+        If `message` is one part of a fragmented notification for
+        which some parts are still pending, a complete notification
+        cannot be constructed and ``None`` is returned.
+
+        Args:
+            message: The received Spread message.
+
+        Returns:
+            notification: The assembled notification or ``None``.
+        """
+
+        # Only handle regular messages.
+        if not hasattr(message, 'msg_type'):
+            return None
+
         fragment = FragmentedNotification()
         fragment.ParseFromString(message.message)
-    except DecodeError:
-        __handleLogger.exception("Error decoding notification")
-        return None
 
-    if __handleLogger.isEnabledFor(logging.DEBUG):
-        __handleLogger.debug(
+        self.__logger.debug(
             "Received notification fragment "
             "from bus (%s/%s), data length: %s",
             fragment.data_part,
             fragment.num_data_parts,
             len(fragment.notification.data))
 
-    assembled = assemblyPool.add(fragment)
-    if assembled:
-        notification, joinedData, wireSchema = assembled
-        # Create event from (potentially assembled)
-        # notification(s)
-        converter = converterMap.getConverterForWireSchema(wireSchema)
-        try:
-            return conversion.notificationToEvent(
-                notification, joinedData, wireSchema, converter)
-        except Exception:
-            __handleLogger.exception("Unable to decode event. "
-                                     "Ignoring and continuing.")
-            return None
+        return self.__assemblyPool.add(fragment)
 
 
 class SpreadReceiverTask(object):
@@ -220,7 +231,7 @@ class SpreadReceiverTask(object):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, mailbox, observerAction, converterMap):
+    def __init__(self, mailbox, observerAction):
         """
         Constructor.
 
@@ -229,23 +240,17 @@ class SpreadReceiverTask(object):
                 spread mailbox to receive from
             observerAction:
                 callable to execute if a new event is received
-            converterMap:
-                converters for data
         """
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
         self.__mailbox = mailbox
-
-        self.__observerAction = observerAction
-
-        self.__converterMap = converterMap
-        assert(converterMap.getWireType() == bytearray)
-
         # Spread groups are 32 chars long and 0-terminated.
         self.__wakeupGroup = str(uuid.uuid1()).replace("-", "")[:-1]
 
-        self.__assemblyPool = AssemblyPool()
+        self.__deserializingHandler = DeserializingHandler()
+
+        self.__observerAction = observerAction
 
     def __call__(self):
 
@@ -261,20 +266,16 @@ class SpreadReceiverTask(object):
             self.__logger.debug("waiting for new messages")
             message = self.__mailbox.receive()
             self.__logger.debug("received message %s", message)
+
+            # Break out of receive loop if deactivating.
+            if hasattr(message, 'msg_type') \
+               and self.__wakeupGroup in message.groups:
+                break
+
             try:
-
-                # Process regular message
-                if hasattr(message, 'msg_type'):
-                    # Break out of receive loop if deactivating.
-                    if self.__wakeupGroup in message.groups:
-                        break
-
-                    event = handleReceivedRegularMsg(
-                        message, self.__assemblyPool, self.__converterMap)
-
-                    if event:
-                        self.__observerAction(event)
-
+                notification \
+                    = self.__deserializingHandler.handleMessage(message)
+                self.__observerAction(notification)
             except Exception, e:
                 self.__logger.exception("Error processing new event")
                 raise e
@@ -419,6 +420,22 @@ class InConnector(Connector):
 
         super(InConnector, self).deactivate()
 
+    def notificationToEvent(self, notification):
+        if notification is None:
+            return None
+
+        notification, joinedData, wireSchema = notification
+
+        # Create event from (potentially assembled) notification(s)
+        converter = self.converterMap.getConverterForWireSchema(wireSchema)
+        try:
+            return conversion.notificationToEvent(
+                notification, joinedData, wireSchema, converter)
+        except Exception:
+            __handleLogger.exception("Unable to decode event. "
+                                     "Ignoring and continuing.")
+            return None
+
 
 class InPushConnector(InConnector,
                       rsb.transport.InPushConnector):
@@ -427,6 +444,7 @@ class InPushConnector(InConnector,
 
         self.__receiveThread = None
         self.__receiveTask = None
+
         self.__observerAction = None
 
         super(InPushConnector, self).__init__(**kwargs)
@@ -435,8 +453,7 @@ class InPushConnector(InConnector,
         super(InPushConnector, self).activate()
 
         self.__receiveTask = SpreadReceiverTask(self.connection,
-                                                self._handleIncomingEvent,
-                                                self.converterMap)
+                                                self._handleIncomingNotification)
         self.__receiveThread = threading.Thread(target=self.__receiveTask)
         self.__receiveThread.start()
 
@@ -455,36 +472,40 @@ class InPushConnector(InConnector,
     def setObserverAction(self, observerAction):
         self.__observerAction = observerAction
 
-    def _handleIncomingEvent(self, event):
-        if self.__observerAction:
+    def _handleIncomingNotification(self, notification):
+        event = self.notificationToEvent(notification)
+        if event is not None and self.__observerAction:
             self.__observerAction(event)
 
 
 class InPullConnector(InConnector,
                       rsb.transport.InPullConnector):
     def __init__(self, **kwargs):
+        super(InPullConnector, self).__init__(**kwargs)
+
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__assemblyPool = AssemblyPool()
-
-        super(InPullConnector, self).__init__(**kwargs)
+        self.__deserializingHandler = DeserializingHandler()
 
     def raiseEvent(self, block):
         self.__logger.debug("raiseEvent starts")
 
         event = None
-        while not event:
+        while event is None:
             self.__logger.debug("next loop iteration")
             if not block:
                 if self.connection.poll() <= 0:
                     return None
+
             message = self.connection.receive()
             if not hasattr(message, 'msg_type'):
                 continue
-            event = handleReceivedRegularMsg(
-                message, self.__assemblyPool, self.converterMap)
-            self.__logger.debug("handleReceivedRegularMsg retuned type %s",
-                                type(event))
+
+            notification = self.__deserializingHandler.handleMessage(message)
+            if notification is None:
+                continue
+
+            event = self.notificationToEvent(notification)
 
         self.__logger.debug("Receive loop exits")
 
