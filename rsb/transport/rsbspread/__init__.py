@@ -288,6 +288,39 @@ class SpreadReceiverTask(object):
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
 
 
+class Memberships(object):
+    """
+    Reference counting-based management of Spread group membership.
+
+    Not thread-safe.
+
+    .. codeauthor:: jmoringe
+    """
+
+    def __init__(self, connection):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
+        self.__connection = connection
+        self.__groups = dict()
+
+    def join(self, group):
+        if group not in self.__groups:
+            self.__logger.debug("Joining group '%s'", group)
+            self.__groups[group] = 1
+            self.__connection.join(group)
+        else:
+            self.__groups[group] = self.__groups[group] + 1
+
+    def leave(self, group):
+        count = self.__groups[group]
+        if count == 1:
+            self.__logger.debug("Leaving group '%s'", group)
+            del self.__groups[group]
+            self.__connection.leave(group)
+        else:
+            self.__groups[group] = count - 1
+
+
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
     """
@@ -366,9 +399,10 @@ class Connector(rsb.transport.Connector,
 
 class InConnector(Connector):
     def __init__(self, **kwargs):
-        self.__scope = None
-
         super(InConnector, self).__init__(**kwargs)
+
+        self.__scope = None
+        self.__memberships = Memberships(self.connection)
 
     def setScope(self, scope):
         assert not self.active
@@ -378,10 +412,10 @@ class InConnector(Connector):
         super(InConnector, self).activate()
 
         assert self.__scope is not None
-        self.connection.join(self._groupName(self.__scope))
+        self.__memberships.join(self._groupName(self.__scope))
 
     def deactivate(self):
-        self.connection.leave(self._groupName(self.__scope))
+        self.__memberships.leave(self._groupName(self.__scope))
 
         super(InConnector, self).deactivate()
 
