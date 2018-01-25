@@ -155,8 +155,12 @@ class SpreadConnection(object):
         name = self.__daemonName.split('@')
         return name[1] if '@' in name else 'localhost'
 
+    host = property(getHost)
+
     def getPort(self):
         return int(self.__daemonName.split('@')[0])
+
+    port = property(getPort)
 
 
 class RefCountingSpreadConnection(SpreadConnection):
