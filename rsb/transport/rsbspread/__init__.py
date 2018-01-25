@@ -293,6 +293,24 @@ class SpreadReceiverTask(object):
         self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
 
 
+class GroupNameCache(object):
+    """
+    Responsible for turning :ref:`scopes <scope>` into Spread group
+    names.
+
+    .. codeauthor:: jmoringe
+    """
+    def scopeToGroups(self, scope):
+        scopes = scope.superScopes(True)
+        return tuple(self.groupName(scope) for scope in scopes)
+
+    @staticmethod
+    def groupName(scope):
+        hashSum = hashlib.md5()
+        hashSum.update(scope.toString())
+        return hashSum.hexdigest()[:-1]
+
+
 class Memberships(object):
     """
     Reference counting-based management of Spread group membership.
@@ -390,12 +408,6 @@ class Connector(rsb.transport.Connector,
 
         self.__logger.debug("SpreadConnector deactivated")
 
-    @staticmethod
-    def _groupName(scope):
-        hashSum = hashlib.md5()
-        hashSum.update(scope.toString())
-        return hashSum.hexdigest()[:-1]
-
     def getTransportURL(self):
         return 'spread://' \
             + self.__connection.getHost()  \
@@ -417,10 +429,10 @@ class InConnector(Connector):
         super(InConnector, self).activate()
 
         assert self.__scope is not None
-        self.__memberships.join(self._groupName(self.__scope))
+        self.__memberships.join(GroupNameCache.groupName(self.__scope))
 
     def deactivate(self):
-        self.__memberships.leave(self._groupName(self.__scope))
+        self.__memberships.leave(GroupNameCache.groupName(self.__scope))
 
         super(InConnector, self).deactivate()
 
@@ -523,6 +535,8 @@ class OutConnector(Connector,
 
         super(OutConnector, self).__init__(**kwargs)
 
+        self.__groupNameCache = GroupNameCache()
+
         self.__serviceType = spread.FIFO_MESS
 
     def setQualityOfServiceSpec(self, qos):
@@ -548,13 +562,11 @@ class OutConnector(Connector,
             self.__logger.debug("Sending fragment %u of length %u",
                                 i + 1, len(serialized))
 
-            scopes = event.scope.superScopes(True)
-            groupNames = [self._groupName(scope) for scope in scopes]
-            self.__logger.debug("Sending to scopes %s which are groupNames %s",
-                                scopes, groupNames)
+            groupNames = self.__groupNameCache.scopeToGroups(event.scope)
+            self.__logger.debug("Sending to groupNames %s", groupNames)
 
             sent = self.connection.multigroup_multicast(self.__serviceType,
-                                                        tuple(groupNames),
+                                                        groupNames,
                                                         serialized)
             if (sent > 0):
                 self.__logger.debug("Message sent successfully (bytes = %i)",
