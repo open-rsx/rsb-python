@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -46,6 +46,10 @@ import os
 import platform
 import ConfigParser
 
+from rsb.util import getLoggerByClass, Enum
+import rsb.eventprocessing
+
+
 _logger = logging.getLogger('rsb')
 
 
@@ -61,9 +65,6 @@ class _NullHandler(logging.Handler):
         pass
 _logger.addHandler(_NullHandler())
 
-from rsb.util import getLoggerByClass, Enum
-import rsb.eventprocessing
-import rsb.filter
 
 _spreadAvailable = False
 try:
@@ -81,6 +82,7 @@ def haveSpread():
         True if spread is available, else False
     """
     return _spreadAvailable
+
 
 __defaultTransportsRegistered = False
 __transportRegistrationLock = threading.RLock()
