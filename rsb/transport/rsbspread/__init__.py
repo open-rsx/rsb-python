@@ -121,12 +121,15 @@ class AssemblyPool(object):
 
 class SpreadConnection(object):
     """
-    A wrapper around a spread mailbox for some convenience.
+    A wrapper around a Spread mailbox for some convenience.
 
     .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
 
     def __init__(self, daemonName, spreadModule=spread):
+        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+
         self.__daemonName = daemonName
         self.__spreadModule = spreadModule
         self.__mailbox = None
@@ -134,22 +137,37 @@ class SpreadConnection(object):
     def activate(self):
         if self.__mailbox is not None:
             raise ValueError("Already activated")
+        self.__logger.info("Connecting to Spread daemon at '%s'",
+                           self.__daemonName)
         self.__mailbox = self.__spreadModule.connect(self.__daemonName)
 
     def deactivate(self):
         if self.__mailbox is None:
             raise ValueError("Not activated")
+        self.__logger.info("Disconnecting from Spread daemon at '%s'",
+                           self.__daemonName)
         self.__mailbox.disconnect()
         self.__mailbox = None
 
-    def __getattr__(self, name):
-        """
-        Dispatches everything that is not implemented in here to the spread
-        mailbox object.
-        """
-        if self.__mailbox is None:
-            raise ValueError("Not activated")
-        return getattr(self.__mailbox, name)
+    def join(self, group):
+        self.__logger.info("Joining Spread group '%s'", group)
+        self.__mailbox.join(group)
+
+    def leave(self, group):
+        self.__logger.info("Leaving Spread group '%s'", group)
+        self.__mailbox.leave(group)
+
+    def receive(self):
+        return self.__mailbox.receive()
+
+    def send(self, serviceType, groups, payload):
+        self.__mailbox.multigroup_multicast(
+            serviceType | spread.SELF_DISCARD, groups, payload)
+
+    def interrupt(self, group):
+        self.__logger.info("Interrupting receive calls using group '%s'",
+                           group)
+        self.__mailbox.multicast(spread.RELIABLE_MESS, group, "")
 
     def getHost(self):
         name = self.__daemonName.split('@')
@@ -233,22 +251,23 @@ class SpreadReceiverTask(object):
     Thread used to receive messages from a spread connection.
 
     .. codeauthor:: jwienke
+    .. codeauthor:: jmoringe
     """
 
-    def __init__(self, mailbox, observerAction):
+    def __init__(self, connection, observerAction):
         """
         Constructor.
 
         Args:
-            mailbox:
-                spread mailbox to receive from
+            connection:
+                Spread connection to receive messages from.
             observerAction:
-                callable to execute if a new event is received
+                Callable to invoke when a new event is received.
         """
 
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
-        self.__mailbox = mailbox
+        self.__connection = connection
         # Spread groups are 32 chars long and 0-terminated.
         self.__wakeupGroup = str(uuid.uuid1()).replace("-", "")[:-1]
 
@@ -258,18 +277,19 @@ class SpreadReceiverTask(object):
 
     def __call__(self):
 
-        # join my id to receive interrupt messages.
-        # receive cannot have a timeout, hence we need a way to stop receiving
-        # messages on interruption even if no one else sends messages.
-        # Otherwise deactivate blocks until another message is received.
-        self.__mailbox.join(self.__wakeupGroup)
-        self.__logger.debug("joined wakup group %s", self.__wakeupGroup)
+        # Join "wakeup group" to receive interrupt messages.
+        # receive() does have a timeout, hence we need a way to stop
+        # receiving messages on interruption even if no one else sends
+        # messages.  Otherwise deactivate would block until another
+        # message is received.
+        self.__logger.debug("Joining wakeup group %s", self.__wakeupGroup)
+        self.__connection.join(self.__wakeupGroup)
 
         while True:
 
-            self.__logger.debug("waiting for new messages")
-            message = self.__mailbox.receive()
-            self.__logger.debug("received message %s", message)
+            self.__logger.debug("Waiting for messages")
+            message = self.__connection.receive()
+            self.__logger.debug("Received message %s", message)
 
             # Break out of receive loop if deactivating.
             if hasattr(message, 'msg_type') \
@@ -284,13 +304,12 @@ class SpreadReceiverTask(object):
                 self.__logger.exception("Error processing new event")
                 raise e
 
-        # leave task id group to clean up
-        self.__mailbox.leave(self.__wakeupGroup)
+        self.__connection.leave(self.__wakeupGroup)
 
     def interrupt(self):
         # send the interruption message to make the
-        # __mailbox.receive() call in __call__ return.
-        self.__mailbox.multicast(spread.RELIABLE_MESS, self.__wakeupGroup, "")
+        # __connection.receive() call in __call__ return.
+        self.__connection.interrupt(self.__wakeupGroup)
 
 
 class GroupNameCache(object):
@@ -510,7 +529,7 @@ class InPullConnector(InConnector,
         while event is None:
             self.__logger.debug("next loop iteration")
             if not block:
-                if self.connection.poll() <= 0:
+                if self.connection._SpreadConnection__mailbox.poll() <= 0:
                     return None
 
             message = self.connection.receive()
@@ -565,9 +584,9 @@ class OutConnector(Connector,
             groupNames = self.__groupNameCache.scopeToGroups(event.scope)
             self.__logger.debug("Sending to groupNames %s", groupNames)
 
-            sent = self.connection.multigroup_multicast(self.__serviceType,
-                                                        groupNames,
-                                                        serialized)
+            sent = self.connection.send(self.__serviceType,
+                                        groupNames,
+                                        serialized)
             if (sent > 0):
                 self.__logger.debug("Message sent successfully (bytes = %i)",
                                     sent)
