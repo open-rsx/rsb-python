@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -113,6 +113,12 @@ def eventToNotification(notification, event, wireSchema, data, metaData=True):
 def eventToNotifications(event, converter, maxFragmentSize):
     wireData, wireSchema = converter.serialize(event.data)
 
+    return eventAndWireDataToNotifications(
+        event, wireData, wireSchema, maxFragmentSize)
+
+
+def eventAndWireDataToNotifications(event, wireData, wireSchema,
+                                    maxFragmentSize):
     remaining, offset, fragments = len(wireData), 0, []
     for i in itertools.count():
         # Create fragment container
