@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -34,6 +34,7 @@ import socket
 import threading
 
 import rsb.util
+import rsb.eventprocessing
 import rsb.transport
 import rsb.transport.conversion as conversion
 
@@ -275,6 +276,7 @@ class Bus(object):
 
         self.__connections = []
         self.__connectors = []
+        self.__dispatcher = rsb.eventprocessing.ScopeDispatcher()
         self.__lock = threading.RLock()
 
         self.__active = False
@@ -360,6 +362,8 @@ class Bus(object):
         """
         self.__logger.info('Adding connector %s', connector)
         with self.lock:
+            if isinstance(connector, InPushConnector):
+                self.__dispatcher.addSink(connector.scope, connector)
             self.__connectors.append(connector)
 
     def removeConnector(self, connector):
@@ -372,6 +376,8 @@ class Bus(object):
         """
         self.__logger.info('Removing connector %s', connector)
         with self.lock:
+            if isinstance(connector, InPushConnector):
+                self.__dispatcher.removeSink(connector.scope, connector)
             self.__connectors.remove(connector)
             if not self.__connectors:
                 self.__logger.info(
@@ -474,12 +480,8 @@ class Bus(object):
         # 2) The scope of the connector has to be a superscope of
         #    NOTIFICATION's scope
         scope = rsb.Scope(notification.scope)
-        for connector in self.connectors:
-            # TODO connector.direction == 'in' instead of isinstance
-            if isinstance(connector, InPushConnector) \
-               and (connector.scope == scope or
-                    connector.scope.isSuperScopeOf(scope)):
-                connector.handle(notification)
+        for sink in self.__dispatcher.matchingSinks(scope):
+            sink.handle(notification)
 
     def __repr__(self):
         return '<%s %d connection(s) %d connector(s) at 0x%x>' \
