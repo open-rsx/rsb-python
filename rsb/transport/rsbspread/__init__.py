@@ -34,7 +34,6 @@ which uses a multicased-based daemon network.
 import threading
 import uuid
 import hashlib
-import logging
 
 import spread
 
