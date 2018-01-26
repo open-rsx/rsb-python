@@ -347,16 +347,20 @@ class Memberships(object):
 
     def join(self, group):
         if group not in self.__groups:
-            self.__logger.debug("Joining group '%s'", group)
+            self.__logger.debug("Incrementing group '%s', 0 -> 1", group)
             self.__groups[group] = 1
             self.__connection.join(group)
         else:
-            self.__groups[group] = self.__groups[group] + 1
+            count = self.__groups[group]
+            self.__logger.debug("Incrementing group '%s', %d -> %d",
+                                group, count, count + 1)
+            self.__groups[group] = count + 1
 
     def leave(self, group):
         count = self.__groups[group]
+        self.__logger.debug("Decrementing group '%s', %d -> %d",
+                            group, count, count - 1)
         if count == 1:
-            self.__logger.debug("Leaving group '%s'", group)
             del self.__groups[group]
             self.__connection.leave(group)
         else:
