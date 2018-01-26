@@ -1,7 +1,7 @@
 # ============================================================
 #
 # Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -38,6 +38,89 @@ import Queue
 
 import rsb.util
 import rsb.filter
+
+
+class ScopeDispatcher(object):
+    """
+    Maintains a map of :ref:`Scopes <scope>` to sink objects.
+
+    .. codeauthor:: jmoringe
+    """
+    def __init__(self):
+        self.__map = dict()
+
+    def __len__(self):
+        return len(self.__map)
+
+    def __bool__(self):
+        return bool(self.__map)
+
+    def addSink(self, scope, sink):
+        """
+        Associates `sink` to `scope`.
+
+        Args:
+            scope (Scope):
+                The scope to which `sink` should be associated.
+            sink (object):
+                The arbitrary object that should be associated to `scope`.
+        """
+        if scope in self.__map:
+            sinks = self.__map[scope]
+        else:
+            sinks = list()
+            self.__map[scope] = sinks
+
+        sinks.append(sink)
+
+    def removeSink(self, scope, sink):
+        """
+        Disassociates `sink` from `scope`.
+
+        Args:
+            scope (Scope):
+                The scope from which `sink` should be disassociated.
+            sink (object):
+                The arbitrary object that should be disassociated from
+                `scope`.
+        """
+        sinks = self.__map.get(scope)
+        sinks.remove(sink)
+        if not sinks:
+            del self.__map[scope]
+
+    def getSinks(self):
+        """
+        Returns a generator yielding all sinks.
+
+        Yields:
+            sinks:
+                A generator yielding all known sinks in an unspecified
+                order.
+        """
+        for sinks in self.__map.values():
+            for sink in sinks:
+                yield sink
+
+    sinks = property(getSinks)
+
+    def matchingSinks(self, scope):
+        """
+        Returns a generator yielding sinks matching `scope`.
+
+        A sink matches `scope` if it was previously associated to
+        `scope` or one of its super-scopes.
+
+        Yields:
+            sinks:
+                A generator yielding all matching sinks in an
+                unspecified order.
+        """
+        for sink in self.__map.get(scope, []):
+            yield sink
+        for scope in scope.superScopes():
+            for sink in self.__map.get(scope, []):
+                yield sink
 
 
 class BroadcastProcessor(object):

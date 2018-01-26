@@ -34,6 +34,30 @@ from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 import time
 
 
+class ScopeDispatcherTest(unittest.TestCase):
+
+    def testSinks(self):
+        dispatcher = rsb.eventprocessing.ScopeDispatcher()
+        dispatcher.addSink(rsb.Scope('/foo'), 1)
+        dispatcher.addSink(rsb.Scope('/foo'), 2)
+        dispatcher.addSink(rsb.Scope('/bar'), 3)
+        self.assertEqual(set((1, 2, 3)), set(dispatcher.sinks))
+
+    def testMatchingSinks(self):
+        dispatcher = rsb.eventprocessing.ScopeDispatcher()
+        dispatcher.addSink(rsb.Scope('/foo'), 1)
+        dispatcher.addSink(rsb.Scope('/foo'), 2)
+        dispatcher.addSink(rsb.Scope('/bar'), 3)
+
+        def check(scope, expected):
+            self.assertEqual(set(expected),
+                             set(dispatcher.matchingSinks(rsb.Scope(scope))))
+        check("/",        ())
+        check("/foo",     (1, 2))
+        check("/foo/baz", (1, 2))
+        check("/bar",     (3,))
+        check("/bar/fez", (3,))
+
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testMatchingProcess(self):
