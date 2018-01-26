@@ -24,8 +24,8 @@
 # ============================================================
 
 """
-This package contains a transport implementation based on the spread toolkit
-which uses a multicased-based daemon network.
+A transport implementation based on the Spread toolkit which uses a
+multicast-based Daemon network.
 
 .. codeauthor:: jmoringe
 .. codeauthor:: jwienke
