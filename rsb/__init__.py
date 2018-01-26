@@ -2063,6 +2063,26 @@ def _initializeIntrospection():
 
 
 def createParticipant(cls, scope, config, parent=None, **kwargs):
+    """
+    Creates and returns a new participant of type `cls`.
+
+    Args:
+        cls (type):
+            The type of participant that should be created. For
+            example :obj:`Listener`.
+        scope (Scope or accepted by :obj:`Scope` constructor):
+            the scope of the new participant. Can be a :obj:`Scope` object
+            or a string.
+        config (ParticipantConfig):
+            The configuration that should be used by the new participant.
+        parent (Participant or NoneType):
+            ``None`` or the :obj:`Participant` which should be considered the
+            parent of the new participant.
+
+    Returns:
+        Participant:
+            A new :obj:`Participant` object of type `cls`.
+    """
     if config is None:
         config = getDefaultParticipantConfig()
     __registerDefaultTransports()
