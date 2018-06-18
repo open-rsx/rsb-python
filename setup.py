@@ -355,8 +355,7 @@ setup(name='rsb-python',
           protocVersion[1] + 1)],
       setup_requires=['nose>=1.3',
                       'coverage',
-                      'nose-testconfig',
-                      'setuptools-lint'],
+                      'nose-testconfig'],
 
       tests_require=['SpreadModule>=1.5spread4'],
 
