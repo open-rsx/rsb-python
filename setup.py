@@ -206,81 +206,12 @@ class Sdist(sdist):
         sdist.run(self)
 
 
-def defineProjectVersion(majorMinor):
-
-    # first, try to get the required information from git directly and put them
-    # in cache files, which can also be created manually in cases we export an
-    # archive
-
-    def checkedProgramOutput(commandLine, filename):
-        '''
-        Tries to get the stdout of a program and writes it to the specified
-        file in cases where the execution of the program succeeded. Otherwise
-        the file remains untouched.
-        '''
-
-        try:
-            proc = subprocess.Popen(commandLine, stdout=subprocess.PIPE)
-            versionOutput, _ = proc.communicate()
-            if proc.returncode != 0:
-                raise RuntimeError(
-                    'Git process terminated with return code {}'
-                    .format(proc.returncode))
-            if len(versionOutput.strip()) == 0:
-                raise RuntimeError('Git process did not produce output')
-
-            with open(filename, 'w') as f:
-                f.write(versionOutput)
-        except:
-            print('Error calling git. Add git to the PATH.')
-
-    checkedProgramOutput(
-        ['git', 'describe', '--tags', '--match', 'release-*.*', '--long'],
-        'gitversion')
-    checkedProgramOutput(
-        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-        'gitbranch')
-
-    # grab the relevant information from the files
-    patchVersion = '0'
-    lastCommit = 'archive'
-
+def get_git_commit():
     try:
-        gitversion = open('gitversion', 'r').read().strip()
-        versionMatch = re.match('^(.+)-([0-9]+)-(g[0-9a-fA-F]+)$',
-                                gitversion.strip())
-        groups = versionMatch.groups()
-        if len(groups) == 3:
-            patchVersion = groups[1]
-            lastCommit = groups[2]
-        else:
-            print("Unable to extract patch version and last commit "
-                  "from version string '{}'".format(gitversion.strip()))
-    except Exception, e:
-        print('Unable to read from the gitversion file: {}'.format(e))
-
-    gitbranch = None
-    try:
-        gitbranch = open('gitbranch', 'r').read().strip()
-    except:
-        print('Unable to read from the gitbranch file')
-    if gitbranch is not None and \
-            re.match(r'[0-9]+\.[0-9]+', gitbranch.strip()) is not None:
-        print('This is a release branch. Defining ')
-    else:
-        patchVersion = '0'
-        print('Not on a release branch. Skipping patch version')
-
-    # if we were still not successful defining the commit hash, try to get it
-    # using git log
-    if lastCommit == 'archive':
-        p = subprocess.Popen(['git', 'log', '-1', '--pretty=format:g%h'],
-                             stdout=subprocess.PIPE)
-        lastCommitOnline, _ = p.communicate()
-        if p.returncode == 0:
-            lastCommit = str(lastCommitOnline).strip()
-
-    return ('{}.{}'.format(majorMinor, patchVersion), str(lastCommit))
+        return subprocess.check_output(
+            ['git', 'log', '-1', '--pretty=format:g%h'])
+    except subprocess.CalledProcessError:
+        return 'archive'
 
 
 def determineProtocVersion():
@@ -316,7 +247,9 @@ def generateVersionFile(version, commit):
                     '@VERSION@', version).replace(
                         '@COMMIT@', commit))
 
-version, commit = defineProjectVersion('0.19')
+
+version = '1.0.0-dev'
+commit = get_git_commit()
 print('This is version {version}-{commit}'.format(version=version,
                                                   commit=commit))
 generateVersionFile(version, commit)
