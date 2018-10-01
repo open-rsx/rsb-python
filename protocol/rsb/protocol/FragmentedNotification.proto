@@ -1,0 +1,76 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2011 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol;
+
+import "rsb/protocol/Notification.proto";
+
+option java_outer_classname = "FragmentedNotificationType";
+
+/**
+ * A message which wraps the normal Notification and extends it with
+ * fragmentation information.
+ *
+ * This message is, for example, used in the Spread transport. See
+ * https://code.cor-lab.org/projects/rsb/wiki/SpreadProtocol for
+ * information regarding the event <-> notification transformation in
+ * this case.
+ *
+ * @author Michael Goetting <mgoettin@techfak.uni-bielefeld.de>
+ * @author Johannes Wienke <jwienke@techfak.uni-bielefeld.de>
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message FragmentedNotification {
+
+    /**
+     * The original notification in some cases with only required
+     * fields filled.
+     *
+     * The first fragment contains the full meta-data set whereas
+     * subsequent FragmentedNotification s only carry payload chunks
+     * in this field and the event id for association.
+     */
+    required Notification notification            = 1;
+
+    /**
+     * The number of notifications an event was split into.
+     *
+     * Splitting only happens when message size would have been to big
+     * for transmission in a single notification. 1 indicates a
+     * self-contained, i.e. not split, notification.
+     */
+    required  uint32      num_data_parts          = 2 [default = 1];
+
+    /**
+     * The index of the current fragment of a fragmented notification.
+     *
+     * The initial fragment has index 0.
+     */
+    required uint32       data_part               = 3 [default = 0];
+
+}

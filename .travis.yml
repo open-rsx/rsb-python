@@ -1,0 +1,12 @@
+language: python
+python:
+  - 2.7
+before_install:
+  - sudo add-apt-repository http://packages.cor-lab.de/ubuntu/
+  - wget -q http://packages.cor-lab.de/keys/cor-lab.asc -O- | sudo apt-key add -
+  - sudo apt-get update -q
+  - sudo apt-get install spread protobuf-compiler
+install:
+  - pip install tox-travis
+script:
+  - tox

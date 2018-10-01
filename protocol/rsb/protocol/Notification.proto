@@ -1,0 +1,107 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2011 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol;
+
+import "rsb/protocol/EventId.proto";
+import "rsb/protocol/EventMetaData.proto";
+
+option java_outer_classname = "NotificationType";
+
+/**
+ * The Notification message is the wire format and serialization
+ * mechanism used by the RSB Spread transport and other transports.
+ *
+ * Notification messages contain
+ *
+ * * event routing information,
+ * * event payloads
+ * * and optional event meta-data such as timestamps
+ *
+ * See
+ * https://docs.cor-lab.org/rsb-manual/trunk/html/specification-event.html
+ * for more information regarding events.
+ *
+ * @author Sebastian Wrede <swrede@techfak.uni-bielefeld.de>
+ * @author Johannes Wienke <jwienke@techfak.uni-bielefeld.de>
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message Notification {
+
+    // Identity, transportation and routing information fields
+
+    /**
+     * The unique ID of the event, consisting of the unique id of
+     * sending participant and the sequence number of the event.
+     *
+     * The odd field number is a historical artifact.
+     */
+    required EventId     event_id               = 108;
+
+    /**
+     * The scope to which the encoded event was sent.
+     */
+    optional bytes      scope                   = 6;
+
+    /**
+     * An ASCII-string designating the role of this event within a
+     * communication pattern.
+     *
+     * Two such roles could be "REQUEST" and "REPLY" in RPC
+     * communication.
+     *
+     * Note: The bytes type has been chosen to avoid UTF-8 de- and
+     * encoding.
+     */
+    optional bytes      method                  = 14 [default = ""];
+
+    // Data fields
+
+    /**
+     * An ASCII-string designating the wire schema with which the
+     * event payload (in the "data" field) has been serialized.
+     *
+     * Note: The bytes type has been chosen to avoid UTF-8 de- and
+     * encoding.
+     */
+    optional bytes      wire_schema             = 7;
+
+    /**
+     * The serialized payload of the event.
+     */
+    optional bytes      data                    = 9;
+
+    // A collection of id of other events which have in some way
+    // caused this event to be sent.
+    repeated EventId    causes                  = 13;
+
+    /// Meta-data fields
+
+    // meta-data storage
+    optional EventMetaData meta_data            = 15;
+}

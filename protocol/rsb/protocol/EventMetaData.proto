@@ -1,0 +1,123 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2011 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol;
+
+option java_outer_classname = "EventMetaDataType";
+
+/**
+ * Additional user-provided timestamps.
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message UserTime {
+
+    /**
+     * The key is an ASCII-string that determines the meaning of the
+     * timestamp. It can be chosen freely.
+     */
+    required bytes      key                     = 1;
+
+    /**
+     * A timestamp in UTC in microseconds since UNIX epoch.
+     *
+     * http://docs.cor-lab.org/rsb-manual/trunk/html/specification-event.html#timestamps
+     */
+    required uint64     timestamp               = 2;
+
+}
+
+/**
+ * Additional user-provided key-value-style meta data.
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message UserInfo {
+
+    required bytes      key                     = 1;
+
+    required bytes      value                   = 2;
+
+}
+
+/**
+ * A collection of supplemental meta data for an event.
+ *
+ * For details on timestamps see
+ * http://docs.cor-lab.org/rsb-manual/trunk/html/specification-event.html#timestamps
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message EventMetaData {
+
+    /**
+     * A timestamp that is automatically filled with the time the
+     * event instance was created. This should usually reflect the
+     * time at which the notified condition most likely occurred in
+     * the sending process.
+     *
+     * If event instances are reused, this timestamp has to be reset
+     * manually by the client.
+     */
+    required int64      create_time             = 2;
+
+    /**
+     * The time at which the generated notification for an event was
+     * sent on the bus (after serialization).
+     */
+    required int64      send_time               = 3;
+
+    /**
+     * The time at which an event is received by listener in its
+     * encoded form.
+     */
+    optional int64      receive_time            = 4;
+
+    /**
+     * The time at which an event was decoded and will be dispatched
+     * to the client as soon as possible (set directly before passing
+     * it to the client handler).
+     */
+    optional int64      deliver_time            = 5;
+
+    /**
+     * A set of key-value user-defined time-stamps.
+     *
+     * Keys have to be unique.
+     */
+    repeated UserTime   user_times              = 6;
+
+    /**
+     * A set of key-value user-defined options with string keys and
+     * values.
+     *
+     * Keys have to be unique.
+     */
+    repeated UserInfo   user_infos              = 7;
+
+}

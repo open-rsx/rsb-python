@@ -1,0 +1,94 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2014 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol.operatingsystem;
+
+option java_outer_classname = "ProcessType";
+
+/**
+ * Basic information about an operatingsystem process.
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message Process {
+
+    /**
+     * Should uniquely identify the process on one machine.
+     *
+     * On POSIX systems, a string representation of the PID is used.
+     */
+    required string id                    = 1;
+
+    /**
+     * Name of the program executed by the process.
+     *
+     * Should not include the full path of the program. TODO or should it?
+     *
+     * On POSIX systems, argv[0].
+     */
+    required string program_name          = 2;
+
+    /**
+     * List of commandline arguments with which the process has been
+     * started.
+     *
+     * On POSIX systems, does not include argv[0], i.e. argv[1:].
+     */
+    repeated string commandline_arguments = 3;
+
+    /**
+     * Start time of the process encoded as a timestamp in UTC in
+     * microseconds since UNIX epoch.
+     *
+     * http://docs.cor-lab.org/rsb-manual/trunk/html/specification-event.html#timestamps
+     */
+    required uint64 start_time            = 4;
+
+    /**
+     * Login- or account-name of the user executing the process.
+     *
+     * Can be omitted when not known, for example because of security
+     * policy constraints.
+     */
+    optional string executing_user        = 5;
+
+    /**
+     * The version of the RSB implementation used in this process.
+     *
+     * The version string is of the form
+     *
+     *   MAJOR.MINOR.REVISION[-COMMIT]
+     */
+    optional string rsb_version           = 7;
+
+    /**
+     * A user-defined name for the process.
+     */
+    optional string display_name          = 8;
+
+}
