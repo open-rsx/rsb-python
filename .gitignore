@@ -17,3 +17,5 @@ setup.cfg
 /MANIFEST
 /pylint.out
 /.eggs
+/.tox
+/tags
