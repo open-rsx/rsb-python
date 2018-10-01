@@ -1,0 +1,114 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2014 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol.introspection;
+
+import "rsb/protocol/operatingsystem/Process.proto";
+import "rsb/protocol/operatingsystem/Host.proto";
+
+option java_outer_classname = "HelloType";
+
+/**
+ * Basic introspection information for one RSB participant.
+ *
+ * May describe a newly created or an already existing participant.
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message Hello {
+
+    // Participant Information
+
+    /**
+     * Kind of the participant as lowercase string.
+     *
+     * Examples: "informer", "listener", "reader", etc.
+     */
+    required string                                kind      = 1;
+
+    /**
+     * ID (a RFC 4122 UUID) of the participant as byte array.
+     *
+     * For this encoding, the encoded UUID is 16 bytes long.
+     */
+    // @constraint(len(value) = 16)
+    required bytes                                 id        = 2;
+
+    /**
+     * If present, ID (a RFC 4122 UUID) of the composite participant
+     * containing the participant as a byte array.
+     *
+     * If not present, the participant is not contained in a composite
+     * participant (it may still be a composite participant and itself
+     * contain other participants, though)
+     *
+     * For this encoding, the encoded UUID is 16 bytes long.
+     */
+    // @constraint(len(value) = 16)
+    optional bytes                                 parent    = 3;
+
+    /**
+     * Scope on which the participant listens, publishes or otherwise
+     * operates.
+     *
+     * @todo proper representation
+     */
+    required string                                scope     = 4;
+
+    /**
+     * Type of data produced or consumed by the participant.
+     *
+     * Programming language data-type within the containing program
+     * for now. For visual inspection only - Do not process.
+     *
+     * @todo Preliminary: will change to a proper representation
+     */
+    optional string                                type      = 5;
+
+    /**
+     * A list of strings describing transports of the participant.
+     *
+     * @todo Preliminary: will change.
+     */
+    repeated string                                transport = 6;
+
+    // Process Information
+
+    /**
+     * Information about the process containing the participant.
+     */
+    required .rsb.protocol.operatingsystem.Process process   = 7;
+
+    // Host Information
+
+    /**
+     * Host on which the containing process executes.
+     */
+    required .rsb.protocol.operatingsystem.Host    host      = 8;
+
+}
