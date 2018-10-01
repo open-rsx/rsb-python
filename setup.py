@@ -290,16 +290,6 @@ setup(name='rsb-python',
                       'coverage',
                       'nose-testconfig'],
 
-      tests_require=['SpreadModule>=1.5spread4'],
-
-      extras_require={
-        'spread-transport': ['SpreadModule>=1.5spread4'],
-      },
-
-      dependency_links=[
-          'http://www.spread.org/files/'
-          'SpreadModule-1.5spread4.tgz#egg=SpreadModule-1.5spread4'],
-
       packages=findRsbPackages(),
 
       cmdclass={

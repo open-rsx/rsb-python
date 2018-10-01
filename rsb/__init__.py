@@ -66,24 +66,6 @@ class _NullHandler(logging.Handler):
 _logger.addHandler(_NullHandler())
 
 
-_spreadAvailable = False
-try:
-    import spread
-    _spreadAvailable = True
-except ImportError:
-    pass
-
-
-def haveSpread():
-    """
-    Indicates whether the installation of RSB has spread support.
-
-    Returns:
-        True if spread is available, else False
-    """
-    return _spreadAvailable
-
-
 __defaultTransportsRegistered = False
 __transportRegistrationLock = threading.RLock()
 
@@ -101,9 +83,6 @@ def __registerDefaultTransports():
         local.initialize()
         import rsb.transport.socket as socket
         socket.initialize()
-        if haveSpread():
-            import rsb.transport.rsbspread as rsbspread
-            rsbspread.initialize()
 
 
 class QualityOfServiceSpec(object):

@@ -68,12 +68,7 @@ class ParticipantConfigTest(unittest.TestCase):
                          QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.getTransports()), 1)
-        self.assertEqual(len(config.getTransports(includeDisabled=True)), 3)
-
-        # Check spread transport
-        transport = config.getTransport('spread')
-        self.assertEqual(transport.getName(), 'spread')
-        self.assertTrue(transport.isEnabled())
+        self.assertEqual(len(config.getTransports(includeDisabled=True)), 2)
 
         # Check introspection
         self.assertTrue(config.introspection)
@@ -86,7 +81,7 @@ class ParticipantConfigTest(unittest.TestCase):
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
         os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'
 
-        os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'yes'
+        os.environ['RSB_TRANSPORT_INPROCESS_ENABLED'] = '1'
 
         os.environ['RSB_INTROSPECTION_ENABLED'] = '1'
 
@@ -100,11 +95,6 @@ class ParticipantConfigTest(unittest.TestCase):
 
         self.assertEqual(len(config.getTransports()), 1)
         self.assertEqual(len(config.getTransports(includeDisabled=True)), 1)
-
-        # Check spread transport
-        transport = config.getTransport('spread')
-        self.assertEqual(transport.getName(), 'spread')
-        self.assertTrue(transport.isEnabled())
 
         # Check introspection
         self.assertTrue(config.introspection)
