@@ -180,5 +180,6 @@ class DataFuture(Future):
 
     .. codeauthor:: jmoringe
     """
+
     def get(self, timeout=0):
         return super(DataFuture, self).get(timeout=timeout).data

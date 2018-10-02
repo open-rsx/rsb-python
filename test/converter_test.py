@@ -129,7 +129,7 @@ class NoneConverterTest(unittest.TestCase):
     def testRoundtrip(self):
         converter = NoneConverter()
         self.assertEqual(None,
-                          converter.deserialize(*converter.serialize(None)))
+                         converter.deserialize(*converter.serialize(None)))
 
 
 class StringConverterTest(unittest.TestCase):
@@ -138,17 +138,17 @@ class StringConverterTest(unittest.TestCase):
         converter = StringConverter()
         orig = "asd" + chr(270) + chr(40928)
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
         orig = "i am a normal string"
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
 
     def testRoundtripAscii(self):
         converter = StringConverter(wireSchema="ascii-string",
                                     encoding="ascii")
         orig = "foooo"
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
 
     def testCharsetErrors(self):
         asciiConverter = StringConverter(wireSchema="ascii-string",
@@ -180,7 +180,7 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
         data = {}
         converter = EventsByScopeMapConverter()
         self.assertEqual(data,
-                          converter.deserialize(*converter.serialize(data)))
+                         converter.deserialize(*converter.serialize(data)))
 
     def testRoundtrip(self):
         self.maxDiff = None

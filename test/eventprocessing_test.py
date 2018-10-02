@@ -58,6 +58,7 @@ class ScopeDispatcherTest(unittest.TestCase):
         check("/bar",     (3,))
         check("/bar/fez", (3,))
 
+
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
     def testMatchingProcess(self):
@@ -164,8 +165,9 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         for size in range(2, 10):
             ep = rsb.eventprocessing.ParallelEventReceivingStrategy(size)
 
-            h1 = lambda e: e
-            h2 = lambda e: e
+            def h1(e): return e
+
+            def h2(e): return e
             ep.addHandler(h1, wait=True)
             ep.addHandler(h2, wait=True)
             ep.addHandler(h1, wait=True)

@@ -46,6 +46,7 @@ class ScopeDispatcher(object):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self):
         self.__map = dict()
 
@@ -130,6 +131,7 @@ class BroadcastProcessor(object):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, handlers=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -502,6 +504,7 @@ class Configurator(object):
     .. codeauthor:: jwienke
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, connectors=None):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 

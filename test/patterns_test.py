@@ -106,7 +106,7 @@ class RoundTripTest (unittest.TestCase):
                 # Call asynchronously
                 self.assertEqual([x.get() for x in
                                   list(map(remoteServer.addone.asynchronous,
-                                         list(range(100))))],
+                                           list(range(100))))],
                                  list(range(1, 101)))
 
     def testVoidMethods(self):

@@ -32,6 +32,7 @@ import rsb
 def handle(event):
     print("Received event: %s" % event)
 
+
 if __name__ == '__main__':
     # Pacify logger.
     logging.basicConfig()

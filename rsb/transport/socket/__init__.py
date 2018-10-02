@@ -271,6 +271,7 @@ class Bus(object):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self):
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
 
@@ -490,6 +491,7 @@ class Bus(object):
                len(self.getConnectors()),
                id(self))
 
+
 __busClients = {}
 __busClientsLock = threading.Lock()
 
@@ -532,6 +534,7 @@ class BusClient(Bus):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, host, port, tcpnodelay):
         """
         Args:

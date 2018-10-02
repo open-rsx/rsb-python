@@ -48,6 +48,7 @@ class RemoteCallError(RuntimeError):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, method, message=None):
         super(RemoteCallError, self).__init__(message)
         self._scope = scope
@@ -89,6 +90,7 @@ class Method(rsb.Participant):
     .. codeauthor:: jmoringe
     """
     # TODO scope and name are redundant
+
     def __init__(self, scope, config,
                  server, name, requestType, replyType):
         """
@@ -260,6 +262,7 @@ class LocalMethod(Method):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config,
                  server, name, func, requestType, replyType,
                  allowParallelExecution):
@@ -345,6 +348,7 @@ class LocalServer(Server):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config):
         """
         Creates a new :obj:`LocalServer` object that exposes methods under
@@ -421,6 +425,7 @@ class RemoteMethod(Method):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config, server, name, requestType, replyType):
         super(RemoteMethod, self).__init__(scope, config,
                                            server, name,
@@ -590,6 +595,7 @@ class RemoteServer(Server):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config):
         """
         Create a new :obj:`RemoteServer` object that provides its methods

@@ -138,6 +138,7 @@ class OriginFilter(AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.origin, self.invert)
 
+
 class CauseFilter(AbstractFilter):
     """
     Filter events based on their cause vectors.

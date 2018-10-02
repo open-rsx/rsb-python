@@ -132,6 +132,7 @@ class ConverterSelectionStrategy(object):
 
     .. codeauthor:: jmoringe
     """
+
     def hasConverterForWireSchema(self, wireSchema):
         return bool(self._getConverterForWireSchema(wireSchema))
 
@@ -200,21 +201,28 @@ class ConverterMap(ConverterSelectionStrategy):
                     return -1
                 else:
                     return 1
+
             def cmp_to_key(mycmp):
                 'Convert a cmp= function into a key= function'
                 class K:
                     def __init__(self, obj, *args):
                         self.obj = obj
+
                     def __lt__(self, other):
                         return mycmp(self.obj, other.obj) < 0
+
                     def __gt__(self, other):
                         return mycmp(self.obj, other.obj) > 0
+
                     def __eq__(self, other):
                         return mycmp(self.obj, other.obj) == 0
+
                     def __le__(self, other):
                         return mycmp(self.obj, other.obj) <= 0
+
                     def __ge__(self, other):
                         return mycmp(self.obj, other.obj) >= 0
+
                     def __ne__(self, other):
                         return mycmp(self.obj, other.obj) != 0
                 return K
@@ -245,6 +253,7 @@ class PredicateConverterList(ConverterMap):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, wireType):
         super(PredicateConverterList, self).__init__(wireType)
         self._list = []
@@ -257,10 +266,10 @@ class PredicateConverterList(ConverterMap):
             # if converter.getWireSchema() == 'void':
             #    wireSchemaPredicate = lambda wireSchema: True
             # else:
-            wireSchemaPredicate = lambda wireSchema: \
+            def wireSchemaPredicate(wireSchema): return \
                 wireSchema == converter.getWireSchema()
         if dataTypePredicate is None:
-            dataTypePredicate = lambda dataType: \
+            def dataTypePredicate(dataType): return \
                 dataType == converter.getDataType()
         key = (wireSchemaPredicate, dataTypePredicate)
         self._converters[key] = converter
@@ -294,6 +303,7 @@ class UnambiguousConverterMap(ConverterMap):
                        dataType))
         super(UnambiguousConverterMap, self).addConverter(
             converter, replaceExisting)
+
 
 __globalConverterMapsLock = RLock()
 __globalConverterMaps = {}
@@ -342,6 +352,7 @@ class IdentityConverter(Converter):
 
     .. codeauthor:: plueckin
     """
+
     def __init__(self):
         super(IdentityConverter, self).__init__(bytes, type(None), 'void')
 
@@ -365,6 +376,7 @@ class NoneConverter(Converter):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self):
         super(NoneConverter, self).__init__(bytes, type(None), 'void')
 
@@ -402,6 +414,7 @@ def makeStructBasedConverter(name, dataType, wireSchema, fmt, size):
 
     globals()[name] = NewConverter
     return NewConverter
+
 
 makeStructBasedConverter('DoubleConverter', Real, 'double', '<d', 8)
 makeStructBasedConverter('FloatConverter', Real, 'float', '<f', 4)
@@ -458,6 +471,7 @@ class ByteArrayConverter(Converter):
 
     .. codeauthor:: jwienke
     """
+
     def __init__(self):
         super(ByteArrayConverter, self).__init__(bytes, bytes, '.*')
 
@@ -475,6 +489,7 @@ class SchemaAndByteArrayConverter(Converter):
 
     .. codeauthor:: nkoester
     """
+
     def __init__(self):
         super(SchemaAndByteArrayConverter, self).__init__(
             bytes, tuple, '.*')
@@ -496,6 +511,7 @@ class ProtocolBufferConverter(Converter):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, messageClass):
         super(ProtocolBufferConverter, self).__init__(
             bytes, messageClass, '.%s' % messageClass.DESCRIPTOR.full_name)
@@ -606,6 +622,7 @@ class EventsByScopeMapConverter(Converter):
                 output[scope].append(event)
 
         return output
+
 
 # FIXME We do not register all available converters here to avoid
 # ambiguities.

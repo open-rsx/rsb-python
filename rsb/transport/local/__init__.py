@@ -98,6 +98,7 @@ class Bus(object):
         pid = os.getpid()
         return 'inprocess://' + hostname + ':' + str(pid)
 
+
 globalBus = Bus()
 
 

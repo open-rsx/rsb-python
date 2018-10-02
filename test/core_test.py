@@ -560,7 +560,7 @@ class ContextManagerTest(unittest.TestCase):
     def testInformerListenerRoundtrip(self):
 
         with rsb.createInformer(self.scope, dataType=str) as informer, \
-             rsb.createListener(self.scope) as listener:
+                rsb.createListener(self.scope) as listener:
             def setReceived(event):
                 with self.receivedCondition:
                     self.receivedData = event.data
@@ -579,7 +579,7 @@ class ContextManagerTest(unittest.TestCase):
     def testRpcRoundtrip(self):
 
         with rsb.createServer(self.scope) as server, \
-             rsb.createRemoteServer(self.scope) as client:
+                rsb.createRemoteServer(self.scope) as client:
 
             methodName = 'test'
             data = 'bla'

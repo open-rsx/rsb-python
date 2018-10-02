@@ -62,8 +62,11 @@ class _NullHandler(logging.Handler):
     """
     Null logging handler to prevent warning messages
     """
+
     def emit(self, record):
         pass
+
+
 _logger.addHandler(_NullHandler())
 
 
@@ -286,9 +289,9 @@ def _configDefaultSourcesToDict(defaults=None,
                 if fileIndex[0] == 1:
                     print('  1. Configuration files')
                 print(('     %d. %s "%s" %s'
-                      % (fileIndex[0], description, configFile,
-                         'exists' if os.path.exists(configFile)
-                         else 'does not exist')))
+                       % (fileIndex[0], description, configFile,
+                          'exists' if os.path.exists(configFile)
+                          else 'does not exist')))
                 fileIndex[0] += 1
             return _configFileToDict(configFile, partial)
         return processFile
@@ -318,6 +321,7 @@ def _configDefaultSourcesToDict(defaults=None,
     if debug:
         print('Configuring with sources (lowest priority first)')
     return reduce(lambda partial, source: source(partial), sources, defaults)
+
 
 _CONFIG_TRUE_VALUES = ['1', 'true', 'yes']
 
@@ -356,6 +360,7 @@ class ParticipantConfig(object):
 
         .. codeauthor:: jmoringe
         """
+
         def __init__(self, name, options=None, converters=None):
             self.__name = name
             self.__enabled = _configValueIsTrue(options.get('enabled', '0'))
@@ -901,6 +906,7 @@ class MetaData(object):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self,
                  createTime=None, sendTime=None,
                  receiveTime=None, deliverTime=None,
@@ -1487,6 +1493,7 @@ class Hook(object):
         with self.__lock:
             self.__handlers.remove(handler)
 
+
 participantCreationHook = Hook()
 
 participantDestructionHook = Hook()
@@ -1499,6 +1506,7 @@ class Participant(object):
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config):
         """
         Constructs a new Participant. This should not be done by
@@ -2014,6 +2022,7 @@ class Reader(Participant):
         """
         return self.__configurator.getReceivingStrategy().raiseEvent(block)
 
+
 __defaultConfigurationOptions = _configDefaultSourcesToDict()
 __defaultParticipantConfig = ParticipantConfig.fromDict(
     __defaultConfigurationOptions)
@@ -2037,6 +2046,7 @@ def setDefaultParticipantConfig(config):
     global __defaultParticipantConfig
     _logger.debug('Setting default participant config to %s', config)
     __defaultParticipantConfig = config
+
 
 _introspectionDisplayName = __defaultConfigurationOptions.get(
     'introspection.displayname')
@@ -2246,7 +2256,6 @@ def createRemoteServer(scope, config=None, parent=None, **kwargs):
 def createServer(scope, config=None, parent=None,
                  object=None, expose=None, methods=None,
                  **kwargs):
-
     """
     Like :obj:`createLocalServer`.
 
