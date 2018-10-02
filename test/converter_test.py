@@ -36,7 +36,7 @@ from nose.tools import assert_equals
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
-        Converter.__init__(self, wireType=bytearray,
+        Converter.__init__(self, wireType=bytes,
                            wireSchema="utf-8-string", dataType=float)
 
     def serialize(self, input):
@@ -128,7 +128,7 @@ class PredicateConverterListTest(unittest.TestCase):
 class NoneConverterTest(unittest.TestCase):
     def testRoundtrip(self):
         converter = NoneConverter()
-        self.assertEquals(None,
+        self.assertEqual(None,
                           converter.deserialize(*converter.serialize(None)))
 
 
@@ -136,27 +136,27 @@ class StringConverterTest(unittest.TestCase):
 
     def testRoundtripUtf8(self):
         converter = StringConverter()
-        orig = u"asd" + unichr(270) + unichr(40928)
-        self.assertEquals(orig,
+        orig = "asd" + chr(270) + chr(40928)
+        self.assertEqual(orig,
                           converter.deserialize(*converter.serialize(orig)))
         orig = "i am a normal string"
-        self.assertEquals(orig,
+        self.assertEqual(orig,
                           converter.deserialize(*converter.serialize(orig)))
 
     def testRoundtripAscii(self):
         converter = StringConverter(wireSchema="ascii-string",
-                                    encoding="ascii", dataType=str)
+                                    encoding="ascii")
         orig = "foooo"
-        self.assertEquals(orig,
+        self.assertEqual(orig,
                           converter.deserialize(*converter.serialize(orig)))
 
     def testCharsetErrors(self):
         asciiConverter = StringConverter(wireSchema="ascii-string",
                                          encoding="ascii")
         self.assertRaises(UnicodeEncodeError,
-                          asciiConverter.serialize, u"test"+unichr(266))
+                          asciiConverter.serialize, "test"+chr(266))
         self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
-                          bytearray(range(133)), 'ascii-string')
+                          bytes(list(range(133))), 'ascii-string')
 
 
 class ScopeConverterTest(unittest.TestCase):
@@ -179,7 +179,7 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
 
         data = {}
         converter = EventsByScopeMapConverter()
-        self.assertEquals(data,
+        self.assertEqual(data,
                           converter.deserialize(*converter.serialize(data)))
 
     def testRoundtrip(self):
@@ -215,7 +215,8 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
             # self.assertEqual(orig.type, converted.type)
             self.assertEqual(orig.data, converted.data)
             self.assertAlmostEqual(orig.metaData.createTime,
-                                   converted.metaData.createTime)
+                                   converted.metaData.createTime,
+                                   places=4)
             self.assertEqual(orig.causes, converted.causes)
 
 
@@ -230,9 +231,9 @@ def test_structureBaseConverters():
     for converterName, values in [
             ('DoubleConverter', [0.0, -1.0, 1.0]),
             ('FloatConverter', [0.0, -1.0, 1.0]),
-            ('Int32Converter', [0L, -1L, 1L, -24378L, ((1L << 31L) - 1L)]),
-            ('Int64Converter', [0L, -1L, 1L, -24378L, ((1L << 63L) - 1L)]),
-            ('Uint32Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
-            ('Uint64Converter', [0L, 1L, 24378L, ((1L << 32L) - 1L)]),
+            ('Int32Converter', [0, -1, 1, -24378, ((1 << 31) - 1)]),
+            ('Int64Converter', [0, -1, 1, -24378, ((1 << 63) - 1)]),
+            ('Uint32Converter', [0, 1, 24378, ((1 << 32) - 1)]),
+            ('Uint64Converter', [0, 1, 24378, ((1 << 32) - 1)]),
             ('BoolConverter', [True, False])]:
         yield checkStructureBasedRountrip, converterName, values

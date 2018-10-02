@@ -34,7 +34,7 @@ transport layer and the client interface.
 import abc
 import copy
 import threading
-import Queue
+import queue
 
 import rsb.util
 import rsb.filter
@@ -98,7 +98,7 @@ class ScopeDispatcher(object):
                 A generator yielding all known sinks in an unspecified
                 order.
         """
-        for sinks in self.__map.values():
+        for sinks in list(self.__map.values()):
             for sink in sinks:
                 yield sink
 
@@ -166,13 +166,12 @@ class BroadcastProcessor(object):
                id(self))
 
 
-class EventReceivingStrategy(object):
+class EventReceivingStrategy(object, metaclass=abc.ABCMeta):
     """
     Superclass for event receiving strategies.
 
     .. codeauthor:: jwienke
     """
-    __metaclass__ = abc.ABCMeta
 
 
 class PushEventReceivingStrategy(EventReceivingStrategy):
@@ -409,7 +408,7 @@ class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
         self.__filters = []
         self.__mutex = threading.RLock()
         self.__handlers = []
-        self.__queue = Queue.Queue(1)
+        self.__queue = queue.Queue(1)
         self.__interrupted = False
         self.__thread = threading.Thread(target=self.__work)
         self.__thread.start()
@@ -697,7 +696,7 @@ class OutRouteConfigurator(Configurator):
             self.__sendingStrategy = sendingStrategy
 
         if connectors is not None:
-            map(self.__sendingStrategy.addConnector, connectors)
+            list(map(self.__sendingStrategy.addConnector, connectors))
 
     def handle(self, event):
         if not self.active:

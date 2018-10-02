@@ -32,7 +32,7 @@ from test.transporttest import TransportCheck
 
 
 def getConnector(clazz, scope, activate=True):
-    connector = clazz(converters=getGlobalConverterMap(bytearray),
+    connector = clazz(converters=getGlobalConverterMap(bytes),
                       options=ParticipantConfig.fromFile(
                           'test/with-socket.conf').getTransport(
                               'socket').options)

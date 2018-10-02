@@ -52,5 +52,5 @@ if __name__ == '__main__':
 
     print("Registered converter %s" % converter)
     print("Registered converters:\n%s "
-          % rsb.converter.getGlobalConverterMap(bytearray))
+          % rsb.converter.getGlobalConverterMap(bytes))
 # mark-end::body

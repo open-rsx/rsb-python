@@ -75,7 +75,7 @@ class ParticipantConfigTest(unittest.TestCase):
 
     def testFromEnvironment(self):
         # Clear RSB-specific variables from environment
-        os.environ = dict((key, value) for (key, value) in os.environ.items()
+        os.environ = dict((key, value) for (key, value) in list(os.environ.items())
                           if 'RSB' not in key)
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
@@ -174,9 +174,9 @@ class ScopeTest(unittest.TestCase):
 
         # Non-ASCII characters are not allowed. However, unicode
         # object consisting of acceptable characters are OK.
-        Scope(u'/')
-        Scope(u'/test')
-        self.assertRaises(ValueError, Scope, u'/br\xc3\xb6tchen')
+        Scope('/')
+        Scope('/test')
+        self.assertRaises(ValueError, Scope, '/br\xc3\xb6tchen')
 
     def testParsingError(self):
 
@@ -351,9 +351,9 @@ class EventTest(unittest.TestCase):
         e2.getMetaData().setCreateTime(e1.getMetaData().getCreateTime())
 
         e1.metaData.setUserTime("foo")
-        self.assertNotEquals(e1, e2)
+        self.assertNotEqual(e1, e2)
         e2.metaData.setUserTime("foo", e1.getMetaData().getUserTimes()["foo"])
-        self.assertEquals(e1, e2)
+        self.assertEqual(e1, e2)
 
         cause = EventId(uuid4(), 42)
         e1.addCause(cause)
@@ -365,13 +365,13 @@ class EventTest(unittest.TestCase):
 class FactoryTest(unittest.TestCase):
 
     def testDefaultParticipantConfig(self):
-        self.assert_(rsb.getDefaultParticipantConfig())
+        self.assertTrue(rsb.getDefaultParticipantConfig())
 
     def testCreateListener(self):
-        self.assert_(rsb.createListener("/"))
+        self.assertTrue(rsb.createListener("/"))
 
     def testCreateInformer(self):
-        self.assert_(rsb.createInformer("/"))
+        self.assertTrue(rsb.createInformer("/"))
 
 
 class MetaDataTest(unittest.TestCase):
@@ -403,10 +403,10 @@ class MetaDataTest(unittest.TestCase):
 
         after = time.time()
 
-        self.assertNotEquals(None, meta.getCreateTime())
-        self.assertNotEquals(None, meta.getSendTime())
-        self.assertNotEquals(None, meta.getReceiveTime())
-        self.assertNotEquals(None, meta.getDeliverTime())
+        self.assertNotEqual(None, meta.getCreateTime())
+        self.assertNotEqual(None, meta.getSendTime())
+        self.assertNotEqual(None, meta.getReceiveTime())
+        self.assertNotEqual(None, meta.getDeliverTime())
 
         self.assertTrue(before <= meta.getCreateTime())
         self.assertTrue(before <= meta.getSendTime())
@@ -426,7 +426,7 @@ class MetaDataTest(unittest.TestCase):
         meta.setUserTime("foo")
         after = time.time()
 
-        self.assertNotEquals(None, meta.userTimes["foo"])
+        self.assertNotEqual(None, meta.userTimes["foo"])
         self.assertTrue(meta.userTimes["foo"] >= before)
         self.assertTrue(meta.userTimes["foo"] <= after)
 
@@ -435,37 +435,37 @@ class MetaDataTest(unittest.TestCase):
         meta1 = MetaData()
         meta2 = MetaData()
         meta2.setCreateTime(meta1.getCreateTime())
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setCreateTime(213123)
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setCreateTime(meta1.getCreateTime())
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setSendTime()
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setSendTime(meta1.getSendTime())
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setReceiveTime()
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setReceiveTime(meta1.getReceiveTime())
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setDeliverTime()
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setDeliverTime(meta1.getDeliverTime())
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setUserTime("foo")
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setUserTime("foo", meta1.getUserTimes()["foo"])
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
         meta1.setUserInfo("foox", "bla")
-        self.assertNotEquals(meta1, meta2)
+        self.assertNotEqual(meta1, meta2)
         meta2.setUserInfo("foox", meta1.getUserInfos()["foox"])
-        self.assertEquals(meta1, meta2)
+        self.assertEqual(meta1, meta2)
 
 
 class InformerTest(unittest.TestCase):
@@ -530,10 +530,10 @@ class IntegrationTest(unittest.TestCase):
         class FooTypeConverter(Converter):
 
             def __init__(self):
-                Converter.__init__(self, bytearray, FooType, "footype")
+                Converter.__init__(self, bytes, FooType, "footype")
 
             def serialize(self, inp):
-                return bytearray(), self.wireSchema
+                return bytes(), self.wireSchema
 
             def deserialize(self, inp, wireSchema):
                 return FooType()

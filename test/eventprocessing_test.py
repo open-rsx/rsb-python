@@ -161,7 +161,7 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         ep.removeFilter(noMatchRecordingFilter)
 
     def testAddRemove(self):
-        for size in xrange(2, 10):
+        for size in range(2, 10):
             ep = rsb.eventprocessing.ParallelEventReceivingStrategy(size)
 
             h1 = lambda e: e
@@ -309,7 +309,7 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
                         zip(calls, self1.calls):
                     self.assertEqual(expFilter, filter)
                     if expAction == 'add':
-                        self.assertEquals(action, rsb.filter.FilterAction.ADD)
+                        self.assertEqual(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
         configurator = rsb.eventprocessing.InPushRouteConfigurator(

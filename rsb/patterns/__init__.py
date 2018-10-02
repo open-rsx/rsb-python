@@ -201,7 +201,7 @@ class Server(rsb.Participant):
             self.deactivate()
 
     def getMethods(self):
-        return self._methods.values()
+        return list(self._methods.values())
 
     methods = property(getMethods)
 
@@ -228,7 +228,7 @@ class Server(rsb.Participant):
 
         self.__active = False
 
-        for m in self._methods.values():
+        for m in list(self._methods.values()):
             m.deactivate()
 
         super(Server, self).deactivate()
@@ -304,7 +304,7 @@ class LocalMethod(Method):
             else:
                 result = self._func(request.data)
             resultType = type(result)
-        except Exception, e:
+        except Exception as e:
             isError = True
             userInfos['rsb:error?'] = '1'
             result = str(e)
@@ -500,12 +500,12 @@ class RemoteMethod(Method):
                 not respond within the specified time frame.
 
         See Also:
-            :obj:`async`
+            :obj:`asynchronous`
 
         """
-        return self.async(arg).get(timeout=timeout)
+        return self.asynchronous(arg).get(timeout=timeout)
 
-    def async(self, arg=None):
+    def asynchronous(self, arg=None):
         """
         Call the method asynchronously with argument ``arg``, returning
         a :obj:`Future` instance that can be used to retrieve the result.
@@ -539,11 +539,11 @@ class RemoteMethod(Method):
             :obj:`__call__`
 
         Examples:
-            >>> myServer.echo.async('bla')
+            >>> myServer.echo.asynchronous('bla')
             <Future running at 3054cd0>
-            >>> myServer.echo.async('bla').get()
+            >>> myServer.echo.asynchronous('bla').get()
             'bla'
-            >>> myServer.echo.async(Event(scope=myServer.scope,
+            >>> myServer.echo.asynchronous(Event(scope=myServer.scope,
             ...                           data='bla', type=str)).get()
             Event[id = ..., data = 'bla', ...]
         """
@@ -571,7 +571,7 @@ class RemoteMethod(Method):
             with self._lock:
                 event = self.informer.publishEvent(event)
                 self._calls[event.id] = result
-        except Exception, e:
+        except Exception as e:
             raise RemoteCallError(self.server.scope, self, message=repr(e))
         return result
 

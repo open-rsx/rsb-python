@@ -29,7 +29,7 @@ Various helper classes and methods.
 """
 
 from threading import Lock, Condition, Thread
-from Queue import Queue
+from queue import Queue
 import logging
 
 

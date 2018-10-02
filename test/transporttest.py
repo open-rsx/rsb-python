@@ -176,7 +176,7 @@ class TransportCheck(object):
         sentEvent.setScope(scope)
         sentEvent.getMetaData().setUserInfo("test", "it")
         sentEvent.getMetaData().setUserInfo("test again", "it works?")
-        sentEvent.getMetaData().setUserTime("blubb", 234234)
+        sentEvent.getMetaData().setUserTime("blubb", 234234.0)
         sentEvent.getMetaData().setUserTime("bla", 3434343.45)
         sentEvent.addCause(EventId(uuid.uuid4(), 1323))
         sentEvent.addCause(EventId(uuid.uuid4(), 42))
@@ -196,6 +196,12 @@ class TransportCheck(object):
                 receiver.resultEvent.metaData.receiveTime
             sentEvent.metaData.deliverTime = \
                 receiver.resultEvent.metaData.deliverTime
+            # HACK: floating point precision leads to an imprecision here,
+            # avoid this.
+            sentEvent.metaData.sendTime = \
+                receiver.resultEvent.metaData.sendTime
+            sentEvent.metaData.createTime = \
+                receiver.resultEvent.metaData.createTime
             self.assertEqual(sentEvent, receiver.resultEvent)
 
         listener.deactivate()
@@ -302,7 +308,7 @@ class TransportCheck(object):
         event.scope = scope
         event.data = "".join(
             random.choice(string.ascii_uppercase + string.ascii_lowercase +
-                          string.digits) for i in range(300502))
+                          string.digits) for i in list(range(300502)))
         event.type = str
         event.metaData.senderId = uuid.uuid4()
 

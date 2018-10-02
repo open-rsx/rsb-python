@@ -115,7 +115,7 @@ class BuildProtocol(Command):
 
         try:
             self.run_command('proto')
-        except RuntimeError, e:
+        except RuntimeError as e:
             # for sdist fetching the protocol may fail as long as we have
             # the protocol available. Otherwise this is a real error
             self.warn('Fetching the protocol failed, but this acceptable '
@@ -209,7 +209,8 @@ class Sdist(sdist):
 def get_git_commit():
     try:
         return subprocess.check_output(
-            ['git', 'log', '-1', '--pretty=format:g%h'])
+            ['git', 'log',
+             '-1', '--pretty=format:g%h']).decode('ascii').strip()
     except subprocess.CalledProcessError:
         return 'archive'
 
@@ -223,8 +224,8 @@ def determineProtocVersion():
     print('Using protoc executable from {} '
           'to determine the protobuf library version to use. '
           'Adjust PATH if something different is desired.'.format(protoc))
-    proc = subprocess.Popen([protoc, '--version'], stdout=subprocess.PIPE)
-    (versionOutput, _) = proc.communicate()
+    versionOutput = subprocess.check_output(
+        [protoc, '--version']).decode('utf-8')
     protocVersionParts = versionOutput.split(' ')
     if len(protocVersionParts) != 2:
         raise RuntimeError(
@@ -287,7 +288,7 @@ setup(name='rsb-python',
           protocVersion[0],
           protocVersion[1] + 1)],
       setup_requires=['nose>=1.3',
-                      'coverage',
+                      # 'coverage',
                       'nose-testconfig'],
 
       packages=findRsbPackages(),

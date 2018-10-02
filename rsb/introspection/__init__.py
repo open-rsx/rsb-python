@@ -547,7 +547,7 @@ class IntrospectionSender(object):
                         participant = next((p for p in self.__participants
                                             if p.id == participantId),
                                            None)
-                except Exception, e:
+                except Exception as e:
                     self.__logger.warn('Query event %s does not '
                                        'properly address a participant: %s',
                                        event, e)

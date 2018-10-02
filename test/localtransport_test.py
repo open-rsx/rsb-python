@@ -71,7 +71,7 @@ class BusTest(unittest.TestCase):
 
         event = Event(scope=targetScope)
         bus.handle(event)
-        for scope, sink in sinksByScope.items():
+        for scope, sink in list(sinksByScope.items()):
             self.assertTrue(event in sink.events)
             self.assertEqual(1, len(sink.events))
 

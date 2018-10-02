@@ -33,7 +33,7 @@ serialization overhead.
 import os
 import platform
 from threading import RLock
-import Queue
+import queue
 
 from rsb import transport
 
@@ -88,7 +88,7 @@ class Bus(object):
 
         with self.__mutex:
 
-            for scope, sinkList in self.__sinksByScope.items():
+            for scope, sinkList in list(self.__sinksByScope.items()):
                 if scope == event.scope or scope.isSuperScopeOf(event.scope):
                     for sink in sinkList:
                         sink.handle(event)
@@ -184,7 +184,7 @@ class InPullConnector(transport.InPullConnector):
         transport.InPullConnector.__init__(self, wireType=object, **kwargs)
         self.__bus = bus
         self.__scope = None
-        self.__eventQueue = Queue.Queue()
+        self.__eventQueue = queue.Queue()
 
     def setScope(self, scope):
         self.__scope = scope
@@ -209,7 +209,7 @@ class InPullConnector(transport.InPullConnector):
     def raiseEvent(self, block):
         try:
             return self.__eventQueue.get(block)
-        except Queue.Empty:
+        except queue.Empty:
             return None
 
 

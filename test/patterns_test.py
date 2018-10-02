@@ -88,26 +88,26 @@ class RoundTripTest (unittest.TestCase):
 
         with rsb.createLocalServer(
                 '/roundtrip',
-                methods=[('addone', lambda x: long(x + 1), long, long)],
+                methods=[('addone', lambda x: int(x + 1), int, int)],
                 config=inProcessNoIntrospectionConfig):
             with rsb.createRemoteServer('/roundtrip',
                                         inProcessNoIntrospectionConfig) \
                     as remoteServer:
 
                 # Call synchronously
-                self.assertEqual(map(remoteServer.addone, range(100)),
-                                 range(1, 101))
+                self.assertEqual(list(map(remoteServer.addone, list(range(100)))),
+                                 list(range(1, 101)))
 
                 # Call synchronously with timeout
                 self.assertEqual([remoteServer.addone(x, timeout=10)
                                   for x in range(100)],
-                                 range(1, 101))
+                                 list(range(1, 101)))
 
                 # Call asynchronously
-                self.assertEqual(map(lambda x: x.get(),
-                                     map(remoteServer.addone.async,
-                                         range(100))),
-                                 range(1, 101))
+                self.assertEqual([x.get() for x in
+                                  list(map(remoteServer.addone.asynchronous,
+                                         list(range(100))))],
+                                 list(range(1, 101)))
 
     def testVoidMethods(self):
 
@@ -121,7 +121,7 @@ class RoundTripTest (unittest.TestCase):
             with rsb.createRemoteServer('/void',
                                         inProcessNoIntrospectionConfig) \
                     as remoteServer:
-                future = remoteServer.nothing.async("test")
+                future = remoteServer.nothing.asynchronous("test")
                 future.get(1)
 
     def testNonIdentifierMethodName(self):
@@ -162,7 +162,7 @@ class RoundTripTest (unittest.TestCase):
                                         inProcessNoIntrospectionConfig) \
                     as remoteServer:
 
-                results = [remoteServer.takeSomeTime.async('call{}'.format(x))
+                results = [remoteServer.takeSomeTime.asynchronous('call{}'.format(x))
                            for x in range(numParallelCalls)]
                 for r in results:
                     r.get(10)

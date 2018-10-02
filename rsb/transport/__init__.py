@@ -37,13 +37,12 @@ import threading
 from rsb.util import getLoggerByClass
 
 
-class Connector(object):
+class Connector(object, metaclass=abc.ABCMeta):
     """
     Superclass for transport-specific connector classes.
 
     .. codeauthor:: jwienke
     """
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, wireType=None, **kwargs):
         """
@@ -246,13 +245,11 @@ class ConverterSelectingConnector(object):
     converterMap = property(getConverterMap)
 
 
-class TransportFactory(object):
+class TransportFactory(object, metaclass=abc.ABCMeta):
     """
     Interface for factories which are able to create :obj:`Connector` instances
     for a certain transport.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def getName(self):

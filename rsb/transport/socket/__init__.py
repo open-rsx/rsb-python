@@ -178,12 +178,12 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.__logger.debug('Receiving notifications')
             try:
                 self.doOneNotification()
-            except EOFError, e:
+            except EOFError as e:
                 self.__logger.info("Received EOF while reading")
                 if not self.__activeShutdown:
                     self.shutdown()
                 break
-            except Exception, e:
+            except Exception as e:
                 self.__logger.warn('Receive error: %s', e)
                 break
 
@@ -247,7 +247,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             try:
                 self.__file.close()
                 self.__socket.close()
-            except Exception, e:
+            except Exception as e:
                 self.__logger.warn('Failed to close socket: %s', e)
 
     def waitForDeactivation(self):
@@ -321,7 +321,7 @@ class Bus(object):
                 self.removeConnection(connection)
                 try:
                     connection.deactivate()
-                except Exception, e:
+                except Exception as e:
                     self.__logger.warning(
                         "Error while deactivating connection %s: %s",
                         connection, e)
@@ -421,7 +421,7 @@ class Bus(object):
         # there are only failing connection in case of an unorderly shutdown.
         # So the shutdown protocol does not apply here and
         # we can immediately call deactivate.
-        map(BusConnection.deactivate, failing)
+        list(map(BusConnection.deactivate, failing))
 
     # State management
 
@@ -450,7 +450,7 @@ class Bus(object):
                 self.removeConnection(connection)
                 connection.shutdown()
                 connection.waitForDeactivation()
-            except Exception, e:
+            except Exception as e:
                 self.__logger.error('Failed to close connections: %s', e)
 
     # Low-level helpers
@@ -461,7 +461,7 @@ class Bus(object):
             if connection is not exclude:
                 try:
                     connection.handle(notification)
-                except Exception, e:
+                except Exception as e:
                     self.__logger.warn(
                         'Failed to send to %s: %s; '
                         'will close connection later',
@@ -470,7 +470,7 @@ class Bus(object):
 
         # Removed connections for which sending the notification
         # failed.
-        map(self.removeConnection, failing)
+        list(map(self.removeConnection, failing))
         return failing
 
     def _toConnectors(self, notification):
@@ -479,7 +479,7 @@ class Bus(object):
         # 1) Direction has to be "incoming events"
         # 2) The scope of the connector has to be a superscope of
         #    NOTIFICATION's scope
-        scope = rsb.Scope(notification.scope)
+        scope = rsb.Scope(notification.scope.decode('ASCII'))
         for sink in self.__dispatcher.matchingSinks(scope):
             sink.handle(notification)
 
@@ -645,11 +645,11 @@ class BusServer(Bus):
                 self.addConnection(BusConnection(socket_=clientSocket,
                                                  isServer=True,
                                                  tcpnodelay=self.__tcpnodelay))
-            except socket.timeout, e:
+            except socket.timeout as e:
                 if sys.platform != 'darwin':
                     self.__logger.error(
                         'Unexpected timeout in acceptClients: "%s"', e)
-            except Exception, e:
+            except Exception as e:
                 if self.__active:
                     self.__logger.error('Exception in acceptClients: "%s"', e,
                                         exc_info=True)
@@ -699,7 +699,7 @@ class BusServer(Bus):
         if self.__socket is not None:
             try:
                 self.__socket.shutdown(socket.SHUT_RDWR)
-            except Exception, e:
+            except Exception as e:
                 self.__logger.warn('Failed to shutdown listen socket: %s', e)
             try:
                 self.__socket.close()
@@ -721,7 +721,7 @@ def removeConnector(bus, connector):
         with lock:
             if not bus.removeConnector(connector):
                 bus.deactivate()
-                del dictionary[[key for (key, value) in dictionary.items()
+                del dictionary[[key for (key, value) in list(dictionary.items())
                                 if value is bus][0]]
 
     if isinstance(bus, BusClient):
@@ -741,7 +741,7 @@ class Connector(rsb.transport.Connector,
     """
 
     def __init__(self, converters, options=None, **kwargs):
-        super(Connector, self).__init__(wireType=bytearray,
+        super(Connector, self).__init__(wireType=bytes,
                                         converters=converters,
                                         **kwargs)
         self.__logger = rsb.util.getLoggerByClass(self.__class__)
@@ -786,7 +786,7 @@ class Connector(rsb.transport.Connector,
                     'Trying to get bus server %s:%d (in server = auto mode)',
                     host, port)
                 self.__bus = getBusServerFor(host, port, tcpnodelay, self)
-            except Exception, e:
+            except Exception as e:
                 self.__logger.info('Failed to get bus server: %s', e)
                 self.__logger.info(
                     'Trying to get bus client %s:%d (in server = auto mode)',
@@ -865,10 +865,11 @@ class InPushConnector(Connector,
         if self.__action is None:
             return
 
-        converter = self.getConverterForWireSchema(notification.wire_schema)
+        converter = self.getConverterForWireSchema(
+            notification.wire_schema.decode('ASCII'))
         event = conversion.notificationToEvent(
             notification,
-            wireData=bytearray(notification.data),
+            wireData=bytes(notification.data),
             wireSchema=notification.wire_schema,
             converter=converter)
         self.__action(event)

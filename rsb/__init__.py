@@ -44,10 +44,11 @@ import time
 import re
 import os
 import platform
-import ConfigParser
+import configparser
 
 from rsb.util import getLoggerByClass, Enum
 import rsb.eventprocessing
+from functools import reduce
 
 
 _logger = logging.getLogger('rsb')
@@ -191,7 +192,7 @@ DEFAULT_CONFIG_FILES = [CONFIG_FILE_KEY_SYSTEM,
 
 
 def _configFileToDict(path, defaults=None):
-    parser = ConfigParser.RawConfigParser()
+    parser = configparser.RawConfigParser()
     parser.read(path)
     if defaults is None:
         options = {}
@@ -209,11 +210,11 @@ def _configEnvironmentToDict(defaults=None, debug=False):
     else:
         options = defaults
     empty = True
-    for (key, value) in os.environ.items():
+    for (key, value) in list(os.environ.items()):
         if key.startswith('RSB_'):
             if debug:
                 empty = False
-                print('     %s -> %s' % (key, value))
+                print(('     %s -> %s' % (key, value)))
             if not key == CONFIG_FILES_VARIABLE and value == '':
                 raise ValueError('The value of the environment variable '
                                  '%s is the empty string' % key)
@@ -284,10 +285,10 @@ def _configDefaultSourcesToDict(defaults=None,
             if debug:
                 if fileIndex[0] == 1:
                     print('  1. Configuration files')
-                print('     %d. %s "%s" %s'
+                print(('     %d. %s "%s" %s'
                       % (fileIndex[0], description, configFile,
                          'exists' if os.path.exists(configFile)
-                         else 'does not exist'))
+                         else 'does not exist')))
                 fileIndex[0] += 1
             return _configFileToDict(configFile, partial)
         return processFile
@@ -364,14 +365,14 @@ class ParticipantConfig(object):
                 self.__options = {}
             else:
                 self.__options = dict([(key, value)
-                                       for (key, value) in options.items()
+                                       for (key, value) in list(options.items())
                                        if '.' not in key and
                                        not key == 'enabled'])
             # Find converter selection rules
             self.__converters = converters
             self.__converterRules = dict(
                 [(key[len("converter.python."):], value)
-                 for (key, value) in options.items()
+                 for (key, value) in list(options.items())
                  if key.startswith('converter.python')])
 
         def getName(self):
@@ -448,7 +449,7 @@ class ParticipantConfig(object):
         self.__introspection = introspection
 
     def getTransports(self, includeDisabled=False):
-        return [t for t in self.__transports.values()
+        return [t for t in list(self.__transports.values())
                 if includeDisabled or t.isEnabled()]
 
     transports = property(getTransports)
@@ -482,7 +483,7 @@ class ParticipantConfig(object):
     def __str__(self):
         return 'ParticipantConfig[%s, options = %s, ' \
                'qos = %s, introspection = %s]' \
-               % (self.__transports.values(), self.__options, self.__qos,
+               % (list(self.__transports.values()), self.__options, self.__qos,
                   self.__introspection)
 
     def __repr__(self):
@@ -492,7 +493,7 @@ class ParticipantConfig(object):
     def __fromDict(cls, options):
         def sectionOptions(section):
             return [(key[len(section) + 1:], value)
-                    for (key, value) in options.items()
+                    for (key, value) in list(options.items())
                     if key.startswith(section)]
         result = ParticipantConfig()
 
@@ -646,7 +647,7 @@ def convertersFromTransportConfig(transport):
     #    the transport, resolving conflicts based on configuration
     #    options when necessary
     # TODO hack!
-    wireType = bytearray
+    wireType = bytes
 
     import rsb
     import rsb.converter
@@ -654,7 +655,7 @@ def convertersFromTransportConfig(transport):
     # Try to add converters form global map
     globalMap = rsb.converter.getGlobalConverterMap(wireType)
     for ((wireSchema, dataType), converter) \
-            in globalMap.getConverters().items():
+            in list(globalMap.getConverters().items()):
         # Converter can be added if converterOptions does not
         # contain a disambiguation that gives precedence to a
         # different converter. map may still raise an
@@ -699,10 +700,10 @@ class Scope(object):
             raise ValueError("The empty string does not designate a "
                              "scope; Use '/' to designate the root scope.")
 
-        if isinstance(stringRep, unicode):
+        if isinstance(stringRep, str):
             try:
-                stringRep = stringRep.encode('ASCII')
-            except UnicodeEncodeError, e:
+                stringRep = stringRep.encode('ASCII').decode('ASCII')
+            except UnicodeEncodeError as e:
                 raise ValueError('Scope strings have be encodable as '
                                  'ASCII-strings, but the supplied scope '
                                  'string cannot be encoded as ASCII-string: %s'
@@ -760,6 +761,17 @@ class Scope(object):
             string += com
             string += self.__COMPONENT_SEPARATOR
         return string
+
+    def toBytes(self):
+        """
+        Encodes the string representation of the scope as a bytes object using
+        ASCII encoding.
+
+        Returns:
+            bytes:
+                encoded string representation
+        """
+        return self.toString().encode('ASCII')
 
     def concat(self, childScope):
         """
@@ -1182,10 +1194,10 @@ class Event(object):
         else:
             self.__metaData = metaData
         if userInfos is not None:
-            for (key, value) in userInfos.items():
+            for (key, value) in list(userInfos.items()):
                 self.__metaData.getUserInfos()[key] = value
         if userTimes is not None:
-            for (key, value) in userTimes.items():
+            for (key, value) in list(userTimes.items()):
                 self.__metaData.getUserTimes()[key] = value
         if causes is not None:
             self.__causes = copy.copy(causes)

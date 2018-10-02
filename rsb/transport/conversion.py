@@ -50,9 +50,9 @@ def notificationToEvent(notification, wireData, wireSchema, converter):
     event = rsb.Event(
         rsb.EventId(uuid.UUID(bytes=notification.event_id.sender_id),
                     notification.event_id.sequence_number))
-    event.scope = rsb.Scope(notification.scope)
+    event.scope = rsb.Scope(notification.scope.decode('ASCII'))
     if notification.HasField("method"):
-        event.method = notification.method
+        event.method = notification.method.decode('ASCII')
     event.type = converter.getDataType()
     event.data = converter.deserialize(wireData, wireSchema)
 
@@ -63,9 +63,10 @@ def notificationToEvent(notification, wireData, wireSchema, converter):
         notification.meta_data.send_time)
     event.metaData.setReceiveTime()
     for info in notification.meta_data.user_infos:
-        event.metaData.setUserInfo(info.key, info.value)
+        event.metaData.setUserInfo(info.key.decode('ASCII'),
+                                   info.value.decode('ASCII'))
     for time in notification.meta_data.user_times:
-        event.metaData.setUserTime(time.key,
+        event.metaData.setUserTime(time.key.decode('ASCII'),
                                    unixMicrosecondsToTime(time.timestamp))
 
     # Causes
@@ -83,25 +84,25 @@ def eventToNotification(notification, event, wireSchema, data, metaData=True):
     notification.event_id.sequence_number = event.sequenceNumber
 
     # Payload [fragment]
-    notification.data = str(data)
+    notification.data = data
 
     # Fill meta-data
     if metaData:
-        notification.scope = event.scope.toString()
+        notification.scope = event.scope.toBytes()
         if event.method is not None:
-            notification.method = event.method
-        notification.wire_schema = wireSchema
+            notification.method = event.method.encode('ASCII')
+        notification.wire_schema = wireSchema.encode('ASCII')
 
         md = notification.meta_data
         md.create_time = timeToUnixMicroseconds(event.metaData.createTime)
         md.send_time = timeToUnixMicroseconds(event.metaData.sendTime)
-        for (k, v) in event.metaData.userInfos.items():
+        for (k, v) in list(event.metaData.userInfos.items()):
             info = md.user_infos.add()
-            info.key = k
-            info.value = v
-        for (k, v) in event.metaData.userTimes.items():
+            info.key = k.encode('ASCII')
+            info.value = v.encode('ASCII')
+        for (k, v) in list(event.metaData.userTimes.items()):
             time = md.user_times.add()
-            time.key = k
+            time.key = k.encode('ASCII')
             time.timestamp = timeToUnixMicroseconds(v)
         # Add causes
         for cause in event.causes:

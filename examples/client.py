@@ -42,7 +42,7 @@ if __name__ == "__main__":
         print('server replied to synchronous call: "%s"' % server.echo('bla'))
 
         # Call the method 'echo' again, this time asynchronously.
-        future = server.echo.async('bla')
+        future = server.echo.asynchronous('bla')
         # do other things
         print('server replied to asynchronous call: "%s"'
               % future.get(timeout=10))
