@@ -63,12 +63,12 @@ class ParticipantInfo(object):
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, kind, id, scope, type, parent_id=None,
+    def __init__(self, kind, participant_id, scope, data_type, parent_id=None,
                  transport_urls=None):
         self.__kind = kind
-        self.__id = id
+        self.__id = participant_id
         self.__scope = rsb.Scope.ensure_scope(scope)
-        self.__type = type
+        self.__type = data_type
         self.__parent_id = parent_id
         self.__transport_urls = transport_urls or []
 
@@ -87,7 +87,7 @@ class ParticipantInfo(object):
 
     kind = property(get_kind)
 
-    def get_id(self):
+    def get_participant_id(self):
         """
         Returns the unique id of the participant.
 
@@ -97,7 +97,7 @@ class ParticipantInfo(object):
         """
         return self.__id
 
-    id = property(get_id)
+    participant_id = property(get_participant_id)
 
     def get_scope(self):
         """
@@ -111,7 +111,7 @@ class ParticipantInfo(object):
 
     scope = property(get_scope)
 
-    def get_type(self):
+    def get_data_type(self):
         """
         Returns a representation of the type of the participant, if
         available.
@@ -125,7 +125,7 @@ class ParticipantInfo(object):
         """
         return self.__type
 
-    type = property(get_type)
+    data_type = property(get_data_type)
 
     def get_parent_id(self):
         """
@@ -228,7 +228,7 @@ class ProcessInfo(object):
     """
 
     def __init__(self,
-                 id=os.getpid(),
+                 process_id=os.getpid(),
                  program_name='python%d.%d %s'
                  % (sys.version_info.major,
                     sys.version_info.minor,
@@ -237,7 +237,7 @@ class ProcessInfo(object):
                  start_time=process_start_time(),
                  executing_user=None,
                  rsb_version=rsb.version.get_version()):
-        self.__id = id
+        self.__id = process_id
         self.__program_name = program_name
         self.__arguments = arguments
         self.__start_time = start_time
@@ -249,7 +249,7 @@ class ProcessInfo(object):
                 pass
         self.__rsb_version = rsb_version
 
-    def get_id(self):
+    def get_process_id(self):
         """
         Returns the numeric id of the process.
 
@@ -259,7 +259,7 @@ class ProcessInfo(object):
         """
         return self.__id
 
-    id = property(get_id)
+    process_id = property(get_process_id)
 
     def get_program_name(self):
         """
@@ -329,7 +329,8 @@ class ProcessInfo(object):
 
     def __str__(self):
         return '<%s %s [%d] at 0x%0x>' \
-            % (type(self).__name__, self.program_name, self.id, id(self))
+            % (type(self).__name__, self.program_name,
+               self.process_id, id(self))
 
     def __repr__(self):
         return str(self)
@@ -390,20 +391,20 @@ class HostInfo(object):
     """
 
     def __init__(self,
-                 id=host_id(),
+                 host_id=host_id(),
                  hostname=platform.node().split('.')[0],
                  machine_type=machine_type(),
                  machine_version=machine_version(),
                  software_type=platform.system().lower(),
                  software_version=platform.release()):
-        self.__id = id
+        self.__id = host_id
         self.__hostname = hostname
         self.__machine_type = machine_type
         self.__machine_version = machine_version
         self.__software_type = software_type
         self.__software_version = software_version
 
-    def get_id(self):
+    def get_host_id(self):
         """
         Return the unique id string for the host.
 
@@ -413,7 +414,7 @@ class HostInfo(object):
         """
         return self.__id
 
-    id = property(get_id)
+    host_id = property(get_host_id)
 
     def get_hostname(self):
         """
@@ -542,9 +543,10 @@ class IntrospectionSender(object):
                 try:
                     participant_id = uuid.UUID(event.scope.components[-1])
                     if participant_id is not None:
-                        participant = next((p for p in self.__participants
-                                            if p.id == participant_id),
-                                           None)
+                        participant = next(
+                            (p for p in self.__participants
+                             if p.participant_id == participant_id),
+                            None)
                 except Exception as e:
                     self.__logger.warn('Query event %s does not '
                                        'properly address a participant: %s',
@@ -569,13 +571,13 @@ class IntrospectionSender(object):
         self.__listener.add_handler(handle)
 
         self.__server = rsb.create_server(
-            process_scope(self.__host.id or self.__host.hostname,
-                          str(self.__process.id)))
+            process_scope(self.__host.host_id or self.__host.hostname,
+                          str(self.__process.process_id)))
 
         def echo(request):
             reply = rsb.Event(scope=request.scope,
                               data=request.data,
-                              type=type(request.data))
+                              data_type=type(request.data))
             reply.meta_data.set_user_time('request.send',
                                         request.meta_data.send_time)
             reply.meta_data.set_user_time('request.receive',
@@ -603,7 +605,7 @@ class IntrospectionSender(object):
     def add_participant(self, participant, parent=None):
         parent_id = None
         if parent:
-            parent_id = parent.id
+            parent_id = parent.participant_id
 
         def camel_case_to_dash_seperated(name):
             result = []
@@ -615,10 +617,10 @@ class IntrospectionSender(object):
 
         info = ParticipantInfo(
             kind=camel_case_to_dash_seperated(type(participant).__name__),
-            id=participant.id,
+            participant_id=participant.participant_id,
             parent_id=parent_id,
             scope=participant.scope,
-            type=object,  # TODO
+            data_type=object,  # TODO
             transport_urls=participant.transport_urls)
 
         self.__participants.append(info)
@@ -628,7 +630,7 @@ class IntrospectionSender(object):
     def remove_participant(self, participant):
         removed = None
         for p in self.__participants:
-            if p.id == participant.id:
+            if p.participant_id == participant.participant_id:
                 removed = p
                 break
 
@@ -641,7 +643,7 @@ class IntrospectionSender(object):
     def send_hello(self, participant, query=None):
         hello = Hello()
         hello.kind = participant.kind
-        hello.id = participant.id.get_bytes()
+        hello.id = participant.participant_id.get_bytes()
         hello.scope = participant.scope.to_string()
         if participant.parent_id:
             hello.parent = participant.parent_id.get_bytes()
@@ -649,10 +651,10 @@ class IntrospectionSender(object):
             hello.transport.append(url)
 
         host = hello.host
-        if self.host.id is None:
+        if self.host.host_id is None:
             host.id = self.host.hostname
         else:
-            host.id = self.host.id
+            host.id = self.host.host_id
         host.hostname = self.host.hostname
         host.machine_type = self.host.machine_type
         if self.host.machine_version is not None:
@@ -661,7 +663,7 @@ class IntrospectionSender(object):
         host.software_version = self.host.software_version
 
         process = hello.process
-        process.id = str(self.process.id)
+        process.id = str(self.process.process_id)
         process.program_name = self.process.program_name
         for argument in self.process.arguments:
             process.commandline_arguments.append(argument)
@@ -671,31 +673,33 @@ class IntrospectionSender(object):
         process.rsb_version = self.process.rsb_version
         if _display_name:
             process.display_name = _display_name
-        scope = participant_scope(participant.id, self.__informer.scope)
+        scope = participant_scope(participant.participant_id,
+                                  self.__informer.scope)
         hello_event = rsb.Event(scope=scope,
                                 data=hello,
-                                type=type(hello))
+                                data_type=type(hello))
         if query:
-            hello_event.add_cause(query.id)
+            hello_event.add_cause(query.event_id)
         self.__informer.publish_event(hello_event)
 
     def send_bye(self, participant):
         bye = Bye()
-        bye.id = participant.id.get_bytes()
+        bye.id = participant.participant_id.get_bytes()
 
-        scope = participant_scope(participant.id, self.__informer.scope)
+        scope = participant_scope(participant.participant_id,
+                                  self.__informer.scope)
         bye_event = rsb.Event(scope=scope,
                               data=bye,
-                              type=type(bye))
+                              data_type=type(bye))
         self.__informer.publish_event(bye_event)
 
     def send_pong(self, participant, query=None):
-        scope = participant_scope(participant.id, self.__informer.scope)
+        scope = participant_scope(participant.participant_id, self.__informer.scope)
         pong_event = rsb.Event(scope=scope,
                                data='pong',
-                               type=str)
+                               data_type=str)
         if query:
-            pong_event.add_cause(query.id)
+            pong_event.add_cause(query.event_id)
         self.__informer.publish_event(pong_event)
 
 

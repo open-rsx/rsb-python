@@ -52,7 +52,7 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
     event.scope = rsb.Scope(notification.scope.decode('ASCII'))
     if notification.HasField("method"):
         event.method = notification.method.decode('ASCII')
-    event.type = converter.get_data_type()
+    event.data_type = converter.get_data_type()
     event.data = converter.deserialize(wire_data, wire_schema)
 
     # Meta data
@@ -70,9 +70,9 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
 
     # Causes
     for cause in notification.causes:
-        id = rsb.EventId(uuid.UUID(bytes=cause.sender_id),
-                         cause.sequence_number)
-        event.add_cause(id)
+        event_id = rsb.EventId(uuid.UUID(bytes=cause.sender_id),
+                               cause.sequence_number)
+        event.add_cause(event_id)
 
     return event
 
@@ -105,9 +105,9 @@ def event_to_notification(notification, event, wire_schema, data, meta_data=True
             time.timestamp = time_to_unix_microseconds(v)
         # Add causes
         for cause in event.causes:
-            id = notification.causes.add()
-            id.sender_id = cause.participant_id.bytes
-            id.sequence_number = cause.sequence_number
+            cause_id = notification.causes.add()
+            cause_id.sender_id = cause.participant_id.bytes
+            cause_id.sequence_number = cause.sequence_number
 
 
 def event_to_notifications(event, converter, max_fragment_size):

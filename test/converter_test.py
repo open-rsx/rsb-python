@@ -45,31 +45,32 @@ class ConflictingStringConverter(Converter):
         Converter.__init__(self, wire_type=bytes,
                            wire_schema="utf-8-string", data_type=float)
 
-    def serialize(self, input):
-        return str(input)
+    def serialize(self, data):
+        return str()
 
-    def deserialize(self, input, wire_schema):
-        return str(input)
+    def deserialize(self, wire, wire_schema):
+        return str(wire)
 
 
 class ConverterMapTest(unittest.TestCase):
     def test_add_converter(self):
-        map = ConverterMap(str)
-        map.add_converter(StringConverter())
-        map.add_converter(ConflictingStringConverter())
-        self.assertRaises(Exception, map.add_converter, StringConverter())
-        map.add_converter(StringConverter(), replace_existing=True)
+        converter_map = ConverterMap(str)
+        converter_map.add_converter(StringConverter())
+        converter_map.add_converter(ConflictingStringConverter())
+        self.assertRaises(Exception,
+                          converter_map.add_converter, StringConverter())
+        converter_map.add_converter(StringConverter(), replace_existing=True)
 
 
 class UnambiguousConverterMapTest(unittest.TestCase):
     def test_add_converter(self):
-        map = UnambiguousConverterMap(str)
-        map.add_converter(StringConverter())
-        self.assertRaises(Exception, map.add_converter,
+        converter_map = UnambiguousConverterMap(str)
+        converter_map.add_converter(StringConverter())
+        self.assertRaises(Exception, converter_map.add_converter,
                           ConflictingStringConverter())
-        self.assertRaises(Exception, map.add_converter,
+        self.assertRaises(Exception, converter_map.add_converter,
                           ConflictingStringConverter(), True)
-        map.add_converter(StringConverter(), replace_existing=True)
+        converter_map.add_converter(StringConverter(), replace_existing=True)
 
 
 class PredicateConverterListTest(unittest.TestCase):
@@ -77,12 +78,14 @@ class PredicateConverterListTest(unittest.TestCase):
         self.assertTrue(a is b)
 
     def test_add_converter(self):
-        list = PredicateConverterList(str)
-        list.add_converter(StringConverter())
-        list.add_converter(StringConverter(),
-                           wire_schema_predicate=lambda wire_schema: True)
-        list.add_converter(StringConverter(),
-                           data_type_predicate=lambda data_type: True)
+        converter_list = PredicateConverterList(str)
+        converter_list.add_converter(StringConverter())
+        converter_list.add_converter(
+            StringConverter(),
+            wire_schema_predicate=lambda wire_schema: True)
+        converter_list.add_converter(
+            StringConverter(),
+            data_type_predicate=lambda data_type: True)
 
     def test_get_converter(self):
         v1 = StringConverter()
@@ -193,13 +196,13 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
 
         data = {}
         scope1 = Scope("/a/test")
-        event1 = Event(id=EventId(uuid4(), 32), scope=scope1,
-                       method="foo", data=42, type=int,
+        event1 = Event(event_id=EventId(uuid4(), 32), scope=scope1,
+                       method="foo", data=42, data_type=int,
                        user_times={"foo": 1231234.0})
         event1.meta_data.set_send_time()
         event1.meta_data.set_receive_time()
-        event2 = Event(id=EventId(uuid4(), 1001), scope=scope1,
-                       method="fooasdas", data=422, type=int,
+        event2 = Event(event_id=EventId(uuid4(), 1001), scope=scope1,
+                       method="fooasdas", data=422, data_type=int,
                        user_times={"bar": 1234.05})
         event2.meta_data.set_send_time()
         event2.meta_data.set_receive_time()
@@ -214,11 +217,11 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
 
         for orig, converted in zip(data[scope1], roundtripped[scope1]):
 
-            self.assertEqual(orig.id, converted.id)
+            self.assertEqual(orig.event_id, converted.event_id)
             self.assertEqual(orig.scope, converted.scope)
             # This test currently does not work correctly without a patch for
             # the converter selection for fundamental types
-            # self.assertEqual(orig.type, converted.type)
+            # self.assertEqual(orig.data_type, converted.data_type)
             self.assertEqual(orig.data, converted.data)
             self.assertAlmostEqual(orig.meta_data.create_time,
                                    converted.meta_data.create_time,

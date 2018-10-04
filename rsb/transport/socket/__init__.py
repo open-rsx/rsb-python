@@ -893,7 +893,7 @@ class OutConnector(Connector,
         # Create a notification fragment for the event and send it
         # over the bus.
         event.get_meta_data().set_send_time()
-        converter = self.get_converter_for_data_type(event.type)
+        converter = self.get_converter_for_data_type(event.data_type)
         wire_data, wire_schema = converter.serialize(event.data)
         notification = Notification()
         conversion.event_to_notification(notification, event,

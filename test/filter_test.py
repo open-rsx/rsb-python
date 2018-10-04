@@ -52,11 +52,11 @@ class OriginFilterTest(unittest.TestCase):
 
     def test_match(self):
         sender_id1 = uuid.uuid1()
-        e1 = rsb.Event(id=rsb.EventId(participant_id=sender_id1,
-                                      sequence_number=0))
+        e1 = rsb.Event(event_id=rsb.EventId(participant_id=sender_id1,
+                                            sequence_number=0))
         sender_id2 = uuid.uuid1()
-        e2 = rsb.Event(id=rsb.EventId(participant_id=sender_id2,
-                                      sequence_number=1))
+        e2 = rsb.Event(event_id=rsb.EventId(participant_id=sender_id2,
+                                            sequence_number=1))
 
         f = rsb.filter.OriginFilter(origin=sender_id1)
         self.assertTrue(f.match(e1))

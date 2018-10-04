@@ -61,11 +61,11 @@ class LocalServerTest(unittest.TestCase):
                 pass
 
         some_object = SomeClass()
-        with rsb.create_local_server(rsb.Scope('/some/scope'),
-                                     object=some_object,
-                                     expose=[('bar', str, None)],
-                                     config=in_process_no_introspection_config) \
-                as server:
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                provider=some_object,
+                expose=[('bar', str, None)],
+                config=in_process_no_introspection_config) as server:
             self.assertEqual([m.name for m in server.methods], ['bar'])
 
             # Cannot supply expose without object
@@ -78,7 +78,7 @@ class LocalServerTest(unittest.TestCase):
             self.assertRaises(ValueError,
                               rsb.create_local_server,
                               '/some/scope',
-                              object=some_object,
+                              provider=some_object,
                               expose=[('bar', str, None)],
                               methods=[('foo', lambda x: x, str, str)])
 

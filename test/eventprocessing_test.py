@@ -194,7 +194,7 @@ class MockConnector(object):
     def push(self, event):
         pass
 
-    def filter_notify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
     def set_observer_action(self, action):
@@ -305,15 +305,15 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
             def __init__(self):
                 self.calls = []
 
-            def filter_notify(self, filter, action):
-                self.calls.append((filter, action))
+            def filter_notify(self, filter_, action):
+                self.calls.append((filter_, action))
 
             def expect(self1, calls):  # noqa: N805
                 self.assertEqual(len(calls), len(self1.calls))
-                for (exp_filter, expAction), (filter, action) in \
+                for (exp_filter, exp_action), (filter_, action) in \
                         zip(calls, self1.calls):
-                    self.assertEqual(exp_filter, filter)
-                    if expAction == 'add':
+                    self.assertEqual(exp_filter, filter_)
+                    if exp_action == 'add':
                         self.assertEqual(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
@@ -359,7 +359,7 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         strategy.add_handler(h1, True)
         strategy.add_handler(h2, True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
 
         with h1.condition:
@@ -382,7 +382,7 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         handler = self.CollectingHandler()
         strategy.add_handler(handler, True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
 
         with false_filter.condition:
@@ -426,11 +426,11 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         strategy = FullyParallelEventReceivingStrategy()
         strategy.add_handler(Receiver(max_parallel_calls), True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
-        event = Event(id=43)
+        event = Event(event_id=43)
         strategy.handle(event)
-        event = Event(id=44)
+        event = Event(event_id=44)
         strategy.handle(event)
 
         num_called = 0

@@ -143,7 +143,7 @@ class InPushConnector(transport.InPushConnector):
         self.__scope = None
         self.__observer_action = None
 
-    def filter_notify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
     def set_observer_action(self, action):

@@ -170,8 +170,8 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
     def test_filter_execution(self):
 
-        filter = self.RejectFilter()
-        pool = OrderedQueueDispatcherPool(2, self.deliver, filter)
+        reject_filter = self.RejectFilter()
+        pool = OrderedQueueDispatcherPool(2, self.deliver, reject_filter)
 
         receiver = self.StubReciever()
         pool.register_receiver(receiver)
@@ -183,13 +183,13 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
             pool.push(i)
 
         # wait for filtering
-        with filter.condition:
-            while filter.reject_calls < num_messages:
-                filter.condition.wait()
+        with reject_filter.condition:
+            while reject_filter.reject_calls < num_messages:
+                reject_filter.condition.wait()
 
         pool.stop()
 
-        self.assertEqual(num_messages, filter.reject_calls)
+        self.assertEqual(num_messages, reject_filter.reject_calls)
 
     def test_unregister(self):
 

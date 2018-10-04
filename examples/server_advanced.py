@@ -51,7 +51,7 @@ if __name__ == '__main__':
             return arg
 
     server = create_server(Scope('/example/server'),
-                           object=MyObject(),
+                           provider=MyObject(),
                            expose=[('echo3', str, str)])
 
     # Note: the code above creates three servers, each of which

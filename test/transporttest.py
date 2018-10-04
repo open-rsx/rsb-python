@@ -86,7 +86,7 @@ class TransportCheck(object):
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "dummy data"
-        event.type = str
+        event.data_type = str
         event.meta_data.sender_id = uuid.uuid4()
         outconnector.handle(event)
 
@@ -133,7 +133,7 @@ class TransportCheck(object):
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "dummy data"
-        event.type = str
+        event.data_type = str
         event.meta_data.sender_id = uuid.uuid4()
         outconnector.handle(event)
 
@@ -172,7 +172,7 @@ class TransportCheck(object):
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
         sent_event.set_data(data1)
-        sent_event.set_type(str)
+        sent_event.set_data_type(str)
         sent_event.set_scope(scope)
         sent_event.get_meta_data().set_user_info("test", "it")
         sent_event.get_meta_data().set_user_info("test again", "it works?")
@@ -229,7 +229,7 @@ class TransportCheck(object):
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
         sent_event.set_data(data1)
-        sent_event.set_type(str)
+        sent_event.set_data_type(str)
         sent_event.set_scope(scope)
         sent_event.get_meta_data().set_user_info("test", "it")
         sent_event.get_meta_data().set_user_info("test again", "it works?")
@@ -309,7 +309,7 @@ class TransportCheck(object):
         event.data = "".join(
             random.choice(string.ascii_uppercase + string.ascii_lowercase +
                           string.digits) for i in list(range(300502)))
-        event.type = str
+        event.data_type = str
         event.meta_data.sender_id = uuid.uuid4()
 
         before = time.time()

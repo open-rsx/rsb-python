@@ -130,7 +130,7 @@ class Future(object):
 
         return self.__result
 
-    def set(self, result):
+    def set_result(self, result):
         """
         Set the result of the :obj:`Future` to ``result`` and wake all
         threads waiting for the result.

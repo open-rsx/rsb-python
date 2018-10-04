@@ -333,10 +333,10 @@ class EventTest(unittest.TestCase):
         self.e.scope = scope
         self.assertEqual(scope, self.e.scope)
 
-    def test_type(self):
+    def test_data_type(self):
         t = "asdasd"
-        self.e.type = t
-        self.assertEqual(t, self.e.type)
+        self.e.data_type = t
+        self.assertEqual(t, self.e.data_type)
 
     def test_causes(self):
 
@@ -491,18 +491,19 @@ class InformerTest(unittest.TestCase):
 
     def test_send_event_wrong_scope(self):
         # Error: unrelated scope
-        e = Event(scope=Scope("/blubb"), data='foo', type=self.informer.type)
+        e = Event(scope=Scope("/blubb"), data='foo',
+                  data_type=self.informer.data_type)
         self.assertRaises(ValueError, self.informer.publish_event, e)
 
         # OK: identical scope
         e = Event(scope=self.default_scope,
-                  data='foo', type=self.informer.type)
+                  data='foo', data_type=self.informer.data_type)
         self.informer.publish_event(e)
 
         # OK: sub-scope
         e = Event(scope=self.default_scope.concat(Scope('/sub')),
                   data='foo',
-                  type=self.informer.type)
+                  data_type=self.informer.data_type)
         self.informer.publish_event(e)
 
     def test_send_event_wrong_type(self):

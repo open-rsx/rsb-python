@@ -1149,14 +1149,21 @@ class Event(object):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, id=None, scope=Scope("/"), method=None,
-                 data=None, type=object,
-                 meta_data=None, user_infos=None, user_times=None, causes=None):
+    def __init__(self,
+                 event_id=None,
+                 scope=Scope("/"),
+                 method=None,
+                 data=None,
+                 data_type=object,
+                 meta_data=None,
+                 user_infos=None,
+                 user_times=None,
+                 causes=None):
         """
         Constructs a new event with undefined type, root scope and no data.
 
         Args:
-            id (EventId):
+            event_id (EventId):
                 The id of this event
             scope (Scope or accepted by Scope constructor):
                 A :obj:`Scope` designating the channel on which the event will
@@ -1167,7 +1174,7 @@ class Event(object):
                 ``"REQUEST"`` and ``"REPLY"``.
             data:
                 data contained in this event
-            type (types.TypeType):
+            data_type (types.TypeType):
                 python data type of the contained data
             meta_data (MetaData):
                 meta data to use for the new event
@@ -1183,13 +1190,13 @@ class Event(object):
                 newly constructed events.
         """
 
-        self.__id = id
+        self.__id = event_id
         self.__scope = Scope.ensure_scope(scope)
         self.__method = method
         self.__data = data
-        if type is None:
+        if data_type is None:
             raise ValueError("Type must not be None")
-        self.__type = type
+        self.__type = data_type
         if meta_data is None:
             self.__meta_data = MetaData()
         else:
@@ -1216,11 +1223,11 @@ class Event(object):
             int:
                 sequence number of the event.
         """
-        return self.get_id().get_sequence_number()
+        return self.get_event_id().get_sequence_number()
 
     sequence_number = property(get_sequence_number)
 
-    def get_id(self):
+    def get_event_id(self):
         """
         Returns the id of this event.
 
@@ -1237,10 +1244,10 @@ class Event(object):
             raise RuntimeError("The event does not have an ID so far.")
         return self.__id
 
-    def set_id(self, the_id):
-        self.__id = the_id
+    def set_event_id(self, event_id):
+        self.__id = event_id
 
-    id = property(get_id, set_id)
+    event_id = property(get_event_id, set_event_id)
 
     def get_scope(self):
         """
@@ -1278,7 +1285,7 @@ class Event(object):
             uuid.UUID:
                 sender id
         """
-        return self.get_id().get_participant_id()
+        return self.get_event_id().get_participant_id()
 
     sender_id = property(get_sender_id)
 
@@ -1328,7 +1335,7 @@ class Event(object):
 
     data = property(get_data, set_data)
 
-    def get_type(self):
+    def get_data_type(self):
         """
         Returns the type of the user data of this event.
 
@@ -1339,7 +1346,7 @@ class Event(object):
 
         return self.__type
 
-    def set_type(self, the_type):
+    def set_data_type(self, data_type):
         """
         Sets the type of the user data of this event
 
@@ -1348,9 +1355,9 @@ class Event(object):
                 user data type
         """
 
-        self.__type = the_type
+        self.__type = data_type
 
-    type = property(get_type, set_type)
+    data_type = property(get_data_type, set_data_type)
 
     def get_meta_data(self):
         return self.__meta_data
@@ -1521,13 +1528,13 @@ class Participant(object):
         self.__scope = Scope.ensure_scope(scope)
         self.__config = config
 
-    def get_id(self):
+    def get_participant_id(self):
         return self.__id
 
-    def set_id(self, the_id):
-        self.__id = the_id
+    def set_participant_id(self, participant_id):
+        self.__id = participant_id
 
-    id = property(get_id, set_id)
+    participant_id = property(get_participant_id, set_participant_id)
 
     def get_scope(self):
         return self.__scope
@@ -1675,7 +1682,7 @@ class Informer(Participant):
 
     transport_urls = property(get_transport_urls)
 
-    def get_type(self):
+    def get_data_type(self):
         """
         Returns the type of data sent by this informer.
 
@@ -1684,13 +1691,13 @@ class Informer(Participant):
         """
         return self.__type
 
-    type = property(get_type)
+    data_type = property(get_data_type)
 
     def publish_data(self, data, user_infos=None, user_times=None):
         # TODO check activation
         self.__logger.debug("Publishing data '%s'", data)
         event = Event(scope=self.scope,
-                      data=data, type=type(data),
+                      data=data, data_type=type(data),
                       user_infos=user_infos, user_times=user_times)
         return self.publish_event(event)
 
@@ -1711,13 +1718,14 @@ class Informer(Participant):
             raise ValueError("Scope %s of event %s is not a sub-scope of "
                              "this informer's scope %s."
                              % (event.scope, event, self.scope))
-        if not isinstance(event.data, self.type):
+        if not isinstance(event.data, self.data_type):
             raise ValueError("The payload %s of event %s does not match "
                              "this informer's type %s."
-                             % (event.data, event, self.type))
+                             % (event.data, event, self.data_type))
 
         with self.__mutex:
-            event.id = EventId(self.id, self.__sequence_number)
+            event.event_id = EventId(self.participant_id,
+                                     self.__sequence_number)
             self.__sequence_number += 1
         self.__logger.debug("Publishing event '%s'", event)
         self.__configurator.handle(event)
@@ -2165,7 +2173,7 @@ def create_informer(scope, config=None, parent=None, data_type=object,
 
 
 def create_local_server(scope, config=None, parent=None,
-                        object=None, expose=None, methods=None,
+                        provider=None, expose=None, methods=None,
                         **kwargs):
     """
     Create and return a new :obj:`LocalServer` object that exposes its
@@ -2184,7 +2192,7 @@ def create_local_server(scope, config=None, parent=None,
         parent (Participant or NoneType):
             ``None`` or the :obj:`Participant` which should be considered the
             parent of the new server.
-        object:
+        provider:
             An object the methods of which should be exposed via the newly
             created server. Has to be supplied in combination with the expose
             keyword parameter.
@@ -2205,19 +2213,19 @@ def create_local_server(scope, config=None, parent=None,
             A newly created :obj:`LocalServer` object.
     """
     # Check arguments
-    if object is not None and expose is not None and methods is not None:
-        raise ValueError('Supply either object and expose or methods')
-    if object is None and expose is not None \
-            or object is not None and expose is None:
-        raise ValueError('object and expose have to supplied together')
+    if provider is not None and expose is not None and methods is not None:
+        raise ValueError('Supply either provider and expose or methods')
+    if provider is None and expose is not None \
+            or provider is not None and expose is None:
+        raise ValueError('provider and expose have to supplied together')
 
     # Create the server object and potentially add methods.
     import rsb.patterns as patterns
     server = create_participant(patterns.LocalServer,
                                 scope, config, parent,
                                 **kwargs)
-    if object and expose:
-        methods = [(name, getattr(object, name), request_type, reply_type)
+    if provider and expose:
+        methods = [(name, getattr(provider, name), request_type, reply_type)
                    for (name, request_type, reply_type) in expose]
     if methods:
         for (name, func, request_type, reply_type) in methods:
@@ -2250,7 +2258,7 @@ def create_remote_server(scope, config=None, parent=None, **kwargs):
 
 
 def create_server(scope, config=None, parent=None,
-                  object=None, expose=None, methods=None,
+                  provider=None, expose=None, methods=None,
                   **kwargs):
     """
     Like :obj:`create_local_server`.
@@ -2260,5 +2268,5 @@ def create_server(scope, config=None, parent=None,
        Use :obj:`create_local_server` instead.
     """
     return create_local_server(scope, config, parent,
-                               object=object, expose=expose, methods=methods,
+                               provider=provider, expose=expose, methods=methods,
                                **kwargs)

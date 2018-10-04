@@ -32,15 +32,15 @@ class ParticipantInfoTest(unittest.TestCase):
 
     def test_construction_without_parent_id(self):
         ParticipantInfo(kind='listener',
-                        id=uuid.uuid4(),
+                        participant_id=uuid.uuid4(),
                         scope='/foo',
-                        type=str)
+                        data_type=str)
 
     def test_construction_with_parent_id(self):
         ParticipantInfo(kind='listener',
-                        id=uuid.uuid4(),
+                        participant_id=uuid.uuid4(),
                         scope='/foo',
-                        type=str,
+                        data_type=str,
                         parent_id=uuid.uuid4())
 
 
@@ -48,7 +48,7 @@ class ProcessInfoTest(unittest.TestCase):
 
     def test_construction_defaults(self):
         info = ProcessInfo()
-        self.assertTrue(isinstance(info.id, int))
+        self.assertTrue(isinstance(info.process_id, int))
         self.assertTrue(isinstance(info.rsb_version, str))
 
 
@@ -56,7 +56,7 @@ class HostInfoTest(unittest.TestCase):
 
     def test_construction_defaults(self):
         info = HostInfo()
-        self.assertTrue(isinstance(info.id, str) or info.id is None)
+        self.assertTrue(isinstance(info.host_id, str) or info.host_id is None)
         self.assertTrue(isinstance(info.machine_type, str))
         self.assertTrue(isinstance(info.software_type, str))
         self.assertTrue(isinstance(info.software_version, str))

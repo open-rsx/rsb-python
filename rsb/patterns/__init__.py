@@ -290,7 +290,7 @@ class LocalMethod(Method):
         # argument. Otherwise pass the payload of the request event to
         # it.
         user_infos = {}
-        causes = [request.id]
+        causes = [request.event_id]
         is_error = False
         try:
             if self.request_type is type(None):
@@ -326,7 +326,7 @@ class LocalMethod(Method):
             reply = rsb.Event(scope=self.informer.scope,
                               method='REPLY',
                               data=result,
-                              type=result_type,
+                              data_type=result_type,
                               user_infos=user_infos,
                               causes=causes)
 
@@ -455,9 +455,9 @@ class RemoteMethod(Method):
             result = self._calls[key]
             del self._calls[key]
         if 'rsb:error?' in event.meta_data.user_infos:
-            result.setError(event.data)
+            result.set_error(event.data)
         else:
-            result.set(event)
+            result.set_result(event)
 
     def __call__(self, arg=None, timeout=0):
         """
@@ -561,7 +561,7 @@ class RemoteMethod(Method):
             event = rsb.Event(scope=self.informer.scope,
                               method='REQUEST',
                               data=arg,
-                              type=type(arg))
+                              data_type=type(arg))
             result = DataFuture()
 
         # Publish the constructed request event and record the call as
@@ -569,7 +569,7 @@ class RemoteMethod(Method):
         try:
             with self._lock:
                 event = self.informer.publish_event(event)
-                self._calls[event.id] = result
+                self._calls[event.event_id] = result
         except Exception as e:
             raise RemoteCallError(self.server.scope, self, e) from e
         return result

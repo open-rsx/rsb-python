@@ -116,7 +116,7 @@ class InPushConnector(Connector):
     """
 
     @abc.abstractmethod
-    def filter_notify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
     @abc.abstractmethod

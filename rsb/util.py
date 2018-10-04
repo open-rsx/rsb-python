@@ -30,7 +30,7 @@ Various helper classes and methods.
 
 import logging
 from queue import Queue
-from threading import Condition, Lock, Thread
+from threading import Lock, Condition, Thread
 
 
 class Enum(object):
@@ -119,7 +119,7 @@ class Enum(object):
                                self.__values)
 
 
-class InterruptedError(RuntimeError):
+class _InterruptedError(RuntimeError):
     """
     .. codeauthor:: jwienke
     """
@@ -298,7 +298,7 @@ class OrderedQueueDispatcherPool(object):
                     self.__condition.wait()
 
                 if (self.__interrupted):
-                    raise InterruptedError("Processing was interrupted")
+                    raise _InterruptedError("Processing was interrupted")
 
                 # search the next job
                 for _ in range(len(self.__receivers)):
@@ -361,7 +361,7 @@ class OrderedQueueDispatcherPool(object):
                         worker_num, receiver.receiver)
                 self.__finished_work(receiver, worker_num)
 
-        except InterruptedError:
+        except _InterruptedError:
             pass
 
     def start(self):
