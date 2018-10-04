@@ -279,7 +279,6 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
             self.__pool = None
 
     def __deliver(self, action, event):
-        # pylint: disable=no-self-use
         action(event)
 
     def __filter(self, action, event):

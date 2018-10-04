@@ -13,7 +13,6 @@ setup.cfg
 /gitversion
 /gitbranch
 /MANIFEST
-/pylint.out
 /.eggs
 /.tox
 /tags

@@ -154,7 +154,6 @@ class OrderedQueueDispatcherPool(object):
             self.processing_condition = Condition()
 
     def __true_filter(self, receiver, message):
-        # pylint: disable=unused-argument,no-self-use
         return True
 
     def __init__(self, thread_pool_size, del_func, filter_func=None):
