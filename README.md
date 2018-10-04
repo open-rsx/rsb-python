@@ -52,3 +52,19 @@ python setup.py coverage
 ```
 
 Will be available in `covhtml`.
+
+# Contributing #
+
+If you want to contribute to this project, please
+
+- Submit your intended changes as coherent pull requests
+- Rebase onto the master branch and squash any fixups and corrections
+- Make sure the unit tests pass (See [Running Unit Tests](#running-unit-tests))
+
+# Acknowledgments #
+
+The development of this software has been supported as follows:
+
+- This research was funded by the EC 7th Framework Programme (FP7/2007-2013), in the TA2 (grant agreement ICT-2007-214 793) and HUMAVIPS (grant aggrement ICT-2009-247525) projects.
+- The development of this software was supported by CoR-Lab, Research Institute for Cognition and Robotics Bielefeld University.
+- This work was supported by the Cluster of Excellence Cognitive Interaction Technology ‘CITEC’ (EXC 277) at Bielefeld University, which is funded by the German Research Foundation (DFG).
