@@ -31,8 +31,7 @@ import rsb.converter
 
 # See ./registration.py.
 sys.path.append('.')
-from SimpleImage_pb2 import SimpleImage  # noqa: I100 adding to path is
-                                         #       required before
+from SimpleImage_pb2 import SimpleImage  # noqa: I100 path required before
 
 if __name__ == '__main__':
     # Pacify logger.

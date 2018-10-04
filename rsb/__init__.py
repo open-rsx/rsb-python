@@ -1549,7 +1549,8 @@ class Participant(object):
 
         Returns:
             set:
-                Set of transport URLs."""
+                Set of transport URLs.
+        """
         return set()
 
     transport_ur_ls = property(get_transport_ur_ls)

@@ -267,11 +267,13 @@ class PredicateConverterList(ConverterMap):
             # if converter.get_wire_schema() == 'void':
             #    wire_schema_predicate = lambda wire_schema: True
             # else:
-            def wire_schema_predicate(wire_schema): return \
-                wire_schema == converter.get_wire_schema()
+            def wire_schema_predicate(wire_schema):
+                return wire_schema == converter.get_wire_schema()
+
         if data_type_predicate is None:
-            def data_type_predicate(data_type): return \
-                data_type == converter.get_data_type()
+            def data_type_predicate(data_type):
+                return data_type == converter.get_data_type()
+
         key = (wire_schema_predicate, data_type_predicate)
         self._converters[key] = converter
         self._list.append((key, converter))

@@ -36,8 +36,7 @@ import rsb.converter
 # See the comment in SimpleImage.proto for how to manually perform the
 # code generation.
 sys.path.append('.')
-from SimpleImage_pb2 import SimpleImage  # noqa: I100 adding to path is
-                                         #       required before
+from SimpleImage_pb2 import SimpleImage  # noqa: I100 correct path required
 
 if __name__ == '__main__':
     # Pacify logger.

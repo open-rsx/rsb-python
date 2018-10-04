@@ -165,9 +165,12 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         for size in range(2, 10):
             ep = rsb.eventprocessing.ParallelEventReceivingStrategy(size)
 
-            def h1(e): return e
+            def h1(e):
+                return e
 
-            def h2(e): return e
+            def h2(e):
+                return e
+
             ep.add_handler(h1, wait=True)
             ep.add_handler(h2, wait=True)
             ep.add_handler(h1, wait=True)
