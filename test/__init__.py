@@ -30,9 +30,9 @@ from testconfig import config
 
 def setup_package():
     try:
-        socketPort = config['socket']['port']
+        socket_port = config['socket']['port']
     except KeyError:
-        socketPort = 55666
+        socket_port = 55666
     # generate config files
     for name, socketenabled, inprocessenabled in \
             [('socket', '1', '0'),
@@ -49,9 +49,9 @@ enabled = {socketenabled}
 port    = {socketport}'''
                     .format(inprocessenabled=inprocessenabled,
                             socketenabled=socketenabled,
-                            socketport=socketPort))
+                            socketport=socket_port))
 
     # initialize participant config
-    rsb.getDefaultParticipantConfig()
-    rsb.setDefaultParticipantConfig(
-        rsb.ParticipantConfig.fromFile('test/with-inprocess.conf'))
+    rsb.get_default_participant_config()
+    rsb.set_default_participant_config(
+        rsb.ParticipantConfig.from_file('test/with-inprocess.conf'))

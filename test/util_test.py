@@ -33,7 +33,7 @@ from rsb.util import OrderedQueueDispatcherPool
 
 class EnumValueTest(unittest.TestCase):
 
-    def testCompare(self):
+    def test_compare(self):
 
         val1 = rsb.util.Enum.EnumValue("TEST")
         val2 = rsb.util.Enum.EnumValue("OTHER")
@@ -54,14 +54,14 @@ class EnumValueTest(unittest.TestCase):
         self.assertTrue(val1 < val2)
         self.assertTrue(val1 <= val2)
 
-    def testStr(self):
+    def test_str(self):
 
         self.assertEqual("TEST", str(rsb.util.Enum.EnumValue("TEST")))
 
 
 class EnumTest(unittest.TestCase):
 
-    def testEnum(self):
+    def test_enum(self):
 
         e = rsb.util.Enum("e", ["A", "B", "C"])
 
@@ -71,7 +71,7 @@ class EnumTest(unittest.TestCase):
 
         self.assertEqual("Enum e: A, B, C", str(e))
 
-    def testValueEnum(self):
+    def test_value_enum(self):
 
         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
 
@@ -79,54 +79,54 @@ class EnumTest(unittest.TestCase):
         self.assertEqual(rsb.util.Enum.EnumValue("B", 20), e.B)
         self.assertEqual(rsb.util.Enum.EnumValue("C", 30), e.C)
 
-    def testFromString(self):
+    def test_from_string(self):
         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
-        self.assertEqual(e.fromString('A'), e.A)
-        self.assertEqual(e.fromString('B'), e.B)
-        self.assertEqual(e.fromString('C'), e.C)
-        self.assertRaises(ValueError, e.fromString, 'D')
+        self.assertEqual(e.from_string('A'), e.A)
+        self.assertEqual(e.from_string('B'), e.B)
+        self.assertEqual(e.from_string('C'), e.C)
+        self.assertRaises(ValueError, e.from_string, 'D')
 
 
 class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
     class StubReciever(object):
 
-        nextReceiverNum = 1
+        next_receiver_num = 1
 
         @classmethod
-        def nextNumber(cls):
-            num = cls.nextReceiverNum
-            cls.nextReceiverNum = cls.nextReceiverNum + 1
+        def next_number(cls):
+            num = cls.next_receiver_num
+            cls.next_receiver_num = cls.next_receiver_num + 1
             return num
 
         def __init__(self):
-            self.receiverNum = self.nextNumber()
+            self.receiver_num = self.next_number()
             self.condition = Condition()
             self.messages = []
 
         def __str__(self):
-            return "StubReceiver%d" % self.receiverNum
+            return "StubReceiver%d" % self.receiver_num
 
     def deliver(self, receiver, message):
 
         with receiver.condition:
 
             time.sleep(random.random() * 0.05 *
-                       float((receiver.receiverNum % 10)))
+                       float((receiver.receiver_num % 10)))
 
             receiver.messages.append(message)
             receiver.condition.notify_all()
 
-    def testProcessing(self):
+    def test_processing(self):
 
-        numMessages = 10
+        num_messages = 10
         pool = OrderedQueueDispatcherPool(4, self.deliver)
 
-        numReceivers = 11
+        num_receivers = 11
         receivers = []
-        for i in range(numReceivers):
+        for i in range(num_receivers):
             r = self.StubReciever()
-            pool.registerReceiver(r)
+            pool.register_receiver(r)
             receivers.append(r)
 
         pool.start()
@@ -137,13 +137,13 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
             pass
 
         # start jobs
-        for i in range(numMessages):
+        for i in range(num_messages):
             pool.push(i)
 
         # wait for processing
         for receiver in receivers:
             with receiver.condition:
-                while len(receiver.messages) < numMessages:
+                while len(receiver.messages) < num_messages:
                     receiver.condition.wait()
 
         pool.stop()
@@ -151,56 +151,56 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
         # check receivers
         for receiver in receivers:
 
-            self.assertEqual(numMessages, len(receiver.messages))
+            self.assertEqual(num_messages, len(receiver.messages))
 
-            for i in range(numMessages):
+            for i in range(num_messages):
                 self.assertEqual(i, receiver.messages[i])
 
     class RejectFilter(object):
 
         def __init__(self):
-            self.rejectCalls = 0
+            self.reject_calls = 0
             self.condition = Condition()
 
         def __call__(self, receiver, message):
             with self.condition:
-                self.rejectCalls = self.rejectCalls + 1
+                self.reject_calls = self.reject_calls + 1
                 self.condition.notify_all()
                 return False
 
-    def testFilterExecution(self):
+    def test_filter_execution(self):
 
         filter = self.RejectFilter()
         pool = OrderedQueueDispatcherPool(2, self.deliver, filter)
 
         receiver = self.StubReciever()
-        pool.registerReceiver(receiver)
+        pool.register_receiver(receiver)
 
         pool.start()
 
-        numMessages = 10
-        for i in range(numMessages):
+        num_messages = 10
+        for i in range(num_messages):
             pool.push(i)
 
         # wait for filtering
         with filter.condition:
-            while filter.rejectCalls < numMessages:
+            while filter.reject_calls < num_messages:
                 filter.condition.wait()
 
         pool.stop()
 
-        self.assertEqual(numMessages, filter.rejectCalls)
+        self.assertEqual(num_messages, filter.reject_calls)
 
-    def testUnregister(self):
+    def test_unregister(self):
 
         pool = OrderedQueueDispatcherPool(2, self.deliver)
 
         pool.start()
 
         receiver = self.StubReciever()
-        pool.registerReceiver(receiver)
-        self.assertTrue(pool.unregisterReceiver(receiver))
-        self.assertFalse(pool.unregisterReceiver(receiver))
+        pool.register_receiver(receiver)
+        self.assertTrue(pool.unregister_receiver(receiver))
+        self.assertFalse(pool.unregister_receiver(receiver))
 
         pool.push(42)
 

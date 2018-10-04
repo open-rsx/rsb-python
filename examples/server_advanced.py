@@ -25,7 +25,7 @@
 import logging
 from time import sleep
 
-from rsb import Scope, createServer
+from rsb import Scope, create_server
 
 if __name__ == '__main__':
     # Pacify logger.
@@ -33,16 +33,16 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    server = createServer(Scope('/example/server'))
+    server = create_server(Scope('/example/server'))
 
     # Add a method to the server.
-    server.addMethod('echo', lambda x: x, str, str)
+    server.add_method('echo', lambda x: x, str, str)
 
     # It is also possible to create a LocalServer with a given set of
     # methods. This construction avoids adding the methods
     # individually.
-    server = createServer(Scope('/example/server'),
-                          methods=[('echo2', lambda x: x, str, str)])
+    server = create_server(Scope('/example/server'),
+                           methods=[('echo2', lambda x: x, str, str)])
 
     # Finally, a LocalServer can be created by exposing some or all
     # methods of an ordinary Python object.
@@ -50,9 +50,9 @@ if __name__ == '__main__':
         def echo3(self, arg):
             return arg
 
-    server = createServer(Scope('/example/server'),
-                          object=MyObject(),
-                          expose=[('echo3', str, str)])
+    server = create_server(Scope('/example/server'),
+                           object=MyObject(),
+                           expose=[('echo3', str, str)])
 
     # Note: the code above creates three servers, each of which
     # provides one method on the scope /example/server

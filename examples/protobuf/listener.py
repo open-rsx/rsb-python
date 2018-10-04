@@ -38,19 +38,21 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # See ./registration.py
-    converter = rsb.converter.ProtocolBufferConverter(messageClass=SimpleImage)
-    rsb.converter.registerGlobalConverter(converter)
+    converter = rsb.converter.ProtocolBufferConverter(
+        message_class=SimpleImage)
+    rsb.converter.register_global_converter(converter)
 
-    rsb.setDefaultParticipantConfig(rsb.ParticipantConfig.fromDefaultSources())
+    rsb.set_default_participant_config(
+        rsb.ParticipantConfig.from_default_sources())
 
     # Create a listener that will receive the events carrying protocol
     # buffer payloads. See the listener.py example for a more detailed
     # explanation of listener creation.
-    with rsb.createListener(rsb.Scope("/example/converter")) as listener:
-        def printData(event):
+    with rsb.create_listener(rsb.Scope("/example/converter")) as listener:
+        def print_data(event):
             print("Received %s object with fields:\n%s"
                   % (type(event.data).__name__, str(event.data)))
-        listener.addHandler(printData)
+        listener.add_handler(print_data)
 
         # wait endlessly for received events
         while True:

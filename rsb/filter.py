@@ -74,7 +74,7 @@ class ScopeFilter(AbstractFilter):
         """
         self.__scope = scope
 
-    def getScope(self):
+    def get_scope(self):
         """
         Returns the top-level scope this filter matches for.
 
@@ -85,7 +85,7 @@ class ScopeFilter(AbstractFilter):
 
     def match(self, event):
         return event.scope == self.__scope \
-            or event.scope.isSubScopeOf(self.__scope)
+            or event.scope.is_sub_scope_of(self.__scope)
 
 
 class OriginFilter(AbstractFilter):
@@ -108,18 +108,18 @@ class OriginFilter(AbstractFilter):
         self.__origin = origin
         self.__invert = invert
 
-    def getOrigin(self):
+    def get_origin(self):
         return self.__origin
 
-    origin = property(getOrigin)
+    origin = property(get_origin)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
-        result = self.origin == event.senderId
+        result = self.origin == event.sender_id
         if self.invert:
             return not result
         else:
@@ -160,15 +160,15 @@ class CauseFilter(AbstractFilter):
         self.__cause = cause
         self.__invert = invert
 
-    def getCause(self):
+    def get_cause(self):
         return self.__cause
 
-    cause = property(getCause)
+    cause = property(get_cause)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
         result = self.cause in event.causes
@@ -211,15 +211,15 @@ class MethodFilter(AbstractFilter):
         self.__method = method
         self.__invert = invert
 
-    def getMethod(self):
+    def get_method(self):
         return self.__method
 
-    method = property(getMethod)
+    method = property(get_method)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
         result = self.method == event.method

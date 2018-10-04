@@ -38,7 +38,7 @@ import struct
 import abc
 
 from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
-from rsb.transport.conversion import notificationToEvent, eventToNotification
+from rsb.transport.conversion import notification_to_event, event_to_notification
 from rsb import Scope
 
 
@@ -49,25 +49,25 @@ class Converter(object):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, wireType, dataType, wireSchema):
+    def __init__(self, wire_type, data_type, wire_schema):
         """
         Constructor.
 
         Args:
-            wireType (types.TypeType):
+            wire_type (types.TypeType):
                 Python type to/from which the converter serializes/deserializes
-            dataType (types.TypeType):
+            data_type (types.TypeType):
                 Python type of data accepted by the converter for serialization
                 (also Python type of deserialized data)
-            wireSchema (str):
+            wire_schema (str):
                 Wire-schema understood by the converter when deserializing
                 (also wire-schema of data serialized with the converter)
         """
-        self.__wireType = wireType
-        self.__dataType = dataType
-        self.__wireSchema = wireSchema
+        self.__wire_type = wire_type
+        self.__data_type = data_type
+        self.__wire_schema = wire_schema
 
-    def getWireType(self):
+    def get_wire_type(self):
         """
         Returns the type of the wire-type to/from this converter
         serializes/deserializes.
@@ -76,11 +76,11 @@ class Converter(object):
             types.TypeType:
                 A type object.
         """
-        return self.__wireType
+        return self.__wire_type
 
-    wireType = property(getWireType)
+    wire_type = property(get_wire_type)
 
-    def getDataType(self):
+    def get_data_type(self):
         """
         Returns the data type this converter is applicable for.
 
@@ -88,11 +88,11 @@ class Converter(object):
             types.TypeType:
                 A type object.
         """
-        return self.__dataType
+        return self.__data_type
 
-    dataType = property(getDataType)
+    data_type = property(get_data_type)
 
-    def getWireSchema(self):
+    def get_wire_schema(self):
         """
         Returns the name of the wire schema this converter can (de)serialize
         from/to.
@@ -102,14 +102,14 @@ class Converter(object):
                 A string designating the wire schema from/to this converter can
                 (de)serialize
         """
-        return self.__wireSchema
+        return self.__wire_schema
 
-    wireSchema = property(getWireSchema)
+    wire_schema = property(get_wire_schema)
 
     def serialize(self, inp):
         raise NotImplementedError()
 
-    def deserialize(self, inp, wireSchema):
+    def deserialize(self, inp, wire_schema):
         raise NotImplementedError()
 
 
@@ -118,11 +118,11 @@ class UnknownConverterError(KeyError):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, sourceType, wireSchema):
+    def __init__(self, source_type, wire_schema):
         KeyError.__init__(
             self,
-            "No converter from type %s to type %s available" % (sourceType,
-                                                                wireSchema))
+            "No converter from type %s to type %s available" % (source_type,
+                                                                wire_schema))
 
 
 class ConverterSelectionStrategy(object):
@@ -133,30 +133,30 @@ class ConverterSelectionStrategy(object):
     .. codeauthor:: jmoringe
     """
 
-    def hasConverterForWireSchema(self, wireSchema):
-        return bool(self._getConverterForWireSchema(wireSchema))
+    def has_converter_for_wire_schema(self, wire_schema):
+        return bool(self._get_converter_for_wire_schema(wire_schema))
 
-    def getConverterForWireSchema(self, wireSchema):
-        converter = self._getConverterForWireSchema(wireSchema)
+    def get_converter_for_wire_schema(self, wire_schema):
+        converter = self._get_converter_for_wire_schema(wire_schema)
         if converter:
             return converter
-        raise KeyError(wireSchema)
+        raise KeyError(wire_schema)
 
-    def hasConverterForDataType(self, dataType):
-        return bool(self._getConverterForDataType(dataType))
+    def has_converter_for_data_type(self, data_type):
+        return bool(self._get_converter_for_data_type(data_type))
 
-    def getConverterForDataType(self, dataType):
-        converter = self._getConverterForDataType(dataType)
+    def get_converter_for_data_type(self, data_type):
+        converter = self._get_converter_for_data_type(data_type)
         if converter:
             return converter
-        raise KeyError(dataType)
+        raise KeyError(data_type)
 
     @abc.abstractmethod
-    def _getConverterForWireSchema(self, wireSchma):
+    def _get_converter_for_wire_schema(self, wire_schma):
         pass
 
     @abc.abstractmethod
-    def _getConverterForDataType(self, dataType):
+    def _get_converter_for_data_type(self, data_type):
         pass
 
 
@@ -167,37 +167,37 @@ class ConverterMap(ConverterSelectionStrategy):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, wireType):
-        self._wireType = wireType
+    def __init__(self, wire_type):
+        self._wire_type = wire_type
         self._converters = {}
 
-    def getWireType(self):
-        return self._wireType
+    def get_wire_type(self):
+        return self._wire_type
 
-    def addConverter(self, converter, replaceExisting=False):
-        key = (converter.getWireSchema(), converter.getDataType())
-        if key in self._converters and not replaceExisting:
+    def add_converter(self, converter, replace_existing=False):
+        key = (converter.get_wire_schema(), converter.get_data_type())
+        if key in self._converters and not replace_existing:
             raise RuntimeError("There already is a converter "
                                "with wire-schema `%s' and data-type `%s'"
                                % key)
         self._converters[key] = converter
 
-    def _getConverterForWireSchema(self, wireSchema):
-        for ((converterWireSchema, _), converter) in list(self._converters.items()):
-            if converterWireSchema == wireSchema:
+    def _get_converter_for_wire_schema(self, wire_schema):
+        for ((converter_wire_schema, _), converter) in list(self._converters.items()):
+            if converter_wire_schema == wire_schema:
                 return converter
 
-    def _getConverterForDataType(self, dataType):
+    def _get_converter_for_data_type(self, data_type):
         # If multiple converters are applicable, use most specific.
         candidates = []
-        for ((_, converterDataType), converter) in list(self._converters.items()):
-            if issubclass(dataType, converterDataType):
+        for ((_, converter_data_type), converter) in list(self._converters.items()):
+            if issubclass(data_type, converter_data_type):
                 candidates.append(converter)
         if len(candidates) == 1:
             return candidates[0]
         elif len(candidates) > 1:
-            def compareViaSubclass(x, y):
-                if issubclass(x.getDataType(), y.getDataType()):
+            def compare_via_subclass(x, y):
+                if issubclass(x.get_data_type(), y.get_data_type()):
                     return -1
                 else:
                     return 1
@@ -227,16 +227,16 @@ class ConverterMap(ConverterSelectionStrategy):
                         return mycmp(self.obj, other.obj) != 0
                 return K
             return sorted(candidates,
-                          key=cmp_to_key(compareViaSubclass))[0]
+                          key=cmp_to_key(compare_via_subclass))[0]
 
-    def getConverters(self):
+    def get_converters(self):
         return self._converters
 
     def __str__(self):
-        s = "ConverterMap(wireType = %s):\n" % self._wireType
+        s = "ConverterMap(wire_type = %s):\n" % self._wire_type
         for converter in list(self._converters.values()):
-            s = s + ("\t%s <-> %s\n" % (converter.getWireSchema(),
-                                        converter.getDataType()))
+            s = s + ("\t%s <-> %s\n" % (converter.get_wire_schema(),
+                                        converter.get_data_type()))
         return s[:-1]
 
 
@@ -254,93 +254,93 @@ class PredicateConverterList(ConverterMap):
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, wireType):
-        super(PredicateConverterList, self).__init__(wireType)
+    def __init__(self, wire_type):
+        super(PredicateConverterList, self).__init__(wire_type)
         self._list = []
 
-    def addConverter(self, converter,
-                     wireSchemaPredicate=None,
-                     dataTypePredicate=None,
-                     replaceExisting=True):
-        if wireSchemaPredicate is None:
-            # if converter.getWireSchema() == 'void':
-            #    wireSchemaPredicate = lambda wireSchema: True
+    def add_converter(self, converter,
+                      wire_schema_predicate=None,
+                      data_type_predicate=None,
+                      replace_existing=True):
+        if wire_schema_predicate is None:
+            # if converter.get_wire_schema() == 'void':
+            #    wire_schema_predicate = lambda wire_schema: True
             # else:
-            def wireSchemaPredicate(wireSchema): return \
-                wireSchema == converter.getWireSchema()
-        if dataTypePredicate is None:
-            def dataTypePredicate(dataType): return \
-                dataType == converter.getDataType()
-        key = (wireSchemaPredicate, dataTypePredicate)
+            def wire_schema_predicate(wire_schema): return \
+                wire_schema == converter.get_wire_schema()
+        if data_type_predicate is None:
+            def data_type_predicate(data_type): return \
+                data_type == converter.get_data_type()
+        key = (wire_schema_predicate, data_type_predicate)
         self._converters[key] = converter
         self._list.append((key, converter))
 
-    def _getConverterForWireSchema(self, wireSchema):
+    def _get_converter_for_wire_schema(self, wire_schema):
         for ((predicate, _), converter) in self._list:
-            if predicate(wireSchema):
+            if predicate(wire_schema):
                 return converter
 
-    def _getConverterForDataType(self, dataType):
+    def _get_converter_for_data_type(self, data_type):
         for ((_, predicate), converter) in self._list:
-            if predicate(dataType):
+            if predicate(data_type):
                 return converter
 
 
 class UnambiguousConverterMap(ConverterMap):
-    def __init__(self, wireType):
-        super(UnambiguousConverterMap, self).__init__(wireType)
+    def __init__(self, wire_type):
+        super(UnambiguousConverterMap, self).__init__(wire_type)
 
-    def addConverter(self, converter, replaceExisting=False):
-        for (wireSchema, dataType) in list(self.getConverters().keys()):
-            if wireSchema == converter.getWireSchema() \
-               and not dataType == converter.getDataType():
+    def add_converter(self, converter, replace_existing=False):
+        for (wire_schema, data_type) in list(self.get_converters().keys()):
+            if wire_schema == converter.get_wire_schema() \
+               and not data_type == converter.get_data_type():
                 raise RuntimeError(
                     "Trying to register ambiguous converter "
                     "with data type `%s' for wire-schema `%s' "
                     "(present converter is for data type `%s')."
-                    % (converter.getDataType(),
-                       wireSchema,
-                       dataType))
-        super(UnambiguousConverterMap, self).addConverter(
-            converter, replaceExisting)
+                    % (converter.get_data_type(),
+                       wire_schema,
+                       data_type))
+        super(UnambiguousConverterMap, self).add_converter(
+            converter, replace_existing)
 
 
-__globalConverterMapsLock = RLock()
-__globalConverterMaps = {}
+__global_converter_maps_lock = RLock()
+__global_converter_maps = {}
 
 
-def registerGlobalConverter(converter, replaceExisting=False):
+def register_global_converter(converter, replace_existing=False):
     """
     Register ``converter`` as a globally available converter.
 
     Args:
         converter:
             converter to register
-        replaceExisting:
+        replace_existing:
             controls whether an existing converter for the same data-type
             and/or wire-type should be replaced by the new converter. If this
             is ``False`` and such a converter exists, an error is raised.
     """
-    mapForWireType = getGlobalConverterMap(converter.getWireType())
-    mapForWireType.addConverter(converter, replaceExisting)
+    map_for_wire_type = get_global_converter_map(converter.get_wire_type())
+    map_for_wire_type.add_converter(converter, replace_existing)
 
 
-def getGlobalConverterMap(wireType):
+def get_global_converter_map(wire_type):
     """
-    Get a map with all globally known converters for the ``wireType``.
+    Get a map with all globally known converters for the ``wire_type``.
 
     Args:
-        wireType (types.TypeType):
+        wire_type (types.TypeType):
             Python type for designating the wire-type.
 
     Returns:
         converter map constantly updated
     """
 
-    with __globalConverterMapsLock:
-        if wireType not in __globalConverterMaps:
-            __globalConverterMaps[wireType] = ConverterMap(wireType)
-        return __globalConverterMaps[wireType]
+    with __global_converter_maps_lock:
+        if wire_type not in __global_converter_maps:
+            __global_converter_maps[wire_type] = ConverterMap(wire_type)
+        return __global_converter_maps[wire_type]
 
 # --- converters with bytes as serialization type ---
 
@@ -348,7 +348,7 @@ def getGlobalConverterMap(wireType):
 class IdentityConverter(Converter):
     """
     This converter does nothing. Use it in combination with the
-    "AlwaysApplicable"-wireSchema.
+    "always_applicable"-wire_schema.
 
     .. codeauthor:: plueckin
     """
@@ -357,12 +357,12 @@ class IdentityConverter(Converter):
         super(IdentityConverter, self).__init__(bytes, type(None), 'void')
 
     def serialize(self, inp):
-        return bytes(), self.wireSchema
+        return bytes(), self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
+    def deserialize(self, inp, wire_schema):
         pass
 
-    def AlwaysApplicable(self):
+    def always_applicable(self):
         return bytes
 
 
@@ -381,48 +381,48 @@ class NoneConverter(Converter):
         super(NoneConverter, self).__init__(bytes, type(None), 'void')
 
     def serialize(self, inp):
-        return bytes(), self.wireSchema
+        return bytes(), self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
-        assert wireSchema == self.wireSchema
+    def deserialize(self, inp, wire_schema):
+        assert wire_schema == self.wire_schema
 
 
-def makeStructBasedConverter(name, dataType, wireSchema, fmt, size):
+def make_struct_based_converter(name, data_type, wire_schema, fmt, size):
     class NewConverter(Converter):
         def __init__(self):
             super(self.__class__, self).__init__(
-                bytes, dataType, wireSchema)
+                bytes, data_type, wire_schema)
 
         def serialize(self, inp):
-            return bytes(struct.pack(fmt, inp)), self.wireSchema
+            return bytes(struct.pack(fmt, inp)), self.wire_schema
 
-        def deserialize(self, inp, wireSchema):
-            assert wireSchema == self.wireSchema
+        def deserialize(self, inp, wire_schema):
+            assert wire_schema == self.wire_schema
             return struct.unpack(fmt, inp)[0]
 
     NewConverter.__name__ = name
     # TODO(jmoringe): seems to be impossible in CPython
     # NewConverter.__doc__ = """
-    # A converter that serializes %(dataType)s to bytes with
-    # %(wireSchema)s wire-schema.
+    # A converter that serializes %(data_type)s to bytes with
+    # %(wire_schema)s wire-schema.
     #
     # .. codeauthor:: jmoringe
     # """ % {
-    #     "dataType":   dataType,
-    #     "wireSchema": wireSchema
+    #     "data_type":   data_type,
+    #     "wire_schema": wire_schema
     # }
 
     globals()[name] = NewConverter
     return NewConverter
 
 
-makeStructBasedConverter('DoubleConverter', Real, 'double', '<d', 8)
-makeStructBasedConverter('FloatConverter', Real, 'float', '<f', 4)
-makeStructBasedConverter('Uint32Converter', Integral, 'uint32', '<I', 4)
-makeStructBasedConverter('Int32Converter', Integral, 'int32', '<i', 4)
-makeStructBasedConverter('Uint64Converter', Integral, 'uint64', '<Q', 8)
-makeStructBasedConverter('Int64Converter', Integral, 'int64', '<q', 8)
-makeStructBasedConverter('BoolConverter', bool, 'bool', '?', 1)
+make_struct_based_converter('DoubleConverter', Real, 'double', '<d', 8)
+make_struct_based_converter('FloatConverter', Real, 'float', '<f', 4)
+make_struct_based_converter('Uint32Converter', Integral, 'uint32', '<I', 4)
+make_struct_based_converter('Int32Converter', Integral, 'int32', '<i', 4)
+make_struct_based_converter('Uint64Converter', Integral, 'uint64', '<Q', 8)
+make_struct_based_converter('Int64Converter', Integral, 'int64', '<q', 8)
+make_struct_based_converter('BoolConverter', bool, 'bool', '?', 1)
 
 
 # Registered at end of file
@@ -433,14 +433,14 @@ class BytesConverter(Converter):
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, wireSchema="bytes", dataType=bytes):
-        super(BytesConverter, self).__init__(bytes, dataType, wireSchema)
+    def __init__(self, wire_schema="bytes", data_type=bytes):
+        super(BytesConverter, self).__init__(bytes, data_type, wire_schema)
 
     def serialize(self, inp):
-        return inp, self.wireSchema
+        return inp, self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
-        assert(wireSchema == self.wireSchema)
+    def deserialize(self, inp, wire_schema):
+        assert(wire_schema == self.wire_schema)
         return inp
 
 
@@ -453,15 +453,15 @@ class StringConverter(Converter):
     """
 
     def __init__(self,
-                 wireSchema='utf-8-string',
+                 wire_schema='utf-8-string',
                  encoding='utf-8'):
-        super(StringConverter, self).__init__(bytes, str, wireSchema)
+        super(StringConverter, self).__init__(bytes, str, wire_schema)
         self.__encoding = encoding
 
     def serialize(self, inp):
-        return bytes(inp.encode(self.__encoding)), self.wireSchema
+        return bytes(inp.encode(self.__encoding)), self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
+    def deserialize(self, inp, wire_schema):
         return inp.decode(self.__encoding)
 
 
@@ -476,15 +476,15 @@ class ByteArrayConverter(Converter):
         super(ByteArrayConverter, self).__init__(bytes, bytes, '.*')
 
     def serialize(self, data):
-        return bytes(data), self.wireSchema
+        return bytes(data), self.wire_schema
 
-    def deserialize(self, data, wireSchema):
+    def deserialize(self, data, wire_schema):
         return bytes(data)
 
 
 class SchemaAndByteArrayConverter(Converter):
     """
-    A converter which passes through the wireSchema as well as the original
+    A converter which passes through the wire_schema as well as the original
     byte array of a message.
 
     .. codeauthor:: nkoester
@@ -497,8 +497,8 @@ class SchemaAndByteArrayConverter(Converter):
     def serialize(self, data):
         return data[1], data[0]
 
-    def deserialize(self, data, wireSchema):
-        return wireSchema, data
+    def deserialize(self, data, wire_schema):
+        return wire_schema, data
 
 
 class ProtocolBufferConverter(Converter):
@@ -512,27 +512,27 @@ class ProtocolBufferConverter(Converter):
     .. codeauthor:: jmoringe
     """
 
-    def __init__(self, messageClass):
+    def __init__(self, message_class):
         super(ProtocolBufferConverter, self).__init__(
-            bytes, messageClass, '.%s' % messageClass.DESCRIPTOR.full_name)
+            bytes, message_class, '.%s' % message_class.DESCRIPTOR.full_name)
 
-        self.__messageClass = messageClass
+        self.__message_class = message_class
 
-    def getMessageClass(self):
-        return self.__messageClass
+    def get_message_class(self):
+        return self.__message_class
 
-    messageClass = property(getMessageClass)
+    message_class = property(get_message_class)
 
-    def getMessageClassName(self):
-        return self.messageClass.DESCRIPTOR.full_name
+    def get_message_class_name(self):
+        return self.message_class.DESCRIPTOR.full_name
 
     def serialize(self, inp):
-        return bytes(inp.SerializeToString()), self.wireSchema
+        return bytes(inp.SerializeToString()), self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
-        assert wireSchema == self.wireSchema
+    def deserialize(self, inp, wire_schema):
+        assert wire_schema == self.wire_schema
 
-        output = self.messageClass()
+        output = self.message_class()
         # we need to convert back to string because bytes do not work with
         # protobuf
         output.ParseFromString(inp)
@@ -540,7 +540,7 @@ class ProtocolBufferConverter(Converter):
 
     def __str__(self):
         return '<%s for %s at 0x%x>' \
-            % (type(self).__name__, self.getMessageClassName(), id(self))
+            % (type(self).__name__, self.get_message_class_name(), id(self))
 
     def __repr__(self):
         return str(self)
@@ -557,11 +557,11 @@ class ScopeConverter(Converter):
         super(ScopeConverter, self).__init__(bytes, Scope, 'scope')
 
     def serialize(self, inp):
-        return bytes(inp.toBytes()), \
-            self.wireSchema
+        return bytes(inp.to_bytes()), \
+            self.wire_schema
 
-    def deserialize(self, inp, wireSchema):
-        assert wireSchema == self.wireSchema
+    def deserialize(self, inp, wire_schema):
+        assert wire_schema == self.wire_schema
 
         return Scope(inp.decode('ascii'))
 
@@ -575,47 +575,47 @@ class EventsByScopeMapConverter(Converter):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, converterRepository=getGlobalConverterMap(bytes)):
-        self.__converterRepository = converterRepository
+    def __init__(self, converter_repository=get_global_converter_map(bytes)):
+        self.__converter_repository = converter_repository
         self.__converter = ProtocolBufferConverter(EventsByScopeMap)
         super(EventsByScopeMapConverter, self).__init__(
-            bytes, dict, self.__converter.wireSchema)
+            bytes, dict, self.__converter.wire_schema)
 
     def serialize(self, data):
 
-        eventMap = EventsByScopeMap()
+        event_map = EventsByScopeMap()
 
         for scope, events in data.items():
 
-            scopeSet = eventMap.sets.add()
-            scopeSet.scope = scope.toBytes()
+            scope_set = event_map.sets.add()
+            scope_set.scope = scope.to_bytes()
 
             for event in events:
 
-                wire, wireSchema = \
-                    self.__converterRepository.getConverterForDataType(
+                wire, wire_schema = \
+                    self.__converter_repository.get_converter_for_data_type(
                         type(event.data)).serialize(event.data)
 
-                notification = scopeSet.notifications.add()
-                eventToNotification(notification, event,
-                                    wireSchema, wire, True)
+                notification = scope_set.notifications.add()
+                event_to_notification(notification, event,
+                                      wire_schema, wire, True)
 
-        return self.__converter.serialize(eventMap)
+        return self.__converter.serialize(event_map)
 
-    def deserialize(self, wire, wireSchema):
-        preliminaryMap = self.__converter.deserialize(wire, wireSchema)
+    def deserialize(self, wire, wire_schema):
+        preliminary_map = self.__converter.deserialize(wire, wire_schema)
 
         output = {}
 
-        for scopeSet in preliminaryMap.sets:
-            scope = Scope(scopeSet.scope.decode('ASCII'))
+        for scope_set in preliminary_map.sets:
+            scope = Scope(scope_set.scope.decode('ASCII'))
             output[scope] = []
-            for notification in scopeSet.notifications:
+            for notification in scope_set.notifications:
 
                 converter = \
-                    self.__converterRepository.getConverterForWireSchema(
+                    self.__converter_repository.get_converter_for_wire_schema(
                         notification.wire_schema.decode('ASCII'))
-                event = notificationToEvent(
+                event = notification_to_event(
                     notification, notification.data,
                     notification.wire_schema.decode('ASCII'), converter)
 
@@ -626,15 +626,15 @@ class EventsByScopeMapConverter(Converter):
 
 # FIXME We do not register all available converters here to avoid
 # ambiguities.
-registerGlobalConverter(NoneConverter())
-registerGlobalConverter(DoubleConverter())
-# registerGlobalConverter(FloatConverter())
-# registerGlobalConverter(Uint32Converter())
-# registerGlobalConverter(Int32Converter())
-# registerGlobalConverter(Uint64Converter())
-registerGlobalConverter(Int64Converter())
-registerGlobalConverter(BoolConverter())
-registerGlobalConverter(BytesConverter())
-registerGlobalConverter(StringConverter())
-registerGlobalConverter(ByteArrayConverter())
-registerGlobalConverter(ScopeConverter())
+register_global_converter(NoneConverter())
+register_global_converter(DoubleConverter())
+# register_global_converter(FloatConverter())
+# register_global_converter(Uint32Converter())
+# register_global_converter(Int32Converter())
+# register_global_converter(Uint64Converter())
+register_global_converter(Int64Converter())
+register_global_converter(BoolConverter())
+register_global_converter(BytesConverter())
+register_global_converter(StringConverter())
+register_global_converter(ByteArrayConverter())
+register_global_converter(ScopeConverter())

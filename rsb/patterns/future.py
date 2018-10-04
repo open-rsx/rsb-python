@@ -76,7 +76,7 @@ class Future(object):
         self.__lock = threading.Lock()
         self.__condition = threading.Condition(lock=self.__lock)
 
-    def isDone(self):
+    def is_done(self):
         """
         Check whether the represented operation is still in progress.
 
@@ -88,7 +88,7 @@ class Future(object):
         with self.__lock:
             return self.__result is not None
 
-    done = property(isDone)
+    done = property(is_done)
 
     def get(self, timeout=0):
         """
@@ -143,7 +143,7 @@ class Future(object):
             self.__result = result
             self.__condition.notifyAll()
 
-    def setError(self, message):
+    def set_error(self, message):
         """
         Mark the operation represented by the :obj:`Future` object as
         failed, set ``message`` as the error message and notify all

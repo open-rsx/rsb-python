@@ -35,7 +35,7 @@ import itertools
 import uuid
 
 import rsb
-from rsb.util import unixMicrosecondsToTime, timeToUnixMicroseconds
+from rsb.util import unix_microseconds_to_time, time_to_unix_microseconds
 
 from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
@@ -43,7 +43,7 @@ from rsb.protocol.Notification_pb2 import Notification
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
 
 
-def notificationToEvent(notification, wireData, wireSchema, converter):
+def notification_to_event(notification, wire_data, wire_schema, converter):
     """
     Build event from notification.
     """
@@ -53,74 +53,74 @@ def notificationToEvent(notification, wireData, wireSchema, converter):
     event.scope = rsb.Scope(notification.scope.decode('ASCII'))
     if notification.HasField("method"):
         event.method = notification.method.decode('ASCII')
-    event.type = converter.getDataType()
-    event.data = converter.deserialize(wireData, wireSchema)
+    event.type = converter.get_data_type()
+    event.data = converter.deserialize(wire_data, wire_schema)
 
     # Meta data
-    event.metaData.createTime = unixMicrosecondsToTime(
+    event.meta_data.create_time = unix_microseconds_to_time(
         notification.meta_data.create_time)
-    event.metaData.sendTime = unixMicrosecondsToTime(
+    event.meta_data.send_time = unix_microseconds_to_time(
         notification.meta_data.send_time)
-    event.metaData.setReceiveTime()
+    event.meta_data.set_receive_time()
     for info in notification.meta_data.user_infos:
-        event.metaData.setUserInfo(info.key.decode('ASCII'),
-                                   info.value.decode('ASCII'))
+        event.meta_data.set_user_info(info.key.decode('ASCII'),
+                                      info.value.decode('ASCII'))
     for time in notification.meta_data.user_times:
-        event.metaData.setUserTime(time.key.decode('ASCII'),
-                                   unixMicrosecondsToTime(time.timestamp))
+        event.meta_data.set_user_time(time.key.decode('ASCII'),
+                                      unix_microseconds_to_time(time.timestamp))
 
     # Causes
     for cause in notification.causes:
         id = rsb.EventId(uuid.UUID(bytes=cause.sender_id),
                          cause.sequence_number)
-        event.addCause(id)
+        event.add_cause(id)
 
     return event
 
 
-def eventToNotification(notification, event, wireSchema, data, metaData=True):
+def event_to_notification(notification, event, wire_schema, data, meta_data=True):
     # Identification information
-    notification.event_id.sender_id = event.senderId.bytes
-    notification.event_id.sequence_number = event.sequenceNumber
+    notification.event_id.sender_id = event.sender_id.bytes
+    notification.event_id.sequence_number = event.sequence_number
 
     # Payload [fragment]
     notification.data = data
 
     # Fill meta-data
-    if metaData:
-        notification.scope = event.scope.toBytes()
+    if meta_data:
+        notification.scope = event.scope.to_bytes()
         if event.method is not None:
             notification.method = event.method.encode('ASCII')
-        notification.wire_schema = wireSchema.encode('ASCII')
+        notification.wire_schema = wire_schema.encode('ASCII')
 
         md = notification.meta_data
-        md.create_time = timeToUnixMicroseconds(event.metaData.createTime)
-        md.send_time = timeToUnixMicroseconds(event.metaData.sendTime)
-        for (k, v) in list(event.metaData.userInfos.items()):
+        md.create_time = time_to_unix_microseconds(event.meta_data.create_time)
+        md.send_time = time_to_unix_microseconds(event.meta_data.send_time)
+        for (k, v) in list(event.meta_data.user_infos.items()):
             info = md.user_infos.add()
             info.key = k.encode('ASCII')
             info.value = v.encode('ASCII')
-        for (k, v) in list(event.metaData.userTimes.items()):
+        for (k, v) in list(event.meta_data.user_times.items()):
             time = md.user_times.add()
             time.key = k.encode('ASCII')
-            time.timestamp = timeToUnixMicroseconds(v)
+            time.timestamp = time_to_unix_microseconds(v)
         # Add causes
         for cause in event.causes:
             id = notification.causes.add()
-            id.sender_id = cause.participantId.bytes
-            id.sequence_number = cause.sequenceNumber
+            id.sender_id = cause.participant_id.bytes
+            id.sequence_number = cause.sequence_number
 
 
-def eventToNotifications(event, converter, maxFragmentSize):
-    wireData, wireSchema = converter.serialize(event.data)
+def event_to_notifications(event, converter, max_fragment_size):
+    wire_data, wire_schema = converter.serialize(event.data)
 
-    return eventAndWireDataToNotifications(
-        event, wireData, wireSchema, maxFragmentSize)
+    return event_and_wire_data_to_notifications(
+        event, wire_data, wire_schema, max_fragment_size)
 
 
-def eventAndWireDataToNotifications(event, wireData, wireSchema,
-                                    maxFragmentSize):
-    remaining, offset, fragments = len(wireData), 0, []
+def event_and_wire_data_to_notifications(event, wire_data, wire_schema,
+                                         max_fragment_size):
+    remaining, offset, fragments = len(wire_data), 0, []
     for i in itertools.count():
         # Create fragment container
         fragment = FragmentedNotification()
@@ -133,19 +133,19 @@ def eventAndWireDataToNotifications(event, wireData, wireSchema,
         #
         # We reserve at least 5 bytes for the payload: up to 4 bytes
         # for the field header and one byte for the payload data.
-        room = maxFragmentSize - fragment.ByteSize()
+        room = max_fragment_size - fragment.ByteSize()
         if room < 5:
             raise ValueError('The event %s cannot be encoded in a '
                              'notification because the serialized meta-data '
                              'would not fit into a single fragment' % event)
         # allow for 4 byte field header
-        fragmentSize = min(room - 4, remaining)
-        eventToNotification(fragment.notification, event,
-                            wireSchema=wireSchema,
-                            data=wireData[offset:offset + fragmentSize],
-                            metaData=(i == 0))
-        offset += fragmentSize
-        remaining -= fragmentSize
+        fragment_size = min(room - 4, remaining)
+        event_to_notification(fragment.notification, event,
+                              wire_schema=wire_schema,
+                              data=wire_data[offset:offset + fragment_size],
+                              meta_data=(i == 0))
+        offset += fragment_size
+        remaining -= fragment_size
 
         if remaining == 0:
             break

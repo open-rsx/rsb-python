@@ -47,10 +47,11 @@ if __name__ == '__main__':
     #   SimepleImage_pb2.SimpleImage
     # The protocol buffer message is called
     #   .tutorial.protobuf_converter.SimpleImage
-    converter = rsb.converter.ProtocolBufferConverter(messageClass=SimpleImage)
-    rsb.converter.registerGlobalConverter(converter)
+    converter = rsb.converter.ProtocolBufferConverter(
+        message_class=SimpleImage)
+    rsb.converter.register_global_converter(converter)
 
     print("Registered converter %s" % converter)
     print("Registered converters:\n%s "
-          % rsb.converter.getGlobalConverterMap(bytes))
+          % rsb.converter.get_global_converter_map(bytes))
 # mark-end::body

@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    with rsb.createLocalServer('/example/server') as server:
+    with rsb.create_local_server('/example/server') as server:
 
         # Create a function which processes requests and returns a
         # result. Note that the name of the function does not determine
@@ -43,7 +43,7 @@ if __name__ == '__main__':
             return x
 
         # Add the function to the server under the name "echo".
-        server.addMethod('echo', echo, str, str)
+        server.add_method('echo', echo, str, str)
 
         # Wait for method calls by clients.
         while True:

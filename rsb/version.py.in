@@ -8,7 +8,7 @@ __version__ = '@VERSION@'
 __commit__ = '@COMMIT@'
 
 
-def getVersion():
+def get_version():
     """
     Returns a descriptive string for the version of RSB.
     """

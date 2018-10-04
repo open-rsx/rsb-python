@@ -33,7 +33,7 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # Create a reader on the specified scope.
-    with rsb.createReader("/example/informer") as reader:
+    with rsb.create_reader("/example/informer") as reader:
 
         # Wait for event and print them
         while True:

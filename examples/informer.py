@@ -32,8 +32,8 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # Create an informer for strings on scope "/example/informer".
-    with rsb.createInformer("/example/informer", dataType=str) as informer:
+    with rsb.create_informer("/example/informer", data_type=str) as informer:
 
         # Send and event using a method that directly accepts data.
-        informer.publishData("example payload")
+        informer.publish_data("example payload")
 # mark-end::body

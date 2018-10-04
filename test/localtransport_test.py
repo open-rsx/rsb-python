@@ -39,7 +39,7 @@ class StubSink(object):
         self.scope = scope
         self.events = []
 
-    def getScope(self):
+    def get_scope(self):
         return self.scope
 
     def handle(self, event):
@@ -51,44 +51,45 @@ class StubSink(object):
 
 class BusTest(unittest.TestCase):
 
-    def testConstruction(self):
+    def test_construction(self):
         Bus()
 
-    def testNotifyHierarchy(self):
+    def test_notify_hierarchy(self):
         bus = Bus()
 
-        targetScope = Scope("/this/is/a/test")
-        scopes = targetScope.superScopes(True)
-        sinksByScope = {}
+        target_scope = Scope("/this/is/a/test")
+        scopes = target_scope.super_scopes(True)
+        sinks_by_scope = {}
         for scope in scopes:
-            sinksByScope[scope] = StubSink(scope)
-            bus.addSink(sinksByScope[scope])
+            sinks_by_scope[scope] = StubSink(scope)
+            bus.add_sink(sinks_by_scope[scope])
 
-        notNotifiedSiblingSink = StubSink(Scope("/not/notified"))
-        bus.addSink(notNotifiedSiblingSink)
-        notNotifiedChildSink = StubSink(targetScope.concat(Scope("/child")))
-        bus.addSink(notNotifiedChildSink)
+        not_notified_sibling_sink = StubSink(Scope("/not/notified"))
+        bus.add_sink(not_notified_sibling_sink)
+        not_notified_child_sink = StubSink(
+            target_scope.concat(Scope("/child")))
+        bus.add_sink(not_notified_child_sink)
 
-        event = Event(scope=targetScope)
+        event = Event(scope=target_scope)
         bus.handle(event)
-        for scope, sink in list(sinksByScope.items()):
+        for scope, sink in list(sinks_by_scope.items()):
             self.assertTrue(event in sink.events)
             self.assertEqual(1, len(sink.events))
 
 
 class OutConnectorTest(unittest.TestCase):
 
-    def testConstruction(self):
+    def test_construction(self):
         OutConnector()
 
-    def testHandle(self):
+    def test_handle(self):
 
         bus = Bus()
         connector = OutConnector(bus=bus)
 
         scope = Scope("/a/test")
         sink = StubSink(scope)
-        bus.addSink(sink)
+        bus.add_sink(sink)
 
         e = Event()
         e.scope = scope
@@ -98,26 +99,26 @@ class OutConnectorTest(unittest.TestCase):
         after = time.time()
         self.assertEqual(1, len(sink.events))
         self.assertTrue(e in sink.events)
-        self.assertTrue(e.metaData.sendTime >= before)
-        self.assertTrue(e.metaData.sendTime <= after)
+        self.assertTrue(e.meta_data.send_time >= before)
+        self.assertTrue(e.meta_data.send_time <= after)
 
 
 class InPushConnectorTest(unittest.TestCase):
 
-    def testConstruction(self):
+    def test_construction(self):
         InPushConnector()
 
-    def testPassToAction(self):
+    def test_pass_to_action(self):
 
         scope = Scope("/lets/go")
 
         bus = Bus()
         connector = InPushConnector(bus=bus)
-        connector.setScope(scope)
+        connector.set_scope(scope)
         connector.activate()
 
         action = StubSink(scope)
-        connector.setObserverAction(action)
+        connector.set_observer_action(action)
 
         e = Event()
         e.scope = scope
@@ -128,23 +129,23 @@ class InPushConnectorTest(unittest.TestCase):
 
 class LocalTransportTest(TransportCheck, unittest.TestCase):
 
-    def _getInPushConnector(self, scope, activate=True):
+    def _get_in_push_connector(self, scope, activate=True):
         connector = InPushConnector()
-        connector.setScope(scope)
+        connector.set_scope(scope)
         if activate:
             connector.activate()
         return connector
 
-    def _getInPullConnector(self, scope, activate=True):
+    def _get_in_pull_connector(self, scope, activate=True):
         connector = InPullConnector()
-        connector.setScope(scope)
+        connector.set_scope(scope)
         if activate:
             connector.activate()
         return connector
 
-    def _getOutConnector(self, scope, activate=True):
+    def _get_out_connector(self, scope, activate=True):
         connector = OutConnector()
-        connector.setScope(scope)
+        connector.set_scope(scope)
         if activate:
             connector.activate()
         return connector

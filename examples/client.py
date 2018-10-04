@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # Create a RemoteServer object for the remote server at scope
     # /example/server. Method calls should complete within five
     # seconds.
-    with rsb.createRemoteServer('/example/server') as server:
+    with rsb.create_remote_server('/example/server') as server:
 
         # Call the method 'echo' on the remote server passing it a
         # string argument. The server's reply is returned from the call as
