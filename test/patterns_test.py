@@ -22,10 +22,11 @@
 #
 # ============================================================
 
+from threading import Condition
 import unittest
+
 import rsb
 from rsb import ParticipantConfig
-from threading import Condition
 
 in_process_no_introspection_config = ParticipantConfig.from_dict({
     'introspection.enabled': '0',

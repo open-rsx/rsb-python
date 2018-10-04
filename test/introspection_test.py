@@ -23,10 +23,9 @@
 # ============================================================
 
 import unittest
-
 import uuid
 
-from rsb.introspection import ParticipantInfo, ProcessInfo, HostInfo
+from rsb.introspection import HostInfo, ParticipantInfo, ProcessInfo
 
 
 class ParticipantInfoTest(unittest.TestCase):

@@ -26,9 +26,8 @@ import unittest
 
 from rsb import ParticipantConfig
 from rsb.converter import get_global_converter_map
-from rsb.transport.socket import OutConnector, InPushConnector
-
-from test.transporttest import TransportCheck
+from rsb.transport.socket import InPushConnector, OutConnector
+from .transporttest import TransportCheck
 
 
 def get_connector(clazz, scope, activate=True):

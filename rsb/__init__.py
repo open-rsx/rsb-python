@@ -36,19 +36,19 @@ In order to create basic objects have a look at the functions
 .. codeauthor:: jmoringe
 """
 
-import uuid
+import configparser
 import copy
+from functools import reduce
 import logging
-import threading
-import time
-import re
 import os
 import platform
-import configparser
+import re
+import threading
+import time
+import uuid
 
-from rsb.util import get_logger_by_class, Enum
 import rsb.eventprocessing
-from functools import reduce
+from rsb.util import Enum, get_logger_by_class
 
 
 _logger = logging.getLogger('rsb')

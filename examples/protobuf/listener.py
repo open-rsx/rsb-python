@@ -23,15 +23,16 @@
 # ============================================================
 
 import logging
+import sys
 import time
 
 import rsb
 import rsb.converter
 
 # See ./registration.py.
-import sys
 sys.path.append('.')
-from SimpleImage_pb2 import SimpleImage
+from SimpleImage_pb2 import SimpleImage  # noqa: I100 adding to path is
+                                         #       required before
 
 if __name__ == '__main__':
     # Pacify logger.

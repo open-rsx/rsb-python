@@ -25,7 +25,7 @@
 import logging
 from time import sleep
 
-from rsb import Scope, create_server
+from rsb import create_server, Scope
 
 if __name__ == '__main__':
     # Pacify logger.

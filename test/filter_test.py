@@ -24,6 +24,7 @@
 
 import unittest
 import uuid
+
 import rsb
 from rsb import Scope
 import rsb.filter

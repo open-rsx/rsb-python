@@ -33,11 +33,11 @@ transport layer and the client interface.
 
 import abc
 import copy
-import threading
 import queue
+import threading
 
-import rsb.util
 import rsb.filter
+import rsb.util
 
 
 class ScopeDispatcher(object):

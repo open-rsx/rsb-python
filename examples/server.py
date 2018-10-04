@@ -23,8 +23,8 @@
 # ============================================================
 
 # mark-start::body
-import time
 import logging
+import time
 
 import rsb
 

@@ -32,8 +32,8 @@ serialization overhead.
 
 import os
 import platform
-from threading import RLock
 import queue
+from threading import RLock
 
 from rsb import transport
 

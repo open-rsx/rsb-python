@@ -23,9 +23,9 @@
 #
 # ============================================================
 
-import rsb
-
 from testconfig import config
+
+import rsb
 
 
 def setup_package():

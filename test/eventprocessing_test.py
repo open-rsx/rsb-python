@@ -22,16 +22,16 @@
 #
 # ============================================================
 
-import uuid
+from threading import Condition
+import time
 import unittest
-from threading import Condition, Lock
+import uuid
 
-from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
-from rsb import Event, EventId
 import rsb
+from rsb import Event, EventId
 import rsb.eventprocessing
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
-import time
+from rsb.filter import RecordingFalseFilter, RecordingTrueFilter
 
 
 class ScopeDispatcherTest(unittest.TestCase):

@@ -30,8 +30,9 @@ clients.
 .. codeauthor:: jmoringe
 """
 
-import rsb.util
 from threading import Condition
+
+import rsb.util
 
 FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
 

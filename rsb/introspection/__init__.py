@@ -34,21 +34,19 @@ sender) part of the introspection architecture.
 .. codeauthor:: jmoringe
 """
 
-import sys
+import copy
+import getpass
 import os
 import platform
-import getpass
-
-import copy
+import sys
 import uuid
 
 import rsb
-import rsb.version
-from rsb.util import get_logger_by_class
 import rsb.converter
-
-from rsb.protocol.introspection.Hello_pb2 import Hello
 from rsb.protocol.introspection.Bye_pb2 import Bye
+from rsb.protocol.introspection.Hello_pb2 import Hello
+from rsb.util import get_logger_by_class
+import rsb.version
 
 _display_name = None
 

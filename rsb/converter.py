@@ -32,14 +32,15 @@ registering and selecting them.
 .. codeauthor:: plueckin
 """
 
-from numbers import Integral, Real
-from threading import RLock
-import struct
 import abc
+from numbers import Integral, Real
+import struct
+from threading import RLock
 
-from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
-from rsb.transport.conversion import notification_to_event, event_to_notification
 from rsb import Scope
+from rsb.protocol.collections.EventsByScopeMap_pb2 import EventsByScopeMap
+from rsb.transport.conversion import (event_to_notification,
+                                      notification_to_event)
 
 
 class Converter(object):

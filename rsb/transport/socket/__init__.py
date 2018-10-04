@@ -33,14 +33,13 @@ import copy
 import socket
 import threading
 
-import rsb.util
 import rsb.eventprocessing
-import rsb.transport
-import rsb.transport.conversion as conversion
-
 from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
 from rsb.protocol.Notification_pb2 import Notification
+import rsb.transport
+import rsb.transport.conversion as conversion
+import rsb.util
 
 
 class BusConnection(rsb.eventprocessing.BroadcastProcessor):

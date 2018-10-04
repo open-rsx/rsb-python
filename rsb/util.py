@@ -28,9 +28,9 @@ Various helper classes and methods.
 .. codeauthor:: jwienke
 """
 
-from threading import Lock, Condition, Thread
-from queue import Queue
 import logging
+from queue import Queue
+from threading import Condition, Lock, Thread
 
 
 class Enum(object):

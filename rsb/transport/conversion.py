@@ -35,12 +35,11 @@ import itertools
 import uuid
 
 import rsb
-from rsb.util import unix_microseconds_to_time, time_to_unix_microseconds
-
 from rsb.protocol.EventId_pb2 import EventId
 from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
-from rsb.protocol.Notification_pb2 import Notification
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
+from rsb.protocol.Notification_pb2 import Notification
+from rsb.util import time_to_unix_microseconds, unix_microseconds_to_time
 
 
 def notification_to_event(notification, wire_data, wire_schema, converter):

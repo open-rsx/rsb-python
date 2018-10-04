@@ -22,15 +22,15 @@
 #
 # ============================================================
 
+import time
 import unittest
 
+from rsb import Event, Scope
 from rsb.transport.local import (Bus,
-                                 OutConnector,
+                                 InPullConnector,
                                  InPushConnector,
-                                 InPullConnector)
-from rsb import Scope, Event
-import time
-from test.transporttest import TransportCheck
+                                 OutConnector)
+from .transporttest import TransportCheck
 
 
 class StubSink(object):

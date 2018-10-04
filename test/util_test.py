@@ -22,12 +22,12 @@
 #
 # ============================================================
 
+import random
+from threading import Condition
+import time
 import unittest
 
 import rsb.util
-from threading import Condition
-import time
-import random
 from rsb.util import OrderedQueueDispatcherPool
 
 

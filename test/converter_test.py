@@ -22,16 +22,22 @@
 #
 # ============================================================
 
-import unittest
 import re
-
-import rsb.converter
-from rsb.converter import Converter, NoneConverter, StringConverter, \
-    ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
-    ScopeConverter, EventsByScopeMapConverter
-from rsb import Scope, Event, EventId
+import unittest
 from uuid import uuid4
+
 from nose.tools import assert_equals
+
+from rsb import Event, EventId, Scope
+import rsb.converter
+from rsb.converter import (Converter,
+                           ConverterMap,
+                           EventsByScopeMapConverter,
+                           NoneConverter,
+                           PredicateConverterList,
+                           ScopeConverter,
+                           StringConverter,
+                           UnambiguousConverterMap)
 
 
 class ConflictingStringConverter(Converter):

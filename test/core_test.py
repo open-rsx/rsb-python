@@ -23,20 +23,26 @@
 #
 # ============================================================
 
-import os
-import uuid
 import copy
-
+import os
+from threading import Condition
+import time
 import unittest
+import uuid
+from uuid import uuid4
 
 import rsb
-from rsb import Scope, QualityOfServiceSpec, ParticipantConfig, MetaData, \
-    Event, Informer, EventId, set_default_participant_config, \
-    get_default_participant_config, Participant
-import time
-from uuid import uuid4
+from rsb import (Event,
+                 EventId,
+                 get_default_participant_config,
+                 Informer,
+                 MetaData,
+                 Participant,
+                 ParticipantConfig,
+                 QualityOfServiceSpec,
+                 Scope,
+                 set_default_participant_config)
 from rsb.converter import Converter, register_global_converter
-from threading import Condition
 
 
 class ParticipantConfigTest(unittest.TestCase):

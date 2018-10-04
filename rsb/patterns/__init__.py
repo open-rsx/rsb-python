@@ -30,14 +30,13 @@ participants :obj:`rsb.Listener` and :obj:`rsb.Informer`.
 .. codeauthor:: jwienke
 """
 
-import uuid
 import threading
+import uuid
 
 import rsb
-import rsb.filter
-
-from rsb.patterns.future import Future, DataFuture
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
+import rsb.filter
+from rsb.patterns.future import DataFuture, Future
 
 
 # TODO superclass for RSB Errors?

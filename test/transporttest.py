@@ -22,21 +22,21 @@
 #
 # ============================================================
 
-import unittest
-from nose.tools import timed
-
-from rsb import (Scope,
-                 Event,
-                 EventId,
-                 create_informer,
-                 create_listener,
-                 create_reader)
-import threading
-import uuid
-import rsb
-import time
 import random
 import string
+import threading
+import time
+import uuid
+
+from nose.tools import timed
+
+import rsb
+from rsb import (create_informer,
+                 create_listener,
+                 create_reader,
+                 Event,
+                 EventId,
+                 Scope)
 
 
 class SettingReceiver(object):
