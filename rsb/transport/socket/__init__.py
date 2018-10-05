@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,15 +16,10 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-This package contains a transport implementation that uses multiple
-point-to-point socket connections to simulate a bus.
+Contains a transport based on point-to-point socket connections.
 
 .. codeauthor:: jmoringe
 """

@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,16 +16,10 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-A module containing serialization methods used by several transports which
-convert :obj:`rsb.Event` instances to protocol buffers based data types and
-vice versa.
+Contains methods to convert :obj:`rsb.Event` instances to protobuf and back.
 
 .. codeauthor:: jmoringe
 .. codeauthor:: jwienke

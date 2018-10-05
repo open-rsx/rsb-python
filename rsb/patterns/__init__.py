@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,15 +16,13 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-Package containing pattern implementations like RPC based on the basic
-participants :obj:`rsb.Listener` and :obj:`rsb.Informer`.
+Contains communication pattern implementations.
+
+For instance, RPC based on the basic participants :obj:`rsb.Listener` and
+:obj:`rsb.Informer`.
 
 .. codeauthor:: jmoringe
 .. codeauthor:: jwienke
