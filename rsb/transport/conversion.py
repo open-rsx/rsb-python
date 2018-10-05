@@ -29,10 +29,7 @@ import itertools
 import uuid
 
 import rsb
-from rsb.protocol.EventId_pb2 import EventId
-from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
 from rsb.protocol.FragmentedNotification_pb2 import FragmentedNotification
-from rsb.protocol.Notification_pb2 import Notification
 from rsb.util import time_to_unix_microseconds, unix_microseconds_to_time
 
 

@@ -29,7 +29,6 @@ For instance, RPC based on the basic participants :obj:`rsb.Listener` and
 """
 
 import threading
-import uuid
 
 import rsb
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy

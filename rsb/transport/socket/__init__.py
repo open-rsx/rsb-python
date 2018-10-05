@@ -29,8 +29,6 @@ import socket
 import threading
 
 import rsb.eventprocessing
-from rsb.protocol.EventId_pb2 import EventId
-from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
 from rsb.protocol.Notification_pb2 import Notification
 import rsb.transport
 import rsb.transport.conversion as conversion
@@ -711,7 +709,7 @@ class BusServer(Bus):
                 self.__logger.warn('Failed to shutdown listen socket: %s', e)
             try:
                 self.__socket.close()
-            except:
+            except Exception as e:
                 self.__logger.warn('Failed to close listen socket: %s', e)
             self.__socket = None
 

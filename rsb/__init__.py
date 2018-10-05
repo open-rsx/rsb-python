@@ -833,9 +833,9 @@ class Scope(object):
 
     def is_super_scope_of(self, other):
         """
-        Check whether this instancse is a super scope of the given one.
+        Check whether this instances is a super scope of the given one.
 
-        Inverse operation of :obj:`isSubScopeOf`.
+        Inverse operation of :obj:`is_sub_scope_of`.
 
         Args:
             other (Scope):

@@ -414,17 +414,23 @@ def make_struct_based_converter(name, data_type, wire_schema, fmt, size):
     #     "wire_schema": wire_schema
     # }
 
-    globals()[name] = NewConverter
     return NewConverter
 
 
-make_struct_based_converter('DoubleConverter', Real, 'double', '<d', 8)
-make_struct_based_converter('FloatConverter', Real, 'float', '<f', 4)
-make_struct_based_converter('Uint32Converter', Integral, 'uint32', '<I', 4)
-make_struct_based_converter('Int32Converter', Integral, 'int32', '<i', 4)
-make_struct_based_converter('Uint64Converter', Integral, 'uint64', '<Q', 8)
-make_struct_based_converter('Int64Converter', Integral, 'int64', '<q', 8)
-make_struct_based_converter('BoolConverter', bool, 'bool', '?', 1)
+DoubleConverter = make_struct_based_converter(
+    'DoubleConverter', Real, 'double', '<d', 8)
+FloatConverter = make_struct_based_converter(
+    'FloatConverter', Real, 'float', '<f', 4)
+Uint32Converter = make_struct_based_converter(
+    'Uint32Converter', Integral, 'uint32', '<I', 4)
+Int32Converter = make_struct_based_converter(
+    'Int32Converter', Integral, 'int32', '<i', 4)
+Uint64Converter = make_struct_based_converter(
+    'Uint64Converter', Integral, 'uint64', '<Q', 8)
+Int64Converter = make_struct_based_converter(
+    'Int64Converter', Integral, 'int64', '<q', 8)
+BoolConverter = make_struct_based_converter(
+    'BoolConverter', bool, 'bool', '?', 1)
 
 
 # Registered at end of file
