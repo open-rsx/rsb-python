@@ -81,8 +81,9 @@ class ParticipantConfigTest(unittest.TestCase):
 
     def test_from_environment(self):
         # Clear RSB-specific variables from environment
-        os.environ = dict((key, value) for (key, value) in list(os.environ.items())
-                          if 'RSB' not in key)
+        os.environ = {key: value
+                      for (key, value) in list(os.environ.items())
+                      if 'RSB' not in key}
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'UNRELIABLE'
         os.environ['RSB_QUALITYOFSERVICE_ORDERED'] = 'UNORDERED'

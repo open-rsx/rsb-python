@@ -369,16 +369,16 @@ class ParticipantConfig(object):
             if options is None:
                 self.__options = {}
             else:
-                self.__options = dict([(key, value)
-                                       for (key, value) in list(options.items())
-                                       if '.' not in key and
-                                       not key == 'enabled'])
+                self.__options = {key: value
+                                  for (key, value) in list(options.items())
+                                  if '.' not in key and
+                                  key != 'enabled'}
             # Find converter selection rules
             self.__converters = converters
-            self.__converter_rules = dict(
-                [(key[len("converter.python."):], value)
-                 for (key, value) in list(options.items())
-                 if key.startswith('converter.python')])
+            self.__converter_rules = {
+                key[len("converter.python."):]: value
+                for (key, value) in list(options.items())
+                if key.startswith('converter.python')}
 
         def get_name(self):
             return self.__name

@@ -48,7 +48,7 @@ class ScopeDispatcher(object):
     """
 
     def __init__(self):
-        self.__map = dict()
+        self.__map = {}
 
     def __len__(self):
         return len(self.__map)
@@ -69,7 +69,7 @@ class ScopeDispatcher(object):
         if scope in self.__map:
             sinks = self.__map[scope]
         else:
-            sinks = list()
+            sinks = []
             self.__map[scope] = sinks
 
         sinks.append(sink)
@@ -551,7 +551,7 @@ class Configurator(object):
             list:
                 List of transport URLs.
         """
-        return set(x.get_transport_url() for x in self.__connectors)
+        return {x.get_transport_url() for x in self.__connectors}
 
     transport_urls = property(get_transport_urls)
 

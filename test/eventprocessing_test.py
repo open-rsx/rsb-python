@@ -41,7 +41,7 @@ class ScopeDispatcherTest(unittest.TestCase):
         dispatcher.add_sink(rsb.Scope('/foo'), 1)
         dispatcher.add_sink(rsb.Scope('/foo'), 2)
         dispatcher.add_sink(rsb.Scope('/bar'), 3)
-        self.assertEqual(set((1, 2, 3)), set(dispatcher.sinks))
+        self.assertEqual({1, 2, 3}, set(dispatcher.sinks))
 
     def test_matching_sinks(self):
         dispatcher = rsb.eventprocessing.ScopeDispatcher()
