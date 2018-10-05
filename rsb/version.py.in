@@ -9,7 +9,5 @@ __commit__ = '@COMMIT@'
 
 
 def get_version():
-    """
-    Returns a descriptive string for the version of RSB.
-    """
+    """Return a descriptive string for the version of RSB."""
     return "%s-%s" % (__version__, __commit__)

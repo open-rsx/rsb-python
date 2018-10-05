@@ -79,7 +79,7 @@ class Enum(object):
 
     def __init__(self, name, keys, values=None):
         """
-        Generates a new enum.
+        Generate a new enum.
 
         Args:
             name:
@@ -121,17 +121,21 @@ class Enum(object):
 
 class _InterruptedError(RuntimeError):
     """
+    Internal exception used by pool implementation.
+
     .. codeauthor:: jwienke
     """
+
     pass
 
 
 class OrderedQueueDispatcherPool(object):
     """
-    A thread pool that dispatches messages to a list of receivers. The number
-    of threads is usually smaller than the number of receivers and for each
-    receiver it is guaranteed that messages arrive in the order they were
-    published. No guarantees are given between different receivers.  All
+    A thread pool that dispatches messages to a list of receivers.
+
+    The number of threads is usually smaller than the number of receivers and
+    for each receiver it is guaranteed that messages arrive in the order they
+    were published. No guarantees are given between different receivers.  All
     methods except #start and #stop are reentrant.
 
     The pool can be stopped and restarted at any time during the processing but
@@ -158,7 +162,7 @@ class OrderedQueueDispatcherPool(object):
 
     def __init__(self, thread_pool_size, del_func, filter_func=None):
         """
-        Constructs a new pool.
+        Construct a new pool.
 
         Args:
             thread_pool_size (int >= 1):
@@ -207,11 +211,12 @@ class OrderedQueueDispatcherPool(object):
 
     def register_receiver(self, receiver):
         """
-        Registers a new receiver at the pool. Multiple registrations of the
-        same receiver are possible resulting in being called multiple times for
-        the same message (but effectively this destroys the guarantee about
-        ordering given above because multiple message queues are used for every
-        subscription).
+        Register a new receiver at the pool.
+
+        Multiple registrations of the same receiver are possible resulting in
+        being called multiple times for the same message (but effectively this
+        destroys the guarantee about ordering given above because multiple
+        message queues are used for every subscription).
 
         Args:
             receiver:
@@ -225,7 +230,7 @@ class OrderedQueueDispatcherPool(object):
 
     def unregister_receiver(self, receiver):
         """
-        Unregisters all registration of one receiver.
+        Unregister all registrations of one receiver.
 
         Args:
             receiver:
@@ -254,7 +259,7 @@ class OrderedQueueDispatcherPool(object):
 
     def push(self, message):
         """
-        Pushes a new message to be dispatched to all receivers in this pool.
+        Push a new message to be dispatched to all receivers in this pool.
 
         Args:
             message:
@@ -275,8 +280,9 @@ class OrderedQueueDispatcherPool(object):
 
     def __next_job(self, worker_num):
         """
-        Returns the next job to process for worker threads and blocks if there
-        is no job.
+        Return the next job to process for worker threads.
+
+        Blocks if there is no job.
 
         Args:
             worker_num:
@@ -366,7 +372,7 @@ class OrderedQueueDispatcherPool(object):
 
     def start(self):
         """
-        Non-blocking start.
+        Start processing and return immediately.
 
         Raises:
             RuntimeError:
@@ -392,9 +398,7 @@ class OrderedQueueDispatcherPool(object):
                            self.__thread_pool_size)
 
     def stop(self):
-        """
-        Blocking until every thread has stopped working.
-        """
+        """Block until every thread has stopped working."""
 
         self.__logger.info(
             "Starting to stop thread pool by wating for workers")
@@ -416,8 +420,10 @@ class OrderedQueueDispatcherPool(object):
 
 def get_logger_by_class(klass):
     """
-    Get a python logger instance based on a class instance. The logger name
-    will be a dotted string containing python module and class name.
+    Get a python logger instance based on a class instance.
+
+    The logger name will be a dotted string containing python module and class
+    name.
 
     Args:
         klass:
@@ -431,8 +437,7 @@ def get_logger_by_class(klass):
 
 def time_to_unix_microseconds(time):
     """
-    Converts a floating point, seconds based time to a unix timestamp in
-    microseconds precision.
+    Convert a floating point, seconds based time to a unix microseconds.
 
     Args:
         time:
@@ -450,8 +455,9 @@ def unix_microseconds_to_time(value):
 
 def prefix():
     """
-    Tries to return the prefix that this code was installed into by guessing
-    the install location from some rules.
+    Try to return the prefix that this code was installed into.
+
+    This is done by guessing the install location from some rules.
 
     Adapted from
     http://ttboj.wordpress.com/2012/09/20/finding-your-software-install-prefix-from-inside-python/

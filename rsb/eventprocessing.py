@@ -58,7 +58,7 @@ class ScopeDispatcher(object):
 
     def add_sink(self, scope, sink):
         """
-        Associates `sink` to `scope`.
+        Associate `sink` to `scope`.
 
         Args:
             scope (Scope):
@@ -76,7 +76,7 @@ class ScopeDispatcher(object):
 
     def remove_sink(self, scope, sink):
         """
-        Disassociates `sink` from `scope`.
+        Disassociate `sink` from `scope`.
 
         Args:
             scope (Scope):
@@ -92,7 +92,7 @@ class ScopeDispatcher(object):
 
     def get_sinks(self):
         """
-        Returns a generator yielding all sinks.
+        Return a generator yielding all sinks.
 
         Yields:
             sinks:
@@ -107,7 +107,7 @@ class ScopeDispatcher(object):
 
     def matching_sinks(self, scope):
         """
-        Returns a generator yielding sinks matching `scope`.
+        Return a generator yielding sinks matching `scope`.
 
         A sink matches `scope` if it was previously associated to
         `scope` or one of its super-scopes.
@@ -126,8 +126,7 @@ class ScopeDispatcher(object):
 
 class BroadcastProcessor(object):
     """
-    This event processor implements synchronous broadcast dispatch to
-    a list of handlers.
+    Implements synchronous broadcast dispatch to a list of handlers.
 
     .. codeauthor:: jmoringe
     """
@@ -218,7 +217,7 @@ class PullEventReceivingStrategy(EventReceivingStrategy):
     @abc.abstractmethod
     def raise_event(self, block):
         """
-        Receives the next event.
+        Receive the next event.
 
         Args:
             block (bool):
@@ -251,6 +250,8 @@ class FirstConnectorPullEventReceivingStrategy(PullEventReceivingStrategy):
 
 class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
+    Dispatches events to multiple handlers in parallel.
+
     An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler is called only
     sequentially but potentially from different threads.
@@ -291,7 +292,7 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
 
     def handle(self, event):
         """
-        Dispatches the event to all registered listeners.
+        Dispatch the event to all registered listeners.
 
         Args:
             event:
@@ -322,6 +323,8 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
 
 class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
+    Dispatches events to multiple handlers that can be called in parallel.
+
     An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler can be called
     in parallel for different requests.
@@ -356,7 +359,7 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
 
     def handle(self, event):
         """
-        Dispatches the event to all registered listeners.
+        Dispatch the event to all registered listeners.
 
         Args:
             event:
@@ -393,6 +396,8 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
 
 class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
+    Dispatches events to handlers using a single thread and no queues.
+
     An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
     handlers using a single thread and without queuing. Only a single buffer
     is used to decouple the transport from the registered handlers. In case
@@ -495,8 +500,9 @@ class DirectEventSendingStrategy(EventSendingStrategy):
 
 class Configurator(object):
     """
-    Superclass for in- and out-direction Configurator classes. Manages
-    the basic aspects like the connector list and (de)activation that
+    Superclass for in- and out-direction Configurator classes.
+
+    Manages the basic aspects like the connector list and (de)activation that
     are not direction-specific.
 
     .. codeauthor:: jwienke
@@ -523,8 +529,9 @@ class Configurator(object):
 
     def set_scope(self, scope):
         """
-        Defines the scope the in route has to be set up. This will be called
-        before calling #activate.
+        Define the scope the in route has to be set up.
+
+        This will be called before calling #activate.
 
         Args:
             scope (rsb.Scope):
@@ -544,8 +551,7 @@ class Configurator(object):
 
     def get_transport_urls(self):
         """
-        Return list of transport URLs describing the connectors
-        managed by the configurator.
+        Return the transport URLs of all used connectors.
 
         Returns:
             list:
@@ -587,6 +593,8 @@ class Configurator(object):
 
 class InPushRouteConfigurator(Configurator):
     """
+    Manages event receiving using a push strategy.
+
     Instances of this class manage the receiving, filtering and
     dispatching of events via one or more :obj:`rsb.transport.Connector` s
     and an :obj:`PushEventReceivingStrategy`.
@@ -597,8 +605,7 @@ class InPushRouteConfigurator(Configurator):
 
     def __init__(self, connectors=None, receiving_strategy=None):
         """
-        Creates a new configurator which manages ``connectors`` and
-        ``receiving_strategy``.
+        Create a new configurator.
 
         Args:
             connectors:
@@ -645,6 +652,8 @@ class InPushRouteConfigurator(Configurator):
 
 class InPullRouteConfigurator(Configurator):
     """
+    Manages pull-based event receiving.
+
     Instances of this class manage the pull-based receiving of events via one
     or more :obj:`rsb.transport.Connector` s and an
     :obj:`PullEventReceivingStrategy`.
@@ -654,8 +663,7 @@ class InPullRouteConfigurator(Configurator):
 
     def __init__(self, connectors=None, receiving_strategy=None):
         """
-        Creates a new configurator which manages ``connectors`` and
-        ``receiving_strategy``.
+        Create a new configurator.
 
         Args:
             connectors:
@@ -680,6 +688,8 @@ class InPullRouteConfigurator(Configurator):
 
 class OutRouteConfigurator(Configurator):
     """
+    Manages send events using one or more connectors and a sending strategy.
+
     Instances of this class manage the sending of events via one or
     more :obj:`rsb.transport.Connector` s and an :obj:`EventSendingStrategy`.
 

@@ -56,11 +56,11 @@ class SettingReceiver(object):
 
 
 class TransportCheck(object):
-    '''
+    """
     An abstract base class for ensuring interface assumptions about transports.
 
     .. codeauthor:: jwienke
-    '''
+    """
 
     def _get_in_push_connector(self, scope, activate=True):
         raise NotImplementedError()

@@ -46,7 +46,7 @@ class Connector(object, metaclass=abc.ABCMeta):
 
     def __init__(self, wire_type=None, **kwargs):
         """
-        Creates a new connector with a serialization type wire_type.
+        Create a new connector with a serialization type wire_type.
 
         Args:
             wire_type (types.TypeType):
@@ -69,7 +69,7 @@ class Connector(object, metaclass=abc.ABCMeta):
 
     def get_wire_type(self):
         """
-        Returns the serialization type used for this connector.
+        Return the serialization type used for this connector.
 
         Returns:
             python serialization type
@@ -83,8 +83,9 @@ class Connector(object, metaclass=abc.ABCMeta):
 
     def set_scope(self, new_value):
         """
-        Sets the scope this connector will receive events from to
-        ``new_value``. Called before #activate.
+        Set the scope this connector will receive events from.
+
+        Called before #activate.
 
         Args:
             new_value (rsb.Scope):
@@ -109,8 +110,7 @@ class Connector(object, metaclass=abc.ABCMeta):
 
 class InPushConnector(Connector):
     """
-    Superclass for in-direction (that is, dealing with incoming
-    events) connector implementations.
+    Superclass for in-direction connectors that use asynchronous notification.
 
     .. codeauthor:: jmoringe
     """
@@ -122,8 +122,9 @@ class InPushConnector(Connector):
     @abc.abstractmethod
     def set_observer_action(self, action):
         """
-        Sets the action used by the connector to notify about incoming
-        events. The call to this method must be thread-safe.
+        Set the action used by the connector to notify about incoming events.
+
+        The call to this method must be thread-safe.
 
         Args:
             action:
@@ -143,7 +144,7 @@ class InPullConnector(Connector):
     @abc.abstractmethod
     def raise_event(self, block):
         """
-        Returns the next received event.
+        Return the next received event.
 
         Args:
             block (bool):
@@ -158,16 +159,14 @@ class InPullConnector(Connector):
 
 class OutConnector(Connector):
     """
-    Superclass for out-direction (that is, dealing with outgoing
-    events) connector implementations.
+    Superclass for connectors sending events to the outside world.
 
     .. codeauthor:: jmoringe
     """
 
     def handle(self, event):
         """
-        Sends ``event`` and adapts its meta data instance with the
-        actual send time.
+        Send ``event`` and adapts its meta data with the actual send time.
 
         Args:
             event:
@@ -178,18 +177,21 @@ class OutConnector(Connector):
 
 class ConverterSelectingConnector(object):
     """
-    This class is intended to be used a superclass (or rather mixin
-    class) for connector classes which have to store a map of
-    converters and select converters for (de)serialization.
+    Base class for connectors that use a map of converters for serialization.
+
+    This class is intended to be used a superclass (or rather mixin class) for
+    connector classes which have to store a map of converters and select
+    converters for (de)serialization.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, converters, **kwargs):
         """
-        Creates a new connector that uses the converters in
-        ``converters`` to deserialize notification and/or serialize
-        events.
+        Create a new connector with the specified converters.
+
+        The new converter uses the converters in ``converters`` to
+        deserialize notification and/or serialize events.
 
         Args:
             converters (rsb.converter.ConverterSelectionStrategy):
@@ -203,8 +205,7 @@ class ConverterSelectingConnector(object):
 
     def get_converter_for_data_type(self, data_type):
         """
-        Returns a converter that can convert the supplied data to the
-        wire-type.
+        Return a converter that converts the supplied data to the wire-type.
 
         Args:
             data_type:
@@ -222,7 +223,7 @@ class ConverterSelectingConnector(object):
 
     def get_converter_for_wire_schema(self, wire_schema):
         """
-        Returns a suitable converter for the ``wire_schema``.
+        Return a suitable converter for the ``wire_schema``.
 
         Args:
             wire_schema (str):
@@ -246,15 +247,12 @@ class ConverterSelectingConnector(object):
 
 
 class TransportFactory(object, metaclass=abc.ABCMeta):
-    """
-    Interface for factories which are able to create :obj:`Connector` instances
-    for a certain transport.
-    """
+    """Creates connectors for a specific transport."""
 
     @abc.abstractmethod
     def get_name(self):
         """
-        Returns the name representing this transport.
+        Return the name representing this transport.
 
         Returns:
             str:
@@ -265,7 +263,7 @@ class TransportFactory(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def is_remote(self):
         """
-        Returns true is the transport performs remote communication.
+        Return ``true`` if the transport performs remote communication.
 
         Returns:
             bool:
@@ -276,8 +274,7 @@ class TransportFactory(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_in_push_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InPushConnector` for the represented
-        transport.
+        Create a new :obj:`InPushConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -293,8 +290,7 @@ class TransportFactory(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_in_pull_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InPullConnector` for the represented
-        transport.
+        Create a new :obj:`InPullConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -311,8 +307,7 @@ class TransportFactory(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_out_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`OutConnector` for the represented
-        transport.
+        Create a new :obj:`OutConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -332,7 +327,7 @@ __factory_lock = threading.Lock()
 
 def register_transport(factory):
     """
-    Registers a new transport.
+    Register a new transport.
 
     Args:
         factory (rsb.transport.TransportFactory):
@@ -357,8 +352,7 @@ def register_transport(factory):
 
 def get_transport_factory(name):
     """
-    Returns a ``TransportFactory`` instance for the transport with the given
-    name.
+    Return a ``TransportFactory`` for the transport with the given name.
 
     Args:
         name (str):

@@ -51,7 +51,7 @@ class Bus(object):
 
     def add_sink(self, sink):
         """
-        Adds a sink for events pushed to the Bus.
+        Add a sink for events pushed to the Bus.
 
         Args:
             sink:
@@ -65,7 +65,7 @@ class Bus(object):
 
     def remove_sink(self, sink):
         """
-        Removes a sink to not be notified anymore.
+        Remove a sink to not be notified anymore.
 
         Args:
             sink:

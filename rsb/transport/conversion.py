@@ -43,9 +43,7 @@ from rsb.util import time_to_unix_microseconds, unix_microseconds_to_time
 
 
 def notification_to_event(notification, wire_data, wire_schema, converter):
-    """
-    Build event from notification.
-    """
+    """Build an event from a notification."""
     event = rsb.Event(
         rsb.EventId(uuid.UUID(bytes=notification.event_id.sender_id),
                     notification.event_id.sequence_number))

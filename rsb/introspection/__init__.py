@@ -74,7 +74,7 @@ class ParticipantInfo(object):
 
     def get_kind(self):
         """
-        Returns the kind of the participant.
+        Return the kind of the participant.
 
         Examples include "listener", "informer" and "local-server".
 
@@ -89,7 +89,7 @@ class ParticipantInfo(object):
 
     def get_participant_id(self):
         """
-        Returns the unique id of the participant.
+        Return the unique id of the participant.
 
         Returns:
             uuid.uuid:
@@ -101,7 +101,7 @@ class ParticipantInfo(object):
 
     def get_scope(self):
         """
-        Returns the scope of the participant.
+        Return the scope of the participant.
 
         Returns:
             rsb.Scope:
@@ -113,8 +113,7 @@ class ParticipantInfo(object):
 
     def get_data_type(self):
         """
-        Returns a representation of the type of the participant, if
-        available.
+        Return a representation of the type of the participant, if available.
 
         Note that this is a temporary solution and will change in
         future versions.
@@ -129,8 +128,9 @@ class ParticipantInfo(object):
 
     def get_parent_id(self):
         """
-        Return the unique id of the parent participant of the participant,
-        or ``None``, if the participant does not have a parent.
+        Return the unique id of the parent participant.
+
+        May return ``None`` if no parent participant exists.
 
         Returns:
             uuid.uuid or NoneType:
@@ -166,8 +166,7 @@ __process_start_time = None
 
 def process_start_time():
     """
-    Return the start time of the current process (or an approximation)
-    in fractional seconds since UNIX epoch.
+    Return the start time of the current process (or an approximation).
 
     Returns:
         float:
@@ -218,8 +217,7 @@ def program_name():
 
 class ProcessInfo(object):
     """
-    Instances of this class store information about operating system
-    processes.
+    Stores information about operating system processes.
 
     The stored information can describe the current process, a
     different process on the local machine or a remote process.
@@ -251,7 +249,7 @@ class ProcessInfo(object):
 
     def get_process_id(self):
         """
-        Returns the numeric id of the process.
+        Return the numeric id of the process.
 
         Returns:
             int:
@@ -263,7 +261,7 @@ class ProcessInfo(object):
 
     def get_program_name(self):
         """
-        Returns the name of the program being executed in the process.
+        Return the name of the program being executed in the process.
 
         Returns:
             str:
@@ -275,8 +273,7 @@ class ProcessInfo(object):
 
     def get_arguments(self):
         """
-        Returns the list of commandline argument the process has been
-        started with.
+        Return the list of commandline argument to the process.
 
         Returns:
             list:
@@ -288,8 +285,7 @@ class ProcessInfo(object):
 
     def get_start_time(self):
         """
-        Returns the start time of the process in fractional seconds
-        since UNIX epoch.
+        Return the start time of the process.
 
         Returns:
             float:
@@ -301,8 +297,7 @@ class ProcessInfo(object):
 
     def get_executing_user(self):
         """
-        Return the login- or account-name of the user executing the
-        process.
+        Return the login- or account-name of the user executing the process.
 
         Returns:
             str:
@@ -338,7 +333,7 @@ class ProcessInfo(object):
 
 def host_id():
     """
-    Returns a unique id string for the current host.
+    Return a unique id string for the current host.
 
     Returns:
         str or NoneType:
@@ -418,7 +413,7 @@ class HostInfo(object):
 
     def get_hostname(self):
         """
-        Returns the hostname of the host.
+        Return the hostname of the host.
 
         Returns:
             str:
@@ -442,8 +437,9 @@ class HostInfo(object):
 
     def get_machine_version(self):
         """
-        Returns the version of the machine within its type, usually
-        the CPU identification string.
+        Return the version of the machine within its type.
+
+        Usually the CPU identification string.
 
         Returns:
             str or NoneType:
@@ -455,8 +451,9 @@ class HostInfo(object):
 
     def get_software_type(self):
         """
-        Returns the type of the operating system running on the host,
-        usually the kernel name.
+        Return the type of the operating system running on the host.
+
+        Usually the kernel name.
 
         Returns:
             str or NoneType:
@@ -468,7 +465,9 @@ class HostInfo(object):
 
     def get_software_version(self):
         """
-        Returns the version of the operating system within its type,
+        Return version information about the operating systems.
+
+        Provides the version of the operating system within its type,
         usually the kernel version string.
 
         Returns:
@@ -508,6 +507,8 @@ def process_scope(host_id, process_id, base_scope=HOSTS_SCOPE):
 
 class IntrospectionSender(object):
     """
+    Sends introspection information to other RSB processes.
+
     Instances of this class (usually zero or one per process) send
     information about participants in the current process, the current
     process itself and the local host to receivers of introspection
@@ -708,6 +709,8 @@ __sender = None
 
 def handle_participant_creation(participant, parent=None):
     """
+    Notify about a created participant.
+
     This function is intended to be connected to
     :obj:`rsb.participant_creation_hook` and calls
     :obj:`IntrospectionSender.add_participant` when appropriate, first
@@ -726,6 +729,8 @@ def handle_participant_creation(participant, parent=None):
 
 def handle_participant_destruction(participant):
     """
+    Notify about a removed participant.
+
     This function is intended to be connected to
     :obj:`rsb.participant_destruction_hook` and calls
     :obj:`IntrospectionSender.remove_participant` when appropriate,
@@ -745,8 +750,9 @@ def handle_participant_destruction(participant):
 
 def initialize(display_name=None):
     """
-    Initializes the introspection module. Clients need to ensure that this
-    method is called only once.
+    Initialize the introspection module.
+
+    Clients need to ensure that this method is called only once.
 
     Args:
         display_name (str or NoneType if not set, optional):

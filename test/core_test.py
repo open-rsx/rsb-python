@@ -531,14 +531,14 @@ class IntegrationTest(unittest.TestCase):
 
     def test_lazy_converter_registration(self):
         """
+        Tests lazy converter registration.
+
         Test that converters can be added to the global converter map without
         requiring a completely new instance of the default participant config.
         """
 
         class FooType(object):
-            """
-            Dummy data type for the test
-            """
+            """Dummy data type for the test."""
 
         class FooTypeConverter(Converter):
 

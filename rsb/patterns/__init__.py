@@ -42,8 +42,7 @@ from rsb.patterns.future import DataFuture, Future
 # TODO superclass for RSB Errors?
 class RemoteCallError(RuntimeError):
     """
-    Errors of this class are raised when a call to a remote method
-    fails for some reason.
+    Represents an error when calling a remote method implementation.
 
     .. codeauthor:: jmoringe
     """
@@ -75,6 +74,8 @@ class RemoteCallError(RuntimeError):
 
 class Method(rsb.Participant):
     """
+    Base class for methods of local or remote servers.
+
     Objects of this class are methods which are associated to a local
     or remote server. Within a server, each method has a unique name.
 
@@ -83,13 +84,12 @@ class Method(rsb.Participant):
 
     .. codeauthor:: jmoringe
     """
-    # TODO scope and name are redundant
 
+    # TODO scope and name are redundant
     def __init__(self, scope, config,
                  server, name, request_type, reply_type):
         """
-        Create a new :obj:`Method` object for the method named ``name``
-        provided by ``server``.
+        Create a new :obj:`Method` object for the given name and server.
 
         Args:
             server:
@@ -163,6 +163,8 @@ class Method(rsb.Participant):
 
 class Server(rsb.Participant):
     """
+    Base class for local or remote servers.
+
     Objects of this class represent local or remote serves. A server
     is basically a collection of named methods that are bound to a
     specific scope.
@@ -175,12 +177,11 @@ class Server(rsb.Participant):
 
     def __init__(self, scope, config):
         """
-        Create a new :obj:`Server` object that provides its methods under the
-        :obj:`rsb.Scope` ``scope``.
+        Create a :obj:`Server` that provides methods under the given scope.
 
         Args:
             scope (rsb.Scope):
-                The under which methods of the server are provided.
+                The scope under which methods of the server are provided.
             config (rsb.ParticipantConfig):
                 The transport configuration that should be used for
                 communication performed by this server.
@@ -248,8 +249,7 @@ class Server(rsb.Participant):
 
 class LocalMethod(Method):
     """
-    Objects of this class implement and make available methods of a
-    local server.
+    Implements and makes available a method of a local server.
 
     The actual behavior of methods is implemented by invoking
     arbitrary user-supplied callables.
@@ -336,6 +336,8 @@ class LocalMethod(Method):
 
 class LocalServer(Server):
     """
+    Provide local methods to remote clients.
+
     Objects of this class associate a collection of method objects
     which are implemented by callback functions with a scope under
     which these methods are exposed for remote clients.
@@ -345,8 +347,7 @@ class LocalServer(Server):
 
     def __init__(self, scope, config):
         """
-        Creates a new :obj:`LocalServer` object that exposes methods under
-        the :obj:`rsb.Scope` ``scope``.
+        Create a :obj:`LocalServer` that provides methods under a given scope.
 
         Args:
             scope (rsb.Scope):
@@ -413,9 +414,9 @@ class LocalServer(Server):
 
 class RemoteMethod(Method):
     """
-    Objects of this class represent methods provided by a remote
-    server. Method objects are callable like regular bound method
-    objects.
+    Represents a method provided by a remote server.
+
+    Method objects are callable like regular bound method objects.
 
     .. codeauthor:: jmoringe
     """
@@ -461,7 +462,9 @@ class RemoteMethod(Method):
 
     def __call__(self, arg=None, timeout=0):
         """
-        Call the method synchronously with argument ``arg``, returning
+        Call the method synchronously and returns the results.
+
+        Calls the represented method with argument ``arg``, returning
         the value returned by the remote method.
 
         If ``arg`` is an instance of :obj:`Event`, an :obj:`Event` containing
@@ -506,7 +509,9 @@ class RemoteMethod(Method):
 
     def asynchronous(self, arg=None):
         """
-        Call the method asynchronously with argument ``arg``, returning
+        Call the method asynchronously and returns a :obj:`Future`.
+
+        Calls the represented method with argument ``arg``, returning
         a :obj:`Future` instance that can be used to retrieve the result.
 
         If ``arg`` is an instance of :obj:`Event`, the result of the method
@@ -584,16 +589,14 @@ class RemoteMethod(Method):
 
 class RemoteServer(Server):
     """
-    Objects of this class represent remote servers in a way that
-    allows calling methods on them as if they were local.
+    Represents remote servers in a way that allows using normal methods calls.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, scope, config):
         """
-        Create a new :obj:`RemoteServer` object that provides its methods
-        under the scope ``scope``.
+        Create a new :obj:`RemoteServer` providing methods on the given scope.
 
         Args:
             scope (rsb.Scope):

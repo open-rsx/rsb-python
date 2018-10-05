@@ -46,7 +46,7 @@ class AbstractFilter(object):
 
     def match(self, event):
         """
-        Matches this filter against a given event.
+        Match this filter against a given event.
 
         Args:
             event:
@@ -67,7 +67,7 @@ class ScopeFilter(AbstractFilter):
 
     def __init__(self, scope):
         """
-        Constructs a new scope filter with a given scope to restrict to.
+        Construct a new scope filter with a given scope to restrict to.
 
         Args:
             scope:
@@ -77,7 +77,7 @@ class ScopeFilter(AbstractFilter):
 
     def get_scope(self):
         """
-        Returns the top-level scope this filter matches for.
+        Return the top-level scope this filter matches for.
 
         Returns:
             scope
@@ -98,6 +98,8 @@ class OriginFilter(AbstractFilter):
 
     def __init__(self, origin, invert=False):
         """
+        Create a new instance.
+
         Args:
             origin:
                 The id of the :obj:`Participant` from which matching events
@@ -149,6 +151,8 @@ class CauseFilter(AbstractFilter):
 
     def __init__(self, cause, invert=False):
         """
+        Create a new instance.
+
         Args:
             cause:
                 The id of the :obj:`Event` that should be in the cause
@@ -192,14 +196,15 @@ class CauseFilter(AbstractFilter):
 
 class MethodFilter(AbstractFilter):
     """
-    Matching events have (not) have a particular value in their method
-    field.
+    Match events do (not) have a particular value in their method field.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, method, invert=False):
         """
+        Create a new instance.
+
         Args:
             method (str):
                 The method string that matching events have to have in their

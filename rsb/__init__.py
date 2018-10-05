@@ -59,9 +59,7 @@ _logger = logging.getLogger('rsb')
 # do so before importing anything from RSB itself, which might already log
 # stuff
 class _NullHandler(logging.Handler):
-    """
-    Null logging handler to prevent warning messages
-    """
+    """Null logging handler to prevent warning messages."""
 
     def emit(self, record):
         pass
@@ -75,9 +73,7 @@ __transport_registration_lock = threading.RLock()
 
 
 def _register_default_transports():
-    """
-    Registers all available transports.
-    """
+    """Register all available transports."""
     global __default_transports_registered
     with __transport_registration_lock:
         if __default_transports_registered:
@@ -91,12 +87,12 @@ def _register_default_transports():
 
 class QualityOfServiceSpec(object):
     """
-    Specification of desired quality of service settings for sending
-    and receiving events. Specification given here are required "at
-    least". This means concrete connector implementations can provide
-    "better" QoS specs without any notification to the clients. Better
-    is decided by the integer value of the specification enums. Higher
-    values mean better services.
+    Specification of desired quality of service settings event transmission.
+
+    Specification given here are required "at least". This means concrete
+    connector implementations can provide "better" QoS specs without any
+    notification to the clients. Better is decided by the integer value of the
+    specification enums. Higher values mean better services.
 
     .. codeauthor:: jwienke
     """
@@ -107,8 +103,9 @@ class QualityOfServiceSpec(object):
     def __init__(self, ordering=Ordering.UNORDERED,
                  reliability=Reliability.RELIABLE):
         """
-        Constructs a new QoS specification with desired
-        details. Defaults are unordered but reliable.
+        Construct a new QoS specification with desired details.
+
+        Defaults are unordered but reliable.
 
         Args:
             ordering:
@@ -121,7 +118,7 @@ class QualityOfServiceSpec(object):
 
     def get_ordering(self):
         """
-        Returns the desired ordering settings.
+        Return the desired ordering settings.
 
         Returns:
             ordering settings
@@ -131,7 +128,7 @@ class QualityOfServiceSpec(object):
 
     def set_ordering(self, ordering):
         """
-        Sets the desired ordering settings
+        Set the desired ordering settings.
 
         Args:
             ordering: ordering to set
@@ -143,7 +140,7 @@ class QualityOfServiceSpec(object):
 
     def get_reliability(self):
         """
-        Returns the desired reliability settings.
+        Return the desired reliability settings.
 
         Returns:
             reliability settings
@@ -153,7 +150,7 @@ class QualityOfServiceSpec(object):
 
     def set_reliability(self, reliability):
         """
-        Sets the desired reliability settings
+        Set the desired reliability settings.
 
         Args:
             reliability: reliability to set
@@ -237,6 +234,8 @@ def _config_default_config_files():
 def _config_default_sources_to_dict(defaults=None,
                                     files=_config_default_config_files()):
     r"""
+    Return a dictionary of configuration options from a cascade of sources.
+
     Obtain configuration options from multiple sources, store them
     in a :obj:`ParticipantConfig` object and return it. By default,
     the following sources of configuration information will be
@@ -332,8 +331,9 @@ def _config_value_is_true(value):
 
 class ParticipantConfig(object):
     """
-    Objects of this class describe desired configurations for newly
-    created :obj:`Participant` instances with respect to:
+    Describes desired configurations for newly created participants.
+
+    Configured aspects comprise:
 
     * Quality of service settings
     * Error handling strategies (not currently used)
@@ -350,8 +350,9 @@ class ParticipantConfig(object):
 
     class Transport(object):
         """
-        Objects of this class describe configurations of transports
-        connectors. These consist of
+        Describes configurations of transports connectors.
+
+        The configured aspects consist of
 
         * Transport name
         * Enabled vs. Disabled
@@ -537,6 +538,8 @@ class ParticipantConfig(object):
     @classmethod
     def from_file(cls, path, defaults=None):
         """
+        Parse the configuration options specified in the provided config file.
+
         Obtain configuration options from the configuration file
         ``path``, store them in a :obj:`ParticipantConfig` object and
         return it.
@@ -568,6 +571,8 @@ class ParticipantConfig(object):
     @classmethod
     def from_environment(cls, defaults=None):
         """
+        Parse the configuration options specified via environment variables.
+
         Obtain configuration options from environment variables, store
         them in a :obj:`ParticipantConfig` object and return
         it. Environment variable names are mapped to RSB option names
@@ -593,6 +598,8 @@ class ParticipantConfig(object):
     @classmethod
     def from_default_sources(cls, defaults=None):
         r"""
+        Parse the configuration from a default set of sources.
+
         Obtain configuration options from multiple sources, store them
         in a :obj:`ParticipantConfig` object and return it. The following
         sources of configuration information will be consulted:
@@ -621,6 +628,8 @@ class ParticipantConfig(object):
 
 def converters_from_transport_config(transport):
     """
+    Return a converter selection strategy suitable for the given transport.
+
     Returns an object implementing the
     :obj:`rsb.converter.ConverterSelectionStrategy` protocol suitable for
     ``transport``.
@@ -675,6 +684,7 @@ def converters_from_transport_config(transport):
 class Scope(object):
     """
     A scope defines a channel of the hierarchical unified bus covered by RSB.
+
     It is defined by a surface syntax like ``"/a/deep/scope"``.
 
     .. codeauthor:: jwienke
@@ -692,7 +702,7 @@ class Scope(object):
 
     def __init__(self, string_rep):
         """
-        Parses a scope from a string representation.
+        Parse a scope from a string representation.
 
         Args:
             string_rep (str or unicode):
@@ -738,10 +748,11 @@ class Scope(object):
 
     def get_components(self):
         """
-        Returns all components of the scope as an ordered list. Components are
-        the names between the separator character '/'. The first entry in the
-        list is the highest level of hierarchy. The scope '/' returns an empty
-        list.
+        Return all components of the scope as an ordered list.
+
+        Components are the names between the separator character '/'. The first
+        entry in the list is the highest level of hierarchy. The scope '/'
+        returns an empty list.
 
         Returns:
             list:
@@ -754,8 +765,7 @@ class Scope(object):
 
     def to_string(self):
         """
-        Reconstructs a fully formal string representation of the scope with
-        leading an trailing slashes.
+        Return a formal string representation with leading an trailing slashes.
 
         Returns:
             str:
@@ -770,8 +780,7 @@ class Scope(object):
 
     def to_bytes(self):
         """
-        Encodes the string representation of the scope as a bytes object using
-        ASCII encoding.
+        Encode the string representation as ASCII-encoded bytes.
 
         Returns:
             bytes:
@@ -781,10 +790,11 @@ class Scope(object):
 
     def concat(self, child_scope):
         """
-        Creates a new scope that is a sub-scope of this one with the
-        subordinated scope described by the given
-        argument. E.g. ``"/this/is/".concat("/a/test/")`` results in
-        ``"/this/is/a/test"``.
+        Create a subscope of this one by appending the given other scope.
+
+        Create a new scope that is a sub-scope of this one with the
+        subordinated scope described by the given argument. E.g.
+        ``"/this/is/".concat("/a/test/")`` results in ``"/this/is/a/test"``.
 
         Args:
             child_scope (Scope):
@@ -802,9 +812,10 @@ class Scope(object):
 
     def is_sub_scope_of(self, other):
         """
-        Tests whether this scope is a sub-scope of the given other scope, which
-        means that the other scope is a prefix of this scope. E.g. "/a/b/" is a
-        sub-scope of "/a/".
+        Test whether this scope is a sub-scope of the given other scope.
+
+        The result of this method is ``True`` if the other scope is a prefix
+        of this scope. E.g. "/a/b/" is a sub-scope of "/a/".
 
         Args:
             other (Scope):
@@ -824,6 +835,8 @@ class Scope(object):
 
     def is_super_scope_of(self, other):
         """
+        Check whether this instancse is a super scope of the given one.
+
         Inverse operation of :obj:`isSubScopeOf`.
 
         Args:
@@ -844,9 +857,10 @@ class Scope(object):
 
     def super_scopes(self, include_self=False):
         """
-        Generates all super scopes of this scope including the root
-        scope "/".  The returned list of scopes is ordered by
-        hierarchy with "/" being the first entry.
+        Generate all super scopes of this scope including the root scope "/".
+
+        The returned list of scopes is ordered by hierarchy with "/" being the
+        first entry.
 
         Args:
             include_self (Bool):
@@ -902,8 +916,7 @@ class Scope(object):
 
 class MetaData(object):
     """
-    Objects of this class store RSB-specific and user-supplied
-    meta-data items such as timing information.
+    Stores RSB-specific and user-supplied meta-data items for an event.
 
     .. codeauthor:: jmoringe
     """
@@ -913,7 +926,7 @@ class MetaData(object):
                  receive_time=None, deliver_time=None,
                  user_times=None, user_infos=None):
         """
-        Constructs a new :obj:`MetaData` object.
+        Construct a new :obj:`MetaData` object.
 
         Args:
             create_time:
@@ -1043,8 +1056,10 @@ class MetaData(object):
 
 class EventId(object):
     """
-    Uniquely identifies an Event by the sending participants ID and a sequence
-    number within this participant. Optional conversion to uuid is possible.
+    Uniquely identifies an Event.
+
+    This is done by the sending participants ID and a sequence number within
+    this participant. Optional conversion to uuid is possible.
 
     .. codeauthor:: jwienke
     """
@@ -1066,7 +1081,7 @@ class EventId(object):
 
     def set_participant_id(self, participant_id):
         """
-        Sets the participant id of this event.
+        Set the participant id of this event.
 
         Args:
             participant_id (uuid.UUID):
@@ -1087,7 +1102,7 @@ class EventId(object):
 
     def set_sequence_number(self, sequence_number):
         """
-        Sets the sequence number of this id.
+        Set the sequence number of this id.
 
         Args:
             sequence_number (int):
@@ -1099,7 +1114,7 @@ class EventId(object):
 
     def get_as_uuid(self):
         """
-        Returns a UUID encoded version of this id.
+        Return a UUID encoded version of this id.
 
         Returns:
             uuid.uuid:
@@ -1160,7 +1175,7 @@ class Event(object):
                  user_times=None,
                  causes=None):
         """
-        Constructs a new event with undefined type, root scope and no data.
+        Construct a new event with undefined type, root scope and no data.
 
         Args:
             event_id (EventId):
@@ -1229,7 +1244,7 @@ class Event(object):
 
     def get_event_id(self):
         """
-        Returns the id of this event.
+        Return the id of this event.
 
         Returns:
             int:
@@ -1251,7 +1266,7 @@ class Event(object):
 
     def get_scope(self):
         """
-        Returns the scope of this event.
+        Return the scope of this event.
 
         Returns:
             Scope:
@@ -1262,7 +1277,7 @@ class Event(object):
 
     def set_scope(self, scope):
         """
-        Sets the scope of this event.
+        Set the scope of this event.
 
         Args:
             scope (Scope):
@@ -1302,7 +1317,7 @@ class Event(object):
 
     def set_method(self, method):
         """
-        Sets the method of this event.
+        Set the method of this event.
 
         Args:
             method (str):
@@ -1314,7 +1329,7 @@ class Event(object):
 
     def get_data(self):
         """
-        Returns the user data of this event.
+        Return the user data of this event.
 
         Returns:
             user data
@@ -1324,7 +1339,7 @@ class Event(object):
 
     def set_data(self, data):
         """
-        Sets the user data of this event
+        Set the user data of this event.
 
         Args:
             data:
@@ -1337,7 +1352,7 @@ class Event(object):
 
     def get_data_type(self):
         """
-        Returns the type of the user data of this event.
+        Return the type of the user data of this event.
 
         Returns:
             user data type
@@ -1348,7 +1363,7 @@ class Event(object):
 
     def set_data_type(self, data_type):
         """
-        Sets the type of the user data of this event
+        Set the type of the user data of this event.
 
         Args:
             the_type:
@@ -1369,7 +1384,7 @@ class Event(object):
 
     def add_cause(self, the_id):
         """
-        Adds a causing EventId to the causes of this event.
+        Add a causing EventId to the causes of this event.
 
         Args:
             the_id (EventId):
@@ -1387,7 +1402,7 @@ class Event(object):
 
     def remove_cause(self, the_id):
         """
-        Removes a causing EventId from the causes of this event.
+        Remove a causing EventId from the causes of this event.
 
         Args:
             the_id (EventId):
@@ -1406,8 +1421,7 @@ class Event(object):
 
     def is_cause(self, the_id):
         """
-        Checks whether a given id of an event is marked as a cause for this
-        event.
+        Check whether an id of an event is marked as a cause for this event.
 
         Args:
             the_id (EventId):
@@ -1421,7 +1435,7 @@ class Event(object):
 
     def get_causes(self):
         """
-        Returns all causes of this event.
+        Return all causes of this event.
 
         Returns:
             list of EventIds:
@@ -1431,7 +1445,7 @@ class Event(object):
 
     def set_causes(self, causes):
         """
-        Overwrites the cause vector of this event with the given one.
+        Overwrite the cause vector of this event with the given one.
 
         Args:
             causes (list of EventId):
@@ -1472,8 +1486,7 @@ class Event(object):
 
 class Hook(object):
     """
-    A mutable collection of callback functions that can be called
-    together.
+    A mutable collection of callback functions that can be called together.
 
     .. codeauthor:: jmoringe
     """
@@ -1503,16 +1516,18 @@ participant_destruction_hook = Hook()
 
 class Participant(object):
     """
-    Base class for specialized bus participant classes. Has a unique
-    id and a scope.
+    Base class for specialized bus participant classes.
+
+    Has a unique id and a scope.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, scope, config):
         """
-        Constructs a new Participant. This should not be done by
-        clients.
+        Construct a new Participant.
+
+        This should not be done by clients.
 
         Args:
             scope (Scope or accepted by Scope constructor):
@@ -1551,8 +1566,7 @@ class Participant(object):
 
     def get_transport_ur_ls(self):
         """
-        Returns of list transport URLs describing transport used by
-        the participant.
+        Return of list transport URLs for all used transports.
 
         Returns:
             set:
@@ -1567,9 +1581,10 @@ class Participant(object):
 
     def deactivate(self):
         """
-        Deactivates a participant by tearing down all connection
-        logic. This needs to be called in case you want to ensure
-        that programs can terminate correctly.
+        Deactivate a participant by tearing down all connection logic.
+
+        This needs to be called in case you want to ensure that programs can
+        terminate correctly.
         """
         participant_destruction_hook.run(self)
 
@@ -1619,8 +1634,10 @@ class Informer(Participant):
     def __init__(self, scope, config, data_type,
                  configurator=None):
         """
-        Constructs a new :obj:`Informer` that publishes :obj:`Events <Event>`
-        carrying payloads of type ``type`` on ``scope``.
+        Construct a new :obj:`Informer`.
+
+        The new instance publishes :obj:`Events <Event>` carrying payloads of
+        type ``type`` on ``scope``.
 
         Args:
             scope (Scope or accepted by Scope constructor):
@@ -1684,7 +1701,7 @@ class Informer(Participant):
 
     def get_data_type(self):
         """
-        Returns the type of data sent by this informer.
+        Return the type of data sent by this informer.
 
         Returns:
             type of sent data
@@ -1703,9 +1720,10 @@ class Informer(Participant):
 
     def publish_event(self, event):
         """
-        Publishes a predefined event. The caller must ensure that the
-        event has the appropriate scope and type according to the
-        :obj:`Informer`'s settings.
+        Publish a predefined event.
+
+        The caller must ensure that the event has the appropriate scope and
+        type according to the :obj:`Informer`'s settings.
 
         Args:
             event (Event):
@@ -1762,7 +1780,7 @@ class Informer(Participant):
 
 class Listener(Participant):
     """
-    Event-receiving part of the communication pattern
+    Event-receiving part of the communication pattern.
 
     .. codeauthor:: jwienke
     .. codeauthor:: jmoringe
@@ -1851,7 +1869,7 @@ class Listener(Participant):
 
     def add_filter(self, the_filter):
         """
-        Appends a filter to restrict the events received by this listener.
+        Append a filter to restrict the events received by this listener.
 
         Args:
             the_filter:
@@ -1864,7 +1882,7 @@ class Listener(Participant):
 
     def get_filters(self):
         """
-        Returns all registered filters of this listener.
+        Return all registered filters of this listener.
 
         Returns:
             list of filters
@@ -1875,8 +1893,7 @@ class Listener(Participant):
 
     def add_handler(self, handler, wait=True):
         """
-        Adds ``handler`` to the list of handlers this listener invokes
-        for received events.
+        Add ``handler`` to the list of handlers being invoked on new events.
 
         Args:
             handler:
@@ -1894,8 +1911,7 @@ class Listener(Participant):
 
     def remove_handler(self, handler, wait=True):
         """
-        Removes ``handler`` from the list of handlers this listener
-        invokes for received events.
+        Remove ``handler`` from the list of handlers this listener invokes.
 
         Args:
             handler:
@@ -1913,7 +1929,7 @@ class Listener(Participant):
 
     def get_handlers(self):
         """
-        Returns the list of all registered handlers.
+        Return the list of all registered handlers.
 
         Returns:
             list of callables accepting an Event:
@@ -1925,8 +1941,7 @@ class Listener(Participant):
 
 class Reader(Participant):
     """
-    Receives events by manually pulling them from the wire instead of
-    asynchronous notifications.
+    Receives events by manually pulling them from the wire.
 
     Clients need to continuously call the :meth:`read` method to receive
     events. Being too slow to receive events will usually terminate the
@@ -2014,7 +2029,9 @@ class Reader(Participant):
 
     def read(self, block=True):
         """
-        Reads the next event from the wire. Blocks until one is received.
+        Read the next event from the wire.
+
+        Optionally blocks until an event is available.
 
         Args:
             block (bool):
@@ -2033,15 +2050,13 @@ __default_participant_config = ParticipantConfig.from_dict(
 
 
 def get_default_participant_config():
-    """
-    Returns the current default configuration for new objects.
-    """
+    """Return the current default configuration for new objects."""
     return __default_participant_config
 
 
 def set_default_participant_config(config):
     """
-    Replaces the default configuration for new objects.
+    Replace the default configuration for new objects.
 
     Args:
         config (ParticipantConfig):
@@ -2069,7 +2084,7 @@ def _initialize_introspection():
 
 def create_participant(cls, scope, config, parent=None, **kwargs):
     """
-    Creates and returns a new participant of type `cls`.
+    Create and returns a new participant of type `cls`.
 
     Args:
         cls (type):
@@ -2102,7 +2117,7 @@ def create_participant(cls, scope, config, parent=None, **kwargs):
 
 def create_listener(scope, config=None, parent=None, **kwargs):
     """
-    Creates and returns a new :obj:`Listener` for ``scope``.
+    Create and returns a new :obj:`Listener` for ``scope``.
 
     Args:
         scope (Scope or accepted by :obj:`Scope` constructor):
@@ -2124,7 +2139,7 @@ def create_listener(scope, config=None, parent=None, **kwargs):
 
 def create_reader(scope, config=None, parent=None, **kwargs):
     """
-    Creates and returns a new :obj:`Reader` for ``scope``.
+    Create and returns a new :obj:`Reader` for ``scope``.
 
     Args:
         scope (Scope or accepted by :obj:`Scope` constructor):
@@ -2147,7 +2162,7 @@ def create_reader(scope, config=None, parent=None, **kwargs):
 def create_informer(scope, config=None, parent=None, data_type=object,
                     **kwargs):
     """
-    Creates and returns a new :obj:`Informer` for ``scope``.
+    Create and returns a new :obj:`Informer` for ``scope``.
 
     Args:
         scope (Scope or accepted by :obj:`Scope` constructor):
@@ -2176,8 +2191,7 @@ def create_local_server(scope, config=None, parent=None,
                         provider=None, expose=None, methods=None,
                         **kwargs):
     """
-    Create and return a new :obj:`LocalServer` object that exposes its
-    methods under ``scope``.
+    Create a new :obj:`LocalServer` that exposes its methods under ``scope``.
 
     The keyword parameters object, expose and methods can be used to
     associate an initial set of methods with the newly created server
@@ -2235,8 +2249,7 @@ def create_local_server(scope, config=None, parent=None,
 
 def create_remote_server(scope, config=None, parent=None, **kwargs):
     """
-    Create a new :obj:`RemoteServer` object for a remote server that
-    provides its methods under ``scope``.
+    Create a new :obj:`RemoteServer` that provides methods under ``scope``.
 
     Args:
         scope (Scope or accepted by Scope constructor):

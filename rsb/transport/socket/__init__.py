@@ -44,8 +44,7 @@ import rsb.util
 
 class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     """
-    Instances of this class implement connections to a socket-based
-    bus.
+    Implements a connection to a socket-based bus.
 
     The basic operations provided by this class are receiving an event
     by calling :obj:`receive_notification` and submitting an event to the bus by
@@ -71,6 +70,8 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
                  host=None, port=None, socket_=None,
                  is_server=False, tcpnodelay=True):
         """
+        Create a new instance.
+
         Args:
             host (str or None):
                 Hostname or address of the bus server.
@@ -288,6 +289,8 @@ class Bus(object):
 
     def get_connections(self):
         """
+        Return the attached connections.
+
         Returns:
             list:
                 A list of all connections to the bus.
@@ -296,10 +299,11 @@ class Bus(object):
 
     def add_connection(self, connection):
         """
-        Add ``connection`` to the list of connections of this bus. This
-        cause notifications send over this bus to be send through
-        ``connection`` and notifications received via ``connection`` to
-        be dispatched to connectors of this bus.
+        Add ``connection`` to the list of connections of this bus.
+
+        This cause notifications send over this bus to be send through
+        ``connection`` and notifications received via ``connection`` to be
+        dispatched to connectors of this bus.
 
         Args:
             connection:
@@ -351,8 +355,9 @@ class Bus(object):
 
     def add_connector(self, connector):
         """
-        Add ``connector`` to the list of connectors of this
-        bus. Depending on the direction of ``connector``, this causes
+        Add ``connector`` to the list of connectors of this bus.
+
+        Depending on the direction of ``connector``, this causes
         ``connector`` to either receive or broadcast notifications via
         this bus.
 
@@ -497,6 +502,8 @@ __bus_clients_lock = threading.Lock()
 
 def get_bus_client_for(host, port, tcpnodelay, connector):
     """
+    Return a bus client for the given end point and attach a connector to it.
+
     Return (creating it if necessary), a :obj:`BusClient` for the endpoint
     designated by ``host`` and ``port`` and attach ``connector`` to
     it. Attaching ``connector`` marks the bus client as being in use
@@ -528,14 +535,15 @@ def get_bus_client_for(host, port, tcpnodelay, connector):
 
 class BusClient(Bus):
     """
-    Instances of this class provide access to a bus by means of a
-    client socket.
+    Provides access to a bus by means of a client socket.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, host, port, tcpnodelay):
         """
+        Create a new client connection on the specified host and port.
+
         Args:
             host (str):
                 A hostname or address of the node on which the bus server
@@ -556,6 +564,8 @@ __bus_servers_lock = threading.Lock()
 
 def get_bus_server_for(host, port, tcpnodelay, connector):
     """
+    Return a bus server for the given end point and attach a connector to it.
+
     Return (creating it if necessary), a :obj:`BusServer` for the endpoint
     designated by ``host`` and ``port`` and attach ``connector`` to
     it. Attaching ``connector`` marks the bus server as being in use
@@ -589,8 +599,7 @@ def get_bus_server_for(host, port, tcpnodelay, connector):
 
 class BusServer(Bus):
     """
-    Instances of this class provide access to a socket-based bus for
-    local and remote bus clients.
+    Provides access to a socket-based bus for local and remote bus clients.
 
     Remote clients can connect to a server socket in order to send and
     receive events through the resulting socket connection.
@@ -604,6 +613,8 @@ class BusServer(Bus):
 
     def __init__(self, host, port, tcpnodelay, backlog=5):
         """
+        Create a new instance on the given host and port.
+
         Args:
             host (str):
                 A hostname or address identifying the interface to which the
@@ -735,6 +746,8 @@ def remove_connector(bus, connector):
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
     """
+    Base class for connectors that operate on a socket connection based bus.
+
     Instances of subclasses of this class receive events from a bus
     (represented by a :obj:`Bus` object) that is accessed via a socket
     connection.
@@ -840,6 +853,8 @@ class Connector(rsb.transport.Connector,
 class InPushConnector(Connector,
                       rsb.transport.InPushConnector):
     """
+    Receives events from a bus represented by a socket connection.
+
     Instances of this class receive events from a bus (represented by
     a :obj:`Bus` object) that is accessed via a socket connection.
 
@@ -880,6 +895,8 @@ class InPushConnector(Connector,
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
     """
+    Sends events to a bus realized as a socket connection.
+
     Instance of this class send events to a bus (represented by a
     :obj:`Bus` object) that is accessed via a socket connection.
 
