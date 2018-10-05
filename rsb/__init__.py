@@ -212,13 +212,13 @@ def _config_environment_to_dict(defaults=None, debug=False):
         if key.startswith('RSB_'):
             if debug:
                 empty = False
-                print(('     %s -> %s' % (key, value)))
+                print(('     %s -> %s' % (key, value)))  # noqa: T001
             if not key == CONFIG_FILES_VARIABLE and value == '':
                 raise ValueError('The value of the environment variable '
                                  '%s is the empty string' % key)
             options[key[4:].lower().replace('_', '.')] = value
     if debug and empty:
-        print('     <none>')
+        print('     <none>')  # noqa: T001
     return options
 
 
@@ -284,8 +284,8 @@ def _config_default_sources_to_dict(defaults=None,
         def process_file(partial):
             if debug:
                 if file_index[0] == 1:
-                    print('  1. Configuration files')
-                print(('     %d. %s "%s" %s'
+                    print('  1. Configuration files')  # noqa: T001
+                print(('     %d. %s "%s" %s'  # noqa: T001
                        % (file_index[0], description, config_file,
                           'exists' if os.path.exists(config_file)
                           else 'does not exist')))
@@ -295,7 +295,7 @@ def _config_default_sources_to_dict(defaults=None,
 
     def process_environment(partial):
         if debug:
-            print('  2. Environment variables with prefix RSB_')
+            print('  2. Environment variables with prefix RSB_')  # noqa: T001
         return _config_environment_to_dict(partial, debug=debug)
 
     def process_spec(spec):
@@ -316,7 +316,7 @@ def _config_default_sources_to_dict(defaults=None,
 
     # Merge sources and defaults.
     if debug:
-        print('Configuring with sources (lowest priority first)')
+        print('Configuring with sources (lowest priority first)')  # noqa: T001
     return reduce(lambda partial, source: source(partial), sources, defaults)
 
 
@@ -1534,8 +1534,8 @@ class Participant(object):
                 Configuration that the participant should use
 
         See Also:
-            :obj:`create_listener`, :obj:`create_informer`, :obj:`create_server`,
-            :obj:`create_remote_server`
+            :obj:`create_listener`, :obj:`create_informer`,
+            :obj:`create_server`, :obj:`create_remote_server`
         """
         self.__id = uuid.uuid4()
         self.__scope = Scope.ensure_scope(scope)
@@ -2278,6 +2278,7 @@ def create_server(scope, config=None, parent=None,
 
        Use :obj:`create_local_server` instead.
     """
-    return create_local_server(scope, config, parent,
-                               provider=provider, expose=expose, methods=methods,
-                               **kwargs)
+    return create_local_server(
+        scope, config, parent,
+        provider=provider, expose=expose, methods=methods,
+        **kwargs)

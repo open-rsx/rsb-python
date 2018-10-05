@@ -290,7 +290,7 @@ class LocalMethod(Method):
         causes = [request.event_id]
         is_error = False
         try:
-            if self.request_type is type(None):
+            if self.request_type is type(None):  # noqa: E721
                 assert(request.data is None)
                 result = self._func()
             elif self.request_type is rsb.Event:

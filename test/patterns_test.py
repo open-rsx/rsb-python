@@ -35,19 +35,21 @@ class LocalServerTest(unittest.TestCase):
     def test_construction(self):
 
         # Test creating a server without methods
-        with rsb.create_local_server('/some/scope',
-                                     in_process_no_introspection_config) as server:
+        with rsb.create_local_server(
+                '/some/scope',
+                in_process_no_introspection_config) as server:
             self.assertEqual(server.methods, [])
 
-        with rsb.create_local_server(rsb.Scope('/some/scope'),
-                                     in_process_no_introspection_config) as server:
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                in_process_no_introspection_config) as server:
             self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
-        with rsb.create_local_server(rsb.Scope('/some/scope'),
-                                     methods=[('foo', lambda x: x, str, str)],
-                                     config=in_process_no_introspection_config) \
-                as server:
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                methods=[('foo', lambda x: x, str, str)],
+                config=in_process_no_introspection_config) as server:
             self.assertEqual([m.name for m in server.methods], ['foo'])
 
         # Test creating a server that exposes method of an existing
@@ -92,8 +94,9 @@ class RoundTripTest (unittest.TestCase):
                     as remote_server:
 
                 # Call synchronously
-                self.assertEqual(list(map(remote_server.addone, list(range(100)))),
-                                 list(range(1, 101)))
+                self.assertEqual(
+                    list(map(remote_server.addone, list(range(100)))),
+                    list(range(1, 101)))
 
                 # Call synchronously with timeout
                 self.assertEqual([remote_server.addone(x, timeout=10)
@@ -108,30 +111,30 @@ class RoundTripTest (unittest.TestCase):
 
     def test_void_methods(self):
 
-        with rsb.create_local_server('/void', in_process_no_introspection_config) \
-                as local_server:
+        with rsb.create_local_server(
+                '/void', in_process_no_introspection_config) as local_server:
 
             def nothing(e):
                 pass
             local_server.add_method("nothing", nothing, str)
 
-            with rsb.create_remote_server('/void',
-                                          in_process_no_introspection_config) \
-                    as remote_server:
+            with rsb.create_remote_server(
+                    '/void',
+                    in_process_no_introspection_config) as remote_server:
                 future = remote_server.nothing.asynchronous("test")
                 future.get(1)
 
     def test_non_identifier_method_name(self):
         server_scope = '/non-identifier-server'
         method_name = 'non-identifier-method'
-        with rsb.create_local_server(server_scope,
-                                     in_process_no_introspection_config) \
-                as local_server:
+        with rsb.create_local_server(
+                server_scope,
+                in_process_no_introspection_config) as local_server:
             local_server.add_method(method_name, lambda x: x, str, str)
 
-            with rsb.create_remote_server(server_scope,
-                                          in_process_no_introspection_config) \
-                    as remote_server:
+            with rsb.create_remote_server(
+                    server_scope,
+                    in_process_no_introspection_config) as remote_server:
                 self.assertEqual(remote_server.get_method(method_name)('foo'),
                                  'foo')
 
@@ -141,9 +144,9 @@ class RoundTripTest (unittest.TestCase):
         running_calls = [0]
         call_lock = Condition()
 
-        with rsb.create_local_server('/takesometime',
-                                     in_process_no_introspection_config) \
-                as local_server:
+        with rsb.create_local_server(
+                '/takesometime',
+                in_process_no_introspection_config) as local_server:
 
             def take_some_time(e):
                 with call_lock:
@@ -155,11 +158,13 @@ class RoundTripTest (unittest.TestCase):
             local_server.add_method("take_some_time", take_some_time,
                                     str, allow_parallel_execution=True)
 
-            with rsb.create_remote_server('/takesometime',
-                                          in_process_no_introspection_config) \
-                    as remote_server:
+            with rsb.create_remote_server(
+                    '/takesometime',
+                    in_process_no_introspection_config) as remote_server:
 
-                results = [remote_server.take_some_time.asynchronous('call{}'.format(x))
-                           for x in range(num_parallel_calls)]
+                results = [
+                    remote_server.take_some_time.asynchronous(
+                        'call{}'.format(x))
+                    for x in range(num_parallel_calls)]
                 for r in results:
                     r.get(10)

@@ -86,7 +86,8 @@ class Bus(object):
         with self.__mutex:
 
             for scope, sink_list in list(self.__sinks_by_scope.items()):
-                if scope == event.scope or scope.is_super_scope_of(event.scope):
+                if scope == event.scope or scope.is_super_scope_of(
+                        event.scope):
                     for sink in sink_list:
                         sink.handle(event)
 
@@ -106,7 +107,8 @@ class OutConnector(transport.OutConnector):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, bus=global_bus, converters=None, options=None, **kwargs):
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
         transport.OutConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
 
@@ -134,7 +136,8 @@ class InPushConnector(transport.InPushConnector):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, bus=global_bus, converters=None, options=None, **kwargs):
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
         transport.InPushConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None
@@ -175,7 +178,8 @@ class InPushConnector(transport.InPushConnector):
 
 class InPullConnector(transport.InPullConnector):
 
-    def __init__(self, bus=global_bus, converters=None, options=None, **kwargs):
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
         transport.InPullConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None

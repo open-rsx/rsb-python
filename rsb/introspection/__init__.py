@@ -150,8 +150,8 @@ class ParticipantInfo(object):
     transport_urls = property(get_transport_urls)
 
     def __str__(self):
-        return '<%s %s %s at 0x%0x>' \
-            % (type(self).__name__, self.kind, self.scope.to_string(), id(self))
+        return '<%s %s %s at 0x%0x>' % (
+            type(self).__name__, self.kind, self.scope.to_string(), id(self))
 
     def __repr__(self):
         return str(self)
@@ -182,17 +182,19 @@ def process_start_time():
         try:
             import re
 
-            proc_stat_content = open('/proc/stat').read()
+            with open('/proc/stat') as f:
+                proc_stat_content = f.read()
             btime_entry = re.match('(?:.|\n)*btime ([0-9]+)',
                                    proc_stat_content).group(1)
             boot_time_unix_seconds = int(btime_entry)
 
-            self_stat_content = open('/proc/self/stat').read()
+            with open('/proc/self/stat') as f:
+                self_stat_content = f.read()
             start_time_boot_jiffies = int(self_stat_content.split(' ')[21])
 
             __process_start_time = float(boot_time_unix_seconds) \
                 + float(start_time_boot_jiffies) / 100.0
-        except:
+        except:  # noqa: E722 do not create an error in any case
             pass
 
     # Default/fallback strategy: just use the current time.
@@ -340,7 +342,7 @@ def host_id():
         try:
             with open(filename, 'r') as f:
                 return f.read().strip()
-        except:
+        except:  # noqa: E722 do not create an error in any case
             return None
 
     return \
@@ -367,7 +369,7 @@ def machine_version():
             cpu_info = open('/proc/cpuinfo').read()
             return re.match('(?:.|\n)*model name\t: ([^\n]+)',
                             cpu_info).group(1)
-        except:
+        except:  # noqa: E722 do not create an error in any case
             return None
 
 
@@ -576,9 +578,9 @@ class IntrospectionSender(object):
                               data=request.data,
                               data_type=type(request.data))
             reply.meta_data.set_user_time('request.send',
-                                        request.meta_data.send_time)
+                                          request.meta_data.send_time)
             reply.meta_data.set_user_time('request.receive',
-                                        request.meta_data.receive_time)
+                                          request.meta_data.receive_time)
             return reply
         self.__server.add_method('echo', echo,
                                  request_type=rsb.Event,
@@ -691,7 +693,8 @@ class IntrospectionSender(object):
         self.__informer.publish_event(bye_event)
 
     def send_pong(self, participant, query=None):
-        scope = participant_scope(participant.participant_id, self.__informer.scope)
+        scope = participant_scope(
+            participant.participant_id, self.__informer.scope)
         pong_event = rsb.Event(scope=scope,
                                data='pong',
                                data_type=str)

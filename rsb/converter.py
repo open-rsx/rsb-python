@@ -181,14 +181,16 @@ class ConverterMap(ConverterSelectionStrategy):
         self._converters[key] = converter
 
     def _get_converter_for_wire_schema(self, wire_schema):
-        for ((converter_wire_schema, _), converter) in list(self._converters.items()):
+        for ((converter_wire_schema, _), converter) in list(
+                self._converters.items()):
             if converter_wire_schema == wire_schema:
                 return converter
 
     def _get_converter_for_data_type(self, data_type):
         # If multiple converters are applicable, use most specific.
         candidates = []
-        for ((_, converter_data_type), converter) in list(self._converters.items()):
+        for ((_, converter_data_type), converter) in list(
+                self._converters.items()):
             if issubclass(data_type, converter_data_type):
                 candidates.append(converter)
         if len(candidates) == 1:

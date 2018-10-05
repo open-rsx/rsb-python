@@ -672,7 +672,8 @@ class InPullRouteConfigurator(Configurator):
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         if receiving_strategy is None:
-            self.__receiving_strategy = FirstConnectorPullEventReceivingStrategy()
+            self.__receiving_strategy = \
+                FirstConnectorPullEventReceivingStrategy()
         else:
             self.__receiving_strategy = receiving_strategy
         self.__receiving_strategy.set_connectors(connectors)

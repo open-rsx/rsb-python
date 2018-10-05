@@ -88,9 +88,10 @@ class PredicateConverterListTest(unittest.TestCase):
         v2 = StringConverter()
 
         always_true = PredicateConverterList(str)
-        always_true.add_converter(v1,
-                                  wire_schema_predicate=lambda wire_schema: True,
-                                  data_type_predicate=lambda data_type: True)
+        always_true.add_converter(
+            v1,
+            wire_schema_predicate=lambda wire_schema: True,
+            data_type_predicate=lambda data_type: True)
         self.assert_is(always_true.get_converter_for_wire_schema(""), v1)
         self.assert_is(always_true.get_converter_for_wire_schema("bla"), v1)
 
@@ -174,8 +175,9 @@ class ScopeConverterTest(unittest.TestCase):
                          converter.deserialize(*converter.serialize(root)))
 
         some_scope = Scope('/foo/bar')
-        self.assertEqual(some_scope,
-                         converter.deserialize(*converter.serialize(some_scope)))
+        self.assertEqual(
+            some_scope,
+            converter.deserialize(*converter.serialize(some_scope)))
 
 
 class EventsByScopeMapConverterTest(unittest.TestCase):

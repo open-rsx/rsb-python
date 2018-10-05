@@ -64,10 +64,12 @@ class ParticipantConfigTest(unittest.TestCase):
         config = ParticipantConfig.from_file('test/smoke-test.conf')
 
         # Check quality of service specs
-        self.assertEqual(config.get_quality_of_service_spec().get_reliability(),
-                         QualityOfServiceSpec.Reliability.UNRELIABLE)
-        self.assertEqual(config.get_quality_of_service_spec().get_ordering(),
-                         QualityOfServiceSpec.Ordering.UNORDERED)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_reliability(),
+            QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_ordering(),
+            QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.get_transports()), 1)
         self.assertEqual(len(config.get_transports(include_disabled=True)), 2)
@@ -91,10 +93,12 @@ class ParticipantConfigTest(unittest.TestCase):
         config = ParticipantConfig.from_environment()
 
         # Check quality of service specs
-        self.assertEqual(config.get_quality_of_service_spec().get_reliability(),
-                         QualityOfServiceSpec.Reliability.UNRELIABLE)
-        self.assertEqual(config.get_quality_of_service_spec().get_ordering(),
-                         QualityOfServiceSpec.Ordering.UNORDERED)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_reliability(),
+            QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_ordering(),
+            QualityOfServiceSpec.Ordering.UNORDERED)
 
         self.assertEqual(len(config.get_transports()), 1)
         self.assertEqual(len(config.get_transports(include_disabled=True)), 1)
@@ -106,8 +110,9 @@ class ParticipantConfigTest(unittest.TestCase):
         defaults = {'transport.spread.enabled': 'yes',
                     'qualityofservice.reliability': 'UNRELIABLE'}
         config = ParticipantConfig.from_dict(defaults)
-        self.assertEqual(config.get_quality_of_service_spec().get_reliability(),
-                         QualityOfServiceSpec.Reliability.UNRELIABLE)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_reliability(),
+            QualityOfServiceSpec.Reliability.UNRELIABLE)
         self.assertTrue(config.get_transport('spread').is_enabled())
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'RELIABLE'
@@ -115,8 +120,9 @@ class ParticipantConfigTest(unittest.TestCase):
         config = ParticipantConfig.from_environment(defaults)
 
         # Check overwritten values
-        self.assertEqual(config.get_quality_of_service_spec().get_reliability(),
-                         QualityOfServiceSpec.Reliability.RELIABLE)
+        self.assertEqual(
+            config.get_quality_of_service_spec().get_reliability(),
+            QualityOfServiceSpec.Reliability.RELIABLE)
         self.assertFalse(config.get_transport('spread').is_enabled())
 
     def test_from_default_source(self):
@@ -354,7 +360,8 @@ class EventTest(unittest.TestCase):
         sid = uuid.uuid4()
         e1 = Event(EventId(sid, 0))
         e2 = Event(EventId(sid, 0))
-        e2.get_meta_data().set_create_time(e1.get_meta_data().get_create_time())
+        e2.get_meta_data().set_create_time(
+            e1.get_meta_data().get_create_time())
 
         e1.meta_data.set_user_time("foo")
         self.assertNotEqual(e1, e2)
@@ -389,10 +396,10 @@ class MetaDataTest(unittest.TestCase):
         meta = MetaData()
         after = time.time()
 
-        self.assertTrue(meta.get_create_time() != None)
-        self.assertTrue(meta.get_send_time() == None)
-        self.assertTrue(meta.get_receive_time() == None)
-        self.assertTrue(meta.get_deliver_time() == None)
+        self.assertTrue(meta.get_create_time() is not None)
+        self.assertTrue(meta.get_send_time() is None)
+        self.assertTrue(meta.get_receive_time() is None)
+        self.assertTrue(meta.get_deliver_time() is None)
 
         self.assertTrue(meta.get_create_time() >= before)
         self.assertTrue(meta.get_create_time() <= after)

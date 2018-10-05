@@ -39,8 +39,8 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     """
     Implements a connection to a socket-based bus.
 
-    The basic operations provided by this class are receiving an event
-    by calling :obj:`receive_notification` and submitting an event to the bus by
+    The basic operations provided by this class are receiving an event by
+    calling :obj:`receive_notification` and submitting an event to the bus by
     calling :obj:`send_notification`.
 
     In a process which act as a client for a particular bus, a single
@@ -648,9 +648,10 @@ class BusServer(Bus):
                 if sys.platform == 'darwin':
                     client_socket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
-                self.add_connection(BusConnection(socket_=client_socket,
-                                                  is_server=True,
-                                                  tcpnodelay=self.__tcpnodelay))
+                self.add_connection(
+                    BusConnection(socket_=client_socket,
+                                  is_server=True,
+                                  tcpnodelay=self.__tcpnodelay))
             except socket.timeout as e:
                 if sys.platform != 'darwin':
                     self.__logger.error(
@@ -727,7 +728,8 @@ def remove_connector(bus, connector):
         with lock:
             if not bus.remove_connector(connector):
                 bus.deactivate()
-                del dictionary[[key for (key, value) in list(dictionary.items())
+                del dictionary[[key
+                                for (key, value) in list(dictionary.items())
                                 if value is bus][0]]
 
     if isinstance(bus, BusClient):

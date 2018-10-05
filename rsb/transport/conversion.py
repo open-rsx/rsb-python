@@ -54,8 +54,9 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
         event.meta_data.set_user_info(info.key.decode('ASCII'),
                                       info.value.decode('ASCII'))
     for time in notification.meta_data.user_times:
-        event.meta_data.set_user_time(time.key.decode('ASCII'),
-                                      unix_microseconds_to_time(time.timestamp))
+        event.meta_data.set_user_time(
+            time.key.decode('ASCII'),
+            unix_microseconds_to_time(time.timestamp))
 
     # Causes
     for cause in notification.causes:
@@ -66,7 +67,8 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
     return event
 
 
-def event_to_notification(notification, event, wire_schema, data, meta_data=True):
+def event_to_notification(
+        notification, event, wire_schema, data, meta_data=True):
     # Identification information
     notification.event_id.sender_id = event.sender_id.bytes
     notification.event_id.sequence_number = event.sequence_number

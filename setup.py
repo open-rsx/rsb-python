@@ -122,9 +122,9 @@ class BuildProtocol(Command):
         proto_files = []
         for root, _, files in os.walk('rsb/protocol'):
             # collect proto files to build
-            for protoFile in files:
-                if protoFile[-6:] == '.proto':
-                    proto_files.append(os.path.join(root, protoFile))
+            for proto_file in files:
+                if proto_file[-6:] == '.proto':
+                    proto_files.append(os.path.join(root, proto_file))
             # create __init__.py files for all resulting packages
             with open(os.path.join(root, '__init__.py'), 'w'):
                 pass
@@ -243,9 +243,9 @@ print('This is version {version}-{commit}'.format(version=version,
                                                   commit=commit))
 generate_version_file(version, commit)
 
-protocVersion = determine_protoc_version()
+protoc_version = determine_protoc_version()
 print('Determined protobuf version to be {version}'.format(
-    version=protocVersion))
+    version=protoc_version))
 
 setup(name='rsb-python',
       version=version,
@@ -271,10 +271,10 @@ setup(name='rsb-python',
       ],
 
       install_requires=['protobuf>={}.{},<{}.{}'.format(
-          protocVersion[0],
-          protocVersion[1],
-          protocVersion[0],
-          protocVersion[1] + 1)],
+          protoc_version[0],
+          protoc_version[1],
+          protoc_version[0],
+          protoc_version[1] + 1)],
       setup_requires=['nose>=1.3',
                       # 'coverage',
                       'nose-testconfig'],
