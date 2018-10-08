@@ -172,10 +172,9 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
                 break
             except Exception as e:
                 self.__logger.warn('Receive error: %s', e)
+                if self.error_hook is not None:
+                    self.error_hook(e)
                 break
-
-        if self.error_hook is not None:
-            self.error_hook(e)
         return
 
     # sending
