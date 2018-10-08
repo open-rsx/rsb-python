@@ -93,11 +93,11 @@ class TransportCheck(object):
         with receiver.result_condition:
             while receiver.result_event is None:
                 receiver.result_condition.wait(10)
-            self.assertTrue(receiver.result_event)
+            assert receiver.result_event
             # ignore meta data here
             event.set_meta_data(None)
             receiver.result_event.set_meta_data(None)
-            self.assertEqual(receiver.result_event, event)
+            assert receiver.result_event == event
 
         inconnector.deactivate()
         outconnector.deactivate()
@@ -110,7 +110,7 @@ class TransportCheck(object):
             return
 
         received = inconnector.raise_event(False)
-        self.assertIsNone(received)
+        assert received is None
 
         inconnector.deactivate()
 
@@ -141,7 +141,7 @@ class TransportCheck(object):
         # ignore meta data here
         event.set_meta_data(None)
         received.set_meta_data(None)
-        self.assertEqual(received, event)
+        assert received == event
 
         inconnector.deactivate()
         outconnector.deactivate()
@@ -184,10 +184,12 @@ class TransportCheck(object):
                 receiver.result_condition.wait(10)
             if receiver.result_event is None:
                 self.fail("Listener did not receive an event")
-            self.assertTrue(receiver.result_event.meta_data.create_time <=
-                            receiver.result_event.meta_data.send_time <=
-                            receiver.result_event.meta_data.receive_time <=
-                            receiver.result_event.meta_data.deliver_time)
+            assert receiver.result_event.meta_data.create_time <= \
+                receiver.result_event.meta_data.send_time
+            assert receiver.result_event.meta_data.send_time <= \
+                receiver.result_event.meta_data.receive_time
+            assert receiver.result_event.meta_data.receive_time <= \
+                receiver.result_event.meta_data.deliver_time
             sent_event.meta_data.receive_time = \
                 receiver.result_event.meta_data.receive_time
             sent_event.meta_data.deliver_time = \
@@ -198,7 +200,7 @@ class TransportCheck(object):
                 receiver.result_event.meta_data.send_time
             sent_event.meta_data.create_time = \
                 receiver.result_event.meta_data.create_time
-            self.assertEqual(sent_event, receiver.result_event)
+            assert sent_event == receiver.result_event
 
         listener.deactivate()
         publisher.deactivate()
@@ -237,13 +239,15 @@ class TransportCheck(object):
         publisher.publish_event(sent_event)
 
         result_event = reader.read(True)
-        self.assertTrue(result_event.meta_data.create_time <=
-                        result_event.meta_data.send_time <=
-                        result_event.meta_data.receive_time <=
-                        result_event.meta_data.deliver_time)
+        assert result_event.meta_data.create_time <= \
+            result_event.meta_data.send_time
+        assert result_event.meta_data.send_time <= \
+            result_event.meta_data.receive_time
+        assert result_event.meta_data.receive_time <= \
+            result_event.meta_data.deliver_time
         sent_event.meta_data.receive_time = result_event.meta_data.receive_time
         sent_event.meta_data.deliver_time = result_event.meta_data.deliver_time
-        self.assertEqual(sent_event, result_event)
+        assert sent_event == result_event
 
         reader.deactivate()
         publisher.deactivate()
@@ -290,7 +294,7 @@ class TransportCheck(object):
                     self.fail(
                         "Listener on scope %s did not receive an event"
                         % receiver.scope)
-                self.assertEqual(receiver.result_event.data, data)
+                assert receiver.result_event.data == data
 
         for listener in listeners:
             listener.deactivate()
@@ -312,7 +316,7 @@ class TransportCheck(object):
         connector.handle(event)
         after = time.time()
 
-        self.assertTrue(event.get_meta_data().get_send_time() >= before)
-        self.assertTrue(event.get_meta_data().get_send_time() <= after)
+        assert event.get_meta_data().get_send_time() >= before
+        assert event.get_meta_data().get_send_time() <= after
 
         connector.deactivate()

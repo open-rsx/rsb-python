@@ -23,7 +23,6 @@ import copy
 import os
 from threading import Condition
 import time
-import unittest
 import uuid
 from uuid import uuid4
 
@@ -42,7 +41,7 @@ from rsb import (Event,
 from rsb.converter import Converter, register_global_converter
 
 
-class ParticipantConfigTest(unittest.TestCase):
+class TestParticipantConfig:
 
     def test_construction(self):
         ParticipantConfig()
@@ -58,25 +57,23 @@ class ParticipantConfigTest(unittest.TestCase):
         copied.transports[0].enabled = False
 
         # Assert source object is unmodified.
-        self.assertTrue(config.introspection)
-        self.assertTrue(config.transports[0].enabled)
+        assert config.introspection
+        assert config.transports[0].enabled
 
     def test_from_file(self):
         config = ParticipantConfig.from_file('test/smoke-test.conf')
 
         # Check quality of service specs
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_reliability(),
-            QualityOfServiceSpec.Reliability.UNRELIABLE)
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_ordering(),
-            QualityOfServiceSpec.Ordering.UNORDERED)
+        assert config.get_quality_of_service_spec().get_reliability() == \
+            QualityOfServiceSpec.Reliability.UNRELIABLE
+        assert config.get_quality_of_service_spec().get_ordering() == \
+            QualityOfServiceSpec.Ordering.UNORDERED
 
-        self.assertEqual(len(config.get_transports()), 1)
-        self.assertEqual(len(config.get_transports(include_disabled=True)), 2)
+        assert len(config.get_transports()) == 1
+        assert len(config.get_transports(include_disabled=True)) == 2
 
         # Check introspection
-        self.assertTrue(config.introspection)
+        assert config.introspection
 
     def test_from_environment(self):
         # Clear RSB-specific variables from environment
@@ -94,37 +91,33 @@ class ParticipantConfigTest(unittest.TestCase):
         config = ParticipantConfig.from_environment()
 
         # Check quality of service specs
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_reliability(),
-            QualityOfServiceSpec.Reliability.UNRELIABLE)
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_ordering(),
-            QualityOfServiceSpec.Ordering.UNORDERED)
+        assert config.get_quality_of_service_spec().get_reliability() == \
+            QualityOfServiceSpec.Reliability.UNRELIABLE
+        assert config.get_quality_of_service_spec().get_ordering() == \
+            QualityOfServiceSpec.Ordering.UNORDERED
 
-        self.assertEqual(len(config.get_transports()), 1)
-        self.assertEqual(len(config.get_transports(include_disabled=True)), 1)
+        assert len(config.get_transports()) == 1
+        assert len(config.get_transports(include_disabled=True)) == 1
 
         # Check introspection
-        self.assertTrue(config.introspection)
+        assert config.introspection
 
     def test_overwriting_defaults(self):
         defaults = {'transport.spread.enabled': 'yes',
                     'qualityofservice.reliability': 'UNRELIABLE'}
         config = ParticipantConfig.from_dict(defaults)
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_reliability(),
-            QualityOfServiceSpec.Reliability.UNRELIABLE)
-        self.assertTrue(config.get_transport('spread').is_enabled())
+        assert config.get_quality_of_service_spec().get_reliability() == \
+            QualityOfServiceSpec.Reliability.UNRELIABLE
+        assert config.get_transport('spread').is_enabled()
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'RELIABLE'
         os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'no'
         config = ParticipantConfig.from_environment(defaults)
 
         # Check overwritten values
-        self.assertEqual(
-            config.get_quality_of_service_spec().get_reliability(),
-            QualityOfServiceSpec.Reliability.RELIABLE)
-        self.assertFalse(config.get_transport('spread').is_enabled())
+        assert config.get_quality_of_service_spec().get_reliability() == \
+            QualityOfServiceSpec.Reliability.RELIABLE
+        assert not config.get_transport('spread').is_enabled()
 
     def test_from_default_source(self):
         # TODO how to test this?
@@ -134,161 +127,155 @@ class ParticipantConfigTest(unittest.TestCase):
         config = ParticipantConfig()
 
         config.introspection = True
-        self.assertTrue(config.introspection)
+        assert config.introspection
         config.set_introspection(False)
-        self.assertFalse(config.introspection)
+        assert not config.introspection
 
 
-class QualityOfServiceSpecTest(unittest.TestCase):
+class TestQualityOfServiceSpec:
 
     def test_construction(self):
 
         specs = QualityOfServiceSpec()
-        self.assertEqual(QualityOfServiceSpec.Ordering.UNORDERED,
-                         specs.get_ordering())
-        self.assertEqual(QualityOfServiceSpec.Reliability.RELIABLE,
-                         specs.get_reliability())
+        assert QualityOfServiceSpec.Ordering.UNORDERED == specs.get_ordering()
+        assert QualityOfServiceSpec.Reliability.RELIABLE == \
+            specs.get_reliability()
 
     def test_comparison(self):
 
-        self.assertEqual(
-            QualityOfServiceSpec(QualityOfServiceSpec.Ordering.UNORDERED,
-                                 QualityOfServiceSpec.Reliability.RELIABLE),
-            QualityOfServiceSpec())
+        assert QualityOfServiceSpec(
+            QualityOfServiceSpec.Ordering.UNORDERED,
+            QualityOfServiceSpec.Reliability.RELIABLE) == \
+            QualityOfServiceSpec()
 
 
-class ScopeTest(unittest.TestCase):
+class TestScope:
 
     def test_parsing(self):
 
         root = rsb.Scope("/")
-        self.assertEqual(0, len(root.get_components()))
+        assert len(root.get_components()) == 0
 
         one_part = rsb.Scope("/test/")
-        self.assertEqual(1, len(one_part.get_components()))
-        self.assertEqual("test", one_part.get_components()[0])
+        assert len(one_part.get_components()) == 1
+        assert one_part.get_components()[0] == "test"
 
         many_parts = rsb.Scope("/this/is/a/dumb3/test/")
-        self.assertEqual(5, len(many_parts.get_components()))
-        self.assertEqual("this", many_parts.get_components()[0])
-        self.assertEqual("is", many_parts.get_components()[1])
-        self.assertEqual("a", many_parts.get_components()[2])
-        self.assertEqual("dumb3", many_parts.get_components()[3])
-        self.assertEqual("test", many_parts.get_components()[4])
+        assert len(many_parts.get_components()) == 5
+        assert many_parts.get_components()[0] == "this"
+        assert many_parts.get_components()[1] == "is"
+        assert many_parts.get_components()[2] == "a"
+        assert many_parts.get_components()[3] == "dumb3"
+        assert many_parts.get_components()[4] == "test"
 
         # also ensure that the shortcut syntax works
         shortcut = rsb.Scope("/this/is")
-        self.assertEqual(2, len(shortcut.get_components()))
-        self.assertEqual("this", shortcut.get_components()[0])
-        self.assertEqual("is", shortcut.get_components()[1])
+        assert len(shortcut.get_components()) == 2
+        assert shortcut.get_components()[0] == "this"
+        assert shortcut.get_components()[1] == "is"
 
         # Non-ASCII characters are not allowed. However, unicode
         # object consisting of acceptable characters are OK.
         Scope('/')
         Scope('/test')
-        self.assertRaises(ValueError, Scope, '/br\xc3\xb6tchen')
+        with pytest.raises(ValueError):
+            Scope('/br\xc3\xb6tchen')
 
     def test_parsing_error(self):
 
-        self.assertRaises(ValueError, rsb.Scope, "")
-        self.assertRaises(ValueError, rsb.Scope, " ")
-        self.assertRaises(ValueError, rsb.Scope, "/with space/does/not/work/")
-        self.assertRaises(ValueError, rsb.Scope, "/with/do#3es/not43as/work/")
-        self.assertRaises(ValueError, rsb.Scope, "/this//is/not/allowed/")
-        self.assertRaises(ValueError, rsb.Scope, "/this/ /is/not/allowed/")
+        for broken in ["",
+                       " ",
+                       "/with space/does/not/work/",
+                       "/with/do#3es/not43as/work/",
+                       "/this//is/not/allowed/",
+                       "/this/ /is/not/allowed/"]:
+            with pytest.raises(ValueError):
+                Scope(broken)
 
     def test_to_string(self):
 
-        self.assertEqual("/", rsb.Scope("/").to_string())
-        self.assertEqual("/foo/", rsb.Scope("/foo/").to_string())
-        self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar/").to_string())
-        self.assertEqual("/foo/bar/", rsb.Scope("/foo/bar").to_string())
+        assert rsb.Scope("/").to_string() == "/"
+        assert rsb.Scope("/foo/").to_string() == "/foo/"
+        assert rsb.Scope("/foo/bar/").to_string() == "/foo/bar/"
+        assert rsb.Scope("/foo/bar").to_string() == "/foo/bar/"
 
     def test_concat(self):
 
-        self.assertEqual(rsb.Scope("/"),
-                         rsb.Scope("/").concat(rsb.Scope("/")))
-        self.assertEqual(rsb.Scope("/a/test/"),
-                         rsb.Scope("/").concat(rsb.Scope("/a/test/")))
-        self.assertEqual(rsb.Scope("/a/test/"),
-                         rsb.Scope("/a/test/").concat(rsb.Scope("/")))
-        self.assertEqual(rsb.Scope("/a/test/example"),
-                         rsb.Scope("/a/test/").concat(rsb.Scope("/example/")))
+        assert rsb.Scope("/") == rsb.Scope("/").concat(rsb.Scope("/"))
+        assert rsb.Scope("/a/test/") == rsb.Scope("/").concat(
+            rsb.Scope("/a/test/"))
+        assert rsb.Scope("/a/test/") == rsb.Scope("/a/test/").concat(
+            rsb.Scope("/"))
+        assert rsb.Scope("/a/test/example") == rsb.Scope("/a/test/").concat(
+            rsb.Scope("/example/"))
 
     def test_comparison(self):
 
-        self.assertTrue(rsb.Scope("/") == rsb.Scope("/"))
-        self.assertFalse(rsb.Scope("/") != rsb.Scope("/"))
-        self.assertFalse(rsb.Scope("/") == rsb.Scope("/foo/"))
-        self.assertTrue(rsb.Scope("/") != rsb.Scope("/foo/"))
+        assert rsb.Scope("/") == rsb.Scope("/")
+        assert not (rsb.Scope("/") != rsb.Scope("/"))
+        assert not (rsb.Scope("/") == rsb.Scope("/foo/"))
+        assert rsb.Scope("/") != rsb.Scope("/foo/")
 
-        self.assertTrue(rsb.Scope("/a/") < rsb.Scope("/c/"))
-        self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/c/"))
-        self.assertTrue(rsb.Scope("/a/") <= rsb.Scope("/a"))
-        self.assertFalse(rsb.Scope("/a/") > rsb.Scope("/c/"))
-        self.assertTrue(rsb.Scope("/c/") > rsb.Scope("/a/"))
-        self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/a/"))
-        self.assertTrue(rsb.Scope("/c/") >= rsb.Scope("/c/"))
+        assert rsb.Scope("/a/") < rsb.Scope("/c/")
+        assert rsb.Scope("/a/") <= rsb.Scope("/c/")
+        assert rsb.Scope("/a/") <= rsb.Scope("/a")
+        assert not (rsb.Scope("/a/") > rsb.Scope("/c/"))
+        assert rsb.Scope("/c/") > rsb.Scope("/a/")
+        assert rsb.Scope("/c/") >= rsb.Scope("/a/")
+        assert rsb.Scope("/c/") >= rsb.Scope("/c/")
 
     def test_compare_other_type_no_crash(self):
-        self.assertFalse(rsb.Scope("/foo") == "test")
-        self.assertFalse("test" == rsb.Scope("/foo"))
+        assert not (rsb.Scope("/foo") == "test")
+        assert not ("test" == rsb.Scope("/foo"))
 
     def test_hierarchy_comparison(self):
 
-        self.assertTrue(rsb.Scope("/a/").is_sub_scope_of(rsb.Scope("/")))
-        self.assertTrue(rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/")))
-        self.assertTrue(
-            rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/")))
-        self.assertFalse(
-            rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/c/")))
-        self.assertFalse(
-            rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/c/d/")))
-        self.assertFalse(
-            rsb.Scope("/a/x/c/").is_sub_scope_of(rsb.Scope("/a/b/")))
+        assert rsb.Scope("/a/").is_sub_scope_of(rsb.Scope("/"))
+        assert rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/"))
+        assert rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/"))
+        assert not rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/c/"))
+        assert not rsb.Scope("/a/b/c/").is_sub_scope_of(rsb.Scope("/a/b/c/d/"))
+        assert not rsb.Scope("/a/x/c/").is_sub_scope_of(rsb.Scope("/a/b/"))
 
-        self.assertTrue(rsb.Scope("/").is_super_scope_of(rsb.Scope("/a/")))
-        self.assertTrue(rsb.Scope("/").is_super_scope_of(rsb.Scope("/a/b/c/")))
-        self.assertTrue(
-            rsb.Scope("/a/b/").is_super_scope_of(rsb.Scope("/a/b/c/")))
-        self.assertFalse(
-            rsb.Scope("/a/b/c/").is_super_scope_of(rsb.Scope("/a/b/c/")))
-        self.assertFalse(
-            rsb.Scope("/a/b/c/d/").is_super_scope_of(rsb.Scope("/a/b/c/")))
-        self.assertFalse(
-            rsb.Scope("/b/").is_super_scope_of(rsb.Scope("/a/b/c/")))
+        assert rsb.Scope("/").is_super_scope_of(rsb.Scope("/a/"))
+        assert rsb.Scope("/").is_super_scope_of(rsb.Scope("/a/b/c/"))
+        assert rsb.Scope("/a/b/").is_super_scope_of(rsb.Scope("/a/b/c/"))
+        assert not rsb.Scope("/a/b/c/").is_super_scope_of(rsb.Scope("/a/b/c/"))
+        assert not rsb.Scope("/a/b/c/d/").is_super_scope_of(
+            rsb.Scope("/a/b/c/"))
+        assert not rsb.Scope("/b/").is_super_scope_of(rsb.Scope("/a/b/c/"))
 
     def test_hash(self):
 
-        self.assertEqual(hash(Scope("/")), hash(Scope("/")))
-        self.assertNotEqual(hash(Scope("/")), hash(Scope("/foo")))
-        self.assertEqual(hash(Scope("/bla/foo")), hash(Scope("/bla/foo/")))
+        assert hash(Scope("/")) == hash(Scope("/"))
+        assert hash(Scope("/")) != hash(Scope("/foo"))
+        assert hash(Scope("/bla/foo")) == hash(Scope("/bla/foo/"))
 
     def test_super_scopes(self):
 
-        self.assertEqual(0, len(rsb.Scope("/").super_scopes()))
+        assert len(rsb.Scope("/").super_scopes()) == 0
 
         supers = rsb.Scope("/this/is/a/test/").super_scopes()
-        self.assertEqual(4, len(supers))
-        self.assertEqual(rsb.Scope("/"), supers[0])
-        self.assertEqual(rsb.Scope("/this/"), supers[1])
-        self.assertEqual(rsb.Scope("/this/is/"), supers[2])
-        self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
+        assert len(supers) == 4
+        assert rsb.Scope("/") == supers[0]
+        assert rsb.Scope("/this/") == supers[1]
+        assert rsb.Scope("/this/is/") == supers[2]
+        assert rsb.Scope("/this/is/a/") == supers[3]
 
         supers = rsb.Scope("/").super_scopes(True)
-        self.assertEqual(1, len(supers))
-        self.assertEqual(rsb.Scope("/"), supers[0])
+        assert len(supers) == 1
+        assert rsb.Scope("/") == supers[0]
 
         supers = rsb.Scope("/this/is/a/test/").super_scopes(True)
-        self.assertEqual(5, len(supers))
-        self.assertEqual(rsb.Scope("/"), supers[0])
-        self.assertEqual(rsb.Scope("/this/"), supers[1])
-        self.assertEqual(rsb.Scope("/this/is/"), supers[2])
-        self.assertEqual(rsb.Scope("/this/is/a/"), supers[3])
-        self.assertEqual(rsb.Scope("/this/is/a/test/"), supers[4])
+        assert len(supers) == 5
+        assert rsb.Scope("/") == supers[0]
+        assert rsb.Scope("/this/") == supers[1]
+        assert rsb.Scope("/this/is/") == supers[2]
+        assert rsb.Scope("/this/is/a/") == supers[3]
+        assert rsb.Scope("/this/is/a/test/") == supers[4]
 
 
-class EventIdTest(unittest.TestCase):
+class TestEventId:
 
     def test_hashing(self):
 
@@ -297,10 +284,10 @@ class EventIdTest(unittest.TestCase):
         id3 = EventId(uuid.uuid4(), 32)
         id4 = EventId(id3.get_participant_id(), 33)
 
-        self.assertEqual(hash(id1), hash(id2))
-        self.assertNotEqual(hash(id1), hash(id3))
-        self.assertNotEqual(hash(id1), hash(id4))
-        self.assertNotEqual(hash(id3), hash(id4))
+        assert hash(id1) == hash(id2)
+        assert hash(id1) != hash(id3)
+        assert hash(id1) != hash(id4)
+        assert hash(id3) != hash(id4)
 
     def test_get_as_uuid(self):
 
@@ -309,52 +296,50 @@ class EventIdTest(unittest.TestCase):
         id3 = EventId(id1.participant_id, 24)
         id4 = EventId(uuid.uuid4(), 24)
 
-        self.assertEqual(id1.get_as_uuid(), id2.get_as_uuid())
-        self.assertNotEqual(id1.get_as_uuid(), id3.get_as_uuid())
-        self.assertNotEqual(id1.get_as_uuid(), id4.get_as_uuid())
-        self.assertNotEqual(id3.get_as_uuid(), id4.get_as_uuid())
+        assert id1.get_as_uuid() == id2.get_as_uuid()
+        assert id1.get_as_uuid() != id3.get_as_uuid()
+        assert id1.get_as_uuid() != id4.get_as_uuid()
+        assert id3.get_as_uuid() != id4.get_as_uuid()
 
 
-class EventTest(unittest.TestCase):
-
-    def setUp(self):
-        self.e = rsb.Event()
+class TestEvent:
 
     def test_constructor(self):
-
-        self.assertEqual(None, self.e.get_data())
-        self.assertEqual(Scope("/"), self.e.get_scope())
+        e = Event()
+        assert e.get_data() is None
+        assert Scope("/") == e.get_scope()
 
     def test_data(self):
-
+        e = Event()
         data = 42
-        self.e.data = data
-        self.assertEqual(data, self.e.data)
+        e.data = data
+        assert data == e.data
 
     def test_scope(self):
-
+        e = Event()
         scope = Scope("/123/456")
-        self.e.scope = scope
-        self.assertEqual(scope, self.e.scope)
+        e.scope = scope
+        assert scope == e.scope
 
     def test_data_type(self):
+        e = Event()
         t = "asdasd"
-        self.e.data_type = t
-        self.assertEqual(t, self.e.data_type)
+        e.data_type = t
+        assert t == e.data_type
 
     def test_causes(self):
 
         sid = uuid.uuid4()
         e = Event(EventId(sid, 32))
-        self.assertEqual(0, len(e.causes))
+        assert len(e.causes) == 0
         cause = EventId(uuid4(), 546345)
         e.add_cause(cause)
-        self.assertEqual(1, len(e.causes))
-        self.assertTrue(e.is_cause(cause))
-        self.assertTrue(cause in e.causes)
+        assert len(e.causes) == 1
+        assert e.is_cause(cause)
+        assert cause in e.causes
         e.remove_cause(cause)
-        self.assertFalse(e.is_cause(cause))
-        self.assertEqual(0, len(e.causes))
+        assert not e.is_cause(cause)
+        assert len(e.causes) == 0
 
     def test_comparison(self):
 
@@ -365,31 +350,31 @@ class EventTest(unittest.TestCase):
             e1.get_meta_data().get_create_time())
 
         e1.meta_data.set_user_time("foo")
-        self.assertNotEqual(e1, e2)
+        assert e1 != e2
         e2.meta_data.set_user_time(
             "foo", e1.get_meta_data().get_user_times()["foo"])
-        self.assertEqual(e1, e2)
+        assert e1 == e2
 
         cause = EventId(uuid4(), 42)
         e1.add_cause(cause)
-        self.assertNotEqual(e1, e2)
+        assert e1 != e2
         e2.add_cause(cause)
-        self.assertEqual(e1, e2)
+        assert e1 == e2
 
 
-class FactoryTest(unittest.TestCase):
+class TestFactory:
 
     def test_default_participant_config(self):
-        self.assertTrue(rsb.get_default_participant_config())
+        assert rsb.get_default_participant_config() is not None
 
     def test_create_listener(self):
-        self.assertTrue(rsb.create_listener("/"))
+        assert rsb.create_listener("/") is not None
 
     def test_create_informer(self):
-        self.assertTrue(rsb.create_informer("/"))
+        assert rsb.create_informer("/") is not None
 
 
-class MetaDataTest(unittest.TestCase):
+class TestMetaData:
 
     def test_construction(self):
 
@@ -397,13 +382,13 @@ class MetaDataTest(unittest.TestCase):
         meta = MetaData()
         after = time.time()
 
-        self.assertTrue(meta.get_create_time() is not None)
-        self.assertTrue(meta.get_send_time() is None)
-        self.assertTrue(meta.get_receive_time() is None)
-        self.assertTrue(meta.get_deliver_time() is None)
+        assert meta.get_create_time() is not None
+        assert meta.get_send_time() is None
+        assert meta.get_receive_time() is None
+        assert meta.get_deliver_time() is None
 
-        self.assertTrue(meta.get_create_time() >= before)
-        self.assertTrue(meta.get_create_time() <= after)
+        assert meta.get_create_time() >= before
+        assert meta.get_create_time() <= after
 
     def test_times_auto(self):
 
@@ -418,20 +403,20 @@ class MetaDataTest(unittest.TestCase):
 
         after = time.time()
 
-        self.assertNotEqual(None, meta.get_create_time())
-        self.assertNotEqual(None, meta.get_send_time())
-        self.assertNotEqual(None, meta.get_receive_time())
-        self.assertNotEqual(None, meta.get_deliver_time())
+        assert meta.get_create_time() is not None
+        assert meta.get_send_time() is not None
+        assert meta.get_receive_time() is not None
+        assert meta.get_deliver_time() is not None
 
-        self.assertTrue(before <= meta.get_create_time())
-        self.assertTrue(before <= meta.get_send_time())
-        self.assertTrue(before <= meta.get_receive_time())
-        self.assertTrue(before <= meta.get_deliver_time())
+        assert before <= meta.get_create_time()
+        assert before <= meta.get_send_time()
+        assert before <= meta.get_receive_time()
+        assert before <= meta.get_deliver_time()
 
-        self.assertTrue(after >= meta.get_create_time())
-        self.assertTrue(after >= meta.get_send_time())
-        self.assertTrue(after >= meta.get_receive_time())
-        self.assertTrue(after >= meta.get_deliver_time())
+        assert after >= meta.get_create_time()
+        assert after >= meta.get_send_time()
+        assert after >= meta.get_receive_time()
+        assert after >= meta.get_deliver_time()
 
     def test_user_times(self):
 
@@ -441,64 +426,67 @@ class MetaDataTest(unittest.TestCase):
         meta.set_user_time("foo")
         after = time.time()
 
-        self.assertNotEqual(None, meta.user_times["foo"])
-        self.assertTrue(meta.user_times["foo"] >= before)
-        self.assertTrue(meta.user_times["foo"] <= after)
+        assert meta.user_times["foo"] is not None
+        assert meta.user_times["foo"] >= before
+        assert meta.user_times["foo"] <= after
 
     def test_comparison(self):
 
         meta1 = MetaData()
         meta2 = MetaData()
         meta2.set_create_time(meta1.get_create_time())
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_create_time(213123)
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_create_time(meta1.get_create_time())
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_send_time()
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_send_time(meta1.get_send_time())
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_receive_time()
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_receive_time(meta1.get_receive_time())
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_deliver_time()
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_deliver_time(meta1.get_deliver_time())
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_user_time("foo")
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_user_time("foo", meta1.get_user_times()["foo"])
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
         meta1.set_user_info("foox", "bla")
-        self.assertNotEqual(meta1, meta2)
+        assert meta1 != meta2
         meta2.set_user_info("foox", meta1.get_user_infos()["foox"])
-        self.assertEqual(meta1, meta2)
+        assert meta1 == meta2
 
 
-class InformerTest(unittest.TestCase):
+class TestInformer:
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def set_up(self):
         self.default_scope = Scope("/a/test")
         self.informer = Informer(self.default_scope,
                                  rsb.get_default_participant_config(),
                                  data_type=str)
 
-    def tear_down(self):
+        yield
+
         self.informer.deactivate()
 
     def test_send_event_wrong_scope(self):
         # Error: unrelated scope
         e = Event(scope=Scope("/blubb"), data='foo',
                   data_type=self.informer.data_type)
-        self.assertRaises(ValueError, self.informer.publish_event, e)
+        with pytest.raises(ValueError):
+            self.informer.publish_event(e)
 
         # OK: identical scope
         e = Event(scope=self.default_scope,
@@ -514,16 +502,18 @@ class InformerTest(unittest.TestCase):
     def test_send_event_wrong_type(self):
         # Wrong type
         e = Event(scope=self.default_scope, data=5)
-        self.assertRaises(ValueError, self.informer.publish_event, e)
+        with pytest.raises(ValueError):
+            self.informer.publish_event(e)
 
         # Wrong type
-        self.assertRaises(ValueError, self.informer.publish_data, 5.0)
+        with pytest.raises(ValueError):
+            self.informer.publish_data(5.0)
 
         # OK
         self.informer.publish_data('bla')
 
 
-class IntegrationTest(unittest.TestCase):
+class TetsIntegration:
 
     @pytest.mark.usefixture('rsb_config_socket')
     def test_lazy_converter_registration(self):
@@ -553,16 +543,16 @@ class IntegrationTest(unittest.TestCase):
         config = get_default_participant_config()
         # this will raise an exception if the converter is not available.
         # This assumes that socket transport is enabled as the only transport
-        self.assertTrue(
-            isinstance(
-                Participant.get_connectors(
-                    'out', config)[0].get_converter_for_data_type(FooType),
-                FooTypeConverter))
+        assert isinstance(
+            Participant.get_connectors(
+                'out', config)[0].get_converter_for_data_type(FooType),
+            FooTypeConverter)
 
 
-class ContextManagerTest(unittest.TestCase):
+class TestContextManager:
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def set_up(self):
         self.scope = rsb.Scope('/one/test')
         self.received_condition = Condition()
         self.received_data = None
@@ -584,7 +574,7 @@ class ContextManagerTest(unittest.TestCase):
                     self.received_condition.wait(1)
                     if time.time() > start + 10:
                         break
-                self.assertEqual(data, self.received_data)
+                assert data == self.received_data
 
     def test_rpc_roundtrip(self):
 
@@ -595,12 +585,13 @@ class ContextManagerTest(unittest.TestCase):
             data = 'bla'
 
             server.add_method(method_name, lambda x: x, str, str)
-            self.assertEqual(data, client.test(data))
+            assert data == client.test(data)
 
 
-class HookTest(unittest.TestCase):
+class TestHook:
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def set_up(self):
         self.creation_calls = []
 
         def handle_creation(participant, parent=None):
@@ -617,7 +608,8 @@ class HookTest(unittest.TestCase):
         self.destruction_handler = handle_destruction
         rsb.participant_destruction_hook.add_handler(self.destruction_handler)
 
-    def tear_down(self):
+        yield
+
         rsb.participant_creation_hook.remove_handler(self.creation_handler)
         rsb.participant_destruction_hook.remove_handler(
             self.destruction_handler)
@@ -626,38 +618,38 @@ class HookTest(unittest.TestCase):
         participant = None
         with rsb.create_informer('/') as informer:
             participant = informer
-            self.assertEqual(self.creation_calls, [(participant, None)])
-        self.assertEqual(self.destruction_calls, [participant])
+            assert self.creation_calls == [(participant, None)]
+        assert self.destruction_calls == [participant]
 
     def test_listener(self):
         participant = None
         with rsb.create_listener('/') as listener:
             participant = listener
-            self.assertEqual(self.creation_calls, [(participant, None)])
-        self.assertEqual(self.destruction_calls, [participant])
+            assert self.creation_calls == [(participant, None)]
+        assert self.destruction_calls == [participant]
 
     def test_local_server(self):
         server = None
         method = None
         with rsb.create_local_server('/') as participant:
             server = participant
-            self.assertEqual(self.creation_calls, [(server, None)])
+            assert self.creation_calls == [(server, None)]
 
             method = server.add_method('echo', lambda x: x)
-            self.assertTrue((method, server) in self.creation_calls)
+            assert (method, server) in self.creation_calls
 
-        self.assertTrue(server in self.destruction_calls)
-        self.assertTrue(method in self.destruction_calls)
+        assert server in self.destruction_calls
+        assert method in self.destruction_calls
 
     def test_remote_server(self):
         server = None
         method = None
         with rsb.create_remote_server('/') as participant:
             server = participant
-            self.assertEqual(self.creation_calls, [(server, None)])
+            assert self.creation_calls == [(server, None)]
 
             method = server.echo
-            self.assertTrue((method, server) in self.creation_calls)
+            assert (method, server) in self.creation_calls
 
-        self.assertTrue(server in self.destruction_calls)
-        self.assertTrue(method in self.destruction_calls)
+        assert server in self.destruction_calls
+        assert method in self.destruction_calls

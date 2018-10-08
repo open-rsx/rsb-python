@@ -18,13 +18,12 @@
 #
 # ============================================================
 
-import unittest
 import uuid
 
 from rsb.introspection import HostInfo, ParticipantInfo, ProcessInfo
 
 
-class ParticipantInfoTest(unittest.TestCase):
+class TestParticipantInfo:
 
     def test_construction_without_parent_id(self):
         ParticipantInfo(kind='listener',
@@ -40,19 +39,19 @@ class ParticipantInfoTest(unittest.TestCase):
                         parent_id=uuid.uuid4())
 
 
-class ProcessInfoTest(unittest.TestCase):
+class TestProcessInfo:
 
     def test_construction_defaults(self):
         info = ProcessInfo()
-        self.assertTrue(isinstance(info.process_id, int))
-        self.assertTrue(isinstance(info.rsb_version, str))
+        assert isinstance(info.process_id, int)
+        assert isinstance(info.rsb_version, str)
 
 
-class HostInfoTest(unittest.TestCase):
+class TestHostInfo:
 
     def test_construction_defaults(self):
         info = HostInfo()
-        self.assertTrue(isinstance(info.host_id, str) or info.host_id is None)
-        self.assertTrue(isinstance(info.machine_type, str))
-        self.assertTrue(isinstance(info.software_type, str))
-        self.assertTrue(isinstance(info.software_version, str))
+        assert isinstance(info.host_id, str) or info.host_id is None
+        assert isinstance(info.machine_type, str)
+        assert isinstance(info.software_type, str)
+        assert isinstance(info.software_version, str)

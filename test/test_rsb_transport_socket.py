@@ -18,8 +18,6 @@
 #
 # ============================================================
 
-import unittest
-
 import rsb
 from rsb.converter import get_global_converter_map
 from rsb.transport.socket import InPushConnector, OutConnector
@@ -37,7 +35,7 @@ def get_connector(clazz, scope, activate=True):
     return connector
 
 
-class SocketTransportTest(TransportCheck, unittest.TestCase):
+class TestSocketTransport(TransportCheck):
 
     def _get_in_push_connector(self, scope, activate=True):
         return get_connector(InPushConnector, scope, activate=activate)

@@ -18,7 +18,6 @@
 #
 # ============================================================
 
-import unittest
 import uuid
 
 import rsb
@@ -26,25 +25,25 @@ from rsb import Scope
 import rsb.filter
 
 
-class ScopeFilterTest(unittest.TestCase):
+class TestScopeFilter:
 
     def test_match(self):
 
         scope = Scope("/bla")
         f = rsb.filter.ScopeFilter(scope)
-        self.assertEqual(scope, f.get_scope())
+        assert scope == f.get_scope()
 
         e = rsb.Event()
         e.scope = scope
-        self.assertTrue(f.match(e))
+        assert f.match(e)
         e.scope = scope.concat(Scope("/sub/scope"))
-        self.assertTrue(f.match(e))
+        assert f.match(e)
 
         e.scope = Scope("/blubbbbbb")
-        self.assertFalse(f.match(e))
+        assert not f.match(e)
 
 
-class OriginFilterTest(unittest.TestCase):
+class TestOriginFilter:
 
     def test_match(self):
         sender_id1 = uuid.uuid1()
@@ -55,15 +54,15 @@ class OriginFilterTest(unittest.TestCase):
                                             sequence_number=1))
 
         f = rsb.filter.OriginFilter(origin=sender_id1)
-        self.assertTrue(f.match(e1))
-        self.assertFalse(f.match(e2))
+        assert f.match(e1)
+        assert not f.match(e2)
 
         f = rsb.filter.OriginFilter(origin=sender_id1, invert=True)
-        self.assertFalse(f.match(e1))
-        self.assertTrue(f.match(e2))
+        assert not f.match(e1)
+        assert f.match(e2)
 
 
-class CauseFilterTest(unittest.TestCase):
+class TestCauseFilter:
 
     def test_match(self):
         id1 = rsb.EventId(participant_id=uuid.uuid1(), sequence_number=0)
@@ -72,24 +71,24 @@ class CauseFilterTest(unittest.TestCase):
         e2 = rsb.Event(causes=[id2])
 
         f = rsb.filter.CauseFilter(cause=id1)
-        self.assertTrue(f.match(e1))
-        self.assertFalse(f.match(e2))
+        assert f.match(e1)
+        assert not f.match(e2)
 
         f = rsb.filter.CauseFilter(cause=id1, invert=True)
-        self.assertFalse(f.match(e1))
-        self.assertTrue(f.match(e2))
+        assert not f.match(e1)
+        assert f.match(e2)
 
 
-class MethodFilterTest(unittest.TestCase):
+class TestMethodFilter:
 
     def test_match(self):
         e1 = rsb.Event(method='foo')
         e2 = rsb.Event()
 
         f = rsb.filter.MethodFilter(method='foo')
-        self.assertTrue(f.match(e1))
-        self.assertFalse(f.match(e2))
+        assert f.match(e1)
+        assert not f.match(e2)
 
         f = rsb.filter.MethodFilter(method='foo', invert=True)
-        self.assertFalse(f.match(e1))
-        self.assertTrue(f.match(e2))
+        assert not f.match(e1)
+        assert f.match(e2)

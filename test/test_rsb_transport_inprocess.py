@@ -19,7 +19,6 @@
 # ============================================================
 
 import time
-import unittest
 
 from rsb import Event, Scope
 from rsb.transport.local import (Bus,
@@ -45,7 +44,7 @@ class StubSink(object):
         self.handle(event)
 
 
-class BusTest(unittest.TestCase):
+class TestBus:
 
     def test_construction(self):
         Bus()
@@ -69,11 +68,11 @@ class BusTest(unittest.TestCase):
         event = Event(scope=target_scope)
         bus.handle(event)
         for scope, sink in list(sinks_by_scope.items()):
-            self.assertTrue(event in sink.events)
-            self.assertEqual(1, len(sink.events))
+            assert event in sink.events
+            assert len(sink.events) == 1
 
 
-class OutConnectorTest(unittest.TestCase):
+class TestOutConnector:
 
     def test_construction(self):
         OutConnector()
@@ -93,13 +92,13 @@ class OutConnectorTest(unittest.TestCase):
         before = time.time()
         connector.handle(e)
         after = time.time()
-        self.assertEqual(1, len(sink.events))
-        self.assertTrue(e in sink.events)
-        self.assertTrue(e.meta_data.send_time >= before)
-        self.assertTrue(e.meta_data.send_time <= after)
+        assert len(sink.events) == 1
+        assert e in sink.events
+        assert e.meta_data.send_time >= before
+        assert e.meta_data.send_time <= after
 
 
-class InPushConnectorTest(unittest.TestCase):
+class TestInPushConnector:
 
     def test_construction(self):
         InPushConnector()
@@ -119,11 +118,11 @@ class InPushConnectorTest(unittest.TestCase):
         e = Event()
         e.scope = scope
         bus.handle(e)
-        self.assertEqual(1, len(action.events))
-        self.assertTrue(e in action.events)
+        assert len(action.events) == 1
+        assert e in action.events
 
 
-class LocalTransportTest(TransportCheck, unittest.TestCase):
+class TestLocalTransport(TransportCheck):
 
     def _get_in_push_connector(self, scope, activate=True):
         connector = InPushConnector()
