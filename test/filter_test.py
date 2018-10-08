@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2010 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,14 +16,11 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 import unittest
 import uuid
+
 import rsb
 from rsb import Scope
 import rsb.filter
@@ -31,11 +28,11 @@ import rsb.filter
 
 class ScopeFilterTest(unittest.TestCase):
 
-    def testMatch(self):
+    def test_match(self):
 
         scope = Scope("/bla")
         f = rsb.filter.ScopeFilter(scope)
-        self.assertEqual(scope, f.getScope())
+        self.assertEqual(scope, f.get_scope())
 
         e = rsb.Event()
         e.scope = scope
@@ -49,29 +46,30 @@ class ScopeFilterTest(unittest.TestCase):
 
 class OriginFilterTest(unittest.TestCase):
 
-    def testMatch(self):
-        senderId1 = uuid.uuid1()
-        e1 = rsb.Event(id=rsb.EventId(participantId=senderId1,
-                                      sequenceNumber=0))
-        senderId2 = uuid.uuid1()
-        e2 = rsb.Event(id=rsb.EventId(participantId=senderId2,
-                                      sequenceNumber=1))
+    def test_match(self):
+        sender_id1 = uuid.uuid1()
+        e1 = rsb.Event(event_id=rsb.EventId(participant_id=sender_id1,
+                                            sequence_number=0))
+        sender_id2 = uuid.uuid1()
+        e2 = rsb.Event(event_id=rsb.EventId(participant_id=sender_id2,
+                                            sequence_number=1))
 
-        f = rsb.filter.OriginFilter(origin=senderId1)
+        f = rsb.filter.OriginFilter(origin=sender_id1)
         self.assertTrue(f.match(e1))
         self.assertFalse(f.match(e2))
 
-        f = rsb.filter.OriginFilter(origin=senderId1, invert=True)
+        f = rsb.filter.OriginFilter(origin=sender_id1, invert=True)
         self.assertFalse(f.match(e1))
         self.assertTrue(f.match(e2))
 
+
 class CauseFilterTest(unittest.TestCase):
 
-    def testMatch(self):
-        id1 = rsb.EventId(participantId=uuid.uuid1(), sequenceNumber=0)
-        e1 = rsb.Event(causes=[ id1 ])
-        id2 = rsb.EventId(participantId=uuid.uuid1(), sequenceNumber=1)
-        e2 = rsb.Event(causes=[ id2 ])
+    def test_match(self):
+        id1 = rsb.EventId(participant_id=uuid.uuid1(), sequence_number=0)
+        e1 = rsb.Event(causes=[id1])
+        id2 = rsb.EventId(participant_id=uuid.uuid1(), sequence_number=1)
+        e2 = rsb.Event(causes=[id2])
 
         f = rsb.filter.CauseFilter(cause=id1)
         self.assertTrue(f.match(e1))
@@ -84,7 +82,7 @@ class CauseFilterTest(unittest.TestCase):
 
 class MethodFilterTest(unittest.TestCase):
 
-    def testMatch(self):
+    def test_match(self):
         e1 = rsb.Event(method='foo')
         e2 = rsb.Event()
 

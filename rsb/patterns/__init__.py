@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,60 +16,51 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-Package containing pattern implementations like RPC based on the basic
-participants :obj:`rsb.Listener` and :obj:`rsb.Informer`.
+Contains communication pattern implementations.
+
+For instance, RPC based on the basic participants :obj:`rsb.Listener` and
+:obj:`rsb.Informer`.
 
 .. codeauthor:: jmoringe
 .. codeauthor:: jwienke
 """
 
-import uuid
 import threading
 
 import rsb
-import rsb.filter
-
-from rsb.patterns.future import Future, DataFuture
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
+import rsb.filter
+from rsb.patterns.future import DataFuture, Future
 
 
 # TODO superclass for RSB Errors?
 class RemoteCallError(RuntimeError):
     """
-    Errors of this class are raised when a call to a remote method
-    fails for some reason.
+    Represents an error when calling a remote method implementation.
 
     .. codeauthor:: jmoringe
     """
-    def __init__(self, scope, method, message=None):
-        super(RemoteCallError, self).__init__(message)
+
+    def __init__(self, scope, method, error):
+        super(RemoteCallError, self).__init__(
+            'failed to call method "%s" on remote server with scope %s. '
+            'reason: %s'
+            % (method.name, scope, error))
         self._scope = scope
         self._method = method
 
-    def getScope(self):
+    def get_scope(self):
         return self._scope
 
-    scope = property(getScope)
+    scope = property(get_scope)
 
-    def getMethod(self):
+    def get_method(self):
         return self._method
 
-    method = property(getMethod)
-
-    def __str__(self):
-        s = 'failed to call method "%s" on remote server with scope %s' \
-            % (self.method.name, self.scope)
-        # TODO(jmoringe): .message seems to be deprecated
-        if self.message:
-            s += ': %s' % self.message
-        return s
+    method = property(get_method)
 
 ######################################################################
 #
@@ -80,6 +71,8 @@ class RemoteCallError(RuntimeError):
 
 class Method(rsb.Participant):
     """
+    Base class for methods of local or remote servers.
+
     Objects of this class are methods which are associated to a local
     or remote server. Within a server, each method has a unique name.
 
@@ -88,21 +81,21 @@ class Method(rsb.Participant):
 
     .. codeauthor:: jmoringe
     """
+
     # TODO scope and name are redundant
     def __init__(self, scope, config,
-                 server, name, requestType, replyType):
+                 server, name, request_type, reply_type):
         """
-        Create a new :obj:`Method` object for the method named ``name``
-        provided by ``server``.
+        Create a new :obj:`Method` object for the given name and server.
 
         Args:
             server:
                 The remote or local server to which the method is associated.
             name (str):
                 The name of the method. Unique within a server.
-            requestType (types.TypeType):
+            request_type (types.TypeType):
                 The type of the request argument accepted by the method.
-            replyType (types.TypeType):
+            reply_type (types.TypeType):
                 The type of the replies produced by the method.
         """
         super(Method, self).__init__(scope, config)
@@ -111,42 +104,42 @@ class Method(rsb.Participant):
         self._name = name
         self._listener = None
         self._informer = None
-        self._requestType = requestType
-        self._replyType = replyType
+        self._request_type = request_type
+        self._reply_type = reply_type
 
-    def getServer(self):
+    def get_server(self):
         return self._server
 
-    server = property(getServer)
+    server = property(get_server)
 
-    def getName(self):
+    def get_name(self):
         return self._name
 
-    name = property(getName)
+    name = property(get_name)
 
-    def getListener(self):
+    def get_listener(self):
         if self._listener is None:
-            self._listener = self.makeListener()
+            self._listener = self.make_listener()
         return self._listener
 
-    listener = property(getListener)
+    listener = property(get_listener)
 
-    def getInformer(self):
+    def get_informer(self):
         if self._informer is None:
-            self._informer = self.makeInformer()
+            self._informer = self.make_informer()
         return self._informer
 
-    informer = property(getInformer)
+    informer = property(get_informer)
 
-    def getRequestType(self):
-        return self._requestType
+    def get_request_type(self):
+        return self._request_type
 
-    requestType = property(getRequestType)
+    request_type = property(get_request_type)
 
-    def getReplyType(self):
-        return self._replyType
+    def get_reply_type(self):
+        return self._reply_type
 
-    replyType = property(getReplyType)
+    reply_type = property(get_reply_type)
 
     def deactivate(self):
         if self._informer is not None:
@@ -167,6 +160,8 @@ class Method(rsb.Participant):
 
 class Server(rsb.Participant):
     """
+    Base class for local or remote servers.
+
     Objects of this class represent local or remote serves. A server
     is basically a collection of named methods that are bound to a
     specific scope.
@@ -179,12 +174,11 @@ class Server(rsb.Participant):
 
     def __init__(self, scope, config):
         """
-        Create a new :obj:`Server` object that provides its methods under the
-        :obj:`rsb.Scope` ``scope``.
+        Create a :obj:`Server` that provides methods under the given scope.
 
         Args:
             scope (rsb.Scope):
-                The under which methods of the server are provided.
+                The scope under which methods of the server are provided.
             config (rsb.ParticipantConfig):
                 The transport configuration that should be used for
                 communication performed by this server.
@@ -200,19 +194,19 @@ class Server(rsb.Participant):
         if self.__active:
             self.deactivate()
 
-    def getMethods(self):
+    def get_methods(self):
         return list(self._methods.values())
 
-    methods = property(getMethods)
+    methods = property(get_methods)
 
-    def getMethod(self, name):
+    def get_method(self, name):
         if name in self._methods:
             return self._methods[name]
 
-    def addMethod(self, method):
+    def add_method(self, method):
         self._methods[method.name] = method
 
-    def removeMethod(self, method):
+    def remove_method(self, method):
         del self._methods[method.name]
 
     # State management
@@ -252,63 +246,63 @@ class Server(rsb.Participant):
 
 class LocalMethod(Method):
     """
-    Objects of this class implement and make available methods of a
-    local server.
+    Implements and makes available a method of a local server.
 
     The actual behavior of methods is implemented by invoking
     arbitrary user-supplied callables.
 
     .. codeauthor:: jmoringe
     """
-    def __init__(self, scope, config,
-                 server, name, func, requestType, replyType,
-                 allowParallelExecution):
-        super(LocalMethod, self).__init__(
-            scope, config, server, name, requestType, replyType)
 
-        self._allowParallelExecution = allowParallelExecution
+    def __init__(self, scope, config,
+                 server, name, func, request_type, reply_type,
+                 allow_parallel_execution):
+        super(LocalMethod, self).__init__(
+            scope, config, server, name, request_type, reply_type)
+
+        self._allow_parallel_execution = allow_parallel_execution
         self._func = func
         self.listener  # force listener creation
 
-    def makeListener(self):
-        receivingStrategy = None
-        if self._allowParallelExecution:
-            receivingStrategy = FullyParallelEventReceivingStrategy()
-        listener = rsb.createListener(self.scope, self.config,
-                                      parent=self,
-                                      receivingStrategy=receivingStrategy)
-        listener.addFilter(rsb.filter.MethodFilter(method='REQUEST'))
-        listener.addHandler(self._handleRequest)
+    def make_listener(self):
+        receiving_strategy = None
+        if self._allow_parallel_execution:
+            receiving_strategy = FullyParallelEventReceivingStrategy()
+        listener = rsb.create_listener(self.scope, self.config,
+                                       parent=self,
+                                       receiving_strategy=receiving_strategy)
+        listener.add_filter(rsb.filter.MethodFilter(method='REQUEST'))
+        listener.add_handler(self._handle_request)
         return listener
 
-    def makeInformer(self):
-        return rsb.createInformer(self.scope, self.config,
-                                  parent=self,
-                                  dataType=object)
+    def make_informer(self):
+        return rsb.create_informer(self.scope, self.config,
+                                   parent=self,
+                                   data_type=object)
 
-    def _handleRequest(self, request):
+    def _handle_request(self, request):
         # Call the callable implementing the behavior of this
         # method. If it does not take an argument
-        # (i.e. self.requestType is type(None)), call it without
+        # (i.e. self.request_type is type(None)), call it without
         # argument. Otherwise pass the payload of the request event to
         # it.
-        userInfos = {}
-        causes = [request.id]
-        isError = False
+        user_infos = {}
+        causes = [request.event_id]
+        is_error = False
         try:
-            if self.requestType is type(None):
+            if self.request_type is type(None):  # noqa: E721
                 assert(request.data is None)
                 result = self._func()
-            elif self.requestType is rsb.Event:
+            elif self.request_type is rsb.Event:
                 result = self._func(request)
             else:
                 result = self._func(request.data)
-            resultType = type(result)
+            result_type = type(result)
         except Exception as e:
-            isError = True
-            userInfos['rsb:error?'] = '1'
+            is_error = True
+            user_infos['rsb:error?'] = '1'
             result = str(e)
-            resultType = str
+            result_type = str
 
         # If the returned result is an event, use it as reply event
         # (after adding the request as cause). Otherwise add all
@@ -320,35 +314,37 @@ class LocalMethod(Method):
         else:
             # This check is required because the reply informer is
             # created with type 'object' to enable throwing exceptions
-            if not isError and not isinstance(result, self.replyType):
+            if not is_error and not isinstance(result, self.reply_type):
                 raise ValueError("The result '%s' (of type %s) "
                                  "of method %s does not match "
                                  "the method's declared return type %s."
-                                 % (result, resultType,
-                                    self.name, self.replyType))
+                                 % (result, result_type,
+                                    self.name, self.reply_type))
             reply = rsb.Event(scope=self.informer.scope,
                               method='REPLY',
                               data=result,
-                              type=resultType,
-                              userInfos=userInfos,
+                              data_type=result_type,
+                              user_infos=user_infos,
                               causes=causes)
 
         # Publish the reply event.
-        self.informer.publishEvent(reply)
+        self.informer.publish_event(reply)
 
 
 class LocalServer(Server):
     """
+    Provide local methods to remote clients.
+
     Objects of this class associate a collection of method objects
     which are implemented by callback functions with a scope under
     which these methods are exposed for remote clients.
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config):
         """
-        Creates a new :obj:`LocalServer` object that exposes methods under
-        the :obj:`rsb.Scope` ``scope``.
+        Create a :obj:`LocalServer` that provides methods under a given scope.
 
         Args:
             scope (rsb.Scope):
@@ -359,12 +355,12 @@ class LocalServer(Server):
                 communication performed by this server.
 
         See Also:
-            :obj:`rsb.createServer`
+            :obj:`rsb.create_server`
         """
         super(LocalServer, self).__init__(scope, config)
 
-    def addMethod(self, name, func, requestType=object, replyType=object,
-                  allowParallelExecution=False):
+    def add_method(self, name, func, request_type=object, reply_type=object,
+                   allow_parallel_execution=False):
         """
         Add a method named ``name`` that is implemented by ``func``.
 
@@ -374,12 +370,12 @@ class LocalServer(Server):
             func:
                 A callable object or a single argument that implements the
                 desired behavior of the new method.
-            requestType (types.TypeType):
+            request_type (types.TypeType):
                 A type object indicating the type of request data passed to the
                 method.
-            replyType:
+            reply_type:
                 A type object indicating the type of reply data of the method.
-            allowParallelExecution(bool):
+            allow_parallel_execution(bool):
                 if set to True, the method will be called fully asynchronously
                 and even multiple calls may enter the method in parallel. Also,
                 no ordering is guaranteed anymore.
@@ -389,22 +385,22 @@ class LocalServer(Server):
                 The newly created method.
         """
         scope = self.scope.concat(rsb.Scope('/' + name))
-        method = rsb.createParticipant(
+        method = rsb.create_participant(
             LocalMethod, scope, self.config,
             parent=self,
             server=self,
             name=name,
             func=func,
-            requestType=requestType,
-            replyType=replyType,
-            allowParallelExecution=allowParallelExecution)
-        super(LocalServer, self).addMethod(method)
+            request_type=request_type,
+            reply_type=reply_type,
+            allow_parallel_execution=allow_parallel_execution)
+        super(LocalServer, self).add_method(method)
         return method
 
-    def removeMethod(self, method):
+    def remove_method(self, method):
         if isinstance(method, str):
-            method = self.getMethod(method)
-        super(LocalServer, self).removeMethod(method)
+            method = self.get_method(method)
+        super(LocalServer, self).remove_method(method)
 
 ######################################################################
 #
@@ -415,33 +411,34 @@ class LocalServer(Server):
 
 class RemoteMethod(Method):
     """
-    Objects of this class represent methods provided by a remote
-    server. Method objects are callable like regular bound method
-    objects.
+    Represents a method provided by a remote server.
+
+    Method objects are callable like regular bound method objects.
 
     .. codeauthor:: jmoringe
     """
-    def __init__(self, scope, config, server, name, requestType, replyType):
+
+    def __init__(self, scope, config, server, name, request_type, reply_type):
         super(RemoteMethod, self).__init__(scope, config,
                                            server, name,
-                                           requestType, replyType)
+                                           request_type, reply_type)
 
         self._calls = {}
         self._lock = threading.RLock()
 
-    def makeListener(self):
-        listener = rsb.createListener(self.scope, self.config,
-                                      parent=self)
-        listener.addFilter(rsb.filter.MethodFilter(method='REPLY'))
-        listener.addHandler(self._handleReply)
+    def make_listener(self):
+        listener = rsb.create_listener(self.scope, self.config,
+                                       parent=self)
+        listener.add_filter(rsb.filter.MethodFilter(method='REPLY'))
+        listener.add_handler(self._handle_reply)
         return listener
 
-    def makeInformer(self):
-        return rsb.createInformer(self.scope, self.config,
-                                  parent=self,
-                                  dataType=self.requestType)
+    def make_informer(self):
+        return rsb.create_informer(self.scope, self.config,
+                                   parent=self,
+                                   data_type=self.request_type)
 
-    def _handleReply(self, event):
+    def _handle_reply(self, event):
         if not event.causes:
             return
 
@@ -455,14 +452,16 @@ class RemoteMethod(Method):
             # The result future
             result = self._calls[key]
             del self._calls[key]
-        if 'rsb:error?' in event.metaData.userInfos:
-            result.setError(event.data)
+        if 'rsb:error?' in event.meta_data.user_infos:
+            result.set_error(event.data)
         else:
-            result.set(event)
+            result.set_result(event)
 
     def __call__(self, arg=None, timeout=0):
         """
-        Call the method synchronously with argument ``arg``, returning
+        Call the method synchronously and returns the results.
+
+        Calls the represented method with argument ``arg``, returning
         the value returned by the remote method.
 
         If ``arg`` is an instance of :obj:`Event`, an :obj:`Event` containing
@@ -474,9 +473,9 @@ class RemoteMethod(Method):
         an error occurs.
 
         Examples:
-            >>> myServer.echo('bla')
+            >>> my_server.echo('bla')
             'bla'
-            >>> myServer.echo(Event(scope=myServer.scope, data='bla',
+            >>> my_server.echo(Event(scope=my_server.scope, data='bla',
             >>>                     type=str))
             Event[id = ..., data = 'bla', ...]
 
@@ -507,7 +506,9 @@ class RemoteMethod(Method):
 
     def asynchronous(self, arg=None):
         """
-        Call the method asynchronously with argument ``arg``, returning
+        Call the method asynchronously and returns a :obj:`Future`.
+
+        Calls the represented method with argument ``arg``, returning
         a :obj:`Future` instance that can be used to retrieve the result.
 
         If ``arg`` is an instance of :obj:`Event`, the result of the method
@@ -539,11 +540,11 @@ class RemoteMethod(Method):
             :obj:`__call__`
 
         Examples:
-            >>> myServer.echo.asynchronous('bla')
+            >>> my_server.echo.asynchronous('bla')
             <Future running at 3054cd0>
-            >>> myServer.echo.asynchronous('bla').get()
+            >>> my_server.echo.asynchronous('bla').get()
             'bla'
-            >>> myServer.echo.asynchronous(Event(scope=myServer.scope,
+            >>> my_server.echo.asynchronous(Event(scope=my_server.scope,
             ...                           data='bla', type=str)).get()
             Event[id = ..., data = 'bla', ...]
         """
@@ -562,17 +563,17 @@ class RemoteMethod(Method):
             event = rsb.Event(scope=self.informer.scope,
                               method='REQUEST',
                               data=arg,
-                              type=type(arg))
+                              data_type=type(arg))
             result = DataFuture()
 
         # Publish the constructed request event and record the call as
         # in-progress, waiting for a reply.
         try:
             with self._lock:
-                event = self.informer.publishEvent(event)
-                self._calls[event.id] = result
+                event = self.informer.publish_event(event)
+                self._calls[event.event_id] = result
         except Exception as e:
-            raise RemoteCallError(self.server.scope, self, message=repr(e))
+            raise RemoteCallError(self.server.scope, self, e) from e
         return result
 
     def __str__(self):
@@ -585,15 +586,14 @@ class RemoteMethod(Method):
 
 class RemoteServer(Server):
     """
-    Objects of this class represent remote servers in a way that
-    allows calling methods on them as if they were local.
+    Represents remote servers in a way that allows using normal methods calls.
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, scope, config):
         """
-        Create a new :obj:`RemoteServer` object that provides its methods
-        under the scope ``scope``.
+        Create a new :obj:`RemoteServer` providing methods on the given scope.
 
         Args:
             scope (rsb.Scope):
@@ -603,29 +603,29 @@ class RemoteServer(Server):
                 The configuration that should be used by this server.
 
         See Also:
-            :obj:`rsb.createRemoteServer`
+            :obj:`rsb.create_remote_server`
         """
         super(RemoteServer, self).__init__(scope, config)
 
-    def ensureMethod(self, name):
-        method = super(RemoteServer, self).getMethod(name)
+    def ensure_method(self, name):
+        method = super(RemoteServer, self).get_method(name)
         if method is None:
             scope = self.scope.concat(rsb.Scope('/' + name))
-            method = rsb.createParticipant(RemoteMethod, scope, self.config,
-                                           parent=self,
-                                           server=self,
-                                           name=name,
-                                           requestType=object,
-                                           replyType=object)
-            self.addMethod(method)
+            method = rsb.create_participant(RemoteMethod, scope, self.config,
+                                            parent=self,
+                                            server=self,
+                                            name=name,
+                                            request_type=object,
+                                            reply_type=object)
+            self.add_method(method)
         return method
 
-    def getMethod(self, name):
-        return self.ensureMethod(name)
+    def get_method(self, name):
+        return self.ensure_method(name)
 
     def __getattr__(self, name):
         # Treat missing attributes as methods.
         try:
             return super(RemoteServer, self).__getattr__(name)
         except AttributeError:
-            return self.ensureMethod(name)
+            return self.ensure_method(name)

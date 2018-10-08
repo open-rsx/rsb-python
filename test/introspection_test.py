@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
+# Copyright (C) 2014 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,48 +16,43 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 import unittest
-
 import uuid
 
-from rsb.introspection import ParticipantInfo, ProcessInfo, HostInfo
+from rsb.introspection import HostInfo, ParticipantInfo, ProcessInfo
 
 
 class ParticipantInfoTest(unittest.TestCase):
 
-    def testConstructionWithoutParentId(self):
+    def test_construction_without_parent_id(self):
         ParticipantInfo(kind='listener',
-                        id=uuid.uuid4(),
+                        participant_id=uuid.uuid4(),
                         scope='/foo',
-                        type=str)
+                        data_type=str)
 
-    def testConstructionWithParentId(self):
+    def test_construction_with_parent_id(self):
         ParticipantInfo(kind='listener',
-                        id=uuid.uuid4(),
+                        participant_id=uuid.uuid4(),
                         scope='/foo',
-                        type=str,
-                        parentId=uuid.uuid4())
+                        data_type=str,
+                        parent_id=uuid.uuid4())
 
 
 class ProcessInfoTest(unittest.TestCase):
 
-    def testConstructionDefaults(self):
+    def test_construction_defaults(self):
         info = ProcessInfo()
-        self.assertTrue(isinstance(info.id, int))
-        self.assertTrue(isinstance(info.rsbVersion, str))
+        self.assertTrue(isinstance(info.process_id, int))
+        self.assertTrue(isinstance(info.rsb_version, str))
 
 
 class HostInfoTest(unittest.TestCase):
 
-    def testConstructionDefaults(self):
+    def test_construction_defaults(self):
         info = HostInfo()
-        self.assertTrue(isinstance(info.id, str) or info.id is None)
-        self.assertTrue(isinstance(info.machineType, str))
-        self.assertTrue(isinstance(info.softwareType, str))
-        self.assertTrue(isinstance(info.softwareVersion, str))
+        self.assertTrue(isinstance(info.host_id, str) or info.host_id is None)
+        self.assertTrue(isinstance(info.machine_type, str))
+        self.assertTrue(isinstance(info.software_type, str))
+        self.assertTrue(isinstance(info.software_version, str))

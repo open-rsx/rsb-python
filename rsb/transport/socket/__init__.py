@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2018 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2018 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,15 +16,10 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-This package contains a transport implementation that uses multiple
-point-to-point socket connections to simulate a bus.
+Contains a transport based on point-to-point socket connections.
 
 .. codeauthor:: jmoringe
 """
@@ -33,24 +28,20 @@ import copy
 import socket
 import threading
 
-import rsb.util
 import rsb.eventprocessing
+from rsb.protocol.Notification_pb2 import Notification
 import rsb.transport
 import rsb.transport.conversion as conversion
-
-from rsb.protocol.EventId_pb2 import EventId
-from rsb.protocol.EventMetaData_pb2 import UserInfo, UserTime
-from rsb.protocol.Notification_pb2 import Notification
+import rsb.util
 
 
 class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     """
-    Instances of this class implement connections to a socket-based
-    bus.
+    Implements a connection to a socket-based bus.
 
-    The basic operations provided by this class are receiving an event
-    by calling :obj:`receiveNotification` and submitting an event to the bus by
-    calling :obj:`sendNotification`.
+    The basic operations provided by this class are receiving an event by
+    calling :obj:`receive_notification` and submitting an event to the bus by
+    calling :obj:`send_notification`.
 
     In a process which act as a client for a particular bus, a single
     instance of this class is connected to the bus server and provides
@@ -70,8 +61,10 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
 
     def __init__(self,
                  host=None, port=None, socket_=None,
-                 isServer=False, tcpnodelay=True):
+                 is_server=False, tcpnodelay=True):
         """
+        Create a new instance.
+
         Args:
             host (str or None):
                 Hostname or address of the bus server.
@@ -80,27 +73,27 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             socket_:
                 A socket object through which the new connection should access
                 the bus.
-            isServer (bool):
+            is_server (bool):
                 if True, the created object will perform the server part of the
                 handshake protocol.
             tcpnodelay (bool):
                 If True, the socket will be set to TCP_NODELAY.
 
         See Also:
-            :obj:`getBusClientFor`, :obj:`getBusServerFor`.
+            :obj:`get_bus_client_for`, :obj:`get_bus_server_for`.
         """
         super(BusConnection, self).__init__()
 
-        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         self.__thread = None
         self.__socket = None
         self.__file = None
 
-        self.__errorHook = None
+        self.__error_hook = None
 
         self.__active = False
-        self.__activeShutdown = False
+        self.__active_shutdown = False
 
         self.__lock = threading.RLock()
 
@@ -121,7 +114,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         self.__file = self.__socket.makefile()
 
         # Perform the client or server part of the handshake.
-        if isServer:
+        if is_server:
             self.__file.write('\0\0\0\0')
             self.__file.flush()
         else:
@@ -133,17 +126,17 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         if self.__active:
             self.deactivate()
 
-    def getErrorHook(self):
-        return self.__errorHook
+    def get_error_hook(self):
+        return self.__error_hook
 
-    def setErrorHook(self, newValue):
-        self.__errorHook = newValue
+    def set_error_hook(self, new_value):
+        self.__error_hook = new_value
 
-    errorHook = property(getErrorHook, setErrorHook)
+    error_hook = property(get_error_hook, set_error_hook)
 
     # receiving
 
-    def receiveNotification(self):
+    def receive_notification(self):
         size = self.__file.read(size=4)
         if len(size) == 0:
             self.__logger.info("Received EOF")
@@ -163,37 +156,37 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         return notification
 
     @staticmethod
-    def bufferToNotification(serialized):
+    def buffer_to_notification(serialized):
         notification = Notification()
         notification.ParseFromString(serialized)
         return notification
 
-    def doOneNotification(self):
-        serialized = self.receiveNotification()
-        notification = self.bufferToNotification(serialized)
+    def do_one_notification(self):
+        serialized = self.receive_notification()
+        notification = self.buffer_to_notification(serialized)
         self.dispatch(notification)
 
-    def receiveNotifications(self):
+    def receive_notifications(self):
         while True:
             self.__logger.debug('Receiving notifications')
             try:
-                self.doOneNotification()
+                self.do_one_notification()
             except EOFError as e:
                 self.__logger.info("Received EOF while reading")
-                if not self.__activeShutdown:
+                if not self.__active_shutdown:
                     self.shutdown()
                 break
             except Exception as e:
                 self.__logger.warn('Receive error: %s', e)
                 break
 
-        if self.errorHook is not None:
-            self.errorHook(e)
+        if self.error_hook is not None:
+            self.error_hook(e)
         return
 
     # sending
 
-    def sendNotification(self, notification):
+    def send_notification(self, notification):
         size = len(notification)
         self.__logger.info('Sending notification of size %d', size)
         size = ''.join((chr(size & 0x000000ff),
@@ -206,12 +199,12 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.__file.flush()
 
     @staticmethod
-    def notificationToBuffer(notification):
+    def notification_to_buffer(notification):
         return notification.SerializeToString()
 
     def handle(self, notification):
-        serialized = self.notificationToBuffer(notification)
-        self.sendNotification(serialized)
+        serialized = self.notification_to_buffer(notification)
+        self.send_notification(serialized)
 
     # state management
 
@@ -221,14 +214,14 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
 
         with self.__lock:
 
-            self.__thread = threading.Thread(target=self.receiveNotifications)
+            self.__thread = threading.Thread(target=self.receive_notifications)
             self.__thread.start()
 
             self.__active = True
 
     def shutdown(self):
         with self.__lock:
-            self.__activeShutdown = True
+            self.__active_shutdown = True
             self.__socket.shutdown(socket.SHUT_WR)
 
     def deactivate(self):
@@ -250,7 +243,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             except Exception as e:
                 self.__logger.warn('Failed to close socket: %s', e)
 
-    def waitForDeactivation(self):
+    def wait_for_deactivation(self):
         self.__logger.info('Joining thread')
         self.__thread.join()
 
@@ -264,15 +257,16 @@ class Bus(object):
     server as a client.
 
     In-direction connectors add themselves as event sinks using the
-    :obj:`addConnector` method.
+    :obj:`add_connector` method.
 
     Out-direction connectors submit events to the bus using the
-    :obj:`handleOutgoing` method.
+    :obj:`handle_outgoing` method.
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self):
-        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         self.__connections = []
         self.__connectors = []
@@ -281,25 +275,28 @@ class Bus(object):
 
         self.__active = False
 
-    def getLock(self):
+    def get_lock(self):
         return self.__lock
 
-    lock = property(getLock)
+    lock = property(get_lock)
 
-    def getConnections(self):
+    def get_connections(self):
         """
+        Return the attached connections.
+
         Returns:
             list:
                 A list of all connections to the bus.
         """
         return self.__connections
 
-    def addConnection(self, connection):
+    def add_connection(self, connection):
         """
-        Add ``connection`` to the list of connections of this bus. This
-        cause notifications send over this bus to be send through
-        ``connection`` and notifications received via ``connection`` to
-        be dispatched to connectors of this bus.
+        Add ``connection`` to the list of connections of this bus.
+
+        This cause notifications send over this bus to be send through
+        ``connection`` and notifications received via ``connection`` to be
+        dispatched to connectors of this bus.
 
         Args:
             connection:
@@ -310,25 +307,25 @@ class Bus(object):
 
             class Handler(object):
 
-                def __init__(_self):
+                def __init__(_self):  # noqa: N805
                     _self.bus = self
 
-                def __call__(_self, notification):
-                    self.handleIncoming((connection, notification))
-            connection.addHandler(Handler())
+                def __call__(_self, notification):  # noqa: N805
+                    self.handle_incoming((connection, notification))
+            connection.add_handler(Handler())
 
-            def removeAndDeactivate(exception):
-                self.removeConnection(connection)
+            def remove_and_deactivate(exception):
+                self.remove_connection(connection)
                 try:
                     connection.deactivate()
                 except Exception as e:
                     self.__logger.warning(
                         "Error while deactivating connection %s: %s",
                         connection, e)
-            connection.errorHook = removeAndDeactivate
+            connection.error_hook = remove_and_deactivate
             connection.activate()
 
-    def removeConnection(self, connection):
+    def remove_connection(self, connection):
         """
         Remove ``connection`` from the list of connections of this bus.
 
@@ -341,18 +338,19 @@ class Bus(object):
         with self.lock:
             if connection in self.__connections:
                 self.__connections.remove(connection)
-                connection.removeHandler([h for h in connection.handlers
-                                          if h.bus is self][0])
+                connection.remove_handler([h for h in connection.handlers
+                                           if h.bus is self][0])
 
-    connections = property(getConnections)
+    connections = property(get_connections)
 
-    def getConnectors(self):
+    def get_connectors(self):
         return self.__connectors
 
-    def addConnector(self, connector):
+    def add_connector(self, connector):
         """
-        Add ``connector`` to the list of connectors of this
-        bus. Depending on the direction of ``connector``, this causes
+        Add ``connector`` to the list of connectors of this bus.
+
+        Depending on the direction of ``connector``, this causes
         ``connector`` to either receive or broadcast notifications via
         this bus.
 
@@ -363,10 +361,10 @@ class Bus(object):
         self.__logger.info('Adding connector %s', connector)
         with self.lock:
             if isinstance(connector, InPushConnector):
-                self.__dispatcher.addSink(connector.scope, connector)
+                self.__dispatcher.add_sink(connector.scope, connector)
             self.__connectors.append(connector)
 
-    def removeConnector(self, connector):
+    def remove_connector(self, connector):
         """
         Remove ``connector`` from the list of connectors of this bus.
 
@@ -377,7 +375,7 @@ class Bus(object):
         self.__logger.info('Removing connector %s', connector)
         with self.lock:
             if isinstance(connector, InPushConnector):
-                self.__dispatcher.removeSink(connector.scope, connector)
+                self.__dispatcher.remove_sink(connector.scope, connector)
             self.__connectors.remove(connector)
             if not self.__connectors:
                 self.__logger.info(
@@ -385,10 +383,10 @@ class Bus(object):
                 return False
             return True
 
-    connectors = property(getConnectors)
+    connectors = property(get_connectors)
 
-    def handleIncoming(self, connectionAndNotification):
-        _, notification = connectionAndNotification
+    def handle_incoming(self, connection_and_notification):
+        _, notification = connection_and_notification
         self.__logger.debug('Trying to distribute notification to connectors')
         with self.lock:
             self.__logger.debug(
@@ -401,9 +399,9 @@ class Bus(object):
 
             # Distribute the notification to participants in our
             # process via InPushConnector instances.
-            self._toConnectors(notification)
+            self._to_connectors(notification)
 
-    def handleOutgoing(self, notification):
+    def handle_outgoing(self, notification):
         with self.lock:
             self.__logger.debug('Locked bus to distribute notification to '
                                 'connections and connectors')
@@ -414,10 +412,10 @@ class Bus(object):
 
             # Distribute the notification to remote participants via
             # network connections.
-            failing = self._toConnections(notification)
+            failing = self._to_connections(notification)
             # Distribute the notification to participants in our own
             # process via InPushConnector instances.
-            self._toConnectors(notification)
+            self._to_connectors(notification)
         # there are only failing connection in case of an unorderly shutdown.
         # So the shutdown protocol does not apply here and
         # we can immediately call deactivate.
@@ -438,24 +436,24 @@ class Bus(object):
 
         with self.lock:
             self.__active = False
-            connectionsCopy = copy.copy(self.connections)
+            connections_copy = copy.copy(self.connections)
 
         # We do not have to lock the bus here, since
-        # 1) removeConnection will do that for each connection
+        # 1) remove_connection will do that for each connection
         # 2) the connection list will not be modified concurrently at
         #    this point
         self.__logger.info('Closing connections')
-        for connection in connectionsCopy:
+        for connection in connections_copy:
             try:
-                self.removeConnection(connection)
+                self.remove_connection(connection)
                 connection.shutdown()
-                connection.waitForDeactivation()
+                connection.wait_for_deactivation()
             except Exception as e:
                 self.__logger.error('Failed to close connections: %s', e)
 
     # Low-level helpers
 
-    def _toConnections(self, notification, exclude=None):
+    def _to_connections(self, notification, exclude=None):
         failing = []
         for connection in self.connections:
             if connection is not exclude:
@@ -470,32 +468,35 @@ class Bus(object):
 
         # Removed connections for which sending the notification
         # failed.
-        list(map(self.removeConnection, failing))
+        list(map(self.remove_connection, failing))
         return failing
 
-    def _toConnectors(self, notification):
+    def _to_connectors(self, notification):
         # Deliver NOTIFICATION to connectors which fulfill two
         # criteria:
         # 1) Direction has to be "incoming events"
         # 2) The scope of the connector has to be a superscope of
         #    NOTIFICATION's scope
         scope = rsb.Scope(notification.scope.decode('ASCII'))
-        for sink in self.__dispatcher.matchingSinks(scope):
+        for sink in self.__dispatcher.matching_sinks(scope):
             sink.handle(notification)
 
     def __repr__(self):
         return '<%s %d connection(s) %d connector(s) at 0x%x>' \
             % (type(self).__name__,
-               len(self.getConnections()),
-               len(self.getConnectors()),
+               len(self.get_connections()),
+               len(self.get_connectors()),
                id(self))
 
-__busClients = {}
-__busClientsLock = threading.Lock()
+
+__bus_clients = {}
+__bus_clients_lock = threading.Lock()
 
 
-def getBusClientFor(host, port, tcpnodelay, connector):
+def get_bus_client_for(host, port, tcpnodelay, connector):
     """
+    Return a bus client for the given end point and attach a connector to it.
+
     Return (creating it if necessary), a :obj:`BusClient` for the endpoint
     designated by ``host`` and ``port`` and attach ``connector`` to
     it. Attaching ``connector`` marks the bus client as being in use
@@ -513,27 +514,29 @@ def getBusClientFor(host, port, tcpnodelay, connector):
             A connector that should be attached to the bus client.
     """
     key = (host, port, tcpnodelay)
-    with __busClientsLock:
-        bus = __busClients.get(key)
+    with __bus_clients_lock:
+        bus = __bus_clients.get(key)
         if bus is None:
             bus = BusClient(host, port, tcpnodelay)
-            __busClients[key] = bus
+            __bus_clients[key] = bus
             bus.activate()
-            bus.addConnector(connector)
+            bus.add_connector(connector)
         else:
-            bus.addConnector(connector)
+            bus.add_connector(connector)
         return bus
 
 
 class BusClient(Bus):
     """
-    Instances of this class provide access to a bus by means of a
-    client socket.
+    Provides access to a bus by means of a client socket.
 
     .. codeauthor:: jmoringe
     """
+
     def __init__(self, host, port, tcpnodelay):
         """
+        Create a new client connection on the specified host and port.
+
         Args:
             host (str):
                 A hostname or address of the node on which the bus server
@@ -545,15 +548,17 @@ class BusClient(Bus):
         """
         super(BusClient, self).__init__()
 
-        self.addConnection(BusConnection(host, port, tcpnodelay=tcpnodelay))
+        self.add_connection(BusConnection(host, port, tcpnodelay=tcpnodelay))
 
 
-__busServers = {}
-__busServersLock = threading.Lock()
+__bus_servers = {}
+__bus_servers_lock = threading.Lock()
 
 
-def getBusServerFor(host, port, tcpnodelay, connector):
+def get_bus_server_for(host, port, tcpnodelay, connector):
     """
+    Return a bus server for the given end point and attach a connector to it.
+
     Return (creating it if necessary), a :obj:`BusServer` for the endpoint
     designated by ``host`` and ``port`` and attach ``connector`` to
     it. Attaching ``connector`` marks the bus server as being in use
@@ -573,22 +578,21 @@ def getBusServerFor(host, port, tcpnodelay, connector):
             A connector that should be attached to the bus server.
     """
     key = (host, port, tcpnodelay)
-    with __busServersLock:
-        bus = __busServers.get(key)
+    with __bus_servers_lock:
+        bus = __bus_servers.get(key)
         if bus is None:
             bus = BusServer(host, port, tcpnodelay)
             bus.activate()
-            __busServers[key] = bus
-            bus.addConnector(connector)
+            __bus_servers[key] = bus
+            bus.add_connector(connector)
         else:
-            bus.addConnector(connector)
+            bus.add_connector(connector)
         return bus
 
 
 class BusServer(Bus):
     """
-    Instances of this class provide access to a socket-based bus for
-    local and remote bus clients.
+    Provides access to a socket-based bus for local and remote bus clients.
 
     Remote clients can connect to a server socket in order to send and
     receive events through the resulting socket connection.
@@ -602,6 +606,8 @@ class BusServer(Bus):
 
     def __init__(self, host, port, tcpnodelay, backlog=5):
         """
+        Create a new instance on the given host and port.
+
         Args:
             host (str):
                 A hostname or address identifying the interface to which the
@@ -616,14 +622,14 @@ class BusServer(Bus):
         """
         super(BusServer, self).__init__()
 
-        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         self.__host = host
         self.__port = port
         self.__tcpnodelay = tcpnodelay
         self.__backlog = backlog
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__acceptorThread = None
+        self.__acceptor_thread = None
 
         self.__active = False
 
@@ -631,41 +637,42 @@ class BusServer(Bus):
         if self.__active:
             self.deactivate()
 
-    def acceptClients(self):
+    def accept_clients(self):
         import sys
         if sys.platform == 'darwin':
             self.__socket.settimeout(1.0)
         while self.__socket:
             self.__logger.info('Waiting for clients')
             try:
-                clientSocket, addr = self.__socket.accept()
+                client_socket, addr = self.__socket.accept()
                 if sys.platform == 'darwin':
-                    clientSocket.settimeout(None)
+                    client_socket.settimeout(None)
                 self.__logger.info('Accepted client %s', addr)
-                self.addConnection(BusConnection(socket_=clientSocket,
-                                                 isServer=True,
-                                                 tcpnodelay=self.__tcpnodelay))
+                self.add_connection(
+                    BusConnection(socket_=client_socket,
+                                  is_server=True,
+                                  tcpnodelay=self.__tcpnodelay))
             except socket.timeout as e:
                 if sys.platform != 'darwin':
                     self.__logger.error(
-                        'Unexpected timeout in acceptClients: "%s"', e)
+                        'Unexpected timeout in accept_clients: "%s"', e)
             except Exception as e:
                 if self.__active:
-                    self.__logger.error('Exception in acceptClients: "%s"', e,
+                    self.__logger.error('Exception in accept_clients: "%s"', e,
                                         exc_info=True)
                 else:
                     self.__logger.info('Acceptor thread terminating')
 
     # Receiving notifications
 
-    def handleIncoming(self, connectionAndNotification):
-        super(BusServer, self).handleIncoming(connectionAndNotification)
+    def handle_incoming(self, connection_and_notification):
+        super(BusServer, self).handle_incoming(connection_and_notification)
 
         # Distribute the notification to all connections except the
         # one that sent it.
-        (sendingConnection, notification) = connectionAndNotification
+        (sending_connection, notification) = connection_and_notification
         with self.lock:
-            self._toConnections(notification, exclude=sendingConnection)
+            self._to_connections(notification, exclude=sending_connection)
 
     # State management
 
@@ -682,8 +689,8 @@ class BusServer(Bus):
         self.__socket.listen(self.__backlog)
 
         self.__logger.info('Starting acceptor thread')
-        self.__acceptorThread = threading.Thread(target=self.acceptClients)
-        self.__acceptorThread.start()
+        self.__acceptor_thread = threading.Thread(target=self.accept_clients)
+        self.__acceptor_thread.start()
 
         self.__active = True
 
@@ -703,36 +710,39 @@ class BusServer(Bus):
                 self.__logger.warn('Failed to shutdown listen socket: %s', e)
             try:
                 self.__socket.close()
-            except:
+            except Exception as e:
                 self.__logger.warn('Failed to close listen socket: %s', e)
             self.__socket = None
 
         # The acceptor thread should encounter an exception and exit
         # eventually. We wait for that.
         self.__logger.info('Waiting for acceptor thread')
-        if self.__acceptorThread is not None:
-            self.__acceptorThread.join()
+        if self.__acceptor_thread is not None:
+            self.__acceptor_thread.join()
 
         super(BusServer, self).deactivate()
 
 
-def removeConnector(bus, connector):
-    def removeAndMaybeKill(lock, dictionary):
+def remove_connector(bus, connector):
+    def remove_and_maybe_kill(lock, dictionary):
         with lock:
-            if not bus.removeConnector(connector):
+            if not bus.remove_connector(connector):
                 bus.deactivate()
-                del dictionary[[key for (key, value) in list(dictionary.items())
+                del dictionary[[key
+                                for (key, value) in list(dictionary.items())
                                 if value is bus][0]]
 
     if isinstance(bus, BusClient):
-        removeAndMaybeKill(__busClientsLock, __busClients)
+        remove_and_maybe_kill(__bus_clients_lock, __bus_clients)
     else:
-        removeAndMaybeKill(__busServersLock, __busServers)
+        remove_and_maybe_kill(__bus_servers_lock, __bus_servers)
 
 
 class Connector(rsb.transport.Connector,
                 rsb.transport.ConverterSelectingConnector):
     """
+    Base class for connectors that operate on a socket connection based bus.
+
     Instances of subclasses of this class receive events from a bus
     (represented by a :obj:`Bus` object) that is accessed via a socket
     connection.
@@ -741,10 +751,10 @@ class Connector(rsb.transport.Connector,
     """
 
     def __init__(self, converters, options=None, **kwargs):
-        super(Connector, self).__init__(wireType=bytes,
+        super(Connector, self).__init__(wire_type=bytes,
                                         converters=converters,
                                         **kwargs)
-        self.__logger = rsb.util.getLoggerByClass(self.__class__)
+        self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         if options is None:
             options = {}
@@ -755,43 +765,43 @@ class Connector(rsb.transport.Connector,
         self.__host = options.get('host', 'localhost')
         self.__port = int(options.get('port', '55555'))
         self.__tcpnodelay = options.get('nodelay', '1') in ['1', 'true']
-        serverString = options.get('server', 'auto')
-        if serverString in ['1', 'true']:
+        server_string = options.get('server', 'auto')
+        if server_string in ['1', 'true']:
             self.__server = True
-        elif serverString in ['0', 'false']:
+        elif server_string in ['0', 'false']:
             self.__server = False
-        elif serverString == 'auto':
+        elif server_string == 'auto':
             self.__server = 'auto'
         else:
             raise TypeError('Server option has to be '
                             '"1", "true", "0", "false" or "auto", not "%s"'
-                            % serverString)
+                            % server_string)
 
     def __del__(self):
         if self.__active:
             self.deactivate()
 
-    def __getBus(self, host, port, tcpnodelay, server):
+    def __get_bus(self, host, port, tcpnodelay, server):
         self.__logger.info('Requested server role: %s', server)
 
         if server is True:
             self.__logger.info('Getting bus server %s:%d', host, port)
-            self.__bus = getBusServerFor(host, port, tcpnodelay, self)
+            self.__bus = get_bus_server_for(host, port, tcpnodelay, self)
         elif server is False:
             self.__logger.info('Getting bus client %s:%d', host, port)
-            self.__bus = getBusClientFor(host, port, tcpnodelay, self)
+            self.__bus = get_bus_client_for(host, port, tcpnodelay, self)
         elif server == 'auto':
             try:
                 self.__logger.info(
                     'Trying to get bus server %s:%d (in server = auto mode)',
                     host, port)
-                self.__bus = getBusServerFor(host, port, tcpnodelay, self)
+                self.__bus = get_bus_server_for(host, port, tcpnodelay, self)
             except Exception as e:
                 self.__logger.info('Failed to get bus server: %s', e)
                 self.__logger.info(
                     'Trying to get bus client %s:%d (in server = auto mode)',
                     host, port)
-                self.__bus = getBusClientFor(host, port, tcpnodelay, self)
+                self.__bus = get_bus_client_for(host, port, tcpnodelay, self)
         else:
             raise TypeError(
                 'Server argument has to be True, False or "auto", not "%s"'
@@ -799,10 +809,10 @@ class Connector(rsb.transport.Connector,
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
-    def getBus(self):
+    def get_bus(self):
         return self.__bus
 
-    bus = property(getBus)
+    bus = property(get_bus)
 
     def activate(self):
         if self.__active:
@@ -810,10 +820,10 @@ class Connector(rsb.transport.Connector,
 
         self.__logger.info('Activating')
 
-        self.__bus = self.__getBus(self.__host,
-                                   self.__port,
-                                   self.__tcpnodelay,
-                                   self.__server)
+        self.__bus = self.__get_bus(self.__host,
+                                    self.__port,
+                                    self.__tcpnodelay,
+                                    self.__server)
 
         self.__active = True
 
@@ -825,12 +835,12 @@ class Connector(rsb.transport.Connector,
 
         self.__active = False
 
-        removeConnector(self.bus, self)
+        remove_connector(self.bus, self)
 
-    def setQualityOfServiceSpec(self, qos):
+    def set_quality_of_service_spec(self, qos):
         pass
 
-    def getTransportURL(self):
+    def get_transport_url(self):
         query = '?tcpnodelay=' + ('1' if self.__tcpnodelay else '0')
         return 'socket://' + self.__host + ':' + str(self.__port) + query
 
@@ -838,6 +848,8 @@ class Connector(rsb.transport.Connector,
 class InPushConnector(Connector,
                       rsb.transport.InPushConnector):
     """
+    Receives events from a bus represented by a socket connection.
+
     Instances of this class receive events from a bus (represented by
     a :obj:`Bus` object) that is accessed via a socket connection.
 
@@ -855,22 +867,22 @@ class InPushConnector(Connector,
 
         super(InPushConnector, self).__init__(**kwargs)
 
-    def filterNotify(self, theFilter, action):
+    def filter_notify(self, the_filter, action):
         pass
 
-    def setObserverAction(self, action):
+    def set_observer_action(self, action):
         self.__action = action
 
     def handle(self, notification):
         if self.__action is None:
             return
 
-        converter = self.getConverterForWireSchema(
+        converter = self.get_converter_for_wire_schema(
             notification.wire_schema.decode('ASCII'))
-        event = conversion.notificationToEvent(
+        event = conversion.notification_to_event(
             notification,
-            wireData=bytes(notification.data),
-            wireSchema=notification.wire_schema,
+            wire_data=bytes(notification.data),
+            wire_schema=notification.wire_schema,
             converter=converter)
         self.__action(event)
 
@@ -878,6 +890,8 @@ class InPushConnector(Connector,
 class OutConnector(Connector,
                    rsb.transport.OutConnector):
     """
+    Sends events to a bus realized as a socket connection.
+
     Instance of this class send events to a bus (represented by a
     :obj:`Bus` object) that is accessed via a socket connection.
 
@@ -890,14 +904,14 @@ class OutConnector(Connector,
     def handle(self, event):
         # Create a notification fragment for the event and send it
         # over the bus.
-        event.getMetaData().setSendTime()
-        converter = self.getConverterForDataType(event.type)
-        wireData, wireSchema = converter.serialize(event.data)
+        event.get_meta_data().set_send_time()
+        converter = self.get_converter_for_data_type(event.data_type)
+        wire_data, wire_schema = converter.serialize(event.data)
         notification = Notification()
-        conversion.eventToNotification(notification, event,
-                                       wireSchema=wireSchema,
-                                       data=wireData)
-        self.bus.handleOutgoing(notification)
+        conversion.event_to_notification(notification, event,
+                                         wire_schema=wire_schema,
+                                         data=wire_data)
+        self.bus.handle_outgoing(notification)
 
 
 class TransportFactory(rsb.transport.TransportFactory):
@@ -907,24 +921,24 @@ class TransportFactory(rsb.transport.TransportFactory):
     .. codeauthor:: jwienke
     """
 
-    def getName(self):
+    def get_name(self):
         return "socket"
 
-    def isRemote(self):
+    def is_remote(self):
         return True
 
-    def createInPushConnector(self, converters, options):
+    def create_in_push_connector(self, converters, options):
         return InPushConnector(converters=converters, options=options)
 
-    def createInPullConnector(self, converters, options):
+    def create_in_pull_connector(self, converters, options):
         raise NotImplementedError()
 
-    def createOutConnector(self, converters, options):
+    def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)
 
 
 def initialize():
     try:
-        rsb.transport.registerTransport(TransportFactory())
+        rsb.transport.register_transport(TransportFactory())
     except ValueError:
         pass

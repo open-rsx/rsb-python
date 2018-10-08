@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2012 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2012 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,24 +16,21 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-This package contains a highly efficient in-process transport implementation
-which allows participants inside one python process to communicate without
-serialization overhead.
+Contains a highly efficient in-process transport implementation.
+
+This transport allows participants inside one python process to communicate
+without serialization overhead.
 
 .. codeauthor:: jwienke
 """
 
 import os
 import platform
-from threading import RLock
 import queue
+from threading import RLock
 
 from rsb import transport
 
@@ -47,11 +44,11 @@ class Bus(object):
 
     def __init__(self):
         self.__mutex = RLock()
-        self.__sinksByScope = {}
+        self.__sinks_by_scope = {}
 
-    def addSink(self, sink):
+    def add_sink(self, sink):
         """
-        Adds a sink for events pushed to the Bus.
+        Add a sink for events pushed to the Bus.
 
         Args:
             sink:
@@ -59,13 +56,13 @@ class Bus(object):
         """
         with self.__mutex:
             # ensure that there is a list of sinks for the given scope
-            if sink.getScope() not in self.__sinksByScope:
-                self.__sinksByScope[sink.getScope()] = []
-            self.__sinksByScope[sink.getScope()].append(sink)
+            if sink.get_scope() not in self.__sinks_by_scope:
+                self.__sinks_by_scope[sink.get_scope()] = []
+            self.__sinks_by_scope[sink.get_scope()].append(sink)
 
-    def removeSink(self, sink):
+    def remove_sink(self, sink):
         """
-        Removes a sink to not be notified anymore.
+        Remove a sink to not be notified anymore.
 
         Args:
             sink:
@@ -73,9 +70,9 @@ class Bus(object):
         """
         with self.__mutex:
             # return immediately if there is no such scope known for sinks
-            if sink.getScope() not in self.__sinksByScope:
+            if sink.get_scope() not in self.__sinks_by_scope:
                 return
-            self.__sinksByScope[sink.getScope()].remove(sink)
+            self.__sinks_by_scope[sink.get_scope()].remove(sink)
 
     def handle(self, event):
         """
@@ -88,17 +85,19 @@ class Bus(object):
 
         with self.__mutex:
 
-            for scope, sinkList in list(self.__sinksByScope.items()):
-                if scope == event.scope or scope.isSuperScopeOf(event.scope):
-                    for sink in sinkList:
+            for scope, sink_list in list(self.__sinks_by_scope.items()):
+                if scope == event.scope or scope.is_super_scope_of(
+                        event.scope):
+                    for sink in sink_list:
                         sink.handle(event)
 
-    def getTransportURL(self):
+    def get_transport_url(self):
         hostname = platform.node().split('.')[0]
         pid = os.getpid()
         return 'inprocess://' + hostname + ':' + str(pid)
 
-globalBus = Bus()
+
+global_bus = Bus()
 
 
 class OutConnector(transport.OutConnector):
@@ -108,13 +107,13 @@ class OutConnector(transport.OutConnector):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
-        # pylint: disable=unused-argument
-        transport.OutConnector.__init__(self, wireType=object, **kwargs)
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
+        transport.OutConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
 
     def handle(self, event):
-        event.metaData.setSendTime()
+        event.meta_data.set_send_time()
         self.__bus.handle(event)
 
     def activate(self):
@@ -123,11 +122,11 @@ class OutConnector(transport.OutConnector):
     def deactivate(self):
         pass
 
-    def setQualityOfServiceSpec(self, qos):
+    def set_quality_of_service_spec(self, qos):
         pass
 
-    def getTransportURL(self):
-        return self.__bus.getTransportURL()
+    def get_transport_url(self):
+        return self.__bus.get_transport_url()
 
 
 class InPushConnector(transport.InPushConnector):
@@ -137,78 +136,78 @@ class InPushConnector(transport.InPushConnector):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
-        # pylint: disable=unused-argument
-        transport.InPushConnector.__init__(self, wireType=object, **kwargs)
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
+        transport.InPushConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None
-        self.__observerAction = None
+        self.__observer_action = None
 
-    def filterNotify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
-    def setObserverAction(self, action):
-        self.__observerAction = action
+    def set_observer_action(self, action):
+        self.__observer_action = action
 
-    def setScope(self, scope):
+    def set_scope(self, scope):
         self.__scope = scope
 
-    def getScope(self):
+    def get_scope(self):
         return self.__scope
 
     def activate(self):
         assert self.__scope is not None
-        self.__bus.addSink(self)
+        self.__bus.add_sink(self)
 
     def deactivate(self):
-        self.__bus.removeSink(self)
+        self.__bus.remove_sink(self)
 
-    def setQualityOfServiceSpec(self, qos):
+    def set_quality_of_service_spec(self, qos):
         pass
 
     def handle(self, event):
         # get reference which will survive parallel changes to the action
-        event.metaData.setReceiveTime()
-        action = self.__observerAction
+        event.meta_data.set_receive_time()
+        action = self.__observer_action
         if action is not None:
             action(event)
 
-    def getTransportURL(self):
-        return self.__bus.getTransportURL()
+    def get_transport_url(self):
+        return self.__bus.get_transport_url()
 
 
 class InPullConnector(transport.InPullConnector):
 
-    def __init__(self, bus=globalBus, converters=None, options=None, **kwargs):
-        # pylint: disable=unused-argument
-        transport.InPullConnector.__init__(self, wireType=object, **kwargs)
+    def __init__(
+            self, bus=global_bus, converters=None, options=None, **kwargs):
+        transport.InPullConnector.__init__(self, wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None
-        self.__eventQueue = queue.Queue()
+        self.__event_queue = queue.Queue()
 
-    def setScope(self, scope):
+    def set_scope(self, scope):
         self.__scope = scope
 
-    def getScope(self):
+    def get_scope(self):
         return self.__scope
 
     def activate(self):
         assert self.__scope is not None
-        self.__bus.addSink(self)
+        self.__bus.add_sink(self)
 
     def deactivate(self):
-        self.__bus.removeSink(self)
+        self.__bus.remove_sink(self)
 
-    def setQualityOfServiceSpec(self, qos):
+    def set_quality_of_service_spec(self, qos):
         pass
 
     def handle(self, event):
-        event.metaData.setReceiveTime()
-        self.__eventQueue.put(event)
+        event.meta_data.set_receive_time()
+        self.__event_queue.put(event)
 
-    def raiseEvent(self, block):
+    def raise_event(self, block):
         try:
-            return self.__eventQueue.get(block)
+            return self.__event_queue.get(block)
         except queue.Empty:
             return None
 
@@ -220,24 +219,24 @@ class TransportFactory(transport.TransportFactory):
     .. codeauthor:: jwienke
     """
 
-    def getName(self):
+    def get_name(self):
         return "inprocess"
 
-    def isRemote(self):
+    def is_remote(self):
         return False
 
-    def createInPushConnector(self, converters, options):
+    def create_in_push_connector(self, converters, options):
         return InPushConnector(converters=converters, options=options)
 
-    def createInPullConnector(self, converters, options):
+    def create_in_pull_connector(self, converters, options):
         return InPullConnector(converters=converters, options=options)
 
-    def createOutConnector(self, converters, options):
+    def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)
 
 
 def initialize():
     try:
-        transport.registerTransport(TransportFactory())
+        transport.register_transport(TransportFactory())
     except ValueError:
         pass

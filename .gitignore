@@ -13,7 +13,10 @@ setup.cfg
 /gitversion
 /gitbranch
 /MANIFEST
-/pylint.out
 /.eggs
 /.tox
 /tags
+/.exrc
+/.mypy_cache/
+/.python-version
+/.ropeproject/

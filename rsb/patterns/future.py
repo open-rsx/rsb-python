@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011-2017 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -15,10 +15,6 @@
 # program. If not, go to http://www.gnu.org/licenses/lgpl.html
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
 #
 # ============================================================
 
@@ -48,8 +44,7 @@ class FutureExecutionError(FutureError):
 
 class Future(object):
     """
-    Objects of this class represent the results of in-progress
-    operations.
+    Represents the results of in-progress operations.
 
     Methods of this class allow checking the state of the represented
     operation, waiting for the operation to finish and retrieving the
@@ -65,10 +60,9 @@ class Future(object):
         <http://docs.python.org/dev/library/concurrent.futures.html>_
     """
 
-    def __init__(self):
+    def __init__(self):  # noqa: D200 false positive from sphinx markup
         """
-        Create a new :obj:`Future` object that represents an in-progress
-        operation for which a result is not yet available.
+        Create a new :obj:`Future` object.
         """
         self.__error = False
         self.__result = None
@@ -76,7 +70,7 @@ class Future(object):
         self.__lock = threading.Lock()
         self.__condition = threading.Condition(lock=self.__lock)
 
-    def isDone(self):
+    def is_done(self):
         """
         Check whether the represented operation is still in progress.
 
@@ -88,12 +82,11 @@ class Future(object):
         with self.__lock:
             return self.__result is not None
 
-    done = property(isDone)
+    done = property(is_done)
 
     def get(self, timeout=0):
         """
-        Try to obtain and then return the result of the represented
-        operation.
+        Try to obtain and return the result of the represented operation.
 
         If necessary, wait for the operation to complete, and then
         retrieve its result.
@@ -130,9 +123,11 @@ class Future(object):
 
         return self.__result
 
-    def set(self, result):
+    def set_result(self, result):
         """
-        Set the result of the :obj:`Future` to ``result`` and wake all
+        Set the result and notify all waiting consumers.
+
+        Sets the result of the :obj:`Future` to ``result`` and wakes all
         threads waiting for the result.
 
         Args:
@@ -143,8 +138,10 @@ class Future(object):
             self.__result = result
             self.__condition.notifyAll()
 
-    def setError(self, message):
+    def set_error(self, message):
         """
+        Indicate a failure and notify all waiting consumers.
+
         Mark the operation represented by the :obj:`Future` object as
         failed, set ``message`` as the error message and notify all
         threads waiting for the result.
@@ -174,11 +171,14 @@ class Future(object):
 
 class DataFuture(Future):
     """
+    A :obj:`Future` that automatically returns the payload of an :obj:`Event`.
+
     Instances of this class are like ordinary :obj:`Future`s, the only
     difference being that the :obj:`get` method returns the payload of an
     :obj:`Event` object.
 
     .. codeauthor:: jmoringe
     """
+
     def get(self, timeout=0):
         return super(DataFuture, self).get(timeout=timeout).data

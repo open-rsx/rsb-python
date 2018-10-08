@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.DE>
+# Copyright (C) 2011-2017 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,18 +16,15 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
+from threading import Condition
 import unittest
+
 import rsb
 from rsb import ParticipantConfig
-from threading import Condition
 
-inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
+in_process_no_introspection_config = ParticipantConfig.from_dict({
     'introspection.enabled': '0',
     'transport.inprocess.enabled': '1'
 })
@@ -35,134 +32,139 @@ inProcessNoIntrospectionConfig = ParticipantConfig.fromDict({
 
 class LocalServerTest(unittest.TestCase):
 
-    def testConstruction(self):
+    def test_construction(self):
 
         # Test creating a server without methods
-        with rsb.createLocalServer('/some/scope',
-                                   inProcessNoIntrospectionConfig) as server:
+        with rsb.create_local_server(
+                '/some/scope',
+                in_process_no_introspection_config) as server:
             self.assertEqual(server.methods, [])
 
-        with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   inProcessNoIntrospectionConfig) as server:
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                in_process_no_introspection_config) as server:
             self.assertEqual(server.methods, [])
 
         # Test creating a server with directly specified methods
-        with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   methods=[('foo', lambda x: x, str, str)],
-                                   config=inProcessNoIntrospectionConfig) \
-                as server:
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                methods=[('foo', lambda x: x, str, str)],
+                config=in_process_no_introspection_config) as server:
             self.assertEqual([m.name for m in server.methods], ['foo'])
 
         # Test creating a server that exposes method of an existing
         # object
         class SomeClass(object):
-            def bar(x):
+            def bar(self, x):
                 pass
 
-        someObject = SomeClass()
-        with rsb.createLocalServer(rsb.Scope('/some/scope'),
-                                   object=someObject,
-                                   expose=[('bar', str, None)],
-                                   config=inProcessNoIntrospectionConfig) \
-                as server:
+        some_object = SomeClass()
+        with rsb.create_local_server(
+                rsb.Scope('/some/scope'),
+                provider=some_object,
+                expose=[('bar', str, None)],
+                config=in_process_no_introspection_config) as server:
             self.assertEqual([m.name for m in server.methods], ['bar'])
 
             # Cannot supply expose without object
             self.assertRaises(ValueError,
-                              rsb.createLocalServer,
+                              rsb.create_local_server,
                               '/some/scope',
                               expose=[('bar', str, None)])
 
             # Cannot supply these simultaneously
             self.assertRaises(ValueError,
-                              rsb.createLocalServer,
+                              rsb.create_local_server,
                               '/some/scope',
-                              object=someObject,
+                              provider=some_object,
                               expose=[('bar', str, None)],
                               methods=[('foo', lambda x: x, str, str)])
 
 
 class RoundTripTest (unittest.TestCase):
 
-    def testRoundTrip(self):
+    def test_round_trip(self):
 
-        with rsb.createLocalServer(
+        with rsb.create_local_server(
                 '/roundtrip',
                 methods=[('addone', lambda x: int(x + 1), int, int)],
-                config=inProcessNoIntrospectionConfig):
-            with rsb.createRemoteServer('/roundtrip',
-                                        inProcessNoIntrospectionConfig) \
-                    as remoteServer:
+                config=in_process_no_introspection_config):
+            with rsb.create_remote_server('/roundtrip',
+                                          in_process_no_introspection_config) \
+                    as remote_server:
 
                 # Call synchronously
-                self.assertEqual(list(map(remoteServer.addone, list(range(100)))),
-                                 list(range(1, 101)))
+                self.assertEqual(
+                    list(map(remote_server.addone, list(range(100)))),
+                    list(range(1, 101)))
 
                 # Call synchronously with timeout
-                self.assertEqual([remoteServer.addone(x, timeout=10)
+                self.assertEqual([remote_server.addone(x, timeout=10)
                                   for x in range(100)],
                                  list(range(1, 101)))
 
                 # Call asynchronously
                 self.assertEqual([x.get() for x in
-                                  list(map(remoteServer.addone.asynchronous,
-                                         list(range(100))))],
+                                  list(map(remote_server.addone.asynchronous,
+                                           list(range(100))))],
                                  list(range(1, 101)))
 
-    def testVoidMethods(self):
+    def test_void_methods(self):
 
-        with rsb.createLocalServer('/void', inProcessNoIntrospectionConfig) \
-                as localServer:
+        with rsb.create_local_server(
+                '/void', in_process_no_introspection_config) as local_server:
 
             def nothing(e):
                 pass
-            localServer.addMethod("nothing", nothing, str)
+            local_server.add_method("nothing", nothing, str)
 
-            with rsb.createRemoteServer('/void',
-                                        inProcessNoIntrospectionConfig) \
-                    as remoteServer:
-                future = remoteServer.nothing.asynchronous("test")
+            with rsb.create_remote_server(
+                    '/void',
+                    in_process_no_introspection_config) as remote_server:
+                future = remote_server.nothing.asynchronous("test")
                 future.get(1)
 
-    def testNonIdentifierMethodName(self):
-        serverScope = '/non-identifier-server'
-        methodName = 'non-identifier-method'
-        with rsb.createLocalServer(serverScope,
-                                   inProcessNoIntrospectionConfig) \
-                as localServer:
-            localServer.addMethod(methodName, lambda x: x, str, str)
+    def test_non_identifier_method_name(self):
+        server_scope = '/non-identifier-server'
+        method_name = 'non-identifier-method'
+        with rsb.create_local_server(
+                server_scope,
+                in_process_no_introspection_config) as local_server:
+            local_server.add_method(method_name, lambda x: x, str, str)
 
-            with rsb.createRemoteServer(serverScope,
-                                        inProcessNoIntrospectionConfig) \
-                    as remoteServer:
-                self.assertEqual(remoteServer.getMethod(methodName)('foo'),
+            with rsb.create_remote_server(
+                    server_scope,
+                    in_process_no_introspection_config) as remote_server:
+                self.assertEqual(remote_server.get_method(method_name)('foo'),
                                  'foo')
 
-    def testParallelCallOfOneMethod(self):
+    def test_parallel_call_of_one_method(self):
 
-        numParallelCalls = 3
-        runningCalls = [0]
-        callLock = Condition()
+        num_parallel_calls = 3
+        running_calls = [0]
+        call_lock = Condition()
 
-        with rsb.createLocalServer('/takesometime',
-                                   inProcessNoIntrospectionConfig) \
-                as localServer:
+        with rsb.create_local_server(
+                '/takesometime',
+                in_process_no_introspection_config) as local_server:
 
-            def takeSomeTime(e):
-                with callLock:
-                    runningCalls[0] = runningCalls[0] + 1
-                    callLock.notifyAll()
-                with callLock:
-                    while runningCalls[0] < numParallelCalls:
-                        callLock.wait()
-            localServer.addMethod("takeSomeTime", takeSomeTime,
-                                  str, allowParallelExecution=True)
+            def take_some_time(e):
+                with call_lock:
+                    running_calls[0] = running_calls[0] + 1
+                    call_lock.notifyAll()
+                with call_lock:
+                    while running_calls[0] < num_parallel_calls:
+                        call_lock.wait()
+            local_server.add_method("take_some_time", take_some_time,
+                                    str, allow_parallel_execution=True)
 
-            with rsb.createRemoteServer('/takesometime',
-                                        inProcessNoIntrospectionConfig) \
-                    as remoteServer:
+            with rsb.create_remote_server(
+                    '/takesometime',
+                    in_process_no_introspection_config) as remote_server:
 
-                results = [remoteServer.takeSomeTime.asynchronous('call{}'.format(x))
-                           for x in range(numParallelCalls)]
+                results = [
+                    remote_server.take_some_time.asynchronous(
+                        'call{}'.format(x))
+                    for x in range(num_parallel_calls)]
                 for r in results:
                     r.get(10)

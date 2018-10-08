@@ -16,187 +16,194 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
-import unittest
 import re
-
-import rsb.converter
-from rsb.converter import Converter, NoneConverter, StringConverter, \
-    ConverterMap, UnambiguousConverterMap, PredicateConverterList, \
-    ScopeConverter, EventsByScopeMapConverter
-from rsb import Scope, Event, EventId
+import unittest
 from uuid import uuid4
+
 from nose.tools import assert_equals
+
+from rsb import Event, EventId, Scope
+import rsb.converter
+from rsb.converter import (Converter,
+                           ConverterMap,
+                           EventsByScopeMapConverter,
+                           NoneConverter,
+                           PredicateConverterList,
+                           ScopeConverter,
+                           StringConverter,
+                           UnambiguousConverterMap)
 
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
-        Converter.__init__(self, wireType=bytes,
-                           wireSchema="utf-8-string", dataType=float)
+        Converter.__init__(self, wire_type=bytes,
+                           wire_schema="utf-8-string", data_type=float)
 
-    def serialize(self, input):
-        return str(input)
+    def serialize(self, data):
+        return str()
 
-    def deserialize(self, input, wireSchema):
-        return str(input)
+    def deserialize(self, wire, wire_schema):
+        return str(wire)
 
 
 class ConverterMapTest(unittest.TestCase):
-    def testAddConverter(self):
-        map = ConverterMap(str)
-        map.addConverter(StringConverter())
-        map.addConverter(ConflictingStringConverter())
-        self.assertRaises(Exception, map.addConverter, StringConverter())
-        map.addConverter(StringConverter(), replaceExisting=True)
+    def test_add_converter(self):
+        converter_map = ConverterMap(str)
+        converter_map.add_converter(StringConverter())
+        converter_map.add_converter(ConflictingStringConverter())
+        self.assertRaises(Exception,
+                          converter_map.add_converter, StringConverter())
+        converter_map.add_converter(StringConverter(), replace_existing=True)
 
 
 class UnambiguousConverterMapTest(unittest.TestCase):
-    def testAddConverter(self):
-        map = UnambiguousConverterMap(str)
-        map.addConverter(StringConverter())
-        self.assertRaises(Exception, map.addConverter,
+    def test_add_converter(self):
+        converter_map = UnambiguousConverterMap(str)
+        converter_map.add_converter(StringConverter())
+        self.assertRaises(Exception, converter_map.add_converter,
                           ConflictingStringConverter())
-        self.assertRaises(Exception, map.addConverter,
+        self.assertRaises(Exception, converter_map.add_converter,
                           ConflictingStringConverter(), True)
-        map.addConverter(StringConverter(), replaceExisting=True)
+        converter_map.add_converter(StringConverter(), replace_existing=True)
 
 
 class PredicateConverterListTest(unittest.TestCase):
-    def assertIs(self, a, b):
+    def assert_is(self, a, b):
         self.assertTrue(a is b)
 
-    def testAddConverter(self):
-        list = PredicateConverterList(str)
-        list.addConverter(StringConverter())
-        list.addConverter(StringConverter(),
-                          wireSchemaPredicate=lambda wireSchema: True)
-        list.addConverter(StringConverter(),
-                          dataTypePredicate=lambda dataType: True)
+    def test_add_converter(self):
+        converter_list = PredicateConverterList(str)
+        converter_list.add_converter(StringConverter())
+        converter_list.add_converter(
+            StringConverter(),
+            wire_schema_predicate=lambda wire_schema: True)
+        converter_list.add_converter(
+            StringConverter(),
+            data_type_predicate=lambda data_type: True)
 
-    def testGetConverter(self):
+    def test_get_converter(self):
         v1 = StringConverter()
         v2 = StringConverter()
 
-        alwaysTrue = PredicateConverterList(str)
-        alwaysTrue.addConverter(v1,
-                                wireSchemaPredicate=lambda wireSchema: True,
-                                dataTypePredicate=lambda dataType: True)
-        self.assertIs(alwaysTrue.getConverterForWireSchema(""), v1)
-        self.assertIs(alwaysTrue.getConverterForWireSchema("bla"), v1)
+        always_true = PredicateConverterList(str)
+        always_true.add_converter(
+            v1,
+            wire_schema_predicate=lambda wire_schema: True,
+            data_type_predicate=lambda data_type: True)
+        self.assert_is(always_true.get_converter_for_wire_schema(""), v1)
+        self.assert_is(always_true.get_converter_for_wire_schema("bla"), v1)
 
         regex = PredicateConverterList(str)
-        regex.addConverter(
+        regex.add_converter(
             v1,
-            wireSchemaPredicate=lambda wireSchema:
-                re.match(".*foo.*", wireSchema),
-            dataTypePredicate=lambda dataType:
-                re.match(".*foo.*", dataType))
-        self.assertRaises(KeyError, regex.getConverterForWireSchema, "")
-        self.assertRaises(KeyError, regex.getConverterForWireSchema, "bla")
-        self.assertIs(regex.getConverterForWireSchema("foo"), v1)
-        self.assertIs(regex.getConverterForWireSchema("foobar"), v1)
-        self.assertRaises(KeyError, regex.getConverterForDataType, "")
-        self.assertRaises(KeyError, regex.getConverterForDataType, "bla")
-        self.assertIs(regex.getConverterForDataType("foo"), v1)
-        self.assertIs(regex.getConverterForDataType("foobar"), v1)
+            wire_schema_predicate=lambda wire_schema:
+                re.match(".*foo.*", wire_schema),
+            data_type_predicate=lambda data_type:
+                re.match(".*foo.*", data_type))
+        self.assertRaises(KeyError, regex.get_converter_for_wire_schema, "")
+        self.assertRaises(KeyError, regex.get_converter_for_wire_schema, "bla")
+        self.assert_is(regex.get_converter_for_wire_schema("foo"), v1)
+        self.assert_is(regex.get_converter_for_wire_schema("foobar"), v1)
+        self.assertRaises(KeyError, regex.get_converter_for_data_type, "")
+        self.assertRaises(KeyError, regex.get_converter_for_data_type, "bla")
+        self.assert_is(regex.get_converter_for_data_type("foo"), v1)
+        self.assert_is(regex.get_converter_for_data_type("foobar"), v1)
 
         mixed = PredicateConverterList(str)
-        mixed.addConverter(
+        mixed.add_converter(
             v1,
-            wireSchemaPredicate=lambda wireSchema:
-                re.match(".*foo.*", wireSchema),
-            dataTypePredicate=lambda dataType:
-                re.match(".*foo.*", dataType))
-        mixed.addConverter(v2,
-                           wireSchemaPredicate=lambda wireSchema: True,
-                           dataTypePredicate=lambda dataType: True)
-        self.assertIs(mixed.getConverterForWireSchema(""), v2)
-        self.assertIs(mixed.getConverterForWireSchema("bla"), v2)
-        self.assertIs(mixed.getConverterForWireSchema("foo"), v1)
-        self.assertIs(mixed.getConverterForWireSchema("foobar"), v1)
-        self.assertIs(mixed.getConverterForDataType(""), v2)
-        self.assertIs(mixed.getConverterForDataType("bla"), v2)
-        self.assertIs(mixed.getConverterForDataType("foo"), v1)
-        self.assertIs(mixed.getConverterForDataType("foobar"), v1)
+            wire_schema_predicate=lambda wire_schema:
+                re.match(".*foo.*", wire_schema),
+            data_type_predicate=lambda data_type:
+                re.match(".*foo.*", data_type))
+        mixed.add_converter(v2,
+                            wire_schema_predicate=lambda wire_schema: True,
+                            data_type_predicate=lambda data_type: True)
+        self.assert_is(mixed.get_converter_for_wire_schema(""), v2)
+        self.assert_is(mixed.get_converter_for_wire_schema("bla"), v2)
+        self.assert_is(mixed.get_converter_for_wire_schema("foo"), v1)
+        self.assert_is(mixed.get_converter_for_wire_schema("foobar"), v1)
+        self.assert_is(mixed.get_converter_for_data_type(""), v2)
+        self.assert_is(mixed.get_converter_for_data_type("bla"), v2)
+        self.assert_is(mixed.get_converter_for_data_type("foo"), v1)
+        self.assert_is(mixed.get_converter_for_data_type("foobar"), v1)
 
 
 class NoneConverterTest(unittest.TestCase):
-    def testRoundtrip(self):
+    def test_roundtrip(self):
         converter = NoneConverter()
         self.assertEqual(None,
-                          converter.deserialize(*converter.serialize(None)))
+                         converter.deserialize(*converter.serialize(None)))
 
 
 class StringConverterTest(unittest.TestCase):
 
-    def testRoundtripUtf8(self):
+    def test_roundtrip_utf8(self):
         converter = StringConverter()
         orig = "asd" + chr(270) + chr(40928)
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
         orig = "i am a normal string"
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
 
-    def testRoundtripAscii(self):
-        converter = StringConverter(wireSchema="ascii-string",
+    def test_roundtrip_ascii(self):
+        converter = StringConverter(wire_schema="ascii-string",
                                     encoding="ascii")
         orig = "foooo"
         self.assertEqual(orig,
-                          converter.deserialize(*converter.serialize(orig)))
+                         converter.deserialize(*converter.serialize(orig)))
 
-    def testCharsetErrors(self):
-        asciiConverter = StringConverter(wireSchema="ascii-string",
-                                         encoding="ascii")
+    def test_charset_errors(self):
+        ascii_converter = StringConverter(wire_schema="ascii-string",
+                                          encoding="ascii")
         self.assertRaises(UnicodeEncodeError,
-                          asciiConverter.serialize, "test"+chr(266))
-        self.assertRaises(UnicodeDecodeError, asciiConverter.deserialize,
+                          ascii_converter.serialize, "test" + chr(266))
+        self.assertRaises(UnicodeDecodeError, ascii_converter.deserialize,
                           bytes(list(range(133))), 'ascii-string')
 
 
 class ScopeConverterTest(unittest.TestCase):
 
-    def testRoundTrip(self):
+    def test_round_trip(self):
         converter = ScopeConverter()
 
         root = Scope('/foo/bar')
         self.assertEqual(root,
                          converter.deserialize(*converter.serialize(root)))
 
-        someScope = Scope('/foo/bar')
-        self.assertEqual(someScope,
-                         converter.deserialize(*converter.serialize(someScope)))
+        some_scope = Scope('/foo/bar')
+        self.assertEqual(
+            some_scope,
+            converter.deserialize(*converter.serialize(some_scope)))
 
 
 class EventsByScopeMapConverterTest(unittest.TestCase):
 
-    def testEmptyRoundtrip(self):
+    def test_empty_roundtrip(self):
 
         data = {}
         converter = EventsByScopeMapConverter()
         self.assertEqual(data,
-                          converter.deserialize(*converter.serialize(data)))
+                         converter.deserialize(*converter.serialize(data)))
 
-    def testRoundtrip(self):
-        self.maxDiff = None
+    def test_roundtrip(self):
+        self.max_diff = None
 
         data = {}
         scope1 = Scope("/a/test")
-        event1 = Event(id=EventId(uuid4(), 32), scope=scope1,
-                       method="foo", data=42, type=int,
-                       userTimes={"foo": 1231234.0})
-        event1.metaData.setSendTime()
-        event1.metaData.setReceiveTime()
-        event2 = Event(id=EventId(uuid4(), 1001), scope=scope1,
-                       method="fooasdas", data=422, type=int,
-                       userTimes={"bar": 1234.05})
-        event2.metaData.setSendTime()
-        event2.metaData.setReceiveTime()
+        event1 = Event(event_id=EventId(uuid4(), 32), scope=scope1,
+                       method="foo", data=42, data_type=int,
+                       user_times={"foo": 1231234.0})
+        event1.meta_data.set_send_time()
+        event1.meta_data.set_receive_time()
+        event2 = Event(event_id=EventId(uuid4(), 1001), scope=scope1,
+                       method="fooasdas", data=422, data_type=int,
+                       user_times={"bar": 1234.05})
+        event2.meta_data.set_send_time()
+        event2.meta_data.set_receive_time()
         data[scope1] = [event1, event2]
 
         converter = EventsByScopeMapConverter()
@@ -208,27 +215,27 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
 
         for orig, converted in zip(data[scope1], roundtripped[scope1]):
 
-            self.assertEqual(orig.id, converted.id)
+            self.assertEqual(orig.event_id, converted.event_id)
             self.assertEqual(orig.scope, converted.scope)
             # This test currently does not work correctly without a patch for
             # the converter selection for fundamental types
-            # self.assertEqual(orig.type, converted.type)
+            # self.assertEqual(orig.data_type, converted.data_type)
             self.assertEqual(orig.data, converted.data)
-            self.assertAlmostEqual(orig.metaData.createTime,
-                                   converted.metaData.createTime,
+            self.assertAlmostEqual(orig.meta_data.create_time,
+                                   converted.meta_data.create_time,
                                    places=4)
             self.assertEqual(orig.causes, converted.causes)
 
 
-def checkStructureBasedRountrip(converterName, values):
-    converter = rsb.converter.__dict__[converterName]()
+def check_structure_based_rountrip(converter_name, values):
+    converter = rsb.converter.__dict__[converter_name]()
     for value in values:
         assert_equals(value,
                       converter.deserialize(*converter.serialize(value)))
 
 
-def test_structureBaseConverters():
-    for converterName, values in [
+def test_structure_base_converters():
+    for converter_name, values in [
             ('DoubleConverter', [0.0, -1.0, 1.0]),
             ('FloatConverter', [0.0, -1.0, 1.0]),
             ('Int32Converter', [0, -1, 1, -24378, ((1 << 31) - 1)]),
@@ -236,4 +243,4 @@ def test_structureBaseConverters():
             ('Uint32Converter', [0, 1, 24378, ((1 << 32) - 1)]),
             ('Uint64Converter', [0, 1, 24378, ((1 << 32) - 1)]),
             ('BoolConverter', [True, False])]:
-        yield checkStructureBasedRountrip, converterName, values
+        yield check_structure_based_rountrip, converter_name, values

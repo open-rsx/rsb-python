@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,10 +16,6 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 # mark-start::body
@@ -34,7 +30,7 @@ if __name__ == "__main__":
     # Create a RemoteServer object for the remote server at scope
     # /example/server. Method calls should complete within five
     # seconds.
-    with rsb.createRemoteServer('/example/server') as server:
+    with rsb.create_remote_server('/example/server') as server:
 
         # Call the method 'echo' on the remote server passing it a
         # string argument. The server's reply is returned from the call as
