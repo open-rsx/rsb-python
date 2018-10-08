@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/open-rsx/rsb-python.svg?branch=master)](https://travis-ci.org/open-rsx/rsb-python)
+
 # Introduction
 
 This repository contains the Python implementation of the [Robotics Service Bus](https://github.com/open-rsx) middleware.
