@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2010 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,22 +16,18 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-Contains filters which can be used to restrict the amount of events received by
-clients.
+Contains filters which can be used to restrict the events received by clients.
 
 .. codeauthor:: jwienke
 .. codeauthor:: jmoringe
 """
 
-import rsb.util
 from threading import Condition
+
+import rsb.util
 
 FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
 
@@ -45,7 +41,7 @@ class AbstractFilter(object):
 
     def match(self, event):
         """
-        Matches this filter against a given event.
+        Match this filter against a given event.
 
         Args:
             event:
@@ -66,7 +62,7 @@ class ScopeFilter(AbstractFilter):
 
     def __init__(self, scope):
         """
-        Constructs a new scope filter with a given scope to restrict to.
+        Construct a new scope filter with a given scope to restrict to.
 
         Args:
             scope:
@@ -74,9 +70,9 @@ class ScopeFilter(AbstractFilter):
         """
         self.__scope = scope
 
-    def getScope(self):
+    def get_scope(self):
         """
-        Returns the top-level scope this filter matches for.
+        Return the top-level scope this filter matches for.
 
         Returns:
             scope
@@ -85,7 +81,7 @@ class ScopeFilter(AbstractFilter):
 
     def match(self, event):
         return event.scope == self.__scope \
-            or event.scope.isSubScopeOf(self.__scope)
+            or event.scope.is_sub_scope_of(self.__scope)
 
 
 class OriginFilter(AbstractFilter):
@@ -97,6 +93,8 @@ class OriginFilter(AbstractFilter):
 
     def __init__(self, origin, invert=False):
         """
+        Create a new instance.
+
         Args:
             origin:
                 The id of the :obj:`Participant` from which matching events
@@ -108,18 +106,18 @@ class OriginFilter(AbstractFilter):
         self.__origin = origin
         self.__invert = invert
 
-    def getOrigin(self):
+    def get_origin(self):
         return self.__origin
 
-    origin = property(getOrigin)
+    origin = property(get_origin)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
-        result = self.origin == event.senderId
+        result = self.origin == event.sender_id
         if self.invert:
             return not result
         else:
@@ -138,6 +136,7 @@ class OriginFilter(AbstractFilter):
         return '%s("%s", invert = %s)' \
             % (type(self).__name__, self.origin, self.invert)
 
+
 class CauseFilter(AbstractFilter):
     """
     Filter events based on their cause vectors.
@@ -147,6 +146,8 @@ class CauseFilter(AbstractFilter):
 
     def __init__(self, cause, invert=False):
         """
+        Create a new instance.
+
         Args:
             cause:
                 The id of the :obj:`Event` that should be in the cause
@@ -159,15 +160,15 @@ class CauseFilter(AbstractFilter):
         self.__cause = cause
         self.__invert = invert
 
-    def getCause(self):
+    def get_cause(self):
         return self.__cause
 
-    cause = property(getCause)
+    cause = property(get_cause)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
         result = self.cause in event.causes
@@ -190,14 +191,15 @@ class CauseFilter(AbstractFilter):
 
 class MethodFilter(AbstractFilter):
     """
-    Matching events have (not) have a particular value in their method
-    field.
+    Match events do (not) have a particular value in their method field.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, method, invert=False):
         """
+        Create a new instance.
+
         Args:
             method (str):
                 The method string that matching events have to have in their
@@ -210,15 +212,15 @@ class MethodFilter(AbstractFilter):
         self.__method = method
         self.__invert = invert
 
-    def getMethod(self):
+    def get_method(self):
         return self.__method
 
-    method = property(getMethod)
+    method = property(get_method)
 
-    def getInvert(self):
+    def get_invert(self):
         return self.__invert
 
-    invert = property(getInvert)
+    invert = property(get_invert)
 
     def match(self, event):
         result = self.method == event.method

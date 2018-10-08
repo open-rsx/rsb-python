@@ -1,7 +1,7 @@
 # ============================================================
 #
-# Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
-# Copyright (C) 2011-2017 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2010 by Johannes Wienke
+# Copyright (C) 2011-2017 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -17,15 +17,10 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
-This module contains different transport implementations for RSB and their
-common base classes and utility functions.
+Contains the interface and bases classes for implementing RSB transports.
 
 .. codeauthor:: jmoringe
 .. codeauthor:: jwienke
@@ -34,66 +29,66 @@ common base classes and utility functions.
 import abc
 import threading
 
-from rsb.util import getLoggerByClass
+from rsb.util import get_logger_by_class
 
 
-class Connector(object):
+class Connector(object, metaclass=abc.ABCMeta):
     """
     Superclass for transport-specific connector classes.
 
     .. codeauthor:: jwienke
     """
-    __metaclass__ = abc.ABCMeta
 
-    def __init__(self, wireType=None, **kwargs):
+    def __init__(self, wire_type=None, **kwargs):
         """
-        Creates a new connector with a serialization type wireType.
+        Create a new connector with a serialization type wire_type.
 
         Args:
-            wireType (types.TypeType):
+            wire_type (types.TypeType):
                 the type of serialized data used by this connector.
         """
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = get_logger_by_class(self.__class__)
 
-        self.__wireType = None
+        self.__wire_type = None
         self.__scope = None
 
-        if wireType is None:
+        if wire_type is None:
             raise ValueError("Wire type must be a type object, None given")
 
         self.__logger.debug("Using specified converter map for wire-type %s",
-                            wireType)
-        self.__wireType = wireType
+                            wire_type)
+        self.__wire_type = wire_type
 
         # fails if still some arguments are left over
         super(Connector, self).__init__(**kwargs)
 
-    def getWireType(self):
+    def get_wire_type(self):
         """
-        Returns the serialization type used for this connector.
+        Return the serialization type used for this connector.
 
         Returns:
             python serialization type
         """
-        return self.__wireType
+        return self.__wire_type
 
-    wireType = property(getWireType)
+    wire_type = property(get_wire_type)
 
-    def getScope(self):
+    def get_scope(self):
         return self.__scope
 
-    def setScope(self, newValue):
+    def set_scope(self, new_value):
         """
-        Sets the scope this connector will receive events from to
-        ``newValue``. Called before #activate.
+        Set the scope this connector will receive events from.
+
+        Called before #activate.
 
         Args:
-            newValue (rsb.Scope):
+            new_value (rsb.Scope):
                 scope of the connector
         """
-        self.__scope = newValue
+        self.__scope = new_value
 
-    scope = property(getScope, setScope)
+    scope = property(get_scope, set_scope)
 
     @abc.abstractmethod
     def activate(self):
@@ -104,27 +99,27 @@ class Connector(object):
         pass
 
     @abc.abstractmethod
-    def setQualityOfServiceSpec(self, qos):
+    def set_quality_of_service_spec(self, qos):
         pass
 
 
 class InPushConnector(Connector):
     """
-    Superclass for in-direction (that is, dealing with incoming
-    events) connector implementations.
+    Superclass for in-direction connectors that use asynchronous notification.
 
     .. codeauthor:: jmoringe
     """
 
     @abc.abstractmethod
-    def filterNotify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
     @abc.abstractmethod
-    def setObserverAction(self, action):
+    def set_observer_action(self, action):
         """
-        Sets the action used by the connector to notify about incoming
-        events. The call to this method must be thread-safe.
+        Set the action used by the connector to notify about incoming events.
+
+        The call to this method must be thread-safe.
 
         Args:
             action:
@@ -142,9 +137,9 @@ class InPullConnector(Connector):
     """
 
     @abc.abstractmethod
-    def raiseEvent(self, block):
+    def raise_event(self, block):
         """
-        Returns the next received event.
+        Return the next received event.
 
         Args:
             block (bool):
@@ -159,16 +154,14 @@ class InPullConnector(Connector):
 
 class OutConnector(Connector):
     """
-    Superclass for out-direction (that is, dealing with outgoing
-    events) connector implementations.
+    Superclass for connectors sending events to the outside world.
 
     .. codeauthor:: jmoringe
     """
 
     def handle(self, event):
         """
-        Sends ``event`` and adapts its meta data instance with the
-        actual send time.
+        Send ``event`` and adapts its meta data with the actual send time.
 
         Args:
             event:
@@ -179,18 +172,21 @@ class OutConnector(Connector):
 
 class ConverterSelectingConnector(object):
     """
-    This class is intended to be used a superclass (or rather mixin
-    class) for connector classes which have to store a map of
-    converters and select converters for (de)serialization.
+    Base class for connectors that use a map of converters for serialization.
+
+    This class is intended to be used a superclass (or rather mixin class) for
+    connector classes which have to store a map of converters and select
+    converters for (de)serialization.
 
     .. codeauthor:: jmoringe
     """
 
     def __init__(self, converters, **kwargs):
         """
-        Creates a new connector that uses the converters in
-        ``converters`` to deserialize notification and/or serialize
-        events.
+        Create a new connector with the specified converters.
+
+        The new converter uses the converters in ``converters`` to
+        deserialize notification and/or serialize events.
 
         Args:
             converters (rsb.converter.ConverterSelectionStrategy):
@@ -198,17 +194,16 @@ class ConverterSelectingConnector(object):
                 connector. If ``None``, the global map of converters for the
                 wire-type of the connector is used.
         """
-        self.__converterMap = converters
+        self.__converter_map = converters
 
-        assert(self.__converterMap.getWireType() == self.wireType)
+        assert(self.__converter_map.get_wire_type() == self.wire_type)
 
-    def getConverterForDataType(self, dataType):
+    def get_converter_for_data_type(self, data_type):
         """
-        Returns a converter that can convert the supplied data to the
-        wire-type.
+        Return a converter that converts the supplied data to the wire-type.
 
         Args:
-            dataType:
+            data_type:
                 the type of the object for which a suitable converter should
                 returned.
 
@@ -219,14 +214,14 @@ class ConverterSelectingConnector(object):
             KeyError:
                 no converter is available for the supplied data.
         """
-        return self.__converterMap.getConverterForDataType(dataType)
+        return self.__converter_map.get_converter_for_data_type(data_type)
 
-    def getConverterForWireSchema(self, wireSchema):
+    def get_converter_for_wire_schema(self, wire_schema):
         """
-        Returns a suitable converter for the ``wireSchema``.
+        Return a suitable converter for the ``wire_schema``.
 
         Args:
-            wireSchema (str):
+            wire_schema (str):
                 the wire-schema to or from which the returned converter should
                 convert
 
@@ -238,26 +233,21 @@ class ConverterSelectingConnector(object):
                 no converter is available for the specified wire-schema.
 
         """
-        return self.__converterMap.getConverterForWireSchema(wireSchema)
+        return self.__converter_map.get_converter_for_wire_schema(wire_schema)
 
-    def getConverterMap(self):
-        return self.__converterMap
+    def get_converter_map(self):
+        return self.__converter_map
 
-    converterMap = property(getConverterMap)
+    converter_map = property(get_converter_map)
 
 
-class TransportFactory(object):
-    """
-    Interface for factories which are able to create :obj:`Connector` instances
-    for a certain transport.
-    """
-
-    __metaclass__ = abc.ABCMeta
+class TransportFactory(object, metaclass=abc.ABCMeta):
+    """Creates connectors for a specific transport."""
 
     @abc.abstractmethod
-    def getName(self):
+    def get_name(self):
         """
-        Returns the name representing this transport.
+        Return the name representing this transport.
 
         Returns:
             str:
@@ -266,9 +256,9 @@ class TransportFactory(object):
         pass
 
     @abc.abstractmethod
-    def isRemote(self):
+    def is_remote(self):
         """
-        Returns true is the transport performs remote communication.
+        Return ``true`` if the transport performs remote communication.
 
         Returns:
             bool:
@@ -277,10 +267,9 @@ class TransportFactory(object):
         pass
 
     @abc.abstractmethod
-    def createInPushConnector(self, converters, options):
+    def create_in_push_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InPushConnector` for the represented
-        transport.
+        Create a new :obj:`InPushConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -294,10 +283,9 @@ class TransportFactory(object):
         pass
 
     @abc.abstractmethod
-    def createInPullConnector(self, converters, options):
+    def create_in_pull_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`InPullConnector` for the represented
-        transport.
+        Create a new :obj:`InPullConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -312,10 +300,9 @@ class TransportFactory(object):
         pass
 
     @abc.abstractmethod
-    def createOutConnector(self, converters, options):
+    def create_out_connector(self, converters, options):
         """
-        Creates a new instance of an :obj:`OutConnector` for the represented
-        transport.
+        Create a new :obj:`OutConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -329,13 +316,13 @@ class TransportFactory(object):
         pass
 
 
-__factoriesByName = {}
-__factoryLock = threading.Lock()
+__factories_by_name = {}
+__factory_lock = threading.Lock()
 
 
-def registerTransport(factory):
+def register_transport(factory):
     """
-    Registers a new transport.
+    Register a new transport.
 
     Args:
         factory (rsb.transport.TransportFactory):
@@ -350,18 +337,17 @@ def registerTransport(factory):
 
     if factory is None:
         raise ValueError("None cannot be a TransportFactory")
-    with __factoryLock:
-        if factory.getName() in __factoriesByName:
+    with __factory_lock:
+        if factory.get_name() in __factories_by_name:
             raise ValueError(
                 "There is already a transport with name {name}".format(
-                    name=factory.getName()))
-        __factoriesByName[factory.getName()] = factory
+                    name=factory.get_name()))
+        __factories_by_name[factory.get_name()] = factory
 
 
-def getTransportFactory(name):
+def get_transport_factory(name):
     """
-    Returns a ``TransportFactory`` instance for the transport with the given
-    name.
+    Return a ``TransportFactory`` for the transport with the given name.
 
     Args:
         name (str):
@@ -375,5 +361,5 @@ def getTransportFactory(name):
         KeyError:
             there is not transport with the given name
     """
-    with __factoryLock:
-        return __factoriesByName[name]
+    with __factory_lock:
+        return __factories_by_name[name]

@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2010 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,10 +16,6 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 """
@@ -28,9 +24,9 @@ Various helper classes and methods.
 .. codeauthor:: jwienke
 """
 
-from threading import Lock, Condition, Thread
-from Queue import Queue
 import logging
+from queue import Queue
+from threading import Condition, Lock, Thread
 
 
 class Enum(object):
@@ -79,7 +75,7 @@ class Enum(object):
 
     def __init__(self, name, keys, values=None):
         """
-        Generates a new enum.
+        Generate a new enum.
 
         Args:
             name:
@@ -105,7 +101,7 @@ class Enum(object):
             else:
                 setattr(self, key, Enum.EnumValue(key))
 
-    def fromString(self, string):
+    def from_string(self, string):
         if string not in self.__keys:
             raise ValueError("Invalid enum item `%s'" % string)
         return getattr(self, string)
@@ -119,19 +115,23 @@ class Enum(object):
                                self.__values)
 
 
-class InterruptedError(RuntimeError):
+class _InterruptedError(RuntimeError):
     """
+    Internal exception used by pool implementation.
+
     .. codeauthor:: jwienke
     """
+
     pass
 
 
 class OrderedQueueDispatcherPool(object):
     """
-    A thread pool that dispatches messages to a list of receivers. The number
-    of threads is usually smaller than the number of receivers and for each
-    receiver it is guaranteed that messages arrive in the order they were
-    published. No guarantees are given between different receivers.  All
+    A thread pool that dispatches messages to a list of receivers.
+
+    The number of threads is usually smaller than the number of receivers and
+    for each receiver it is guaranteed that messages arrive in the order they
+    were published. No guarantees are given between different receivers.  All
     methods except #start and #stop are reentrant.
 
     The pool can be stopped and restarted at any time during the processing but
@@ -144,33 +144,32 @@ class OrderedQueueDispatcherPool(object):
     .. codeauthor:: jwienke
     """
 
-    class __Receiver(object):
+    class _Receiver(object):
 
         def __init__(self, receiver):
             self.receiver = receiver
             self.queue = Queue()
             self.processing = False
-            self.processingMutex = Lock()
-            self.processingCondition = Condition()
+            self.processing_mutex = Lock()
+            self.processing_condition = Condition()
 
-    def __trueFilter(self, receiver, message):
-        # pylint: disable=unused-argument,no-self-use
+    def __true_filter(self, receiver, message):
         return True
 
-    def __init__(self, threadPoolSize, delFunc, filterFunc=None):
+    def __init__(self, thread_pool_size, del_func, filter_func=None):
         """
-        Constructs a new pool.
+        Construct a new pool.
 
         Args:
-            threadPoolSize (int >= 1):
+            thread_pool_size (int >= 1):
                 number of threads for this pool
-            delFunc (callable):
+            del_func (callable):
                 the strategy used to deliver messages of type M to receivers of
                 type R. This will most likely be a simple delegate function
                 mapping to a concrete method call.  Must be reentrant. callable
                 with two arguments. First is the receiver of a message, second
                 is the message to deliver
-            filterFunc (callable):
+            filter_func (callable):
                 Reentrant function used to filter messages per receiver.
                 Default accepts every message. callable with two arguments.
                 First is the receiver of a message, second is the message to
@@ -178,18 +177,18 @@ class OrderedQueueDispatcherPool(object):
                 false rejects it.
         """
 
-        self.__logger = getLoggerByClass(self.__class__)
+        self.__logger = get_logger_by_class(self.__class__)
 
-        if threadPoolSize < 1:
+        if thread_pool_size < 1:
             raise ValueError("Thread pool size must be at least 1,"
-                             "%d was given." % threadPoolSize)
-        self.__threadPoolSize = int(threadPoolSize)
+                             "%d was given." % thread_pool_size)
+        self.__thread_pool_size = int(thread_pool_size)
 
-        self.__delFunc = delFunc
-        if filterFunc is not None:
-            self.__filterFunc = filterFunc
+        self.__del_func = del_func
+        if filter_func is not None:
+            self.__filter_func = filter_func
         else:
-            self.__filterFunc = self.__trueFilter
+            self.__filter_func = self.__true_filter
 
         self.__condition = Condition()
         self.__receivers = []
@@ -206,13 +205,14 @@ class OrderedQueueDispatcherPool(object):
     def __del__(self):
         self.stop()
 
-    def registerReceiver(self, receiver):
+    def register_receiver(self, receiver):
         """
-        Registers a new receiver at the pool. Multiple registrations of the
-        same receiver are possible resulting in being called multiple times for
-        the same message (but effectively this destroys the guarantee about
-        ordering given above because multiple message queues are used for every
-        subscription).
+        Register a new receiver at the pool.
+
+        Multiple registrations of the same receiver are possible resulting in
+        being called multiple times for the same message (but effectively this
+        destroys the guarantee about ordering given above because multiple
+        message queues are used for every subscription).
 
         Args:
             receiver:
@@ -220,13 +220,13 @@ class OrderedQueueDispatcherPool(object):
         """
 
         with self.__condition:
-            self.__receivers.append(self.__Receiver(receiver))
+            self.__receivers.append(self._Receiver(receiver))
 
         self.__logger.info("Registered receiver %s", receiver)
 
-    def unregisterReceiver(self, receiver):
+    def unregister_receiver(self, receiver):
         """
-        Unregisters all registration of one receiver.
+        Unregister all registrations of one receiver.
 
         Args:
             receiver:
@@ -246,16 +246,16 @@ class OrderedQueueDispatcherPool(object):
                     kept.append(r)
             self.__receivers = kept
         if removed:
-            with removed.processingCondition:
+            with removed.processing_condition:
                 while removed.processing:
                     self.__logger.info("Waiting for receiver %s to finish",
                                        receiver)
-                    removed.processingCondition.wait()
+                    removed.processing_condition.wait()
         return not (removed is None)
 
     def push(self, message):
         """
-        Pushes a new message to be dispatched to all receivers in this pool.
+        Push a new message to be dispatched to all receivers in this pool.
 
         Args:
             message:
@@ -274,13 +274,14 @@ class OrderedQueueDispatcherPool(object):
         # See also #1331
         # self.__logger.debug("Got new message to dispatch: %s", message)
 
-    def __nextJob(self, workerNum):
+    def __next_job(self, worker_num):
         """
-        Returns the next job to process for worker threads and blocks if there
-        is no job.
+        Return the next job to process for worker threads.
+
+        Blocks if there is no job.
 
         Args:
-            workerNum:
+            worker_num:
                 number of the worker requesting a new job
 
         Returns:
@@ -290,56 +291,56 @@ class OrderedQueueDispatcherPool(object):
         receiver = None
         with self.__condition:
 
-            gotJob = False
-            while not gotJob:
+            got_job = False
+            while not got_job:
 
                 while (not self.__jobsAvailable) and (not self.__interrupted):
                     self.__logger.debug(
-                        "Worker %d: no jobs available, waiting", workerNum)
+                        "Worker %d: no jobs available, waiting", worker_num)
                     self.__condition.wait()
 
                 if (self.__interrupted):
-                    raise InterruptedError("Processing was interrupted")
+                    raise _InterruptedError("Processing was interrupted")
 
                 # search the next job
                 for _ in range(len(self.__receivers)):
 
                     self.__currentPosition = self.__currentPosition + 1
-                    realPos = self.__currentPosition % len(self.__receivers)
+                    real_pos = self.__currentPosition % len(self.__receivers)
 
-                    if (not self.__receivers[realPos].processing) and \
-                            (not self.__receivers[realPos].queue.empty()):
+                    if (not self.__receivers[real_pos].processing) and \
+                            (not self.__receivers[real_pos].queue.empty()):
 
-                        receiver = self.__receivers[realPos]
+                        receiver = self.__receivers[real_pos]
                         receiver.processing = True
-                        gotJob = True
+                        got_job = True
                         break
 
-                if not gotJob:
+                if not got_job:
                     self.__jobsAvailable = False
 
             self.__condition.notify()
             return receiver
 
-    def __finishedWork(self, receiver, workerNum):
+    def __finished_work(self, receiver, worker_num):
 
         with self.__condition:
 
-            with receiver.processingCondition:
+            with receiver.processing_condition:
                 receiver.processing = False
-                receiver.processingCondition.notifyAll()
+                receiver.processing_condition.notifyAll()
             if not receiver.queue.empty():
                 self.__jobsAvailable = True
                 self.__logger.debug("Worker %d: new jobs available, "
-                                    "notifying one", workerNum)
+                                    "notifying one", worker_num)
                 self.__condition.notify()
 
-    def __worker(self, workerNum):
+    def __worker(self, worker_num):
         """
         Threaded worker method.
 
         Args:
-            workerNum:
+            worker_num:
                 number of this worker thread
         """
 
@@ -347,27 +348,27 @@ class OrderedQueueDispatcherPool(object):
 
             while True:
 
-                receiver = self.__nextJob(workerNum)
+                receiver = self.__next_job(worker_num)
                 message = receiver.queue.get(True, None)
                 self.__logger.debug(
                     "Worker %d: got message %s for receiver %s",
-                    workerNum, message, receiver.receiver)
-                if self.__filterFunc(receiver.receiver, message):
+                    worker_num, message, receiver.receiver)
+                if self.__filter_func(receiver.receiver, message):
                     self.__logger.debug(
                         "Worker %d: delivering message %s for receiver %s",
-                        workerNum, message, receiver.receiver)
-                    self.__delFunc(receiver.receiver, message)
+                        worker_num, message, receiver.receiver)
+                    self.__del_func(receiver.receiver, message)
                     self.__logger.debug(
                         "Worker %d: delivery for receiver %s finished",
-                        workerNum, receiver.receiver)
-                self.__finishedWork(receiver, workerNum)
+                        worker_num, receiver.receiver)
+                self.__finished_work(receiver, worker_num)
 
-        except InterruptedError:
+        except _InterruptedError:
             pass
 
     def start(self):
         """
-        Non-blocking start.
+        Start processing and return immediately.
 
         Raises:
             RuntimeError:
@@ -381,7 +382,7 @@ class OrderedQueueDispatcherPool(object):
 
             self.__interrupted = False
 
-            for i in range(self.__threadPoolSize):
+            for i in range(self.__thread_pool_size):
                 worker = Thread(target=self.__worker, args=[i])
                 worker.setDaemon(True)
                 worker.start()
@@ -390,12 +391,10 @@ class OrderedQueueDispatcherPool(object):
             self.__started = True
 
         self.__logger.info("Started pool with %d threads",
-                           self.__threadPoolSize)
+                           self.__thread_pool_size)
 
     def stop(self):
-        """
-        Blocking until every thread has stopped working.
-        """
+        """Block until every thread has stopped working."""
 
         self.__logger.info(
             "Starting to stop thread pool by wating for workers")
@@ -415,10 +414,12 @@ class OrderedQueueDispatcherPool(object):
         self.__logger.info("Stopped thread pool")
 
 
-def getLoggerByClass(klass):
+def get_logger_by_class(klass):
     """
-    Get a python logger instance based on a class instance. The logger name
-    will be a dotted string containing python module and class name.
+    Get a python logger instance based on a class instance.
+
+    The logger name will be a dotted string containing python module and class
+    name.
 
     Args:
         klass:
@@ -430,10 +431,9 @@ def getLoggerByClass(klass):
     return logging.getLogger(klass.__module__ + "." + klass.__name__)
 
 
-def timeToUnixMicroseconds(time):
+def time_to_unix_microseconds(time):
     """
-    Converts a floating point, seconds based time to a unix timestamp in
-    microseconds precision.
+    Convert a floating point, seconds based time to a unix microseconds.
 
     Args:
         time:
@@ -445,14 +445,15 @@ def timeToUnixMicroseconds(time):
     return int(time * 1000000)
 
 
-def unixMicrosecondsToTime(value):
+def unix_microseconds_to_time(value):
     return float(value) / 1000000.0
 
 
 def prefix():
     """
-    Tries to return the prefix that this code was installed into by guessing
-    the install location from some rules.
+    Try to return the prefix that this code was installed into.
+
+    This is done by guessing the install location from some rules.
 
     Adapted from
     http://ttboj.wordpress.com/2012/09/20/finding-your-software-install-prefix-from-inside-python/

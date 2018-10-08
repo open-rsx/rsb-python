@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2012 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2012 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,27 +16,22 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 import unittest
 
 from rsb import ParticipantConfig
-from rsb.converter import getGlobalConverterMap
-from rsb.transport.socket import OutConnector, InPushConnector
+from rsb.converter import get_global_converter_map
+from rsb.transport.socket import InPushConnector, OutConnector
+from .transporttest import TransportCheck
 
-from test.transporttest import TransportCheck
 
-
-def getConnector(clazz, scope, activate=True):
-    connector = clazz(converters=getGlobalConverterMap(bytearray),
-                      options=ParticipantConfig.fromFile(
-                          'test/with-socket.conf').getTransport(
+def get_connector(clazz, scope, activate=True):
+    connector = clazz(converters=get_global_converter_map(bytes),
+                      options=ParticipantConfig.from_file(
+                          'test/with-socket.conf').get_transport(
                               'socket').options)
-    connector.setScope(scope)
+    connector.set_scope(scope)
     if activate:
         connector.activate()
     return connector
@@ -44,8 +39,8 @@ def getConnector(clazz, scope, activate=True):
 
 class SocketTransportTest(TransportCheck, unittest.TestCase):
 
-    def _getInPushConnector(self, scope, activate=True):
-        return getConnector(InPushConnector, scope, activate=activate)
+    def _get_in_push_connector(self, scope, activate=True):
+        return get_connector(InPushConnector, scope, activate=activate)
 
-    def _getOutConnector(self, scope, activate=True):
-        return getConnector(OutConnector, scope, activate=activate)
+    def _get_out_connector(self, scope, activate=True):
+        return get_connector(OutConnector, scope, activate=activate)

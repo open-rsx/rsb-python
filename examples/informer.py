@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2011 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,10 +16,6 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 # mark-start::body
@@ -32,8 +28,8 @@ if __name__ == '__main__':
     logging.basicConfig()
 
     # Create an informer for strings on scope "/example/informer".
-    with rsb.createInformer("/example/informer", dataType=str) as informer:
+    with rsb.create_informer("/example/informer", data_type=str) as informer:
 
         # Send and event using a method that directly accepts data.
-        informer.publishData("example payload")
+        informer.publish_data("example payload")
 # mark-end::body

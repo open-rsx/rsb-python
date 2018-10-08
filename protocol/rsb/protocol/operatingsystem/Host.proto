@@ -1,0 +1,122 @@
+/* ============================================================
+ *
+ * This file is part of the RSB project.
+ *
+ * Copyright (C) 2014 The RSB developers.
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
+syntax = "proto2";
+
+package rsb.protocol.operatingsystem;
+
+option java_outer_classname = "HostType";
+
+/**
+ * Basic description of a host.
+ *
+ * @author Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+ */
+message Host {
+
+    /**
+     * Arbitrary string (hopefully) uniquely identifying the host.
+     *
+     * The following sources should be used for determining this
+     * string (in order of preference for each platform):
+     *
+     * Linux
+     *
+     *   * contents of /etc/machine-id (excluding whitespace characters)
+     *   * contents of /var/lib/dbus/machine-id (excluding whitespace
+     *     characters)
+     *   * As a last resort, the value may be omitted in which case
+     *     the hostname will be used as a means of identifying the
+     *     host.
+     *
+     * Windows
+     *
+     *   Since the appropriate C API function (GetComputerObjectName)
+     *   is difficult to use in some languages, the hostname should be
+     *   used instead.
+     *
+     * MacOS
+     *
+     *   Since the appropriate C API function (gethostuuid) is
+     *   difficult to use in some languages, the hostname should be
+     *   used instead.
+     *
+     * Other operating systems
+     *
+     *   A unique id provided by the operating should be used when it
+     *   can easily be used from all languages (i.e. readable from
+     *   file), otherwise the hostname should be used.
+     */
+    required string id               = 1;
+
+    /**
+     * Human-readable name of the host.
+     */
+    required string hostname         = 2;
+
+    /**
+     * Type of the machine, usually CPU architecture.
+     *
+     * The value is a lower-case string that identifies the processor
+     * family and potentially associated system architecture,
+     * generally without indicating a specific vendor or version.
+     *
+     * For 32-bit and 64-bit CPUs in the x86 family, the values "x86"
+     * and "x86_64" should be used.
+     */
+    optional string machine_type     = 3;
+
+    /**
+     * Version of the machine within its type, usually CPU
+     * identification string.
+     *
+     * On Linux, the value of the "model name" field in the
+     * "/proc/cpuinfo" file can be used.
+     */
+    optional string machine_version  = 4;
+
+    /**
+     * Type of the operating system running on the machine, usually
+     * the kernel name.
+     *
+     * The value is a lower-case string that identifies the operating
+     * system running on the machine without indicating a specific
+     * version of that operating system.
+     *
+     * For Linux, MacOS and Windows the strings "linux", "darwin" and
+     * "win32" should be used respectively.
+     */
+    optional string software_type    = 5;
+
+    /**
+     * Version of the operating system within its type, usually the
+     * kernel version string.
+     *
+     * On Linux and MacOS, the output of the command "uname -r".
+     */
+    optional string software_version = 6;
+
+}

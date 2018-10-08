@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2012, 2013 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2012, 2013 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,14 +16,11 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 # mark-start::body
 import logging
+import sys
 
 import rsb
 import rsb.converter
@@ -34,9 +31,8 @@ import rsb.converter
 #
 # See the comment in SimpleImage.proto for how to manually perform the
 # code generation.
-import sys
 sys.path.append('.')
-from SimpleImage_pb2 import SimpleImage
+from SimpleImage_pb2 import SimpleImage  # noqa: I100 correct path required
 
 if __name__ == '__main__':
     # Pacify logger.
@@ -47,10 +43,11 @@ if __name__ == '__main__':
     #   SimepleImage_pb2.SimpleImage
     # The protocol buffer message is called
     #   .tutorial.protobuf_converter.SimpleImage
-    converter = rsb.converter.ProtocolBufferConverter(messageClass=SimpleImage)
-    rsb.converter.registerGlobalConverter(converter)
+    converter = rsb.converter.ProtocolBufferConverter(
+        message_class=SimpleImage)
+    rsb.converter.register_global_converter(converter)
 
     print("Registered converter %s" % converter)
     print("Registered converters:\n%s "
-          % rsb.converter.getGlobalConverterMap(bytearray))
+          % rsb.converter.get_global_converter_map(bytes))
 # mark-end::body

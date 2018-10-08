@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2011, 2012, 2014 Jan Moringen <jmoringe@techfak.uni-bielefeld.de>
+# Copyright (C) 2011, 2012, 2014 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,15 +16,11 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
 # mark-start::body
-import time
 import logging
+import time
 
 import rsb
 
@@ -34,7 +30,7 @@ if __name__ == '__main__':
 
     # Create a LocalServer object that exposes its methods under the
     # scope /example/server.
-    with rsb.createLocalServer('/example/server') as server:
+    with rsb.create_local_server('/example/server') as server:
 
         # Create a function which processes requests and returns a
         # result. Note that the name of the function does not determine
@@ -43,7 +39,7 @@ if __name__ == '__main__':
             return x
 
         # Add the function to the server under the name "echo".
-        server.addMethod('echo', echo, str, str)
+        server.add_method('echo', echo, str, str)
 
         # Wait for method calls by clients.
         while True:

@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2012 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2012 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,301 +16,303 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
-import unittest
-from nose.tools import timed
-
-from rsb import (Scope,
-                 Event,
-                 EventId,
-                 createInformer,
-                 createListener,
-                 createReader)
-import threading
-import uuid
-import rsb
-import time
 import random
 import string
+import threading
+import time
+import uuid
+
+from nose.tools import timed
+
+import rsb
+from rsb import (create_informer,
+                 create_listener,
+                 create_reader,
+                 Event,
+                 EventId,
+                 Scope)
 
 
 class SettingReceiver(object):
 
     def __init__(self, scope):
-        self.resultEvent = None
-        self.resultCondition = threading.Condition()
+        self.result_event = None
+        self.result_condition = threading.Condition()
         self.scope = scope
 
     def __call__(self, event):
-        with self.resultCondition:
-            self.resultEvent = event
-            self.resultCondition.notifyAll()
+        with self.result_condition:
+            self.result_event = event
+            self.result_condition.notifyAll()
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.scope)
 
 
 class TransportCheck(object):
-    '''
+    """
     An abstract base class for ensuring interface assumptions about transports.
 
     .. codeauthor:: jwienke
-    '''
+    """
 
-    def _getInPushConnector(self, scope, activate=True):
+    def _get_in_push_connector(self, scope, activate=True):
         raise NotImplementedError()
 
-    def _getInPullConnector(self, scope, activate=True):
+    def _get_in_pull_connector(self, scope, activate=True):
         raise NotImplementedError()
 
-    def _getOutConnector(self, scope, activate=True):
+    def _get_out_connector(self, scope, activate=True):
         raise NotImplementedError()
 
     @timed(5)
-    def testRoundtrip(self):
+    def test_roundtrip(self):
 
-        goodScope = Scope("/good")
+        good_scope = Scope("/good")
 
-        inconnector = self._getInPushConnector(goodScope)
-        outconnector = self._getOutConnector(goodScope)
+        inconnector = self._get_in_push_connector(good_scope)
+        outconnector = self._get_out_connector(good_scope)
 
-        receiver = SettingReceiver(goodScope)
-        inconnector.setObserverAction(receiver)
+        receiver = SettingReceiver(good_scope)
+        inconnector.set_observer_action(receiver)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "dummy data"
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
+        event.data_type = str
+        event.meta_data.sender_id = uuid.uuid4()
         outconnector.handle(event)
 
         # and then a desired event
-        event.scope = goodScope
+        event.scope = good_scope
         outconnector.handle(event)
 
-        with receiver.resultCondition:
-            while receiver.resultEvent is None:
-                receiver.resultCondition.wait(10)
-            self.assertTrue(receiver.resultEvent)
+        with receiver.result_condition:
+            while receiver.result_event is None:
+                receiver.result_condition.wait(10)
+            self.assertTrue(receiver.result_event)
             # ignore meta data here
-            event.setMetaData(None)
-            receiver.resultEvent.setMetaData(None)
-            self.assertEqual(receiver.resultEvent, event)
+            event.set_meta_data(None)
+            receiver.result_event.set_meta_data(None)
+            self.assertEqual(receiver.result_event, event)
 
         inconnector.deactivate()
         outconnector.deactivate()
 
     @timed(5)
-    def testPullNonBlocking(self):
+    def test_pull_non_blocking(self):
         try:
-            inconnector = self._getInPullConnector(Scope("/somewhere"))
+            inconnector = self._get_in_pull_connector(Scope("/somewhere"))
         except NotImplementedError:
             return
 
-        received = inconnector.raiseEvent(False)
+        received = inconnector.raise_event(False)
         self.assertIsNone(received)
 
         inconnector.deactivate()
 
     @timed(5)
-    def testPullRoundtrip(self):
+    def test_pull_roundtrip(self):
 
-        goodScope = Scope("/good")
+        good_scope = Scope("/good")
 
         try:
-            inconnector = self._getInPullConnector(goodScope)
+            inconnector = self._get_in_pull_connector(good_scope)
         except NotImplementedError:
             return
-        outconnector = self._getOutConnector(goodScope)
+        outconnector = self._get_out_connector(good_scope)
 
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
         event.data = "dummy data"
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
+        event.data_type = str
+        event.meta_data.sender_id = uuid.uuid4()
         outconnector.handle(event)
 
         # and then a desired event
-        event.scope = goodScope
+        event.scope = good_scope
         outconnector.handle(event)
 
-        received = inconnector.raiseEvent(True)
+        received = inconnector.raise_event(True)
         # ignore meta data here
-        event.setMetaData(None)
-        received.setMetaData(None)
+        event.set_meta_data(None)
+        received.set_meta_data(None)
         self.assertEqual(received, event)
 
         inconnector.deactivate()
         outconnector.deactivate()
 
     @timed(5)
-    def testUserRoundtrip(self):
+    def test_user_roundtrip(self):
         scope = Scope("/test/it")
-        inConnector = self._getInPushConnector(scope, activate=False)
-        outConnector = self._getOutConnector(scope, activate=False)
+        in_connector = self._get_in_push_connector(scope, activate=False)
+        out_connector = self._get_out_connector(scope, activate=False)
 
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
-            connectors=[outConnector])
-        inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
-            connectors=[inConnector])
+        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[out_connector])
+        in_configurator = rsb.eventprocessing.InPushRouteConfigurator(
+            connectors=[in_connector])
 
-        publisher = createInformer(scope,
-                                   dataType=str,
-                                   configurator=outConfigurator)
-        listener = createListener(scope, configurator=inConfigurator)
+        publisher = create_informer(scope,
+                                    data_type=str,
+                                    configurator=out_configurator)
+        listener = create_listener(scope, configurator=in_configurator)
 
         receiver = SettingReceiver(scope)
-        listener.addHandler(receiver)
+        listener.add_handler(receiver)
 
         data1 = "a string to test"
-        sentEvent = Event(EventId(uuid.uuid4(), 0))
-        sentEvent.setData(data1)
-        sentEvent.setType(str)
-        sentEvent.setScope(scope)
-        sentEvent.getMetaData().setUserInfo("test", "it")
-        sentEvent.getMetaData().setUserInfo("test again", "it works?")
-        sentEvent.getMetaData().setUserTime("blubb", 234234)
-        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
-        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
-        sentEvent.addCause(EventId(uuid.uuid4(), 42))
+        sent_event = Event(EventId(uuid.uuid4(), 0))
+        sent_event.set_data(data1)
+        sent_event.set_data_type(str)
+        sent_event.set_scope(scope)
+        sent_event.get_meta_data().set_user_info("test", "it")
+        sent_event.get_meta_data().set_user_info("test again", "it works?")
+        sent_event.get_meta_data().set_user_time("blubb", 234234.0)
+        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.add_cause(EventId(uuid.uuid4(), 1323))
+        sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
-        publisher.publishEvent(sentEvent)
+        publisher.publish_event(sent_event)
 
-        with receiver.resultCondition:
-            while receiver.resultEvent is None:
-                receiver.resultCondition.wait(10)
-            if receiver.resultEvent is None:
+        with receiver.result_condition:
+            while receiver.result_event is None:
+                receiver.result_condition.wait(10)
+            if receiver.result_event is None:
                 self.fail("Listener did not receive an event")
-            self.assertTrue(receiver.resultEvent.metaData.createTime <=
-                            receiver.resultEvent.metaData.sendTime <=
-                            receiver.resultEvent.metaData.receiveTime <=
-                            receiver.resultEvent.metaData.deliverTime)
-            sentEvent.metaData.receiveTime = \
-                receiver.resultEvent.metaData.receiveTime
-            sentEvent.metaData.deliverTime = \
-                receiver.resultEvent.metaData.deliverTime
-            self.assertEqual(sentEvent, receiver.resultEvent)
+            self.assertTrue(receiver.result_event.meta_data.create_time <=
+                            receiver.result_event.meta_data.send_time <=
+                            receiver.result_event.meta_data.receive_time <=
+                            receiver.result_event.meta_data.deliver_time)
+            sent_event.meta_data.receive_time = \
+                receiver.result_event.meta_data.receive_time
+            sent_event.meta_data.deliver_time = \
+                receiver.result_event.meta_data.deliver_time
+            # HACK: floating point precision leads to an imprecision here,
+            # avoid this.
+            sent_event.meta_data.send_time = \
+                receiver.result_event.meta_data.send_time
+            sent_event.meta_data.create_time = \
+                receiver.result_event.meta_data.create_time
+            self.assertEqual(sent_event, receiver.result_event)
 
         listener.deactivate()
         publisher.deactivate()
 
     @timed(5)
-    def testUserPullRoundtrip(self):
+    def test_user_pull_roundtrip(self):
         scope = Scope("/test/it/pull")
         try:
-            inConnector = self._getInPullConnector(scope, activate=False)
+            in_connector = self._get_in_pull_connector(scope, activate=False)
         except NotImplementedError:
             return
-        outConnector = self._getOutConnector(scope, activate=False)
+        out_connector = self._get_out_connector(scope, activate=False)
 
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
-            connectors=[outConnector])
-        inConfigurator = rsb.eventprocessing.InPullRouteConfigurator(
-            connectors=[inConnector])
+        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[out_connector])
+        in_configurator = rsb.eventprocessing.InPullRouteConfigurator(
+            connectors=[in_connector])
 
-        publisher = createInformer(scope,
-                                   dataType=str,
-                                   configurator=outConfigurator)
-        reader = createReader(scope, configurator=inConfigurator)
+        publisher = create_informer(scope,
+                                    data_type=str,
+                                    configurator=out_configurator)
+        reader = create_reader(scope, configurator=in_configurator)
 
         data1 = "a string to test"
-        sentEvent = Event(EventId(uuid.uuid4(), 0))
-        sentEvent.setData(data1)
-        sentEvent.setType(str)
-        sentEvent.setScope(scope)
-        sentEvent.getMetaData().setUserInfo("test", "it")
-        sentEvent.getMetaData().setUserInfo("test again", "it works?")
-        sentEvent.getMetaData().setUserTime("blubb", 234234)
-        sentEvent.getMetaData().setUserTime("bla", 3434343.45)
-        sentEvent.addCause(EventId(uuid.uuid4(), 1323))
-        sentEvent.addCause(EventId(uuid.uuid4(), 42))
+        sent_event = Event(EventId(uuid.uuid4(), 0))
+        sent_event.set_data(data1)
+        sent_event.set_data_type(str)
+        sent_event.set_scope(scope)
+        sent_event.get_meta_data().set_user_info("test", "it")
+        sent_event.get_meta_data().set_user_info("test again", "it works?")
+        sent_event.get_meta_data().set_user_time("blubb", 234234)
+        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.add_cause(EventId(uuid.uuid4(), 1323))
+        sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
-        publisher.publishEvent(sentEvent)
+        publisher.publish_event(sent_event)
 
-        resultEvent = reader.read(True)
-        self.assertTrue(resultEvent.metaData.createTime <=
-                        resultEvent.metaData.sendTime <=
-                        resultEvent.metaData.receiveTime <=
-                        resultEvent.metaData.deliverTime)
-        sentEvent.metaData.receiveTime = resultEvent.metaData.receiveTime
-        sentEvent.metaData.deliverTime = resultEvent.metaData.deliverTime
-        self.assertEqual(sentEvent, resultEvent)
+        result_event = reader.read(True)
+        self.assertTrue(result_event.meta_data.create_time <=
+                        result_event.meta_data.send_time <=
+                        result_event.meta_data.receive_time <=
+                        result_event.meta_data.deliver_time)
+        sent_event.meta_data.receive_time = result_event.meta_data.receive_time
+        sent_event.meta_data.deliver_time = result_event.meta_data.deliver_time
+        self.assertEqual(sent_event, result_event)
 
         reader.deactivate()
         publisher.deactivate()
 
     @timed(5)
-    def testHierarchySending(self):
+    def test_hierarchy_sending(self):
 
-        sendScope = Scope("/this/is/a/test")
-        superScopes = sendScope.superScopes(True)
+        send_scope = Scope("/this/is/a/test")
+        super_scopes = send_scope.super_scopes(True)
 
-        outConnector = self._getOutConnector(sendScope, activate=False)
-        outConfigurator = rsb.eventprocessing.OutRouteConfigurator(
-            connectors=[outConnector])
-        informer = createInformer(sendScope,
-                                  dataType=str,
-                                  configurator=outConfigurator)
+        out_connector = self._get_out_connector(send_scope, activate=False)
+        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[out_connector])
+        informer = create_informer(send_scope,
+                                   data_type=str,
+                                   configurator=out_configurator)
 
         # set up listeners on the complete hierarchy
         listeners = []
         receivers = []
-        for scope in superScopes:
+        for scope in super_scopes:
 
-            inConnector = self._getInPushConnector(scope, activate=False)
-            inConfigurator = rsb.eventprocessing.InPushRouteConfigurator(
-                connectors=[inConnector])
+            in_connector = self._get_in_push_connector(scope, activate=False)
+            in_configurator = rsb.eventprocessing.InPushRouteConfigurator(
+                connectors=[in_connector])
 
-            listener = createListener(scope, configurator=inConfigurator)
+            listener = create_listener(scope, configurator=in_configurator)
             listeners.append(listener)
 
             receiver = SettingReceiver(scope)
 
-            listener.addHandler(receiver)
+            listener.add_handler(receiver)
 
             receivers.append(receiver)
 
         data = "a string to test"
-        informer.publishData(data)
+        informer.publish_data(data)
 
         for receiver in receivers:
-            with receiver.resultCondition:
-                while receiver.resultEvent is None:
-                    receiver.resultCondition.wait(10)
-                if receiver.resultEvent is None:
+            with receiver.result_condition:
+                while receiver.result_event is None:
+                    receiver.result_condition.wait(10)
+                if receiver.result_event is None:
                     self.fail(
                         "Listener on scope %s did not receive an event"
                         % receiver.scope)
-                self.assertEqual(receiver.resultEvent.data, data)
+                self.assertEqual(receiver.result_event.data, data)
 
         for listener in listeners:
             listener.deactivate()
         informer.deactivate()
 
-    def testSendTimeAdaption(self):
+    def test_send_time_adaption(self):
         scope = Scope("/notGood")
-        connector = self._getOutConnector(scope)
+        connector = self._get_out_connector(scope)
 
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = scope
         event.data = "".join(
             random.choice(string.ascii_uppercase + string.ascii_lowercase +
-                          string.digits) for i in range(300502))
-        event.type = str
-        event.metaData.senderId = uuid.uuid4()
+                          string.digits) for i in list(range(300502)))
+        event.data_type = str
+        event.meta_data.sender_id = uuid.uuid4()
 
         before = time.time()
         connector.handle(event)
         after = time.time()
 
-        self.assertTrue(event.getMetaData().getSendTime() >= before)
-        self.assertTrue(event.getMetaData().getSendTime() <= after)
+        self.assertTrue(event.get_meta_data().get_send_time() >= before)
+        self.assertTrue(event.get_meta_data().get_send_time() <= after)
 
         connector.deactivate()

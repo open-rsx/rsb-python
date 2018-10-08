@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2010 by Johannes Wienke <jwienke at techfak dot uni-bielefeld dot de>
+# Copyright (C) 2010 by Johannes Wienke
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -16,74 +16,71 @@
 # or write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# The development of this software was supported by:
-#   CoR-Lab, Research Institute for Cognition and Robotics
-#     Bielefeld University
-#
 # ============================================================
 
-import uuid
+from threading import Condition
+import time
 import unittest
-from threading import Condition, Lock
+import uuid
 
-from rsb.filter import RecordingTrueFilter, RecordingFalseFilter
-from rsb import Event, EventId
 import rsb
+from rsb import Event, EventId
 import rsb.eventprocessing
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
-import time
+from rsb.filter import RecordingFalseFilter, RecordingTrueFilter
 
 
 class ScopeDispatcherTest(unittest.TestCase):
 
-    def testSinks(self):
+    def test_sinks(self):
         dispatcher = rsb.eventprocessing.ScopeDispatcher()
-        dispatcher.addSink(rsb.Scope('/foo'), 1)
-        dispatcher.addSink(rsb.Scope('/foo'), 2)
-        dispatcher.addSink(rsb.Scope('/bar'), 3)
-        self.assertEqual(set((1, 2, 3)), set(dispatcher.sinks))
+        dispatcher.add_sink(rsb.Scope('/foo'), 1)
+        dispatcher.add_sink(rsb.Scope('/foo'), 2)
+        dispatcher.add_sink(rsb.Scope('/bar'), 3)
+        self.assertEqual({1, 2, 3}, set(dispatcher.sinks))
 
-    def testMatchingSinks(self):
+    def test_matching_sinks(self):
         dispatcher = rsb.eventprocessing.ScopeDispatcher()
-        dispatcher.addSink(rsb.Scope('/foo'), 1)
-        dispatcher.addSink(rsb.Scope('/foo'), 2)
-        dispatcher.addSink(rsb.Scope('/bar'), 3)
+        dispatcher.add_sink(rsb.Scope('/foo'), 1)
+        dispatcher.add_sink(rsb.Scope('/foo'), 2)
+        dispatcher.add_sink(rsb.Scope('/bar'), 3)
 
         def check(scope, expected):
             self.assertEqual(set(expected),
-                             set(dispatcher.matchingSinks(rsb.Scope(scope))))
-        check("/",        ())
-        check("/foo",     (1, 2))
+                             set(dispatcher.matching_sinks(rsb.Scope(scope))))
+        check("/", ())
+        check("/foo", (1, 2))
         check("/foo/baz", (1, 2))
-        check("/bar",     (3,))
+        check("/bar", (3,))
         check("/bar/fez", (3,))
+
 
 class ParallelEventReceivingStrategyTest(unittest.TestCase):
 
-    def testMatchingProcess(self):
+    def test_matching_process(self):
         ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
 
-        mc1Cond = Condition()
-        matchingCalls1 = []
-        mc2Cond = Condition()
-        matchingCalls2 = []
+        mc1_cond = Condition()
+        matching_calls1 = []
+        mc2_cond = Condition()
+        matching_calls2 = []
 
-        def matchingAction1(event):
-            with mc1Cond:
-                matchingCalls1.append(event)
-                mc1Cond.notifyAll()
+        def matching_action1(event):
+            with mc1_cond:
+                matching_calls1.append(event)
+                mc1_cond.notifyAll()
 
-        def matchingAction2(event):
-            with mc2Cond:
-                matchingCalls2.append(event)
-                mc2Cond.notifyAll()
+        def matching_action2(event):
+            with mc2_cond:
+                matching_calls2.append(event)
+                mc2_cond.notifyAll()
 
-        matchingRecordingFilter1 = RecordingTrueFilter()
-        matchingRecordingFilter2 = RecordingTrueFilter()
-        ep.addFilter(matchingRecordingFilter1)
-        ep.addFilter(matchingRecordingFilter2)
-        ep.addHandler(matchingAction1, wait=True)
-        ep.addHandler(matchingAction2, wait=True)
+        matching_recording_filter_1 = RecordingTrueFilter()
+        matching_recording_filter_2 = RecordingTrueFilter()
+        ep.add_filter(matching_recording_filter_1)
+        ep.add_filter(matching_recording_filter_2)
+        ep.add_handler(matching_action1, wait=True)
+        ep.add_handler(matching_action2, wait=True)
 
         event1 = Event(EventId(uuid.uuid4(), 0))
         event2 = Event(EventId(uuid.uuid4(), 1))
@@ -92,52 +89,52 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         ep.handle(event2)
 
         # both filters must have been called
-        with matchingRecordingFilter1.condition:
-            while len(matchingRecordingFilter1.events) < 4:
-                matchingRecordingFilter1.condition.wait()
+        with matching_recording_filter_1.condition:
+            while len(matching_recording_filter_1.events) < 4:
+                matching_recording_filter_1.condition.wait()
 
-            self.assertEqual(4, len(matchingRecordingFilter1.events))
-            self.assertTrue(event1 in matchingRecordingFilter1.events)
-            self.assertTrue(event2 in matchingRecordingFilter1.events)
+            self.assertEqual(4, len(matching_recording_filter_1.events))
+            self.assertTrue(event1 in matching_recording_filter_1.events)
+            self.assertTrue(event2 in matching_recording_filter_1.events)
 
-        with matchingRecordingFilter2.condition:
-            while len(matchingRecordingFilter2.events) < 4:
-                matchingRecordingFilter2.condition.wait()
+        with matching_recording_filter_2.condition:
+            while len(matching_recording_filter_2.events) < 4:
+                matching_recording_filter_2.condition.wait()
 
-            self.assertEqual(4, len(matchingRecordingFilter2.events))
-            self.assertTrue(event1 in matchingRecordingFilter2.events)
-            self.assertTrue(event2 in matchingRecordingFilter2.events)
+            self.assertEqual(4, len(matching_recording_filter_2.events))
+            self.assertTrue(event1 in matching_recording_filter_2.events)
+            self.assertTrue(event2 in matching_recording_filter_2.events)
 
         # both actions must have been called
-        with mc1Cond:
-            while len(matchingCalls1) < 2:
-                mc1Cond.wait()
-            self.assertEqual(2, len(matchingCalls1))
-            self.assertTrue(event1 in matchingCalls1)
-            self.assertTrue(event2 in matchingCalls1)
+        with mc1_cond:
+            while len(matching_calls1) < 2:
+                mc1_cond.wait()
+            self.assertEqual(2, len(matching_calls1))
+            self.assertTrue(event1 in matching_calls1)
+            self.assertTrue(event2 in matching_calls1)
 
-        with mc2Cond:
-            while len(matchingCalls2) < 2:
-                mc2Cond.wait()
-            self.assertEqual(2, len(matchingCalls2))
-            self.assertTrue(event1 in matchingCalls2)
-            self.assertTrue(event2 in matchingCalls2)
+        with mc2_cond:
+            while len(matching_calls2) < 2:
+                mc2_cond.wait()
+            self.assertEqual(2, len(matching_calls2))
+            self.assertTrue(event1 in matching_calls2)
+            self.assertTrue(event2 in matching_calls2)
 
-        ep.removeFilter(matchingRecordingFilter2)
-        ep.removeFilter(matchingRecordingFilter1)
+        ep.remove_filter(matching_recording_filter_2)
+        ep.remove_filter(matching_recording_filter_1)
 
-    def testNotMatchingProcess(self):
+    def test_not_matching_process(self):
 
         ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
 
-        noMatchingCalls = []
+        no_matching_calls = []
 
-        def noMatchingAction(event):
-            noMatchingCalls.append(event)
+        def no_matching_action(event):
+            no_matching_calls.append(event)
 
-        noMatchRecordingFilter = RecordingFalseFilter()
-        ep.addFilter(noMatchRecordingFilter)
-        ep.addHandler(noMatchingAction, wait=True)
+        no_match_recording_filter = RecordingFalseFilter()
+        ep.add_filter(no_match_recording_filter)
+        ep.add_handler(no_matching_action, wait=True)
 
         event1 = Event(EventId(uuid.uuid4(), 0))
         event2 = Event(EventId(uuid.uuid4(), 1))
@@ -148,35 +145,39 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         ep.handle(event3)
 
         # no Match listener must not have been called
-        with noMatchRecordingFilter.condition:
-            while len(noMatchRecordingFilter.events) < 3:
-                noMatchRecordingFilter.condition.wait()
-            self.assertEqual(3, len(noMatchRecordingFilter.events))
-            self.assertTrue(event1 in noMatchRecordingFilter.events)
-            self.assertTrue(event2 in noMatchRecordingFilter.events)
-            self.assertTrue(event3 in noMatchRecordingFilter.events)
+        with no_match_recording_filter.condition:
+            while len(no_match_recording_filter.events) < 3:
+                no_match_recording_filter.condition.wait()
+            self.assertEqual(3, len(no_match_recording_filter.events))
+            self.assertTrue(event1 in no_match_recording_filter.events)
+            self.assertTrue(event2 in no_match_recording_filter.events)
+            self.assertTrue(event3 in no_match_recording_filter.events)
 
-        self.assertEqual(0, len(noMatchingCalls))
+        self.assertEqual(0, len(no_matching_calls))
 
-        ep.removeFilter(noMatchRecordingFilter)
+        ep.remove_filter(no_match_recording_filter)
 
-    def testAddRemove(self):
-        for size in xrange(2, 10):
+    def test_add_remove(self):
+        for size in range(2, 10):
             ep = rsb.eventprocessing.ParallelEventReceivingStrategy(size)
 
-            h1 = lambda e: e
-            h2 = lambda e: e
-            ep.addHandler(h1, wait=True)
-            ep.addHandler(h2, wait=True)
-            ep.addHandler(h1, wait=True)
+            def h1(e):
+                return e
+
+            def h2(e):
+                return e
+
+            ep.add_handler(h1, wait=True)
+            ep.add_handler(h2, wait=True)
+            ep.add_handler(h1, wait=True)
 
             ep.handle(Event(EventId(uuid.uuid4(), 0)))
             ep.handle(Event(EventId(uuid.uuid4(), 1)))
             ep.handle(Event(EventId(uuid.uuid4(), 2)))
 
-            ep.removeHandler(h1, wait=True)
-            ep.removeHandler(h2, wait=True)
-            ep.removeHandler(h1, wait=True)
+            ep.remove_handler(h1, wait=True)
+            ep.remove_handler(h2, wait=True)
+            ep.remove_handler(h1, wait=True)
 
 
 class MockConnector(object):
@@ -189,10 +190,10 @@ class MockConnector(object):
     def push(self, event):
         pass
 
-    def filterNotify(self, filter, action):
+    def filter_notify(self, filter_, action):
         pass
 
-    def setObserverAction(self, action):
+    def set_observer_action(self, action):
         pass
 
 
@@ -216,7 +217,7 @@ class ActivateCountingMockConnector(MockConnector):
 
 class OutRouteConfiguratorTest(unittest.TestCase):
 
-    def testActivation(self):
+    def test_activation(self):
         connector = ActivateCountingMockConnector(self)
         configurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[connector])
@@ -239,12 +240,12 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         self.assertRaises(RuntimeError, configurator.deactivate)
         connector.expect(1, 1)
 
-    def testPublish(self):
+    def test_publish(self):
         class RecordingOutConnector(MockConnector):
-            lastEvent = None
+            last_event = None
 
             def handle(self, event):
-                RecordingOutConnector.lastEvent = event
+                RecordingOutConnector.last_event = event
 
         configurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[RecordingOutConnector()])
@@ -253,26 +254,26 @@ class OutRouteConfiguratorTest(unittest.TestCase):
 
         # Cannot publish while inactive
         self.assertRaises(RuntimeError, configurator.handle, event)
-        self.assertEqual(None, RecordingOutConnector.lastEvent)
+        self.assertEqual(None, RecordingOutConnector.last_event)
 
         configurator.activate()
         configurator.handle(event)
-        self.assertEqual(event, RecordingOutConnector.lastEvent)
+        self.assertEqual(event, RecordingOutConnector.last_event)
 
         event = 34
         configurator.handle(event)
-        self.assertEqual(event, RecordingOutConnector.lastEvent)
+        self.assertEqual(event, RecordingOutConnector.last_event)
 
         # Deactivate and check exception, again
-        RecordingOutConnector.lastEvent = None
+        RecordingOutConnector.last_event = None
         configurator.deactivate()
         self.assertRaises(RuntimeError, configurator.handle, event)
-        self.assertEqual(None, RecordingOutConnector.lastEvent)
+        self.assertEqual(None, RecordingOutConnector.last_event)
 
 
 class InPushRouteConfiguratorTest(unittest.TestCase):
 
-    def testActivation(self):
+    def test_activation(self):
         connector = ActivateCountingMockConnector(self)
         configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
@@ -295,21 +296,21 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
         self.assertRaises(RuntimeError, configurator.deactivate)
         connector.expect(1, 1)
 
-    def testNotifyConnector(self):
+    def test_notify_connector(self):
         class RecordingMockConnector(MockConnector):
             def __init__(self):
                 self.calls = []
 
-            def filterNotify(self, filter, action):
-                self.calls.append((filter, action))
+            def filter_notify(self, filter_, action):
+                self.calls.append((filter_, action))
 
-            def expect(self1, calls):
+            def expect(self1, calls):  # noqa: N805
                 self.assertEqual(len(calls), len(self1.calls))
-                for (expFilter, expAction), (filter, action) in \
+                for (exp_filter, exp_action), (filter_, action) in \
                         zip(calls, self1.calls):
-                    self.assertEqual(expFilter, filter)
-                    if expAction == 'add':
-                        self.assertEquals(action, rsb.filter.FilterAction.ADD)
+                    self.assertEqual(exp_filter, filter_)
+                    if exp_action == 'add':
+                        self.assertEqual(action, rsb.filter.FilterAction.ADD)
 
         connector = RecordingMockConnector()
         configurator = rsb.eventprocessing.InPushRouteConfigurator(
@@ -318,16 +319,16 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
         connector.expect(())
 
         f1, f2, f3 = 12, 24, 36
-        configurator.filterAdded(f1)
+        configurator.filter_added(f1)
         connector.expect(((f1, 'add'),))
 
-        configurator.filterAdded(f2)
+        configurator.filter_added(f2)
         connector.expect(((f1, 'add'), (f2, 'add')))
 
-        configurator.filterAdded(f3)
+        configurator.filter_added(f3)
         connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add')))
 
-        configurator.filterRemoved(f3)
+        configurator.filter_removed(f3)
         connector.expect(((f1, 'add'), (f2, 'add'), (f3, 'add'),
                           (f3, 'remove')))
 
@@ -345,16 +346,16 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
                 self.event = event
                 self.condition.notifyAll()
 
-    def testSmoke(self):
+    def test_smoke(self):
 
         strategy = FullyParallelEventReceivingStrategy()
 
         h1 = self.CollectingHandler()
         h2 = self.CollectingHandler()
-        strategy.addHandler(h1, True)
-        strategy.addHandler(h2, True)
+        strategy.add_handler(h1, True)
+        strategy.add_handler(h2, True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
 
         with h1.condition:
@@ -367,23 +368,23 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
                 h2.condition.wait()
             self.assertEqual(event, h2.event)
 
-    def testFiltering(self):
+    def test_filtering(self):
 
         strategy = FullyParallelEventReceivingStrategy()
 
-        falseFilter = RecordingFalseFilter()
-        strategy.addFilter(falseFilter)
+        false_filter = RecordingFalseFilter()
+        strategy.add_filter(false_filter)
 
         handler = self.CollectingHandler()
-        strategy.addHandler(handler, True)
+        strategy.add_handler(handler, True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
 
-        with falseFilter.condition:
-            while len(falseFilter.events) == 0:
-                falseFilter.condition.wait(timeout=5)
-                if len(falseFilter.events) == 0:
+        with false_filter.condition:
+            while len(false_filter.events) == 0:
+                false_filter.condition.wait(timeout=5)
+                if len(false_filter.events) == 0:
                     self.fail("Filter not called")
 
         time.sleep(1)
@@ -391,16 +392,16 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         with handler.condition:
             self.assertEqual(None, handler.event)
 
-        strategy.removeFilter(falseFilter)
+        strategy.remove_filter(false_filter)
 
-    def testParallelCallOfOneHandler(self):
+    def test_parallel_call_of_one_handler(self):
 
         class Counter(object):
             def __init__(self):
                 self.value = 0
-        maxParallelCalls = Counter()
-        currentCalls = []
-        callLock = Condition()
+        max_parallel_calls = Counter()
+        current_calls = []
+        call_lock = Condition()
 
         class Receiver(object):
 
@@ -408,32 +409,32 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
                 self.counter = counter
 
             def __call__(self, message):
-                with callLock:
-                    currentCalls.append(message)
+                with call_lock:
+                    current_calls.append(message)
                     self.counter.value = max(self.counter.value,
-                                             len(currentCalls))
-                    callLock.notifyAll()
+                                             len(current_calls))
+                    call_lock.notifyAll()
                 time.sleep(2)
-                with callLock:
-                    currentCalls.remove(message)
-                    callLock.notifyAll()
+                with call_lock:
+                    current_calls.remove(message)
+                    call_lock.notifyAll()
 
         strategy = FullyParallelEventReceivingStrategy()
-        strategy.addHandler(Receiver(maxParallelCalls), True)
+        strategy.add_handler(Receiver(max_parallel_calls), True)
 
-        event = Event(id=42)
+        event = Event(event_id=42)
         strategy.handle(event)
-        event = Event(id=43)
+        event = Event(event_id=43)
         strategy.handle(event)
-        event = Event(id=44)
+        event = Event(event_id=44)
         strategy.handle(event)
 
-        numCalled = 0
-        with callLock:
-            while maxParallelCalls.value < 3 and numCalled < 5:
-                numCalled = numCalled + 1
-                callLock.wait()
-            if numCalled == 5:
+        num_called = 0
+        with call_lock:
+            while max_parallel_calls.value < 3 and num_called < 5:
+                num_called = num_called + 1
+                call_lock.wait()
+            if num_called == 5:
                 self.fail("Impossible to be called in parallel again")
             else:
-                self.assertEqual(3, maxParallelCalls.value)
+                self.assertEqual(3, max_parallel_calls.value)
