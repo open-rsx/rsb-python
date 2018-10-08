@@ -24,7 +24,7 @@ import threading
 import time
 import uuid
 
-from nose.tools import timed
+import pytest
 
 import rsb
 from rsb import (create_informer,
@@ -67,7 +67,7 @@ class TransportCheck(object):
     def _get_out_connector(self, scope, activate=True):
         raise NotImplementedError()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_roundtrip(self):
 
         good_scope = Scope("/good")
@@ -102,7 +102,7 @@ class TransportCheck(object):
         inconnector.deactivate()
         outconnector.deactivate()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_pull_non_blocking(self):
         try:
             inconnector = self._get_in_pull_connector(Scope("/somewhere"))
@@ -114,7 +114,7 @@ class TransportCheck(object):
 
         inconnector.deactivate()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_pull_roundtrip(self):
 
         good_scope = Scope("/good")
@@ -146,7 +146,7 @@ class TransportCheck(object):
         inconnector.deactivate()
         outconnector.deactivate()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_user_roundtrip(self):
         scope = Scope("/test/it")
         in_connector = self._get_in_push_connector(scope, activate=False)
@@ -203,7 +203,7 @@ class TransportCheck(object):
         listener.deactivate()
         publisher.deactivate()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_user_pull_roundtrip(self):
         scope = Scope("/test/it/pull")
         try:
@@ -248,7 +248,7 @@ class TransportCheck(object):
         reader.deactivate()
         publisher.deactivate()
 
-    @timed(5)
+    @pytest.mark.timeout(5)
     def test_hierarchy_sending(self):
 
         send_scope = Scope("/this/is/a/test")

@@ -27,6 +27,8 @@ import unittest
 import uuid
 from uuid import uuid4
 
+import pytest
+
 import rsb
 from rsb import (Event,
                  EventId,
@@ -36,8 +38,7 @@ from rsb import (Event,
                  Participant,
                  ParticipantConfig,
                  QualityOfServiceSpec,
-                 Scope,
-                 set_default_participant_config)
+                 Scope)
 from rsb.converter import Converter, register_global_converter
 
 
@@ -524,14 +525,7 @@ class InformerTest(unittest.TestCase):
 
 class IntegrationTest(unittest.TestCase):
 
-    def setUp(self):
-        self._previous_config = get_default_participant_config()
-        set_default_participant_config(
-            ParticipantConfig.from_file('test/with-socket.conf'))
-
-    def tear_down(self):
-        set_default_participant_config(self._previous_config)
-
+    @pytest.mark.usefixture('rsb_config_socket')
     def test_lazy_converter_registration(self):
         """
         Tests lazy converter registration.

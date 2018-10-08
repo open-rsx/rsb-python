@@ -22,7 +22,7 @@ import re
 import unittest
 from uuid import uuid4
 
-from nose.tools import assert_equals
+import pytest
 
 from rsb import Event, EventId, Scope
 import rsb.converter
@@ -227,20 +227,15 @@ class EventsByScopeMapConverterTest(unittest.TestCase):
             self.assertEqual(orig.causes, converted.causes)
 
 
-def check_structure_based_rountrip(converter_name, values):
-    converter = rsb.converter.__dict__[converter_name]()
+@pytest.mark.parametrize('converter,values', [
+    (rsb.converter.DoubleConverter(), [0.0, -1.0, 1.0]),
+    (rsb.converter.FloatConverter(), [0.0, -1.0, 1.0]),
+    (rsb.converter.Int32Converter(), [0, -1, 1, -24378, ((1 << 31) - 1)]),
+    (rsb.converter.Int64Converter(), [0, -1, 1, -24378, ((1 << 63) - 1)]),
+    (rsb.converter.Uint32Converter(), [0, 1, 24378, ((1 << 32) - 1)]),
+    (rsb.converter.Uint64Converter(), [0, 1, 24378, ((1 << 32) - 1)]),
+    (rsb.converter.BoolConverter(), [True, False]),
+])
+def test_structure_base_converters(converter, values):
     for value in values:
-        assert_equals(value,
-                      converter.deserialize(*converter.serialize(value)))
-
-
-def test_structure_base_converters():
-    for converter_name, values in [
-            ('DoubleConverter', [0.0, -1.0, 1.0]),
-            ('FloatConverter', [0.0, -1.0, 1.0]),
-            ('Int32Converter', [0, -1, 1, -24378, ((1 << 31) - 1)]),
-            ('Int64Converter', [0, -1, 1, -24378, ((1 << 63) - 1)]),
-            ('Uint32Converter', [0, 1, 24378, ((1 << 32) - 1)]),
-            ('Uint64Converter', [0, 1, 24378, ((1 << 32) - 1)]),
-            ('BoolConverter', [True, False])]:
-        yield check_structure_based_rountrip, converter_name, values
+        assert value == converter.deserialize(*converter.serialize(value))

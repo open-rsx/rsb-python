@@ -2103,7 +2103,6 @@ def create_participant(cls, scope, config, parent=None, **kwargs):
     """
     if config is None:
         config = get_default_participant_config()
-    _register_default_transports()
 
     if config.introspection:
         _initialize_introspection()
@@ -2282,3 +2281,6 @@ def create_server(scope, config=None, parent=None,
         scope, config, parent,
         provider=provider, expose=expose, methods=methods,
         **kwargs)
+
+
+_register_default_transports()
