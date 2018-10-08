@@ -6,9 +6,11 @@ This repository contains the Python implementation of the [Robotics Service Bus]
 
 **The full documentation for RSB can be found at <https://docs.cor-lab.de/manual/rsb-trunk/index.html>.**
 
-- epydoc for API documentation
-- coverage for code coverage report
-- unittest-xml-reporting for xml unit test reports
+# Dependencies
+
+* epydoc for API documentation
+* coverage for code coverage report
+* unittest-xml-reporting for xml unit test reports
 
 # Building and Installing
 
