@@ -88,7 +88,6 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
 
         self.__thread = None
         self.__socket = None
-        self.__file = None
 
         self.__error_hook = None
 
@@ -111,15 +110,13 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         else:
             self.__socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 0)
-        self.__file = self.__socket.makefile()
 
         # Perform the client or server part of the handshake.
         if is_server:
-            self.__file.write('\0\0\0\0')
-            self.__file.flush()
+            self.__socket.send(b'\0\0\0\0')
         else:
-            zero = self.__file.read(size=4)
-            if len(zero) == '\0\0\0\0':
+            zero = self.__socket.recv(4)
+            if zero != b'\0\0\0\0':
                 raise RuntimeError('Incorrect handshake')
 
     def __del__(self):
@@ -137,19 +134,16 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     # receiving
 
     def receive_notification(self):
-        size = self.__file.read(size=4)
+        size = self.__socket.recv(4)
         if len(size) == 0:
             self.__logger.info("Received EOF")
             raise EOFError()
         if not (len(size) == 4):
             raise RuntimeError('Short read when receiving notification size '
                                '(size: %s)' % len(size))
-        size = ord(size[0])      \
-            | ord(size[1]) << 8  \
-            | ord(size[2]) << 16 \
-            | ord(size[3]) << 24
+        size = size[0] | size[1] << 8 | size[2] << 16 | size[3] << 24
         self.__logger.debug('Receiving notification of size %d', size)
-        notification = self.__file.read(size=size)
+        notification = self.__socket.recv(size)
         if not (len(notification) == size):
             raise RuntimeError(
                 'Short read when receiving notification payload')
@@ -189,14 +183,13 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
     def send_notification(self, notification):
         size = len(notification)
         self.__logger.info('Sending notification of size %d', size)
-        size = ''.join((chr(size & 0x000000ff),
-                        chr((size & 0x0000ff00) >> 8),
-                        chr((size & 0x00ff0000) >> 16),
-                        chr((size & 0xff000000) >> 24)))
+        size = bytes([size & 0x000000ff,
+                      (size & 0x0000ff00) >> 8,
+                      (size & 0x00ff0000) >> 16,
+                      (size & 0xff000000) >> 24])
         with self.__lock:
-            self.__file.write(size)
-            self.__file.write(notification)
-            self.__file.flush()
+            self.__socket.send(size)
+            self.__socket.send(notification)
 
     @staticmethod
     def notification_to_buffer(notification):
@@ -238,7 +231,6 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             # context that thread).
             self.__logger.info('Closing socket')
             try:
-                self.__file.close()
                 self.__socket.close()
             except Exception as e:
                 self.__logger.warn('Failed to close socket: %s', e)
@@ -882,7 +874,7 @@ class InPushConnector(Connector,
         event = conversion.notification_to_event(
             notification,
             wire_data=bytes(notification.data),
-            wire_schema=notification.wire_schema,
+            wire_schema=notification.wire_schema.decode('ASCII'),
             converter=converter)
         self.__action(event)
 

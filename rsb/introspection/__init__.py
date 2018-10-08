@@ -642,10 +642,10 @@ class IntrospectionSender(object):
     def send_hello(self, participant, query=None):
         hello = Hello()
         hello.kind = participant.kind
-        hello.id = participant.participant_id.get_bytes()
+        hello.id = participant.participant_id.bytes
         hello.scope = participant.scope.to_string()
         if participant.parent_id:
-            hello.parent = participant.parent_id.get_bytes()
+            hello.parent = participant.parent_id.bytes
         for url in participant.transport_urls:
             hello.transport.append(url)
 
@@ -683,7 +683,7 @@ class IntrospectionSender(object):
 
     def send_bye(self, participant):
         bye = Bye()
-        bye.id = participant.participant_id.get_bytes()
+        bye.id = participant.participant_id.bytes
 
         scope = participant_scope(participant.participant_id,
                                   self.__informer.scope)
