@@ -276,7 +276,7 @@ setup(name='rsb-python',
           protoc_version[0],
           protoc_version[1] + 1)],
       extras_require={
-          'dev': ['pytest', 'pytest-timeout',
+          'dev': ['pytest', 'pytest-timeout', 'pytest-cov',
                   'tox']
       },
 
