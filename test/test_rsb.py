@@ -151,53 +151,42 @@ class TestQualityOfServiceSpec:
 
 class TestScope:
 
-    def test_parsing(self):
-
-        root = rsb.Scope("/")
-        assert len(root.get_components()) == 0
-
-        one_part = rsb.Scope("/test/")
-        assert len(one_part.get_components()) == 1
-        assert one_part.get_components()[0] == "test"
-
-        many_parts = rsb.Scope("/this/is/a/dumb3/test/")
-        assert len(many_parts.get_components()) == 5
-        assert many_parts.get_components()[0] == "this"
-        assert many_parts.get_components()[1] == "is"
-        assert many_parts.get_components()[2] == "a"
-        assert many_parts.get_components()[3] == "dumb3"
-        assert many_parts.get_components()[4] == "test"
-
-        # also ensure that the shortcut syntax works
-        shortcut = rsb.Scope("/this/is")
-        assert len(shortcut.get_components()) == 2
-        assert shortcut.get_components()[0] == "this"
-        assert shortcut.get_components()[1] == "is"
+    @pytest.mark.parametrize('str_repr,components', [
+        ('/', []),
+        ('/test/', ['test']),
+        ('/this/is/a/dumb3/test/', ['this', 'is', 'a', 'dumb3', 'test']),
+        ('/this/is', ['this', 'is']),  # shortcut syntax without slash
+    ])
+    def test_parsing(self, str_repr, components):
+        scope = rsb.Scope(str_repr)
+        assert scope.get_components() == components
 
         # Non-ASCII characters are not allowed. However, unicode
         # object consisting of acceptable characters are OK.
-        Scope('/')
-        Scope('/test')
         with pytest.raises(ValueError):
             Scope('/br\xc3\xb6tchen')
 
-    def test_parsing_error(self):
+    @pytest.mark.parametrize('str_repr', [
+        '',
+        ' ',
+        '/with space/does/not/work/',
+        '/with/do#3es/not43as/work/',
+        '/this//is/not/allowed/',
+        '/this/ /is/not/allowed/',
+        '/br\xc3\xb6tchen',
+    ])
+    def test_parsing_error(self, str_repr):
+        with pytest.raises(ValueError):
+            Scope(str_repr)
 
-        for broken in ["",
-                       " ",
-                       "/with space/does/not/work/",
-                       "/with/do#3es/not43as/work/",
-                       "/this//is/not/allowed/",
-                       "/this/ /is/not/allowed/"]:
-            with pytest.raises(ValueError):
-                Scope(broken)
-
-    def test_to_string(self):
-
-        assert rsb.Scope("/").to_string() == "/"
-        assert rsb.Scope("/foo/").to_string() == "/foo/"
-        assert rsb.Scope("/foo/bar/").to_string() == "/foo/bar/"
-        assert rsb.Scope("/foo/bar").to_string() == "/foo/bar/"
+    @pytest.mark.parametrize('str_input,expected', [
+        ('/', '/'),
+        ('/foo/', '/foo/'),
+        ('/foo/bar/', '/foo/bar/'),
+        ('/foo/bar', '/foo/bar/'),  # shortcut syntax
+    ])
+    def test_to_string(self, str_input, expected):
+        assert rsb.Scope(str_input).to_string() == expected
 
     def test_concat(self):
 
@@ -251,28 +240,19 @@ class TestScope:
         assert hash(Scope("/")) != hash(Scope("/foo"))
         assert hash(Scope("/bla/foo")) == hash(Scope("/bla/foo/"))
 
-    def test_super_scopes(self):
-
-        assert len(rsb.Scope("/").super_scopes()) == 0
-
-        supers = rsb.Scope("/this/is/a/test/").super_scopes()
-        assert len(supers) == 4
-        assert rsb.Scope("/") == supers[0]
-        assert rsb.Scope("/this/") == supers[1]
-        assert rsb.Scope("/this/is/") == supers[2]
-        assert rsb.Scope("/this/is/a/") == supers[3]
-
-        supers = rsb.Scope("/").super_scopes(True)
-        assert len(supers) == 1
-        assert rsb.Scope("/") == supers[0]
-
-        supers = rsb.Scope("/this/is/a/test/").super_scopes(True)
-        assert len(supers) == 5
-        assert rsb.Scope("/") == supers[0]
-        assert rsb.Scope("/this/") == supers[1]
-        assert rsb.Scope("/this/is/") == supers[2]
-        assert rsb.Scope("/this/is/a/") == supers[3]
-        assert rsb.Scope("/this/is/a/test/") == supers[4]
+    @pytest.mark.parametrize('scope,supers', [
+        (rsb.Scope('/'),
+         [rsb.Scope('/')]),
+        (rsb.Scope('/this/is/a/test/'),
+         [rsb.Scope('/'),
+          rsb.Scope('/this'),
+          rsb.Scope('/this/is'),
+          rsb.Scope('/this/is/a'),
+          rsb.Scope('/this/is/a/test')]),
+    ])
+    def test_super_scopes(self, scope, supers):
+        assert scope.super_scopes() == supers[:-1]
+        assert scope.super_scopes(True) == supers
 
 
 class TestEventId:

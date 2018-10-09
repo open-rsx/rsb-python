@@ -140,12 +140,13 @@ class TestNoneConverter:
 
 class TestStringConverter:
 
-    def test_roundtrip_utf8(self):
+    @pytest.mark.parametrize('data', [
+        'asd' + chr(270) + chr(40928),
+        'i am a normal string',
+    ])
+    def test_roundtrip_utf8(self, data):
         converter = StringConverter()
-        orig = "asd" + chr(270) + chr(40928)
-        assert converter.deserialize(*converter.serialize(orig)) == orig
-        orig = "i am a normal string"
-        assert converter.deserialize(*converter.serialize(orig)) == orig
+        assert converter.deserialize(*converter.serialize(data)) == data
 
     def test_roundtrip_ascii(self):
         converter = StringConverter(wire_schema="ascii-string",
