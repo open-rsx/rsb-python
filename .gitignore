@@ -3,7 +3,7 @@ setup.cfg
 /*.egg
 /build
 *.egg-info
-/cover*
+/cov*
 /.coverage
 /rsb/protocol
 /rsb/version.py

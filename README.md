@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/open-rsx/rsb-python.svg?branch=master)](https://travis-ci.org/open-rsx/rsb-python)
+[![Build Status](https://travis-ci.org/open-rsx/rsb-python.svg?branch=master)](https://travis-ci.org/open-rsx/rsb-python) [![Coverage Report](https://codecov.io/gh/open-rsx/rsb-python/branch/master/graph/badge.svg)](https://codecov.io/gh/open-rsx/rsb-python)
 
 # Introduction
 
@@ -9,7 +9,7 @@ This repository contains the Python implementation of the [Robotics Service Bus]
 # Dependencies
 
 * epydoc for API documentation
-* [pytest], [pytest-timeout], [tox], and optionally [pyenv] for testing
+* [pytest], [pytest-timeout], [pytest-cov], [tox], and optionally [pyenv] for testing
 
 # Building and Installing
 
@@ -55,6 +55,7 @@ The development of this software has been supported as follows:
 * This work was supported by the Cluster of Excellence Cognitive Interaction Technology ‘CITEC’ (EXC 277) at Bielefeld University, which is funded by the German Research Foundation (DFG).
 
 [pyenv]: https://github.com/pyenv/pyenv
+[pytest-cov]: https://pytest-cov.readthedocs.io
 [pytest-timeout]: https://bitbucket.org/pytest-dev/pytest-timeout/
 [pytest]: https://docs.pytest.org
 [tox]: https://tox.readthedocs.io
