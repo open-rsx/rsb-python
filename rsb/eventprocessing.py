@@ -461,18 +461,18 @@ class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
 
 class EventSendingStrategy:
     def get_connectors(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     connectors = property(get_connectors)
 
     def add_connector(self, connector):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def remove_connector(self, connector):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def handle(self, event):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class DirectEventSendingStrategy(EventSendingStrategy):
