@@ -156,9 +156,9 @@ class BroadcastProcessor:
             handler(event)
 
     def __str__(self):
-        return '<%s %d handlers at 0x%x>' % (type(self).__name__,
-                                             len(self.handlers),
-                                             id(self))
+        return '<{} {} handlers at 0x{:x}>'.format(type(self).__name__,
+                                                   len(self.handlers),
+                                                   id(self))
 
 
 class EventReceivingStrategy(metaclass=abc.ABCMeta):

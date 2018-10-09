@@ -150,7 +150,7 @@ class ParticipantInfo:
     transport_urls = property(get_transport_urls)
 
     def __str__(self):
-        return '<%s %s %s at 0x%0x>' % (
+        return '<{} {} {} at 0x{:x}>'.format(
             type(self).__name__, self.kind, self.scope.to_string(), id(self))
 
     def __repr__(self):
@@ -225,10 +225,10 @@ class ProcessInfo:
 
     def __init__(self,
                  process_id=os.getpid(),
-                 program_name='python%d.%d %s'
-                 % (sys.version_info.major,
-                    sys.version_info.minor,
-                    program_name()),
+                 program_name='python{}.{} {}'.format(
+                     sys.version_info.major,
+                     sys.version_info.minor,
+                     program_name()),
                  arguments=copy.copy(sys.argv),
                  start_time=process_start_time(),
                  executing_user=None,
@@ -321,9 +321,8 @@ class ProcessInfo:
     rsb_version = property(get_rsb_version)
 
     def __str__(self):
-        return '<%s %s [%d] at 0x%0x>' \
-            % (type(self).__name__, self.program_name,
-               self.process_id, id(self))
+        return '<{} {} [{}] at 0x{:x}>'.format(
+            type(self).__name__, self.program_name, self.process_id, id(self))
 
     def __repr__(self):
         return str(self)
@@ -477,10 +476,9 @@ class HostInfo:
     software_version = property(get_software_version)
 
     def __str__(self):
-        return '<%s %s %s %s at 0x%0x>' \
-            % (type(self).__name__,
-               self.hostname, self.machine_type, self.software_type,
-               id(self))
+        return '<{} {} {} {} at 0x{:x}>'.format(
+            type(self).__name__, self.hostname, self.machine_type,
+            self.software_type, id(self))
 
     def __repr__(self):
         return str(self)

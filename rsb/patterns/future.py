@@ -115,11 +115,11 @@ class Future:
                     if self.__result is None:
                         raise FutureTimeout(
                             'Timeout while waiting for result; '
-                            'Waited %s seconds.' % timeout)
+                            'Waited {} seconds.'.format(timeout))
 
         if self.__error:
-            raise FutureExecutionError('Failed to execute operation: %s' %
-                                       self.__result)
+            raise FutureExecutionError(
+                'Failed to execute operation: {}'.format(self.__result))
 
         return self.__result
 
@@ -163,7 +163,7 @@ class Future:
                 state = 'failed'
             else:
                 state = 'completed'
-        return '<%s %s at 0x%x>' % (type(self).__name__, state, id(self))
+        return '<{} {} at 0x{:x}>'.format(type(self).__name__, state, id(self))
 
     def __repr__(self):
         return str(self)

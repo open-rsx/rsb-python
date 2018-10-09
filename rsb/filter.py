@@ -130,14 +130,14 @@ class OriginFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-        return '<%s %sfrom %s at 0x%x>' % (type(self).__name__,
-                                           inverted,
-                                           self.origin,
-                                           id(self))
+        return '<{} {}from {} at 0x{:x}>'.format(type(self).__name__,
+                                                 inverted,
+                                                 self.origin,
+                                                 id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.origin, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.origin, self.invert)
 
 
 class CauseFilter(AbstractFilter):
@@ -184,12 +184,12 @@ class CauseFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-        return '<%s %scaused-by %s at 0x%x>' \
-            % (type(self).__name__, inverted, self.cause, id(self))
+        return '<{} {}caused-by {} at 0x{:x}>'.format(
+            type(self).__name__, inverted, self.cause, id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.cause, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.cause, self.invert)
 
 
 class MethodFilter(AbstractFilter):
@@ -236,12 +236,12 @@ class MethodFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-            return '<%s %sfrom %s at 0x%x>' \
-                % (type(self).__name__, inverted, self.method, id(self))
+            return '<{} {}from {} at 0x{:x}>'.format(
+                type(self).__name__, inverted, self.method, id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.method, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.method, self.invert)
 
 
 class RecordingTrueFilter(AbstractFilter):

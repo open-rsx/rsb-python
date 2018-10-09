@@ -120,8 +120,8 @@ class UnknownConverterError(KeyError):
     def __init__(self, source_type, wire_schema):
         super().__init__(
             self,
-            "No converter from type %s to type %s available" % (source_type,
-                                                                wire_schema))
+            "No converter from type {} to type {} available".format(
+                source_type, wire_schema))
 
 
 class ConverterSelectionStrategy:
@@ -175,9 +175,8 @@ class ConverterMap(ConverterSelectionStrategy):
     def add_converter(self, converter, replace_existing=False):
         key = (converter.get_wire_schema(), converter.get_data_type())
         if key in self._converters and not replace_existing:
-            raise RuntimeError("There already is a converter "
-                               "with wire-schema `%s' and data-type `%s'"
-                               % key)
+            raise RuntimeError(
+                "There already is a converter with key '{}' ".format(key))
         self._converters[key] = converter
 
     def _get_converter_for_wire_schema(self, wire_schema):
@@ -233,10 +232,10 @@ class ConverterMap(ConverterSelectionStrategy):
         return self._converters
 
     def __str__(self):
-        s = "ConverterMap(wire_type = %s):\n" % self._wire_type
+        s = "ConverterMap(wire_type = {}):\n".format(self._wire_type)
         for converter in list(self._converters.values()):
-            s = s + ("\t%s <-> %s\n" % (converter.get_wire_schema(),
-                                        converter.get_data_type()))
+            s = s + ("\t{} <-> {}\n".format(converter.get_wire_schema(),
+                                            converter.get_data_type()))
         return s[:-1]
 
 
@@ -297,11 +296,11 @@ class UnambiguousConverterMap(ConverterMap):
                and not data_type == converter.get_data_type():
                 raise RuntimeError(
                     "Trying to register ambiguous converter "
-                    "with data type `%s' for wire-schema `%s' "
-                    "(present converter is for data type `%s')."
-                    % (converter.get_data_type(),
-                       wire_schema,
-                       data_type))
+                    "with data type '{}' for wire-schema '{}' "
+                    "(present converter is for data type '{}').".format(
+                        converter.get_data_type(),
+                        wire_schema,
+                        data_type))
         super().add_converter(converter, replace_existing)
 
 
@@ -517,8 +516,8 @@ class ProtocolBufferConverter(Converter):
     """
 
     def __init__(self, message_class):
-        super().__init__(
-            bytes, message_class, '.%s' % message_class.DESCRIPTOR.full_name)
+        super().__init__(bytes, message_class,
+                         '.{}'.format(message_class.DESCRIPTOR.full_name))
 
         self.__message_class = message_class
 
@@ -543,8 +542,8 @@ class ProtocolBufferConverter(Converter):
         return output
 
     def __str__(self):
-        return '<%s for %s at 0x%x>' \
-            % (type(self).__name__, self.get_message_class_name(), id(self))
+        return '<{} for {} at 0x{:x}>'.format(
+            type(self).__name__, self.get_message_class_name(), id(self))
 
     def __repr__(self):
         return str(self)

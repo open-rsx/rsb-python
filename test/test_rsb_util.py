@@ -45,7 +45,7 @@ class TestOrderedQueueDispatcherPool:
             self.messages = []
 
         def __str__(self):
-            return "StubReceiver%d" % self.receiver_num
+            return "StubReceiver{}".format(self.receiver_num)
 
     def deliver(self, receiver, message):
 

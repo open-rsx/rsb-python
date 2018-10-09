@@ -177,9 +177,10 @@ class QualityOfServiceSpec:
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "%s(%r, %r)" % (self.__class__.__name__,
-                               self.__ordering,
-                               self.__reliability)
+        return "{type_name}({ordering}, {reliability})".format(
+            type_name=self.__class__.__name__,
+            ordering=self.__ordering,
+            reliability=self.__reliability)
 
 
 CONFIG_DEBUG_VARIABLE = 'RSB_CONFIG_DEBUG'
@@ -220,10 +221,10 @@ def _config_environment_to_dict(defaults=None, debug=False):
         if key.startswith('RSB_'):
             if debug:
                 empty = False
-                print(('     %s -> %s' % (key, value)))  # noqa: T001
+                print(('     {} -> {}'.format(key, value)))  # noqa: T001
             if not key == CONFIG_FILES_VARIABLE and value == '':
                 raise ValueError('The value of the environment variable '
-                                 '%s is the empty string' % key)
+                                 '{} is the empty string'.format(key))
             options[key[4:].lower().replace('_', '.')] = value
     if debug and empty:
         print('     <none>')  # noqa: T001
@@ -293,10 +294,13 @@ def _config_default_sources_to_dict(defaults=None,
             if debug:
                 if file_index[0] == 1:
                     print('  1. Configuration files')  # noqa: T001
-                print(('     %d. %s "%s" %s'  # noqa: T001
-                       % (file_index[0], description, config_file,
-                          'exists' if os.path.exists(config_file)
-                          else 'does not exist')))
+                print('     {index}. {description} '  # noqa: T001
+                      '"{config_file}" {exists}'.format(
+                          index=file_index[0],
+                          description=description,
+                          config_file=config_file,
+                          exists='exists' if os.path.exists(config_file)
+                                          else 'does not exist'))
                 file_index[0] += 1
             return _config_file_to_dict(config_file, partial)
         return process_file
@@ -311,7 +315,7 @@ def _config_default_sources_to_dict(defaults=None,
             return from_file(system_config_file,
                              'System wide config file')
         elif spec == CONFIG_FILE_KEY_PREFIX:
-            return from_file('%s/etc/rsb.conf' % rsb.util.prefix(),
+            return from_file('{}/etc/rsb.conf'.format(rsb.util.prefix()),
                              'Prefix wide config file')
         elif spec == CONFIG_FILE_KEY_USER:
             return from_file(os.path.expanduser('~/.config/rsb.conf'),
@@ -430,10 +434,14 @@ class ParticipantConfig:
             return result
 
         def __str__(self):
-            return ('ParticipantConfig.Transport[%s, enabled = %s, '
-                    'converters = %s, converter_rules = %s, options = %s]'
-                    % (self.__name, self.__enabled, self.__converters,
-                       self.__converter_rules, self.__options))
+            return ('ParticipantConfig.Transport[{name}, enabled={enabled}, '
+                    'converters={converters}, converter_rules={rules}, '
+                    'options={options}]'.format(
+                        name=self.__name,
+                        enabled=self.__enabled,
+                        converters=self.__converters,
+                        rules=self.__converter_rules,
+                        options=self.__options))
 
         def __repr__(self):
             return str(self)
@@ -493,10 +501,12 @@ class ParticipantConfig:
         return result
 
     def __str__(self):
-        return 'ParticipantConfig[%s, options = %s, ' \
-               'qos = %s, introspection = %s]' \
-               % (list(self.__transports.values()), self.__options, self.__qos,
-                  self.__introspection)
+        return 'ParticipantConfig[{transports}, options={options}, ' \
+               'qos={qos}, introspection={introspection}]'.format(
+                   transports=list(self.__transports.values()),
+                   options=self.__options,
+                   qos=self.__qos,
+                   introspection=self.__introspection)
 
     def __repr__(self):
         return str(self)
@@ -525,7 +535,7 @@ class ParticipantConfig:
         # Transport options
         for transport in ['spread', 'socket', 'inprocess']:
             transport_options = dict(
-                section_options('transport.%s' % transport))
+                section_options('transport.{}'.format(transport)))
             if transport_options:
                 result.__transports[transport] = cls.Transport(
                     transport, transport_options)
@@ -728,8 +738,8 @@ class Scope:
             except UnicodeEncodeError as e:
                 raise ValueError('Scope strings have be encodable as '
                                  'ASCII-strings, but the supplied scope '
-                                 'string cannot be encoded as ASCII-string: %s'
-                                 % e)
+                                 'string cannot be encoded '
+                                 'as ASCII-string: {}'.format(e))
 
         # append missing trailing slash
         if string_rep[-1] != self.__COMPONENT_SEPARATOR:
@@ -740,17 +750,18 @@ class Scope:
             raise ValueError("Empty scope is not allowed.")
         if len(raw_components[0]) != 0:
             raise ValueError("Scope must start with a slash. "
-                             "Given was '%s'." % string_rep)
+                             "Given was '{}'.".format(string_rep))
         if len(raw_components[-1]) != 0:
             raise ValueError("Scope must end with a slash. "
-                             "Given was '%s'." % string_rep)
+                             "Given was '{}'.".format(string_rep))
 
         self.__components = raw_components[1:-1]
 
         for com in self.__components:
             if not self.__COMPONENT_REGEX.match(com):
-                raise ValueError("Invalid character in component %s. "
-                                 "Given was scope '%s'." % (com, string_rep))
+                raise ValueError("Invalid character in component {}. "
+                                 "Given was scope '{}'.".format(
+                                     com, string_rep))
 
     def get_components(self):
         """
@@ -914,10 +925,12 @@ class Scope:
         return self.to_string() >= other.to_string()
 
     def __str__(self):
-        return "Scope[%s]" % self.to_string()
+        return "Scope[{}]".format(self.to_string())
 
     def __repr__(self):
-        return '%s("%s")' % (self.__class__.__name__, self.to_string())
+        return '{type_name}({str_repr!r})'.format(
+            type_name=self.__class__.__name__,
+            str_repr=self.to_string())
 
 
 class MetaData:
@@ -1050,11 +1063,17 @@ class MetaData:
         return not self.__eq__(other)
 
     def __str__(self):
-        return ('%s[createTime= %s, sendTime = %s, receiveTime = %s, '
-                'deliverTime = %s, userTimes = %s, userInfos = %s]'
-                % ('MetaData',
-                   self.__create_time, self.__send_time, self.__receive_time,
-                   self.__deliver_time, self.__user_times, self.__user_infos))
+        return ('{type_name}[create_time={create_time}, '
+                'send_time={send_time}, receive_time={receive_time}, '
+                'deliver_time={deliver_time}, user_times={user_times}, '
+                'user_infos={user_infos}]'.format(
+                    type_name=self.__class__.__name__,
+                    create_time=self.__create_time,
+                    send_time=self.__send_time,
+                    receive_time=self.__receive_time,
+                    deliver_time=self.__deliver_time,
+                    user_times=self.__user_times,
+                    user_infos=self.__user_infos))
 
     def __repr__(self):
         return self.__str__()
@@ -1129,7 +1148,7 @@ class EventId:
 
         if self.__id is None:
             self.__id = uuid.uuid5(self.__participant_id,
-                                   '%08x' % self.__sequence_number)
+                                   '{:08x}'.format(self.__sequence_number))
         return self.__id
 
     def __eq__(self, other):
@@ -1140,8 +1159,8 @@ class EventId:
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "EventId(%r, %r)" % (self.__participant_id,
-                                    self.__sequence_number)
+        return "EventId({!r}, {!r})".format(self.__participant_id,
+                                            self.__sequence_number)
 
     def __hash__(self):
         prime = 31
@@ -1465,12 +1484,20 @@ class Event:
         print_data = str(self.__data)
         if len(print_data) > 100:
             print_data = print_data[:100] + '...'
-        print_data = ''.join(['\\x%x' % ord(c)
+        print_data = ''.join(['\\x{:x}'.format(ord(c))
                               if ord(c) < 32 else c for c in print_data])
-        return "%s[id = %s, scope = '%s', data = '%s', type = '%s', " \
-            "method = '%s', meta_data = %s, causes = %s]" \
-            % ("Event", self.__id, self.__scope, print_data, self.__type,
-               self.__method, self.__meta_data, self.__causes)
+        return "{type_name}[id = {event_id}, scope = '{scope}', " \
+            "data = '{data}', data_type = '{data_type}', " \
+            "method = '{method}', meta_data = {meta_data}, " \
+            "causes = {causes}]".format(
+                type_name="Event",
+                event_id=self.__id,
+                scope=self.__scope,
+                data=print_data,
+                data_type=self.__type,
+                method=self.__method,
+                meta_data=self.__meta_data,
+                causes=self.__causes)
 
     def __repr__(self):
         return self.__str__()
@@ -1603,10 +1630,12 @@ class Participant:
     @classmethod
     def get_connectors(cls, direction, config):
         if direction not in ('in', 'in-pull', 'out'):
-            raise ValueError('Invalid direction: %s (valid directions '
-                             'are "in", "in-pull" and "out")' % direction)
+            raise ValueError('Invalid direction: {} (valid directions '
+                             'are "in", "in-pull" and "out")'.format(
+                                 direction))
         if len(config.get_transports()) == 0:
-            raise ValueError('No transports specified (config is %s)' % config)
+            raise ValueError(
+                'No transports specified (config is {})'.format(config))
 
         transports = []
         for transport in config.get_transports():
@@ -1739,13 +1768,13 @@ class Informer(Participant):
 
         if not event.scope == self.scope \
                 and not event.scope.is_sub_scope_of(self.scope):
-            raise ValueError("Scope %s of event %s is not a sub-scope of "
-                             "this informer's scope %s."
-                             % (event.scope, event, self.scope))
+            raise ValueError("Scope {} of event {} is not a sub-scope of "
+                             "this informer's scope {}.".format(
+                                 event.scope, event, self.scope))
         if not isinstance(event.data, self.data_type):
-            raise ValueError("The payload %s of event %s does not match "
-                             "this informer's type %s."
-                             % (event.data, event, self.data_type))
+            raise ValueError("The payload {} of event {} does not match "
+                             "this informer's type {}.".format(
+                                 event.data, event, self.data_type))
 
         with self.__mutex:
             event.event_id = EventId(self.participant_id,

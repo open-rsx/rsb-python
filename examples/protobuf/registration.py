@@ -47,7 +47,7 @@ if __name__ == '__main__':
         message_class=SimpleImage)
     rsb.converter.register_global_converter(converter)
 
-    print("Registered converter %s" % converter)
-    print("Registered converters:\n%s "
-          % rsb.converter.get_global_converter_map(bytes))
+    print("Registered converter {}".format(converter))
+    print("Registered converters:\n{}".format(
+        rsb.converter.get_global_converter_map(bytes)))
 # mark-end::body

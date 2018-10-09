@@ -48,7 +48,7 @@ class SettingReceiver:
             self.result_condition.notifyAll()
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.scope)
+        return "{}({!r})".format(self.__class__.__name__, self.scope)
 
 
 class TransportCheck:
@@ -291,9 +291,9 @@ class TransportCheck:
                 while receiver.result_event is None:
                     receiver.result_condition.wait(10)
                 if receiver.result_event is None:
-                    self.fail(
-                        "Listener on scope %s did not receive an event"
-                        % receiver.scope)
+                    pytest.fail(
+                        "Listener on scope {} did not receive an event".format(
+                            receiver.scope))
                 assert receiver.result_event.data == data
 
         for listener in listeners:

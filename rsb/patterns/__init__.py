@@ -46,9 +46,8 @@ class RemoteCallError(RuntimeError):
 
     def __init__(self, scope, method, error):
         super().__init__(
-            'failed to call method "%s" on remote server with scope %s. '
-            'reason: %s'
-            % (method.name, scope, error))
+            'failed to call method "{}" on remote server with scope {}. '
+            'reason: {}'.format(method.name, scope, error))
         self._scope = scope
         self._method = method
 
@@ -152,7 +151,8 @@ class Method(rsb.Participant):
         super().deactivate()
 
     def __str__(self):
-        return '<%s "%s" at 0x%x>' % (type(self).__name__, self.name, id(self))
+        return '<{} "{}" at 0x{:x}>'.format(
+            type(self).__name__, self.name, id(self))
 
     def __repr__(self):
         return str(self)
@@ -230,9 +230,8 @@ class Server(rsb.Participant):
     # Printing
 
     def __str__(self):
-        return '<%s with %d method(s) at 0x%x>' % (type(self).__name__,
-                                                   len(self._methods),
-                                                   id(self))
+        return '<{} with {} method(s) at 0x{:x}>'.format(
+            type(self).__name__, len(self._methods), id(self))
 
     def __repr__(self):
         return str(self)
@@ -315,11 +314,10 @@ class LocalMethod(Method):
             # This check is required because the reply informer is
             # created with type 'object' to enable throwing exceptions
             if not is_error and not isinstance(result, self.reply_type):
-                raise ValueError("The result '%s' (of type %s) "
-                                 "of method %s does not match "
-                                 "the method's declared return type %s."
-                                 % (result, result_type,
-                                    self.name, self.reply_type))
+                raise ValueError(
+                    "The result '{}' (of type {}) of method {} does not match "
+                    "the method's declared return type {}.".format(
+                        result, result_type, self.name, self.reply_type))
             reply = rsb.Event(scope=self.informer.scope,
                               method='REPLY',
                               data=result,
@@ -576,8 +574,8 @@ class RemoteMethod(Method):
         return result
 
     def __str__(self):
-        return '<%s "%s" with %d in-progress calls at 0x%x>' \
-            % (type(self).__name__, self.name, len(self._calls), id(self))
+        return '<{} "{}" with {} in-progress calls at 0x{:x}>'.format(
+            type(self).__name__, self.name, len(self._calls), id(self))
 
     def __repr__(self):
         return str(self)

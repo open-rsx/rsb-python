@@ -140,7 +140,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             raise EOFError()
         if not (len(size) == 4):
             raise RuntimeError('Short read when receiving notification size '
-                               '(size: %s)' % len(size))
+                               '(size: {})'.format(len(size)))
         size = size[0] | size[1] << 8 | size[2] << 16 | size[3] << 24
         self.__logger.debug('Receiving notification of size %d', size)
         notification = self.__socket.recv(size)
@@ -473,11 +473,9 @@ class Bus:
             sink.handle(notification)
 
     def __repr__(self):
-        return '<%s %d connection(s) %d connector(s) at 0x%x>' \
-            % (type(self).__name__,
-               len(self.get_connections()),
-               len(self.get_connectors()),
-               id(self))
+        return '<{} {} connection(s) {} connector(s) at 0x{:x}>'.format(
+            type(self).__name__, len(self.get_connections()),
+            len(self.get_connectors()), id(self))
 
 
 __bus_clients = {}
@@ -762,9 +760,9 @@ class Connector(rsb.transport.Connector,
         elif server_string == 'auto':
             self.__server = 'auto'
         else:
-            raise TypeError('Server option has to be '
-                            '"1", "true", "0", "false" or "auto", not "%s"'
-                            % server_string)
+            raise TypeError(
+                'Server option has to be "1", "true", "0", "false" '
+                'or "auto", not "{}"'.format(server_string))
 
     def __del__(self):
         if self.__active:
@@ -793,8 +791,8 @@ class Connector(rsb.transport.Connector,
                 self.__bus = get_bus_client_for(host, port, tcpnodelay, self)
         else:
             raise TypeError(
-                'Server argument has to be True, False or "auto", not "%s"'
-                % server)
+                'Server argument has to be True, False or '
+                '"auto", not "{}"'.format(server))
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 

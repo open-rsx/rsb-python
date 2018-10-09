@@ -95,7 +95,7 @@ class OrderedQueueDispatcherPool:
 
         if thread_pool_size < 1:
             raise ValueError("Thread pool size must be at least 1,"
-                             "%d was given." % thread_pool_size)
+                             "{} was given.".format(thread_pool_size))
         self.__thread_pool_size = int(thread_pool_size)
 
         self.__del_func = del_func
@@ -386,7 +386,7 @@ def prefix():
         (path, token) = os.path.split(path)
         if token in ['site-packages', 'dist-packages']:
             (path, token) = os.path.split(path)
-            if token == 'python%s' % sys.version[:3]:
+            if token == 'python{}'.format(sys.version[:3]):
                 (path, token) = os.path.split(path)
                 return path
 

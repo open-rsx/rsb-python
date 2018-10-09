@@ -46,8 +46,8 @@ if __name__ == '__main__':
     # explanation of listener creation.
     with rsb.create_listener(rsb.Scope("/example/converter")) as listener:
         def print_data(event):
-            print("Received %s object with fields:\n%s"
-                  % (type(event.data).__name__, str(event.data)))
+            print("Received {} object with fields:\n{}".format(
+                type(event.data).__name__, str(event.data)))
         listener.add_handler(print_data)
 
         # wait endlessly for received events
