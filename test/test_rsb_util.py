@@ -21,69 +21,70 @@
 import random
 from threading import Condition
 import time
-import unittest
+
+import pytest
 
 import rsb.util
 from rsb.util import OrderedQueueDispatcherPool
 
 
-class EnumValueTest(unittest.TestCase):
+class TestEnumValue:
 
     def test_compare(self):
 
         val1 = rsb.util.Enum.EnumValue("TEST")
         val2 = rsb.util.Enum.EnumValue("OTHER")
-        self.assertNotEqual(val1, val2)
+        assert val1 != val2
 
-        self.assertTrue(val1 > val2)
-        self.assertTrue(val1 >= val2)
-        self.assertFalse(val1 < val2)
-        self.assertFalse(val1 <= val2)
+        assert val1 > val2
+        assert val1 >= val2
+        assert not (val1 < val2)
+        assert not (val1 <= val2)
 
         val2 = rsb.util.Enum.EnumValue("TEST")
-        self.assertEqual(val1, val2)
+        assert val1 == val2
 
         val1 = rsb.util.Enum.EnumValue("TEST", 5)
         val2 = rsb.util.Enum.EnumValue("OTHER", 10)
-        self.assertFalse(val1 > val2)
-        self.assertFalse(val1 >= val2)
-        self.assertTrue(val1 < val2)
-        self.assertTrue(val1 <= val2)
+        assert not (val1 > val2)
+        assert not (val1 >= val2)
+        assert val1 < val2
+        assert val1 <= val2
 
     def test_str(self):
+        assert str(rsb.util.Enum.EnumValue("TEST")) == "TEST"
 
-        self.assertEqual("TEST", str(rsb.util.Enum.EnumValue("TEST")))
 
-
-class EnumTest(unittest.TestCase):
+class TestEnum:
 
     def test_enum(self):
 
         e = rsb.util.Enum("e", ["A", "B", "C"])
 
-        self.assertEqual(rsb.util.Enum.EnumValue("A"), e.A)
-        self.assertEqual(rsb.util.Enum.EnumValue("B"), e.B)
-        self.assertEqual(rsb.util.Enum.EnumValue("C"), e.C)
+        assert rsb.util.Enum.EnumValue("A") == e.A
+        assert rsb.util.Enum.EnumValue("B") == e.B
+        assert rsb.util.Enum.EnumValue("C") == e.C
 
-        self.assertEqual("Enum e: A, B, C", str(e))
+        assert "Enum e: A == B, C", str(e)
 
     def test_value_enum(self):
 
         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
 
-        self.assertEqual(rsb.util.Enum.EnumValue("A", 10), e.A)
-        self.assertEqual(rsb.util.Enum.EnumValue("B", 20), e.B)
-        self.assertEqual(rsb.util.Enum.EnumValue("C", 30), e.C)
+        assert rsb.util.Enum.EnumValue("A", 10) == e.A
+        assert rsb.util.Enum.EnumValue("B", 20) == e.B
+        assert rsb.util.Enum.EnumValue("C", 30) == e.C
 
     def test_from_string(self):
         e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
-        self.assertEqual(e.from_string('A'), e.A)
-        self.assertEqual(e.from_string('B'), e.B)
-        self.assertEqual(e.from_string('C'), e.C)
-        self.assertRaises(ValueError, e.from_string, 'D')
+        assert e.from_string('A') == e.A
+        assert e.from_string('B') == e.B
+        assert e.from_string('C') == e.C
+        with pytest.raises(ValueError):
+            e.from_string('D')
 
 
-class OrderedQueueDispatcherPoolTest(unittest.TestCase):
+class TestOrderedQueueDispatcherPool:
 
     class StubReciever(object):
 
@@ -128,7 +129,8 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
         pool.start()
         try:
             pool.start()
-            self.fail("Starting an already running pool must not be possible")
+            pytest.fail(
+                "Starting an already running pool must not be possible")
         except RuntimeError:
             pass
 
@@ -147,10 +149,10 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
         # check receivers
         for receiver in receivers:
 
-            self.assertEqual(num_messages, len(receiver.messages))
+            assert len(receiver.messages) == num_messages
 
             for i in range(num_messages):
-                self.assertEqual(i, receiver.messages[i])
+                assert receiver.messages[i] == i
 
     class RejectFilter(object):
 
@@ -185,7 +187,7 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         pool.stop()
 
-        self.assertEqual(num_messages, reject_filter.reject_calls)
+        assert reject_filter.reject_calls == num_messages
 
     def test_unregister(self):
 
@@ -195,8 +197,8 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         receiver = self.StubReciever()
         pool.register_receiver(receiver)
-        self.assertTrue(pool.unregister_receiver(receiver))
-        self.assertFalse(pool.unregister_receiver(receiver))
+        assert pool.unregister_receiver(receiver)
+        assert not pool.unregister_receiver(receiver)
 
         pool.push(42)
 
@@ -204,4 +206,4 @@ class OrderedQueueDispatcherPoolTest(unittest.TestCase):
 
         time.sleep(0.1)
 
-        self.assertEqual(0, len(receiver.messages))
+        assert len(receiver.messages) == 0

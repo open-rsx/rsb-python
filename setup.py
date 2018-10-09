@@ -275,9 +275,10 @@ setup(name='rsb-python',
           protoc_version[1],
           protoc_version[0],
           protoc_version[1] + 1)],
-      setup_requires=['nose>=1.3',
-                      # 'coverage',
-                      'nose-testconfig'],
+      extras_require={
+          'dev': ['pytest', 'pytest-timeout',
+                  'tox']
+      },
 
       packages=find_rsb_packages(),
 

@@ -5,7 +5,6 @@ setup.cfg
 *.egg-info
 /cover*
 /.coverage
-/nosetests.xml
 /rsb/protocol
 /rsb/version.py
 /test/with-*.conf

@@ -18,26 +18,24 @@
 #
 # ============================================================
 
-import unittest
-
-from rsb import ParticipantConfig
+import rsb
 from rsb.converter import get_global_converter_map
 from rsb.transport.socket import InPushConnector, OutConnector
 from .transporttest import TransportCheck
 
 
 def get_connector(clazz, scope, activate=True):
-    connector = clazz(converters=get_global_converter_map(bytes),
-                      options=ParticipantConfig.from_file(
-                          'test/with-socket.conf').get_transport(
-                              'socket').options)
+    connector = clazz(
+        converters=get_global_converter_map(bytes),
+        options=rsb.get_default_participant_config().get_transport(
+            'socket').options)
     connector.set_scope(scope)
     if activate:
         connector.activate()
     return connector
 
 
-class SocketTransportTest(TransportCheck, unittest.TestCase):
+class TestSocketTransport(TransportCheck):
 
     def _get_in_push_connector(self, scope, activate=True):
         return get_connector(InPushConnector, scope, activate=activate)

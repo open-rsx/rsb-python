@@ -19,7 +19,8 @@
 # ============================================================
 
 from threading import Condition
-import unittest
+
+import pytest
 
 import rsb
 from rsb import ParticipantConfig
@@ -30,7 +31,7 @@ in_process_no_introspection_config = ParticipantConfig.from_dict({
 })
 
 
-class LocalServerTest(unittest.TestCase):
+class TestLocalServer:
 
     def test_construction(self):
 
@@ -38,19 +39,19 @@ class LocalServerTest(unittest.TestCase):
         with rsb.create_local_server(
                 '/some/scope',
                 in_process_no_introspection_config) as server:
-            self.assertEqual(server.methods, [])
+            assert server.methods == []
 
         with rsb.create_local_server(
                 rsb.Scope('/some/scope'),
                 in_process_no_introspection_config) as server:
-            self.assertEqual(server.methods, [])
+            assert server.methods == []
 
         # Test creating a server with directly specified methods
         with rsb.create_local_server(
                 rsb.Scope('/some/scope'),
                 methods=[('foo', lambda x: x, str, str)],
                 config=in_process_no_introspection_config) as server:
-            self.assertEqual([m.name for m in server.methods], ['foo'])
+            assert [m.name for m in server.methods] == ['foo']
 
         # Test creating a server that exposes method of an existing
         # object
@@ -64,24 +65,23 @@ class LocalServerTest(unittest.TestCase):
                 provider=some_object,
                 expose=[('bar', str, None)],
                 config=in_process_no_introspection_config) as server:
-            self.assertEqual([m.name for m in server.methods], ['bar'])
+            assert [m.name for m in server.methods] == ['bar']
 
             # Cannot supply expose without object
-            self.assertRaises(ValueError,
-                              rsb.create_local_server,
-                              '/some/scope',
-                              expose=[('bar', str, None)])
+            with pytest.raises(ValueError):
+                rsb.create_local_server('/some/scope',
+                                        expose=[('bar', str, None)])
 
             # Cannot supply these simultaneously
-            self.assertRaises(ValueError,
-                              rsb.create_local_server,
-                              '/some/scope',
-                              provider=some_object,
-                              expose=[('bar', str, None)],
-                              methods=[('foo', lambda x: x, str, str)])
+            with pytest.raises(ValueError):
+                rsb.create_local_server(
+                    '/some/scope',
+                    provider=some_object,
+                    expose=[('bar', str, None)],
+                    methods=[('foo', lambda x: x, str, str)])
 
 
-class RoundTripTest (unittest.TestCase):
+class TestRoundTrip:
 
     def test_round_trip(self):
 
@@ -94,20 +94,18 @@ class RoundTripTest (unittest.TestCase):
                     as remote_server:
 
                 # Call synchronously
-                self.assertEqual(
-                    list(map(remote_server.addone, list(range(100)))),
-                    list(range(1, 101)))
+                assert list(map(remote_server.addone, list(range(100)))) == \
+                    list(range(1, 101))
 
                 # Call synchronously with timeout
-                self.assertEqual([remote_server.addone(x, timeout=10)
-                                  for x in range(100)],
-                                 list(range(1, 101)))
+                assert [remote_server.addone(x, timeout=10)
+                        for x in range(100)] == list(range(1, 101))
 
                 # Call asynchronously
-                self.assertEqual([x.get() for x in
-                                  list(map(remote_server.addone.asynchronous,
-                                           list(range(100))))],
-                                 list(range(1, 101)))
+                assert [x.get()
+                        for x in
+                        list(map(remote_server.addone.asynchronous,
+                                 list(range(100))))] == list(range(1, 101))
 
     def test_void_methods(self):
 
@@ -135,8 +133,7 @@ class RoundTripTest (unittest.TestCase):
             with rsb.create_remote_server(
                     server_scope,
                     in_process_no_introspection_config) as remote_server:
-                self.assertEqual(remote_server.get_method(method_name)('foo'),
-                                 'foo')
+                assert remote_server.get_method(method_name)('foo') == 'foo'
 
     def test_parallel_call_of_one_method(self):
 

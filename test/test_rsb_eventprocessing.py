@@ -20,8 +20,9 @@
 
 from threading import Condition
 import time
-import unittest
 import uuid
+
+import pytest
 
 import rsb
 from rsb import Event, EventId
@@ -30,14 +31,14 @@ from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 from rsb.filter import RecordingFalseFilter, RecordingTrueFilter
 
 
-class ScopeDispatcherTest(unittest.TestCase):
+class TestScopeDispatcher:
 
     def test_sinks(self):
         dispatcher = rsb.eventprocessing.ScopeDispatcher()
         dispatcher.add_sink(rsb.Scope('/foo'), 1)
         dispatcher.add_sink(rsb.Scope('/foo'), 2)
         dispatcher.add_sink(rsb.Scope('/bar'), 3)
-        self.assertEqual({1, 2, 3}, set(dispatcher.sinks))
+        assert set(dispatcher.sinks) == {1, 2, 3}
 
     def test_matching_sinks(self):
         dispatcher = rsb.eventprocessing.ScopeDispatcher()
@@ -46,8 +47,8 @@ class ScopeDispatcherTest(unittest.TestCase):
         dispatcher.add_sink(rsb.Scope('/bar'), 3)
 
         def check(scope, expected):
-            self.assertEqual(set(expected),
-                             set(dispatcher.matching_sinks(rsb.Scope(scope))))
+            assert set(
+                dispatcher.matching_sinks(rsb.Scope(scope))) == set(expected)
         check("/", ())
         check("/foo", (1, 2))
         check("/foo/baz", (1, 2))
@@ -55,7 +56,7 @@ class ScopeDispatcherTest(unittest.TestCase):
         check("/bar/fez", (3,))
 
 
-class ParallelEventReceivingStrategyTest(unittest.TestCase):
+class TestParallelEventReceivingStrategy:
 
     def test_matching_process(self):
         ep = rsb.eventprocessing.ParallelEventReceivingStrategy(5)
@@ -93,32 +94,32 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
             while len(matching_recording_filter_1.events) < 4:
                 matching_recording_filter_1.condition.wait()
 
-            self.assertEqual(4, len(matching_recording_filter_1.events))
-            self.assertTrue(event1 in matching_recording_filter_1.events)
-            self.assertTrue(event2 in matching_recording_filter_1.events)
+            assert len(matching_recording_filter_1.events) == 4
+            assert event1 in matching_recording_filter_1.events
+            assert event2 in matching_recording_filter_1.events
 
         with matching_recording_filter_2.condition:
             while len(matching_recording_filter_2.events) < 4:
                 matching_recording_filter_2.condition.wait()
 
-            self.assertEqual(4, len(matching_recording_filter_2.events))
-            self.assertTrue(event1 in matching_recording_filter_2.events)
-            self.assertTrue(event2 in matching_recording_filter_2.events)
+            assert len(matching_recording_filter_2.events) == 4
+            assert event1 in matching_recording_filter_2.events
+            assert event2 in matching_recording_filter_2.events
 
         # both actions must have been called
         with mc1_cond:
             while len(matching_calls1) < 2:
                 mc1_cond.wait()
-            self.assertEqual(2, len(matching_calls1))
-            self.assertTrue(event1 in matching_calls1)
-            self.assertTrue(event2 in matching_calls1)
+            assert len(matching_calls1) == 2
+            assert event1 in matching_calls1
+            assert event2 in matching_calls1
 
         with mc2_cond:
             while len(matching_calls2) < 2:
                 mc2_cond.wait()
-            self.assertEqual(2, len(matching_calls2))
-            self.assertTrue(event1 in matching_calls2)
-            self.assertTrue(event2 in matching_calls2)
+            assert len(matching_calls2) == 2
+            assert event1 in matching_calls2
+            assert event2 in matching_calls2
 
         ep.remove_filter(matching_recording_filter_2)
         ep.remove_filter(matching_recording_filter_1)
@@ -148,12 +149,12 @@ class ParallelEventReceivingStrategyTest(unittest.TestCase):
         with no_match_recording_filter.condition:
             while len(no_match_recording_filter.events) < 3:
                 no_match_recording_filter.condition.wait()
-            self.assertEqual(3, len(no_match_recording_filter.events))
-            self.assertTrue(event1 in no_match_recording_filter.events)
-            self.assertTrue(event2 in no_match_recording_filter.events)
-            self.assertTrue(event3 in no_match_recording_filter.events)
+            assert len(no_match_recording_filter.events) == 3
+            assert event1 in no_match_recording_filter.events
+            assert event2 in no_match_recording_filter.events
+            assert event3 in no_match_recording_filter.events
 
-        self.assertEqual(0, len(no_matching_calls))
+        assert len(no_matching_calls) == 0
 
         ep.remove_filter(no_match_recording_filter)
 
@@ -199,8 +200,7 @@ class MockConnector(object):
 
 # TODO(jmoringe): could be useful in all tests for active objects
 class ActivateCountingMockConnector(MockConnector):
-    def __init__(self, case):
-        self.__case = case
+    def __init__(self):
         self.activations = 0
         self.deactivations = 0
 
@@ -211,33 +211,36 @@ class ActivateCountingMockConnector(MockConnector):
         self.deactivations += 1
 
     def expect(self, activations, deactivations):
-        self.__case.assertEqual(activations, self.activations)
-        self.__case.assertEqual(deactivations, self.deactivations)
+        assert activations == self.activations
+        assert deactivations == self.deactivations
 
 
-class OutRouteConfiguratorTest(unittest.TestCase):
+class TestOutRouteConfigurator:
 
     def test_activation(self):
-        connector = ActivateCountingMockConnector(self)
+        connector = ActivateCountingMockConnector()
         configurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[connector])
 
         # Cannot deactivate inactive configurator
-        self.assertRaises(RuntimeError, configurator.deactivate)
+        with pytest.raises(RuntimeError):
+            configurator.deactivate()
         connector.expect(0, 0)
 
         configurator.activate()
         connector.expect(1, 0)
 
         # Cannot activate already activated configurator
-        self.assertRaises(RuntimeError, configurator.activate)
+        with pytest.raises(RuntimeError):
+            configurator.activate()
         connector.expect(1, 0)
 
         configurator.deactivate()
         connector.expect(1, 1)
 
         # Cannot deactivate twice
-        self.assertRaises(RuntimeError, configurator.deactivate)
+        with pytest.raises(RuntimeError):
+            configurator.deactivate()
         connector.expect(1, 1)
 
     def test_publish(self):
@@ -253,47 +256,52 @@ class OutRouteConfiguratorTest(unittest.TestCase):
         event = 42
 
         # Cannot publish while inactive
-        self.assertRaises(RuntimeError, configurator.handle, event)
-        self.assertEqual(None, RecordingOutConnector.last_event)
+        with pytest.raises(RuntimeError):
+            configurator.handle(event)
+        assert RecordingOutConnector.last_event is None
 
         configurator.activate()
         configurator.handle(event)
-        self.assertEqual(event, RecordingOutConnector.last_event)
+        assert RecordingOutConnector.last_event == event
 
         event = 34
         configurator.handle(event)
-        self.assertEqual(event, RecordingOutConnector.last_event)
+        assert RecordingOutConnector.last_event == event
 
         # Deactivate and check exception, again
         RecordingOutConnector.last_event = None
         configurator.deactivate()
-        self.assertRaises(RuntimeError, configurator.handle, event)
-        self.assertEqual(None, RecordingOutConnector.last_event)
+        with pytest.raises(RuntimeError):
+            configurator.handle(event)
+        assert RecordingOutConnector.last_event is None
 
 
-class InPushRouteConfiguratorTest(unittest.TestCase):
+class TestInPushRouteConfigurator:
 
     def test_activation(self):
-        connector = ActivateCountingMockConnector(self)
+        connector = ActivateCountingMockConnector()
         configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[connector])
 
         # Cannot deactivate inactive configurator
-        self.assertRaises(RuntimeError, configurator.deactivate)
+        with pytest.raises(RuntimeError):
+            configurator.deactivate()
         connector.expect(0, 0)
 
         configurator.activate()
         connector.expect(1, 0)
 
         # Cannot activate already activated configurator
-        self.assertRaises(RuntimeError, configurator.activate)
+        with pytest.raises(RuntimeError):
+            configurator.activate()
         connector.expect(1, 0)
 
         configurator.deactivate()
         connector.expect(1, 1)
 
         # Cannot deactivate twice
-        self.assertRaises(RuntimeError, configurator.deactivate)
+        with pytest.raises(RuntimeError):
+            configurator.deactivate()
         connector.expect(1, 1)
 
     def test_notify_connector(self):
@@ -305,12 +313,12 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
                 self.calls.append((filter_, action))
 
             def expect(self1, calls):  # noqa: N805
-                self.assertEqual(len(calls), len(self1.calls))
+                assert len(self1.calls) == len(calls)
                 for (exp_filter, exp_action), (filter_, action) in \
                         zip(calls, self1.calls):
-                    self.assertEqual(exp_filter, filter_)
+                    assert exp_filter == filter_
                     if exp_action == 'add':
-                        self.assertEqual(action, rsb.filter.FilterAction.ADD)
+                        assert action == rsb.filter.FilterAction.ADD
 
         connector = RecordingMockConnector()
         configurator = rsb.eventprocessing.InPushRouteConfigurator(
@@ -333,7 +341,7 @@ class InPushRouteConfiguratorTest(unittest.TestCase):
                           (f3, 'remove')))
 
 
-class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
+class TestFullyParallelEventReceivingStrategy:
 
     class CollectingHandler(object):
 
@@ -361,12 +369,12 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         with h1.condition:
             while h1.event is None:
                 h1.condition.wait()
-            self.assertEqual(event, h1.event)
+            assert event == h1.event
 
         with h2.condition:
             while h2.event is None:
                 h2.condition.wait()
-            self.assertEqual(event, h2.event)
+            assert event == h2.event
 
     def test_filtering(self):
 
@@ -390,7 +398,7 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
         time.sleep(1)
 
         with handler.condition:
-            self.assertEqual(None, handler.event)
+            assert handler.event is None
 
         strategy.remove_filter(false_filter)
 
@@ -437,4 +445,4 @@ class FullyParallelEventReceivingStrategyTest(unittest.TestCase):
             if num_called == 5:
                 self.fail("Impossible to be called in parallel again")
             else:
-                self.assertEqual(3, max_parallel_calls.value)
+                assert max_parallel_calls.value == 3
