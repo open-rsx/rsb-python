@@ -42,3 +42,6 @@ class TestSocketTransport(TransportCheck):
 
     def _get_out_connector(self, scope, activate=True):
         return get_connector(OutConnector, scope, activate=activate)
+
+    def _get_in_pull_connector(self, scope, activate=True):
+        raise NotImplementedError()

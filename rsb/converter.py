@@ -38,7 +38,7 @@ from rsb.transport.conversion import (event_to_notification,
                                       notification_to_event)
 
 
-class Converter:
+class Converter(metaclass=abc.ABCMeta):
     """
     Base class for converters to a certain target type.
 
@@ -103,11 +103,13 @@ class Converter:
 
     wire_schema = property(get_wire_schema)
 
+    @abc.abstractmethod
     def serialize(self, inp):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def deserialize(self, inp, wire_schema):
-        raise NotImplementedError()
+        pass
 
 
 class UnknownConverterError(KeyError):
@@ -124,7 +126,7 @@ class UnknownConverterError(KeyError):
                 source_type, wire_schema))
 
 
-class ConverterSelectionStrategy:
+class ConverterSelectionStrategy(metaclass=abc.ABCMeta):
     """
     This class defines the interface for converter selection strategy classes.
 

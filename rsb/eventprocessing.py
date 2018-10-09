@@ -459,27 +459,33 @@ class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
             self.__filters = [f for f in self.__filters if f != the_filter]
 
 
-class EventSendingStrategy:
-    def get_connectors(self):
-        raise NotImplementedError()
+class EventSendingStrategy(metaclass=abc.ABCMeta):
 
-    connectors = property(get_connectors)
+    @property
+    @abc.abstractmethod
+    def connectors(self):
+        pass
 
+    @abc.abstractmethod
     def add_connector(self, connector):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def remove_connector(self, connector):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def handle(self, event):
-        raise NotImplementedError()
+        pass
 
 
 class DirectEventSendingStrategy(EventSendingStrategy):
+
     def __init__(self):
         self.__connectors = []
 
-    def get_connectors(self):
+    @property
+    def connectors(self):
         return self.__connectors
 
     def add_connector(self, connector):

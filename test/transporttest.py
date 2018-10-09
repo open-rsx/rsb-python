@@ -18,6 +18,7 @@
 #
 # ============================================================
 
+import abc
 import random
 import string
 import threading
@@ -51,21 +52,24 @@ class SettingReceiver:
         return "{}({!r})".format(self.__class__.__name__, self.scope)
 
 
-class TransportCheck:
+class TransportCheck(metaclass=abc.ABCMeta):
     """
     An abstract base class for ensuring interface assumptions about transports.
 
     .. codeauthor:: jwienke
     """
 
+    @abc.abstractmethod
     def _get_in_push_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def _get_in_pull_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def _get_out_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
     @pytest.mark.timeout(5)
     def test_roundtrip(self):

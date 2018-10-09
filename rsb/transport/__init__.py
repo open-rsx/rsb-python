@@ -159,6 +159,7 @@ class OutConnector(Connector):
     .. codeauthor:: jmoringe
     """
 
+    @abc.abstractmethod
     def handle(self, event):
         """
         Send ``event`` and adapts its meta data with the actual send time.
@@ -167,7 +168,7 @@ class OutConnector(Connector):
             event:
                 event to send
         """
-        raise NotImplementedError()
+        pass
 
 
 class ConverterSelectingConnector:
