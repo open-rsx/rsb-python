@@ -9,8 +9,7 @@ This repository contains the Python implementation of the [Robotics Service Bus]
 # Dependencies
 
 * epydoc for API documentation
-* coverage for code coverage report
-* unittest-xml-reporting for xml unit test reports
+* [pytest], [pytest-timeout], [tox], and optionally [pyenv] for testing
 
 # Building and Installing
 
@@ -25,11 +24,15 @@ python setup.py install --prefix=$prefix
 
 Preparation:
 
-1. Install [pyenv] and configure it as described
-1. With [pyenv], install Python 3.6 and 3.7 and make them active for this project
-1. Install [tox]
+If you do not have parallel installations of Python 3.6 and 3.7 provided through other means, install [pyenv], configure it as described in its installation instructions, and install Python 3.6 and 3.7 and make them active for this project using:
 
-Execute:
+```shell
+pyenv install 3.6.0
+pyenv install 3.7.0
+pyenv local 3.6.0 3.7.0
+```
+
+For executing the tests, then use:
 
 ```shell
 tox
@@ -52,4 +55,6 @@ The development of this software has been supported as follows:
 * This work was supported by the Cluster of Excellence Cognitive Interaction Technology ‘CITEC’ (EXC 277) at Bielefeld University, which is funded by the German Research Foundation (DFG).
 
 [pyenv]: https://github.com/pyenv/pyenv
+[pytest-timeout]: https://bitbucket.org/pytest-dev/pytest-timeout/
+[pytest]: https://docs.pytest.org
 [tox]: https://tox.readthedocs.io
