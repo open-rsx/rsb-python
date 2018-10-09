@@ -165,13 +165,13 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.__logger.debug('Receiving notifications')
             try:
                 self.do_one_notification()
-            except EOFError as e:
+            except EOFError:
                 self.__logger.info("Received EOF while reading")
                 if not self.__active_shutdown:
                     self.shutdown()
                 break
             except Exception as e:
-                self.__logger.warn('Receive error: %s', e)
+                self.__logger.warn('Receive error: %s', e, exc_info=True)
                 if self.error_hook is not None:
                     self.error_hook(e)
                 break
@@ -232,7 +232,8 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             try:
                 self.__socket.close()
             except Exception as e:
-                self.__logger.warn('Failed to close socket: %s', e)
+                self.__logger.warn('Failed to close socket: %s', e,
+                                   exc_info=True)
 
     def wait_for_deactivation(self):
         self.__logger.info('Joining thread')
@@ -312,7 +313,7 @@ class Bus:
                 except Exception as e:
                     self.__logger.warning(
                         "Error while deactivating connection %s: %s",
-                        connection, e)
+                        connection, e, exc_info=True)
             connection.error_hook = remove_and_deactivate
             connection.activate()
 
@@ -440,7 +441,8 @@ class Bus:
                 connection.shutdown()
                 connection.wait_for_deactivation()
             except Exception as e:
-                self.__logger.error('Failed to close connections: %s', e)
+                self.__logger.error('Failed to close connections: %s', e,
+                                    exc_info=True)
 
     # Low-level helpers
 
@@ -454,7 +456,7 @@ class Bus:
                     self.__logger.warn(
                         'Failed to send to %s: %s; '
                         'will close connection later',
-                        connection, e)
+                        connection, e, exc_info=True)
                     failing.append(connection)
 
         # Removed connections for which sending the notification
@@ -644,7 +646,8 @@ class BusServer(Bus):
             except socket.timeout as e:
                 if sys.platform != 'darwin':
                     self.__logger.error(
-                        'Unexpected timeout in accept_clients: "%s"', e)
+                        'Unexpected timeout in accept_clients: "%s"', e,
+                        exc_info=True)
             except Exception as e:
                 if self.__active:
                     self.__logger.error('Exception in accept_clients: "%s"', e,
@@ -696,11 +699,13 @@ class BusServer(Bus):
             try:
                 self.__socket.shutdown(socket.SHUT_RDWR)
             except Exception as e:
-                self.__logger.warn('Failed to shutdown listen socket: %s', e)
+                self.__logger.warn('Failed to shutdown listen socket: %s', e,
+                                   exc_info=True)
             try:
                 self.__socket.close()
             except Exception as e:
-                self.__logger.warn('Failed to close listen socket: %s', e)
+                self.__logger.warn('Failed to close listen socket: %s', e,
+                                   exc_info=True)
             self.__socket = None
 
         # The acceptor thread should encounter an exception and exit
@@ -784,7 +789,8 @@ class Connector(rsb.transport.Connector,
                     host, port)
                 self.__bus = get_bus_server_for(host, port, tcpnodelay, self)
             except Exception as e:
-                self.__logger.info('Failed to get bus server: %s', e)
+                self.__logger.info('Failed to get bus server: %s', e,
+                                   exc_info=True)
                 self.__logger.info(
                     'Trying to get bus client %s:%d (in server = auto mode)',
                     host, port)

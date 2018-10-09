@@ -544,10 +544,10 @@ class IntrospectionSender:
                             (p for p in self.__participants
                              if p.participant_id == participant_id),
                             None)
-                except Exception as e:
+                except Exception:
                     self.__logger.warn('Query event %s does not '
-                                       'properly address a participant: %s',
-                                       event, e)
+                                       'properly address a participant',
+                                       event, exc_info=True)
 
             def process(thunk):
                 if participant is not None and event.method == 'REQUEST':
