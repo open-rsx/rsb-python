@@ -739,7 +739,7 @@ class Scope:
                 raise ValueError('Scope strings have be encodable as '
                                  'ASCII-strings, but the supplied scope '
                                  'string cannot be encoded '
-                                 'as ASCII-string: {}'.format(e))
+                                 'as ASCII-string: {}'.format(e)) from e
 
         # append missing trailing slash
         if string_rep[-1] != self.__COMPONENT_SEPARATOR:
