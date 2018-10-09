@@ -35,7 +35,7 @@ import rsb.filter
 import rsb.util
 
 
-class ScopeDispatcher(object):
+class ScopeDispatcher:
     """
     Maintains a map of :ref:`Scopes <scope>` to sink objects.
 
@@ -119,7 +119,7 @@ class ScopeDispatcher(object):
                 yield sink
 
 
-class BroadcastProcessor(object):
+class BroadcastProcessor:
     """
     Implements synchronous broadcast dispatch to a list of handlers.
 
@@ -161,7 +161,7 @@ class BroadcastProcessor(object):
                                              id(self))
 
 
-class EventReceivingStrategy(object, metaclass=abc.ABCMeta):
+class EventReceivingStrategy(metaclass=abc.ABCMeta):
     """
     Superclass for event receiving strategies.
 
@@ -459,7 +459,7 @@ class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
             self.__filters = [f for f in self.__filters if f != the_filter]
 
 
-class EventSendingStrategy(object):
+class EventSendingStrategy:
     def get_connectors(self):
         raise NotImplementedError
 
@@ -493,7 +493,7 @@ class DirectEventSendingStrategy(EventSendingStrategy):
             connector.handle(event)
 
 
-class Configurator(object):
+class Configurator:
     """
     Superclass for in- and out-direction Configurator classes.
 

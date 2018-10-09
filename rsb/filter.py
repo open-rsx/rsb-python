@@ -35,7 +35,7 @@ class FilterAction(Enum):
     UPDATE = 3
 
 
-class AbstractFilter(object):
+class AbstractFilter:
     """
     Interface for concrete filters.
 

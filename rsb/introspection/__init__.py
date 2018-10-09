@@ -49,7 +49,7 @@ _display_name = None
 # Model
 
 
-class ParticipantInfo(object):
+class ParticipantInfo:
     """
     Instances of this class store information about a participant.
 
@@ -213,7 +213,7 @@ def program_name():
         return '<no script>'
 
 
-class ProcessInfo(object):
+class ProcessInfo:
     """
     Stores information about operating system processes.
 
@@ -373,7 +373,7 @@ def machine_version():
             return None
 
 
-class HostInfo(object):
+class HostInfo:
     """
     Instances of this class store information about a host.
 
@@ -503,7 +503,7 @@ def process_scope(host_id, process_id, base_scope=HOSTS_SCOPE):
             .concat(rsb.Scope('/' + process_id)))
 
 
-class IntrospectionSender(object):
+class IntrospectionSender:
     """
     Sends introspection information to other RSB processes.
 

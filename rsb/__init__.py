@@ -84,7 +84,7 @@ def _register_default_transports():
         socket.initialize()
 
 
-class QualityOfServiceSpec(object):
+class QualityOfServiceSpec:
     """
     Specification of desired quality of service settings event transmission.
 
@@ -335,7 +335,7 @@ def _config_value_is_true(value):
     return value in _CONFIG_TRUE_VALUES
 
 
-class ParticipantConfig(object):
+class ParticipantConfig:
     """
     Describes desired configurations for newly created participants.
 
@@ -354,7 +354,7 @@ class ParticipantConfig(object):
     .. codeauthor:: jmoringe
     """
 
-    class Transport(object):
+    class Transport:
         """
         Describes configurations of transports connectors.
 
@@ -687,7 +687,7 @@ def converters_from_transport_config(transport):
     return converter_map
 
 
-class Scope(object):
+class Scope:
     """
     A scope defines a channel of the hierarchical unified bus covered by RSB.
 
@@ -920,7 +920,7 @@ class Scope(object):
         return '%s("%s")' % (self.__class__.__name__, self.to_string())
 
 
-class MetaData(object):
+class MetaData:
     """
     Stores RSB-specific and user-supplied meta-data items for an event.
 
@@ -1060,7 +1060,7 @@ class MetaData(object):
         return self.__str__()
 
 
-class EventId(object):
+class EventId:
     """
     Uniquely identifies an Event.
 
@@ -1152,7 +1152,7 @@ class EventId(object):
         return result
 
 
-class Event(object):
+class Event:
     """
     Basic event class.
 
@@ -1490,7 +1490,7 @@ class Event(object):
         return not self.__eq__(other)
 
 
-class Hook(object):
+class Hook:
     """
     A mutable collection of callback functions that can be called together.
 
@@ -1520,7 +1520,7 @@ participant_creation_hook = Hook()
 participant_destruction_hook = Hook()
 
 
-class Participant(object):
+class Participant:
     """
     Base class for specialized bus participant classes.
 

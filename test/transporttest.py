@@ -35,7 +35,7 @@ from rsb import (create_informer,
                  Scope)
 
 
-class SettingReceiver(object):
+class SettingReceiver:
 
     def __init__(self, scope):
         self.result_event = None
@@ -51,7 +51,7 @@ class SettingReceiver(object):
         return "%s(%r)" % (self.__class__.__name__, self.scope)
 
 
-class TransportCheck(object):
+class TransportCheck:
     """
     An abstract base class for ensuring interface assumptions about transports.
 

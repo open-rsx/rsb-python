@@ -42,7 +42,7 @@ class FutureExecutionError(FutureError):
         super(FutureExecutionError, self).__init__(*args)
 
 
-class Future(object):
+class Future:
     """
     Represents the results of in-progress operations.
 

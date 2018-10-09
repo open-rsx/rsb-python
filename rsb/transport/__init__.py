@@ -32,7 +32,7 @@ import threading
 from rsb.util import get_logger_by_class
 
 
-class Connector(object, metaclass=abc.ABCMeta):
+class Connector(metaclass=abc.ABCMeta):
     """
     Superclass for transport-specific connector classes.
 
@@ -170,7 +170,7 @@ class OutConnector(Connector):
         raise NotImplementedError()
 
 
-class ConverterSelectingConnector(object):
+class ConverterSelectingConnector:
     """
     Base class for connectors that use a map of converters for serialization.
 
@@ -241,7 +241,7 @@ class ConverterSelectingConnector(object):
     converter_map = property(get_converter_map)
 
 
-class TransportFactory(object, metaclass=abc.ABCMeta):
+class TransportFactory(metaclass=abc.ABCMeta):
     """Creates connectors for a specific transport."""
 
     @abc.abstractmethod

@@ -35,7 +35,7 @@ from threading import RLock
 from rsb import transport
 
 
-class Bus(object):
+class Bus:
     """
     Singleton-like representation of the local bus.
 

@@ -39,7 +39,7 @@ class _InterruptedError(RuntimeError):
     pass
 
 
-class OrderedQueueDispatcherPool(object):
+class OrderedQueueDispatcherPool:
     """
     A thread pool that dispatches messages to a list of receivers.
 
@@ -58,7 +58,7 @@ class OrderedQueueDispatcherPool(object):
     .. codeauthor:: jwienke
     """
 
-    class _Receiver(object):
+    class _Receiver:
 
         def __init__(self, receiver):
             self.receiver = receiver

@@ -504,7 +504,7 @@ class TetsIntegration:
         requiring a completely new instance of the default participant config.
         """
 
-        class FooType(object):
+        class FooType:
             """Dummy data type for the test."""
 
         class FooTypeConverter(Converter):

@@ -38,7 +38,7 @@ from rsb.transport.conversion import (event_to_notification,
                                       notification_to_event)
 
 
-class Converter(object):
+class Converter:
     """
     Base class for converters to a certain target type.
 
@@ -124,7 +124,7 @@ class UnknownConverterError(KeyError):
                                                                 wire_schema))
 
 
-class ConverterSelectionStrategy(object):
+class ConverterSelectionStrategy:
     """
     This class defines the interface for converter selection strategy classes.
 

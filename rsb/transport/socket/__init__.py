@@ -239,7 +239,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         self.__thread.join()
 
 
-class Bus(object):
+class Bus:
     """
     Instances of this class provide access to a socket-based bus.
 
@@ -296,7 +296,7 @@ class Bus(object):
         with self.lock:
             self.__connections.append(connection)
 
-            class Handler(object):
+            class Handler:
 
                 def __init__(_self):  # noqa: N805
                     _self.bus = self

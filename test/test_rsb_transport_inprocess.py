@@ -28,7 +28,7 @@ from rsb.transport.local import (Bus,
 from .transporttest import TransportCheck
 
 
-class StubSink(object):
+class StubSink:
 
     def __init__(self, scope):
         self.scope = scope
