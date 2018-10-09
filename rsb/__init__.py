@@ -36,6 +36,7 @@ In order to create basic objects have a look at the functions
 
 import configparser
 import copy
+from enum import Enum
 from functools import reduce
 import logging
 import os
@@ -46,7 +47,7 @@ import time
 import uuid
 
 import rsb.eventprocessing
-from rsb.util import Enum, get_logger_by_class
+from rsb.util import get_logger_by_class
 
 
 _logger = logging.getLogger('rsb')
@@ -95,8 +96,15 @@ class QualityOfServiceSpec(object):
     .. codeauthor:: jwienke
     """
 
-    Ordering = Enum("Ordering", ["UNORDERED", "ORDERED"], [10, 20])
-    Reliability = Enum("Reliability", ["UNRELIABLE", "RELIABLE"], [10, 20])
+    class Ordering(Enum):
+
+        UNORDERED = 10
+        ORDERED = 20
+
+    class Reliability(Enum):
+
+        UNRELIABLE = 10
+        RELIABLE = 20
 
     def __init__(self, ordering=Ordering.UNORDERED,
                  reliability=Reliability.RELIABLE):
@@ -504,15 +512,15 @@ class ParticipantConfig(object):
         # Quality of service
         qos_options = dict(section_options('qualityofservice'))
         result.__qos.set_reliability(
-            QualityOfServiceSpec.Reliability.from_string(
+            QualityOfServiceSpec.Reliability[
                 qos_options.get(
                     'reliability',
-                    QualityOfServiceSpec().get_reliability().__str__())))
+                    QualityOfServiceSpec().get_reliability().name)])
         result.__qos.set_ordering(
-            QualityOfServiceSpec.Ordering.from_string(
+            QualityOfServiceSpec.Ordering[
                 qos_options.get(
                     'ordering',
-                    QualityOfServiceSpec().get_ordering().__str__())))
+                    QualityOfServiceSpec().get_ordering().name)])
 
         # Transport options
         for transport in ['spread', 'socket', 'inprocess']:

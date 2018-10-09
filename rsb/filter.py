@@ -25,11 +25,14 @@ Contains filters which can be used to restrict the events received by clients.
 .. codeauthor:: jmoringe
 """
 
+from enum import Enum
 from threading import Condition
 
-import rsb.util
 
-FilterAction = rsb.util.Enum("FilterAction", ["ADD", "REMOVE", "UPDATE"])
+class FilterAction(Enum):
+    ADD = 1
+    REMOVE = 2
+    UPDATE = 3
 
 
 class AbstractFilter(object):

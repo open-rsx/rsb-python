@@ -24,64 +24,7 @@ import time
 
 import pytest
 
-import rsb.util
 from rsb.util import OrderedQueueDispatcherPool
-
-
-class TestEnumValue:
-
-    def test_compare(self):
-
-        val1 = rsb.util.Enum.EnumValue("TEST")
-        val2 = rsb.util.Enum.EnumValue("OTHER")
-        assert val1 != val2
-
-        assert val1 > val2
-        assert val1 >= val2
-        assert not (val1 < val2)
-        assert not (val1 <= val2)
-
-        val2 = rsb.util.Enum.EnumValue("TEST")
-        assert val1 == val2
-
-        val1 = rsb.util.Enum.EnumValue("TEST", 5)
-        val2 = rsb.util.Enum.EnumValue("OTHER", 10)
-        assert not (val1 > val2)
-        assert not (val1 >= val2)
-        assert val1 < val2
-        assert val1 <= val2
-
-    def test_str(self):
-        assert str(rsb.util.Enum.EnumValue("TEST")) == "TEST"
-
-
-class TestEnum:
-
-    def test_enum(self):
-
-        e = rsb.util.Enum("e", ["A", "B", "C"])
-
-        assert rsb.util.Enum.EnumValue("A") == e.A
-        assert rsb.util.Enum.EnumValue("B") == e.B
-        assert rsb.util.Enum.EnumValue("C") == e.C
-
-        assert "Enum e: A == B, C", str(e)
-
-    def test_value_enum(self):
-
-        e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
-
-        assert rsb.util.Enum.EnumValue("A", 10) == e.A
-        assert rsb.util.Enum.EnumValue("B", 20) == e.B
-        assert rsb.util.Enum.EnumValue("C", 30) == e.C
-
-    def test_from_string(self):
-        e = rsb.util.Enum("e", ["A", "B", "C"], [10, 20, 30])
-        assert e.from_string('A') == e.A
-        assert e.from_string('B') == e.B
-        assert e.from_string('C') == e.C
-        with pytest.raises(ValueError):
-            e.from_string('D')
 
 
 class TestOrderedQueueDispatcherPool:
