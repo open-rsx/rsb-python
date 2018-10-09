@@ -29,7 +29,7 @@ def get_connector(clazz, scope, activate=True):
         converters=get_global_converter_map(bytes),
         options=rsb.get_default_participant_config().get_transport(
             'socket').options)
-    connector.set_scope(scope)
+    connector.scope = scope
     if activate:
         connector.activate()
     return connector

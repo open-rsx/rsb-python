@@ -122,7 +122,8 @@ class QualityOfServiceSpec:
         self.__ordering = ordering
         self.__reliability = reliability
 
-    def get_ordering(self):
+    @property
+    def ordering(self):
         """
         Return the desired ordering settings.
 
@@ -132,7 +133,8 @@ class QualityOfServiceSpec:
 
         return self.__ordering
 
-    def set_ordering(self, ordering):
+    @ordering.setter
+    def ordering(self, ordering):
         """
         Set the desired ordering settings.
 
@@ -142,9 +144,8 @@ class QualityOfServiceSpec:
 
         self.__ordering = ordering
 
-    ordering = property(get_ordering, set_ordering)
-
-    def get_reliability(self):
+    @property
+    def reliability(self):
         """
         Return the desired reliability settings.
 
@@ -154,7 +155,8 @@ class QualityOfServiceSpec:
 
         return self.__reliability
 
-    def set_reliability(self, reliability):
+    @reliability.setter
+    def reliability(self, reliability):
         """
         Set the desired reliability settings.
 
@@ -163,8 +165,6 @@ class QualityOfServiceSpec:
         """
 
         self.__reliability = reliability
-
-    reliability = property(get_reliability, set_reliability)
 
     def __eq__(self, other):
         try:
@@ -391,39 +391,37 @@ class ParticipantConfig:
                 for (key, value) in list(options.items())
                 if key.startswith('converter.python')}
 
-        def get_name(self):
+        @property
+        def name(self):
             return self.__name
 
-        name = property(get_name)
-
-        def is_enabled(self):
+        @property
+        def enabled(self):
             return self.__enabled
 
-        def set_enabled(self, flag):
+        @enabled.setter
+        def enabled(self, flag):
             self.__enabled = flag
 
-        enabled = property(is_enabled, set_enabled)
-
-        def get_converters(self):
+        @property
+        def converters(self):
             return self.__converters
 
-        def set_converters(self, converters):
+        @converters.setter
+        def converters(self, converters):
             self.__converters = converters
 
-        converters = property(get_converters, set_converters)
-
-        def get_converter_rules(self):
+        @property
+        def converter_rules(self):
             return self.__converter_rules
 
-        def set_converter_rules(self, converter_rules):
+        @converter_rules.setter
+        def converter_rules(self, converter_rules):
             self.__converter_rules = converter_rules
 
-        converter_rules = property(get_converter_rules, set_converter_rules)
-
-        def get_options(self):
+        @property
+        def options(self):
             return self.__options
-
-        options = property(get_options)
 
         def __deepcopy__(self, memo):
             result = copy.copy(self)
@@ -468,31 +466,32 @@ class ParticipantConfig:
 
         self.__introspection = introspection
 
-    def get_transports(self, include_disabled=False):
-        return [t for t in list(self.__transports.values())
-                if include_disabled or t.is_enabled()]
+    @property
+    def enabled_transports(self):
+        return [t for t in list(self.__transports.values()) if t.enabled]
 
-    transports = property(get_transports)
+    @property
+    def all_transports(self):
+        return [t for t in list(self.__transports.values())]
 
     def get_transport(self, name):
         return self.__transports[name]
 
-    def get_quality_of_service_spec(self):
+    @property
+    def quality_of_service_spec(self):
         return self.__qos
 
-    def set_quality_of_service_spec(self, new_value):
+    @quality_of_service_spec.setter
+    def quality_of_service_spec(self, new_value):
         self.__qos = new_value
 
-    quality_of_service_spec = property(get_quality_of_service_spec,
-                                       set_quality_of_service_spec)
-
-    def get_introspection(self):
+    @property
+    def introspection(self):
         return self.__introspection
 
-    def set_introspection(self, new_value):
+    @introspection.setter
+    def introspection(self, new_value):
         self.__introspection = new_value
-
-    introspection = property(get_introspection, set_introspection)
 
     def __deepcopy__(self, memo):
         result = copy.copy(self)
@@ -521,16 +520,14 @@ class ParticipantConfig:
 
         # Quality of service
         qos_options = dict(section_options('qualityofservice'))
-        result.__qos.set_reliability(
-            QualityOfServiceSpec.Reliability[
-                qos_options.get(
-                    'reliability',
-                    QualityOfServiceSpec().get_reliability().name)])
-        result.__qos.set_ordering(
-            QualityOfServiceSpec.Ordering[
-                qos_options.get(
-                    'ordering',
-                    QualityOfServiceSpec().get_ordering().name)])
+        result.__qos.reliability = QualityOfServiceSpec.Reliability[
+            qos_options.get(
+                'reliability',
+                QualityOfServiceSpec().reliability.name)]
+        result.__qos.ordering = QualityOfServiceSpec.Ordering[
+            qos_options.get(
+                'ordering',
+                QualityOfServiceSpec().ordering.name)]
 
         # Transport options
         for transport in ['spread', 'socket', 'inprocess']:
@@ -763,7 +760,8 @@ class Scope:
                                  "Given was scope '{}'.".format(
                                      com, string_rep))
 
-    def get_components(self):
+    @property
+    def components(self):
         """
         Return all components of the scope as an ordered list.
 
@@ -777,8 +775,6 @@ class Scope:
                 highest level as first entry
         """
         return copy.copy(self.__components)
-
-    components = property(get_components)
 
     def to_string(self):
         """
@@ -982,54 +978,68 @@ class MetaData:
         else:
             self.__user_infos = user_infos
 
-    def get_create_time(self):
+    @property
+    def create_time(self):
         return self.__create_time
 
-    def set_create_time(self, create_time=None):
+    @create_time.setter
+    def create_time(self, create_time=None):
         if create_time is None:
             self.__create_time = time.time()
         else:
             self.__create_time = create_time
 
-    create_time = property(get_create_time, set_create_time)
+    def set_create_time(self, create_time=None):
+        self.create_time = create_time
 
-    def get_send_time(self):
+    @property
+    def send_time(self):
         return self.__send_time
 
-    def set_send_time(self, send_time=None):
+    @send_time.setter
+    def send_time(self, send_time=None):
         if send_time is None:
             self.__send_time = time.time()
         else:
             self.__send_time = send_time
 
-    send_time = property(get_send_time, set_send_time)
+    def set_send_time(self, send_time=None):
+        self.send_time = send_time
 
-    def get_receive_time(self):
+    @property
+    def receive_time(self):
         return self.__receive_time
 
-    def set_receive_time(self, receive_time=None):
+    @receive_time.setter
+    def receive_time(self, receive_time=None):
         if receive_time is None:
             self.__receive_time = time.time()
         else:
             self.__receive_time = receive_time
 
-    receive_time = property(get_receive_time, set_receive_time)
+    def set_receive_time(self, receive_time=None):
+        self.receive_time = receive_time
 
-    def get_deliver_time(self):
+    @property
+    def deliver_time(self):
         return self.__deliver_time
 
-    def set_deliver_time(self, deliver_time=None):
+    @deliver_time.setter
+    def deliver_time(self, deliver_time=None):
         if deliver_time is None:
             self.__deliver_time = time.time()
         else:
             self.__deliver_time = deliver_time
 
-    deliver_time = property(get_deliver_time, set_deliver_time)
+    def set_deliver_time(self, deliver_time=None):
+        self.deliver_time = deliver_time
 
-    def get_user_times(self):
+    @property
+    def user_times(self):
         return self.__user_times
 
-    def set_user_times(self, user_times):
+    @user_times.setter
+    def user_times(self, user_times):
         self.__user_times = user_times
 
     def set_user_time(self, key, timestamp=None):
@@ -1038,18 +1048,16 @@ class MetaData:
         else:
             self.__user_times[key] = timestamp
 
-    user_times = property(get_user_times, set_user_times)
-
-    def get_user_infos(self):
+    @property
+    def user_infos(self):
         return self.__user_infos
 
-    def set_user_infos(self, user_infos):
+    @user_infos.setter
+    def user_infos(self, user_infos):
         self.__user_infos = user_infos
 
     def set_user_info(self, key, value):
         self.__user_infos[key] = value
-
-    user_infos = property(get_user_infos, set_user_infos)
 
     def __eq__(self, other):
         return (self.__create_time == other.__create_time) and \
@@ -1094,7 +1102,8 @@ class EventId:
         self.__sequence_number = sequence_number
         self.__id = None
 
-    def get_participant_id(self):
+    @property
+    def participant_id(self):
         """
         Return the sender id of this id.
 
@@ -1104,7 +1113,8 @@ class EventId:
         """
         return self.__participant_id
 
-    def set_participant_id(self, participant_id):
+    @participant_id.setter
+    def participant_id(self, participant_id):
         """
         Set the participant id of this event.
 
@@ -1114,9 +1124,8 @@ class EventId:
         """
         self.__participant_id = participant_id
 
-    participant_id = property(get_participant_id, set_participant_id)
-
-    def get_sequence_number(self):
+    @property
+    def sequence_number(self):
         """
         Return the sequence number of this id.
 
@@ -1125,7 +1134,8 @@ class EventId:
         """
         return self.__sequence_number
 
-    def set_sequence_number(self, sequence_number):
+    @sequence_number.setter
+    def sequence_number(self, sequence_number):
         """
         Set the sequence number of this id.
 
@@ -1134,8 +1144,6 @@ class EventId:
                 new sequence number of the id.
         """
         self.__sequence_number = sequence_number
-
-    sequence_number = property(get_sequence_number, set_sequence_number)
 
     def get_as_uuid(self):
         """
@@ -1243,16 +1251,17 @@ class Event:
             self.__meta_data = meta_data
         if user_infos is not None:
             for (key, value) in list(user_infos.items()):
-                self.__meta_data.get_user_infos()[key] = value
+                self.__meta_data.user_infos[key] = value
         if user_times is not None:
             for (key, value) in list(user_times.items()):
-                self.__meta_data.get_user_times()[key] = value
+                self.__meta_data.user_times[key] = value
         if causes is not None:
             self.__causes = copy.copy(causes)
         else:
             self.__causes = []
 
-    def get_sequence_number(self):
+    @property
+    def sequence_number(self):
         """
         Return the sequence number of this event.
 
@@ -1263,11 +1272,10 @@ class Event:
             int:
                 sequence number of the event.
         """
-        return self.get_event_id().get_sequence_number()
+        return self.event_id.sequence_number
 
-    sequence_number = property(get_sequence_number)
-
-    def get_event_id(self):
+    @property
+    def event_id(self):
         """
         Return the id of this event.
 
@@ -1284,12 +1292,12 @@ class Event:
             raise RuntimeError("The event does not have an ID so far.")
         return self.__id
 
-    def set_event_id(self, event_id):
+    @event_id.setter
+    def event_id(self, event_id):
         self.__id = event_id
 
-    event_id = property(get_event_id, set_event_id)
-
-    def get_scope(self):
+    @property
+    def scope(self):
         """
         Return the scope of this event.
 
@@ -1300,7 +1308,8 @@ class Event:
 
         return self.__scope
 
-    def set_scope(self, scope):
+    @scope.setter
+    def scope(self, scope):
         """
         Set the scope of this event.
 
@@ -1311,9 +1320,8 @@ class Event:
 
         self.__scope = scope
 
-    scope = property(get_scope, set_scope)
-
-    def get_sender_id(self):
+    @property
+    def sender_id(self):
         """
         Return the sender id of this event.
 
@@ -1325,11 +1333,10 @@ class Event:
             uuid.UUID:
                 sender id
         """
-        return self.get_event_id().get_participant_id()
+        return self.event_id.participant_id
 
-    sender_id = property(get_sender_id)
-
-    def get_method(self):
+    @property
+    def method(self):
         """
         Return the method of this event.
 
@@ -1340,7 +1347,8 @@ class Event:
         """
         return self.__method
 
-    def set_method(self, method):
+    @method.setter
+    def method(self, method):
         """
         Set the method of this event.
 
@@ -1350,9 +1358,8 @@ class Event:
         """
         self.__method = method
 
-    method = property(get_method, set_method)
-
-    def get_data(self):
+    @property
+    def data(self):
         """
         Return the user data of this event.
 
@@ -1362,7 +1369,8 @@ class Event:
 
         return self.__data
 
-    def set_data(self, data):
+    @data.setter
+    def data(self, data):
         """
         Set the user data of this event.
 
@@ -1373,9 +1381,8 @@ class Event:
 
         self.__data = data
 
-    data = property(get_data, set_data)
-
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Return the type of the user data of this event.
 
@@ -1386,7 +1393,8 @@ class Event:
 
         return self.__type
 
-    def set_data_type(self, data_type):
+    @data_type.setter
+    def data_type(self, data_type):
         """
         Set the type of the user data of this event.
 
@@ -1397,15 +1405,13 @@ class Event:
 
         self.__type = data_type
 
-    data_type = property(get_data_type, set_data_type)
-
-    def get_meta_data(self):
+    @property
+    def meta_data(self):
         return self.__meta_data
 
-    def set_meta_data(self, meta_data):
+    @meta_data.setter
+    def meta_data(self, meta_data):
         self.__meta_data = meta_data
-
-    meta_data = property(get_meta_data, set_meta_data)
 
     def add_cause(self, the_id):
         """
@@ -1458,7 +1464,8 @@ class Event:
         """
         return the_id in self.__causes
 
-    def get_causes(self):
+    @property
+    def causes(self):
         """
         Return all causes of this event.
 
@@ -1468,7 +1475,8 @@ class Event:
         """
         return self.__causes
 
-    def set_causes(self, causes):
+    @causes.setter
+    def causes(self, causes):
         """
         Overwrite the cause vector of this event with the given one.
 
@@ -1477,8 +1485,6 @@ class Event:
                 new cause vector
         """
         self.__causes = causes
-
-    causes = property(get_causes, set_causes)
 
     def __str__(self):
         print_data = str(self.__data)
@@ -1576,28 +1582,28 @@ class Participant:
         self.__scope = Scope.ensure_scope(scope)
         self.__config = config
 
-    def get_participant_id(self):
+    @property
+    def participant_id(self):
         return self.__id
 
-    def set_participant_id(self, participant_id):
+    @participant_id.setter
+    def participant_id(self, participant_id):
         self.__id = participant_id
 
-    participant_id = property(get_participant_id, set_participant_id)
-
-    def get_scope(self):
+    @property
+    def scope(self):
         return self.__scope
 
-    def set_scope(self, scope):
+    @scope.setter
+    def scope(self, scope):
         self.__scope = scope
 
-    scope = property(get_scope, set_scope)
-
-    def get_config(self):
+    @property
+    def config(self):
         return self.__config
 
-    config = property(get_config)
-
-    def get_transport_ur_ls(self):
+    @property
+    def transport_urls(self):
         """
         Return of list transport URLs for all used transports.
 
@@ -1606,8 +1612,6 @@ class Participant:
                 Set of transport URLs.
         """
         return set()
-
-    transport_ur_ls = property(get_transport_ur_ls)
 
     def activate(self):
         pass
@@ -1633,26 +1637,26 @@ class Participant:
             raise ValueError('Invalid direction: {} (valid directions '
                              'are "in", "in-pull" and "out")'.format(
                                  direction))
-        if len(config.get_transports()) == 0:
+        if len(config.enabled_transports) == 0:
             raise ValueError(
                 'No transports specified (config is {})'.format(config))
 
         transports = []
-        for transport in config.get_transports():
-            factory = rsb.transport.get_transport_factory(transport.get_name())
+        for transport in config.enabled_transports:
+            factory = rsb.transport.get_transport_factory(transport.name)
             converters = converters_from_transport_config(transport)
             if direction == 'in':
                 transports.append(
                     factory.create_in_push_connector(converters,
-                                                     transport.get_options()))
+                                                     transport.options))
             elif direction == 'in-pull':
                 transports.append(
                     factory.create_in_pull_connector(converters,
-                                                     transport.get_options()))
+                                                     transport.options))
             elif direction == 'out':
                 transports.append(
                     factory.create_out_connector(converters,
-                                                 transport.get_options()))
+                                                 transport.options))
             else:
                 assert False
         return transports
@@ -1714,12 +1718,12 @@ class Informer(Participant):
         else:
             connectors = self.get_connectors('out', config)
             for connector in connectors:
-                connector.set_quality_of_service_spec(
-                    config.get_quality_of_service_spec())
+                connector.quality_of_service_spec = \
+                    config.quality_of_service_spec
             self.__configurator = rsb.eventprocessing.OutRouteConfigurator(
                 connectors=connectors)
-        self.__configurator.set_quality_of_service_spec(
-            config.get_quality_of_service_spec())
+        self.__configurator.quality_of_service_spec = \
+            config.quality_of_service_spec
         self.__configurator.scope = self.scope
 
         self.__activate()
@@ -1729,12 +1733,12 @@ class Informer(Participant):
         if self.__active:
             self.deactivate()
 
-    def get_transport_urls(self):
-        return self.__configurator.get_transport_urls()
+    @property
+    def transport_urls(self):
+        return self.__configurator.transport_urls
 
-    transport_urls = property(get_transport_urls)
-
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Return the type of data sent by this informer.
 
@@ -1742,8 +1746,6 @@ class Informer(Participant):
             type of sent data
         """
         return self.__type
-
-    data_type = property(get_data_type)
 
     def publish_data(self, data, user_infos=None, user_times=None):
         # TODO check activation
@@ -1855,12 +1857,12 @@ class Listener(Participant):
         else:
             connectors = self.get_connectors('in', config)
             for connector in connectors:
-                connector.set_quality_of_service_spec(
-                    config.get_quality_of_service_spec())
+                connector.quality_of_service_spec = \
+                    config.quality_of_service_spec
             self.__configurator = rsb.eventprocessing.InPushRouteConfigurator(
                 connectors=connectors,
                 receiving_strategy=receiving_strategy)
-        self.__configurator.set_scope(self.scope)
+        self.__configurator.scope = self.scope
 
         self.__activate()
 
@@ -1868,10 +1870,9 @@ class Listener(Participant):
         if self.__active:
             self.deactivate()
 
-    def get_transport_urls(self):
-        return self.__configurator.get_transport_urls()
-
-    transport_urls = property(get_transport_urls)
+    @property
+    def transport_urls(self):
+        return self.__configurator.transport_urls
 
     def __activate(self):
         # TODO commonality with Informer... refactor
@@ -2017,11 +2018,11 @@ class Reader(Participant):
         else:
             connectors = self.get_connectors('in-pull', config)
             for connector in connectors:
-                connector.set_quality_of_service_spec(
-                    config.get_quality_of_service_spec())
+                connector.quality_of_service_spec = \
+                    config.quality_of_service_spec
             self.__configurator = rsb.eventprocessing.InPullRouteConfigurator(
                 connectors=connectors, receiving_strategy=receiving_strategy)
-        self.__configurator.set_scope(self.scope)
+        self.__configurator.scope = self.scope
 
         self.__activate()
 
@@ -2029,10 +2030,9 @@ class Reader(Participant):
         if self.__active:
             self.deactivate()
 
-    def get_transport_urls(self):
-        return self.__configurator.get_transport_urls()
-
-    transport_urls = property(get_transport_urls)
+    @property
+    def transport_urls(self):
+        return self.__configurator.transport_urls
 
     def __activate(self):
         with self.__mutex:

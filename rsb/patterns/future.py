@@ -70,7 +70,8 @@ class Future:
         self.__lock = threading.Lock()
         self.__condition = threading.Condition(lock=self.__lock)
 
-    def is_done(self):
+    @property
+    def done(self):
         """
         Check whether the represented operation is still in progress.
 
@@ -81,8 +82,6 @@ class Future:
         """
         with self.__lock:
             return self.__result is not None
-
-    done = property(is_done)
 
     def get(self, timeout=0):
         """

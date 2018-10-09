@@ -99,8 +99,8 @@ class TransportCheck(metaclass=abc.ABCMeta):
                 receiver.result_condition.wait(10)
             assert receiver.result_event
             # ignore meta data here
-            event.set_meta_data(None)
-            receiver.result_event.set_meta_data(None)
+            event.meta_data = None
+            receiver.result_event.meta_data = None
             assert receiver.result_event == event
 
         inconnector.deactivate()
@@ -143,8 +143,8 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
         received = inconnector.raise_event(True)
         # ignore meta data here
-        event.set_meta_data(None)
-        received.set_meta_data(None)
+        event.meta_data = None
+        received.meta_data = None
         assert received == event
 
         inconnector.deactivate()
@@ -171,13 +171,13 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
-        sent_event.set_data(data1)
-        sent_event.set_data_type(str)
-        sent_event.set_scope(scope)
-        sent_event.get_meta_data().set_user_info("test", "it")
-        sent_event.get_meta_data().set_user_info("test again", "it works?")
-        sent_event.get_meta_data().set_user_time("blubb", 234234.0)
-        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.data = data1
+        sent_event.data_type = str
+        sent_event.scope = scope
+        sent_event.meta_data.set_user_info("test", "it")
+        sent_event.meta_data.set_user_info("test again", "it works?")
+        sent_event.meta_data.set_user_time("blubb", 234234.0)
+        sent_event.meta_data.set_user_time("bla", 3434343.45)
         sent_event.add_cause(EventId(uuid.uuid4(), 1323))
         sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
@@ -230,13 +230,13 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
-        sent_event.set_data(data1)
-        sent_event.set_data_type(str)
-        sent_event.set_scope(scope)
-        sent_event.get_meta_data().set_user_info("test", "it")
-        sent_event.get_meta_data().set_user_info("test again", "it works?")
-        sent_event.get_meta_data().set_user_time("blubb", 234234)
-        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.data = data1
+        sent_event.data_type = str
+        sent_event.scope = scope
+        sent_event.meta_data.set_user_info("test", "it")
+        sent_event.meta_data.set_user_info("test again", "it works?")
+        sent_event.meta_data.set_user_time("blubb", 234234)
+        sent_event.meta_data.set_user_time("bla", 3434343.45)
         sent_event.add_cause(EventId(uuid.uuid4(), 1323))
         sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
@@ -320,7 +320,7 @@ class TransportCheck(metaclass=abc.ABCMeta):
         connector.handle(event)
         after = time.time()
 
-        assert event.get_meta_data().get_send_time() >= before
-        assert event.get_meta_data().get_send_time() <= after
+        assert event.meta_data.send_time >= before
+        assert event.meta_data.send_time <= after
 
         connector.deactivate()

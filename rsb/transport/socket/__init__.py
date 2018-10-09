@@ -123,13 +123,13 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         if self.__active:
             self.deactivate()
 
-    def get_error_hook(self):
+    @property
+    def error_hook(self):
         return self.__error_hook
 
-    def set_error_hook(self, new_value):
+    @error_hook.setter
+    def error_hook(self, new_value):
         self.__error_hook = new_value
-
-    error_hook = property(get_error_hook, set_error_hook)
 
     # receiving
 
@@ -267,12 +267,12 @@ class Bus:
 
         self.__active = False
 
-    def get_lock(self):
+    @property
+    def lock(self):
         return self.__lock
 
-    lock = property(get_lock)
-
-    def get_connections(self):
+    @property
+    def connections(self):
         """
         Return the attached connections.
 
@@ -333,9 +333,8 @@ class Bus:
                 connection.remove_handler([h for h in connection.handlers
                                            if h.bus is self][0])
 
-    connections = property(get_connections)
-
-    def get_connectors(self):
+    @property
+    def connectors(self):
         return self.__connectors
 
     def add_connector(self, connector):
@@ -374,8 +373,6 @@ class Bus:
                     'Removed last connector; requesting deletion')
                 return False
             return True
-
-    connectors = property(get_connectors)
 
     def handle_incoming(self, connection_and_notification):
         _, notification = connection_and_notification
@@ -476,8 +473,8 @@ class Bus:
 
     def __repr__(self):
         return '<{} {} connection(s) {} connector(s) at 0x{:x}>'.format(
-            type(self).__name__, len(self.get_connections()),
-            len(self.get_connectors()), id(self))
+            type(self).__name__, len(self.connections),
+            len(self.connectors), id(self))
 
 
 __bus_clients = {}
@@ -802,10 +799,9 @@ class Connector(rsb.transport.Connector,
         self.__logger.info('Got %s', self.__bus)
         return self.__bus
 
-    def get_bus(self):
+    @property
+    def bus(self):
         return self.__bus
-
-    bus = property(get_bus)
 
     def activate(self):
         if self.__active:
@@ -897,7 +893,7 @@ class OutConnector(Connector,
     def handle(self, event):
         # Create a notification fragment for the event and send it
         # over the bus.
-        event.get_meta_data().set_send_time()
+        event.meta_data.send_time = None
         converter = self.get_converter_for_data_type(event.data_type)
         wire_data, wire_schema = converter.serialize(event.data)
         notification = Notification()
@@ -914,10 +910,12 @@ class TransportFactory(rsb.transport.TransportFactory):
     .. codeauthor:: jwienke
     """
 
-    def get_name(self):
+    @property
+    def name(self):
         return "socket"
 
-    def is_remote(self):
+    @property
+    def remote(self):
         return True
 
     def create_in_push_connector(self, converters, options):

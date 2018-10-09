@@ -62,7 +62,8 @@ class Connector(metaclass=abc.ABCMeta):
         # fails if still some arguments are left over
         super().__init__(**kwargs)
 
-    def get_wire_type(self):
+    @property
+    def wire_type(self):
         """
         Return the serialization type used for this connector.
 
@@ -71,12 +72,12 @@ class Connector(metaclass=abc.ABCMeta):
         """
         return self.__wire_type
 
-    wire_type = property(get_wire_type)
-
-    def get_scope(self):
+    @property
+    def scope(self):
         return self.__scope
 
-    def set_scope(self, new_value):
+    @scope.setter
+    def scope(self, new_value):
         """
         Set the scope this connector will receive events from.
 
@@ -87,8 +88,6 @@ class Connector(metaclass=abc.ABCMeta):
                 scope of the connector
         """
         self.__scope = new_value
-
-    scope = property(get_scope, set_scope)
 
     @abc.abstractmethod
     def activate(self):
@@ -197,7 +196,7 @@ class ConverterSelectingConnector:
         """
         self.__converter_map = converters
 
-        assert(self.__converter_map.get_wire_type() == self.wire_type)
+        assert(self.__converter_map.wire_type == self.wire_type)
 
     def get_converter_for_data_type(self, data_type):
         """
@@ -236,17 +235,17 @@ class ConverterSelectingConnector:
         """
         return self.__converter_map.get_converter_for_wire_schema(wire_schema)
 
-    def get_converter_map(self):
+    @property
+    def converter_map(self):
         return self.__converter_map
-
-    converter_map = property(get_converter_map)
 
 
 class TransportFactory(metaclass=abc.ABCMeta):
     """Creates connectors for a specific transport."""
 
+    @property
     @abc.abstractmethod
-    def get_name(self):
+    def name(self):
         """
         Return the name representing this transport.
 
@@ -256,8 +255,9 @@ class TransportFactory(metaclass=abc.ABCMeta):
         """
         pass
 
+    @property
     @abc.abstractmethod
-    def is_remote(self):
+    def remote(self):
         """
         Return ``true`` if the transport performs remote communication.
 
@@ -339,11 +339,11 @@ def register_transport(factory):
     if factory is None:
         raise ValueError("None cannot be a TransportFactory")
     with __factory_lock:
-        if factory.get_name() in __factories_by_name:
+        if factory.name in __factories_by_name:
             raise ValueError(
                 "There is already a transport with name {name}".format(
-                    name=factory.get_name()))
-        __factories_by_name[factory.get_name()] = factory
+                    name=factory.name))
+        __factories_by_name[factory.name] = factory
 
 
 def get_transport_factory(name):

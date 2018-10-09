@@ -41,7 +41,7 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
     event.scope = rsb.Scope(notification.scope.decode('ASCII'))
     if notification.HasField("method"):
         event.method = notification.method.decode('ASCII')
-    event.data_type = converter.get_data_type()
+    event.data_type = converter.data_type
     event.data = converter.deserialize(wire_data, wire_schema)
 
     # Meta data

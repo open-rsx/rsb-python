@@ -73,7 +73,8 @@ class ScopeFilter(AbstractFilter):
         """
         self.__scope = scope
 
-    def get_scope(self):
+    @property
+    def scope(self):
         """
         Return the top-level scope this filter matches for.
 
@@ -109,15 +110,13 @@ class OriginFilter(AbstractFilter):
         self.__origin = origin
         self.__invert = invert
 
-    def get_origin(self):
+    @property
+    def origin(self):
         return self.__origin
 
-    origin = property(get_origin)
-
-    def get_invert(self):
+    @property
+    def invert(self):
         return self.__invert
-
-    invert = property(get_invert)
 
     def match(self, event):
         result = self.origin == event.sender_id
@@ -163,15 +162,13 @@ class CauseFilter(AbstractFilter):
         self.__cause = cause
         self.__invert = invert
 
-    def get_cause(self):
+    @property
+    def cause(self):
         return self.__cause
 
-    cause = property(get_cause)
-
-    def get_invert(self):
+    @property
+    def invert(self):
         return self.__invert
-
-    invert = property(get_invert)
 
     def match(self, event):
         result = self.cause in event.causes
@@ -215,15 +212,13 @@ class MethodFilter(AbstractFilter):
         self.__method = method
         self.__invert = invert
 
-    def get_method(self):
+    @property
+    def method(self):
         return self.__method
 
-    method = property(get_method)
-
-    def get_invert(self):
+    @property
+    def invert(self):
         return self.__invert
-
-    invert = property(get_invert)
 
     def match(self, event):
         result = self.method == event.method

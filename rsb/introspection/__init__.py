@@ -68,7 +68,8 @@ class ParticipantInfo:
         self.__parent_id = parent_id
         self.__transport_urls = transport_urls or []
 
-    def get_kind(self):
+    @property
+    def kind(self):
         """
         Return the kind of the participant.
 
@@ -81,9 +82,8 @@ class ParticipantInfo:
         """
         return self.__kind
 
-    kind = property(get_kind)
-
-    def get_participant_id(self):
+    @property
+    def participant_id(self):
         """
         Return the unique id of the participant.
 
@@ -93,9 +93,8 @@ class ParticipantInfo:
         """
         return self.__id
 
-    participant_id = property(get_participant_id)
-
-    def get_scope(self):
+    @property
+    def scope(self):
         """
         Return the scope of the participant.
 
@@ -105,9 +104,8 @@ class ParticipantInfo:
         """
         return self.__scope
 
-    scope = property(get_scope)
-
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Return a representation of the type of the participant, if available.
 
@@ -120,9 +118,8 @@ class ParticipantInfo:
         """
         return self.__type
 
-    data_type = property(get_data_type)
-
-    def get_parent_id(self):
+    @property
+    def parent_id(self):
         """
         Return the unique id of the parent participant.
 
@@ -134,9 +131,8 @@ class ParticipantInfo:
         """
         return self.__parent_id
 
-    parent_id = property(get_parent_id)
-
-    def get_transport_urls(self):
+    @property
+    def transport_urls(self):
         """
         Return list of transport URLs.
 
@@ -146,8 +142,6 @@ class ParticipantInfo:
                 by the participant.
         """
         return self.__transport_urls
-
-    transport_urls = property(get_transport_urls)
 
     def __str__(self):
         return '<{} {} {} at 0x{:x}>'.format(
@@ -245,7 +239,8 @@ class ProcessInfo:
                 pass
         self.__rsb_version = rsb_version
 
-    def get_process_id(self):
+    @property
+    def process_id(self):
         """
         Return the numeric id of the process.
 
@@ -255,9 +250,8 @@ class ProcessInfo:
         """
         return self.__id
 
-    process_id = property(get_process_id)
-
-    def get_program_name(self):
+    @property
+    def program_name(self):
         """
         Return the name of the program being executed in the process.
 
@@ -267,9 +261,8 @@ class ProcessInfo:
         """
         return self.__program_name
 
-    program_name = property(get_program_name)
-
-    def get_arguments(self):
+    @property
+    def arguments(self):
         """
         Return the list of commandline argument to the process.
 
@@ -279,9 +272,8 @@ class ProcessInfo:
         """
         return self.__arguments
 
-    arguments = property(get_arguments)
-
-    def get_start_time(self):
+    @property
+    def start_time(self):
         """
         Return the start time of the process.
 
@@ -291,9 +283,8 @@ class ProcessInfo:
         """
         return self.__start_time
 
-    start_time = property(get_start_time)
-
-    def get_executing_user(self):
+    @property
+    def executing_user(self):
         """
         Return the login- or account-name of the user executing the process.
 
@@ -304,9 +295,8 @@ class ProcessInfo:
         """
         return self.__executing_user
 
-    executing_user = property(get_executing_user)
-
-    def get_rsb_version(self):
+    @property
+    def rsb_version(self):
         """
         Return the version of the RSB implementation used in this process.
 
@@ -317,8 +307,6 @@ class ProcessInfo:
                    MAJOR.MINOR.REVISION[-COMMIT]
         """
         return self.__rsb_version
-
-    rsb_version = property(get_rsb_version)
 
     def __str__(self):
         return '<{} {} [{}] at 0x{:x}>'.format(
@@ -396,7 +384,8 @@ class HostInfo:
         self.__software_type = software_type
         self.__software_version = software_version
 
-    def get_host_id(self):
+    @property
+    def host_id(self):
         """
         Return the unique id string for the host.
 
@@ -406,9 +395,8 @@ class HostInfo:
         """
         return self.__id
 
-    host_id = property(get_host_id)
-
-    def get_hostname(self):
+    @property
+    def hostname(self):
         """
         Return the hostname of the host.
 
@@ -418,9 +406,8 @@ class HostInfo:
         """
         return self.__hostname
 
-    hostname = property(get_hostname)
-
-    def get_machine_type(self):
+    @property
+    def machine_type(self):
         """
         Return the type of the machine, usually CPU architecture.
 
@@ -430,9 +417,8 @@ class HostInfo:
         """
         return self.__machine_type
 
-    machine_type = property(get_machine_type)
-
-    def get_machine_version(self):
+    @property
+    def machine_version(self):
         """
         Return the version of the machine within its type.
 
@@ -444,9 +430,8 @@ class HostInfo:
         """
         return self.__machine_version
 
-    machine_version = property(get_machine_version)
-
-    def get_software_type(self):
+    @property
+    def software_type(self):
         """
         Return the type of the operating system running on the host.
 
@@ -458,9 +443,8 @@ class HostInfo:
         """
         return self.__software_type
 
-    software_type = property(get_software_type)
-
-    def get_software_version(self):
+    @property
+    def software_version(self):
         """
         Return version information about the operating systems.
 
@@ -472,8 +456,6 @@ class HostInfo:
                 The software version when known.
         """
         return self.__software_version
-
-    software_version = property(get_software_version)
 
     def __str__(self):
         return '<{} {} {} {} at 0x{:x}>'.format(
@@ -589,15 +571,13 @@ class IntrospectionSender:
         self.__informer.deactivate()
         self.__server.deactivate()
 
-    def get_process(self):
+    @property
+    def process(self):
         return self.__process
 
-    process = property(get_process)
-
-    def get_host(self):
+    @property
+    def host(self):
         return self.__host
-
-    host = property(get_host)
 
     def add_participant(self, participant, parent=None):
         parent_id = None

@@ -63,7 +63,8 @@ class Converter(metaclass=abc.ABCMeta):
         self.__data_type = data_type
         self.__wire_schema = wire_schema
 
-    def get_wire_type(self):
+    @property
+    def wire_type(self):
         """
         Return the type of the wire-type of this converter.
 
@@ -76,9 +77,8 @@ class Converter(metaclass=abc.ABCMeta):
         """
         return self.__wire_type
 
-    wire_type = property(get_wire_type)
-
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Return the data type this converter is applicable for.
 
@@ -88,9 +88,8 @@ class Converter(metaclass=abc.ABCMeta):
         """
         return self.__data_type
 
-    data_type = property(get_data_type)
-
-    def get_wire_schema(self):
+    @property
+    def wire_schema(self):
         """
         Return the name of the wire schema this converter can (de)serialize.
 
@@ -100,8 +99,6 @@ class Converter(metaclass=abc.ABCMeta):
                 (de)serialize
         """
         return self.__wire_schema
-
-    wire_schema = property(get_wire_schema)
 
     @abc.abstractmethod
     def serialize(self, inp):
@@ -171,11 +168,12 @@ class ConverterMap(ConverterSelectionStrategy):
         self._wire_type = wire_type
         self._converters = {}
 
-    def get_wire_type(self):
+    @property
+    def wire_type(self):
         return self._wire_type
 
     def add_converter(self, converter, replace_existing=False):
-        key = (converter.get_wire_schema(), converter.get_data_type())
+        key = (converter.wire_schema, converter.data_type)
         if key in self._converters and not replace_existing:
             raise RuntimeError(
                 "There already is a converter with key '{}' ".format(key))
@@ -198,7 +196,7 @@ class ConverterMap(ConverterSelectionStrategy):
             return candidates[0]
         elif len(candidates) > 1:
             def compare_via_subclass(x, y):
-                if issubclass(x.get_data_type(), y.get_data_type()):
+                if issubclass(x.data_type, y.data_type):
                     return -1
                 else:
                     return 1
@@ -236,8 +234,8 @@ class ConverterMap(ConverterSelectionStrategy):
     def __str__(self):
         s = "ConverterMap(wire_type = {}):\n".format(self._wire_type)
         for converter in list(self._converters.values()):
-            s = s + ("\t{} <-> {}\n".format(converter.get_wire_schema(),
-                                            converter.get_data_type()))
+            s = s + ("\t{} <-> {}\n".format(converter.wire_schema,
+                                            converter.data_type))
         return s[:-1]
 
 
@@ -263,15 +261,15 @@ class PredicateConverterList(ConverterMap):
                       data_type_predicate=None,
                       replace_existing=True):
         if wire_schema_predicate is None:
-            # if converter.get_wire_schema() == 'void':
+            # if converter.wire_schema == 'void':
             #    wire_schema_predicate = lambda wire_schema: True
             # else:
             def wire_schema_predicate(wire_schema):
-                return wire_schema == converter.get_wire_schema()
+                return wire_schema == converter.wire_schema
 
         if data_type_predicate is None:
             def data_type_predicate(data_type):
-                return data_type == converter.get_data_type()
+                return data_type == converter.data_type
 
         key = (wire_schema_predicate, data_type_predicate)
         self._converters[key] = converter
@@ -294,13 +292,13 @@ class UnambiguousConverterMap(ConverterMap):
 
     def add_converter(self, converter, replace_existing=False):
         for (wire_schema, data_type) in list(self.get_converters().keys()):
-            if wire_schema == converter.get_wire_schema() \
-               and not data_type == converter.get_data_type():
+            if wire_schema == converter.wire_schema \
+               and not data_type == converter.data_type:
                 raise RuntimeError(
                     "Trying to register ambiguous converter "
                     "with data type '{}' for wire-schema '{}' "
                     "(present converter is for data type '{}').".format(
-                        converter.get_data_type(),
+                        converter.data_type,
                         wire_schema,
                         data_type))
         super().add_converter(converter, replace_existing)
@@ -322,7 +320,7 @@ def register_global_converter(converter, replace_existing=False):
             and/or wire-type should be replaced by the new converter. If this
             is ``False`` and such a converter exists, an error is raised.
     """
-    map_for_wire_type = get_global_converter_map(converter.get_wire_type())
+    map_for_wire_type = get_global_converter_map(converter.wire_type)
     map_for_wire_type.add_converter(converter, replace_existing)
 
 
@@ -523,10 +521,9 @@ class ProtocolBufferConverter(Converter):
 
         self.__message_class = message_class
 
-    def get_message_class(self):
+    @property
+    def message_class(self):
         return self.__message_class
-
-    message_class = property(get_message_class)
 
     def get_message_class_name(self):
         return self.message_class.DESCRIPTOR.full_name

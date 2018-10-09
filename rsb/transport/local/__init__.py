@@ -56,9 +56,9 @@ class Bus:
         """
         with self.__mutex:
             # ensure that there is a list of sinks for the given scope
-            if sink.get_scope() not in self.__sinks_by_scope:
-                self.__sinks_by_scope[sink.get_scope()] = []
-            self.__sinks_by_scope[sink.get_scope()].append(sink)
+            if sink.scope not in self.__sinks_by_scope:
+                self.__sinks_by_scope[sink.scope] = []
+            self.__sinks_by_scope[sink.scope].append(sink)
 
     def remove_sink(self, sink):
         """
@@ -70,9 +70,9 @@ class Bus:
         """
         with self.__mutex:
             # return immediately if there is no such scope known for sinks
-            if sink.get_scope() not in self.__sinks_by_scope:
+            if sink.scope not in self.__sinks_by_scope:
                 return
-            self.__sinks_by_scope[sink.get_scope()].remove(sink)
+            self.__sinks_by_scope[sink.scope].remove(sink)
 
     def handle(self, event):
         """
@@ -140,7 +140,6 @@ class InPushConnector(transport.InPushConnector):
             self, bus=global_bus, converters=None, options=None, **kwargs):
         super().__init__(wire_type=object, **kwargs)
         self.__bus = bus
-        self.__scope = None
         self.__observer_action = None
 
     def filter_notify(self, filter_, action):
@@ -149,14 +148,8 @@ class InPushConnector(transport.InPushConnector):
     def set_observer_action(self, action):
         self.__observer_action = action
 
-    def set_scope(self, scope):
-        self.__scope = scope
-
-    def get_scope(self):
-        return self.__scope
-
     def activate(self):
-        assert self.__scope is not None
+        assert self.scope is not None
         self.__bus.add_sink(self)
 
     def deactivate(self):
@@ -182,17 +175,10 @@ class InPullConnector(transport.InPullConnector):
             self, bus=global_bus, converters=None, options=None, **kwargs):
         super().__init__(wire_type=object, **kwargs)
         self.__bus = bus
-        self.__scope = None
         self.__event_queue = queue.Queue()
 
-    def set_scope(self, scope):
-        self.__scope = scope
-
-    def get_scope(self):
-        return self.__scope
-
     def activate(self):
-        assert self.__scope is not None
+        assert self.scope is not None
         self.__bus.add_sink(self)
 
     def deactivate(self):
@@ -219,10 +205,12 @@ class TransportFactory(transport.TransportFactory):
     .. codeauthor:: jwienke
     """
 
-    def get_name(self):
+    @property
+    def name(self):
         return "inprocess"
 
-    def is_remote(self):
+    @property
+    def remote(self):
         return False
 
     def create_in_push_connector(self, converters, options):

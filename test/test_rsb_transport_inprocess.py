@@ -34,7 +34,7 @@ class StubSink:
         self.scope = scope
         self.events = []
 
-    def get_scope(self):
+    def scope(self):
         return self.scope
 
     def handle(self, event):
@@ -109,7 +109,7 @@ class TestInPushConnector:
 
         bus = Bus()
         connector = InPushConnector(bus=bus)
-        connector.set_scope(scope)
+        connector.scope = scope
         connector.activate()
 
         action = StubSink(scope)
@@ -126,21 +126,21 @@ class TestLocalTransport(TransportCheck):
 
     def _get_in_push_connector(self, scope, activate=True):
         connector = InPushConnector()
-        connector.set_scope(scope)
+        connector.scope = scope
         if activate:
             connector.activate()
         return connector
 
     def _get_in_pull_connector(self, scope, activate=True):
         connector = InPullConnector()
-        connector.set_scope(scope)
+        connector.scope = scope
         if activate:
             connector.activate()
         return connector
 
     def _get_out_connector(self, scope, activate=True):
         connector = OutConnector()
-        connector.set_scope(scope)
+        connector.scope = scope
         if activate:
             connector.activate()
         return connector

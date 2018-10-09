@@ -85,7 +85,8 @@ class ScopeDispatcher:
         if not sinks:
             del self.__map[scope]
 
-    def get_sinks(self):
+    @property
+    def sinks(self):
         """
         Return a generator yielding all sinks.
 
@@ -97,8 +98,6 @@ class ScopeDispatcher:
         for sinks in list(self.__map.values()):
             for sink in sinks:
                 yield sink
-
-    sinks = property(get_sinks)
 
     def matching_sinks(self, scope):
         """
@@ -134,7 +133,8 @@ class BroadcastProcessor:
         else:
             self.__handlers = list(handlers)
 
-    def get_handlers(self):
+    @property
+    def handlers(self):
         return self.__handlers
 
     def add_handler(self, handler):
@@ -142,8 +142,6 @@ class BroadcastProcessor:
 
     def remove_handler(self, handler):
         self.__handlers.remove(handler)
-
-    handlers = property(get_handlers)
 
     def __call__(self, event):
         self.handle(event)
@@ -525,10 +523,12 @@ class Configurator:
         if self.__active:
             self.deactivate()
 
-    def get_scope(self):
+    @property
+    def scope(self):
         return self.__scope
 
-    def set_scope(self, scope):
+    @scope.setter
+    def scope(self, scope):
         """
         Define the scope the in route has to be set up.
 
@@ -541,16 +541,14 @@ class Configurator:
         self.__scope = scope
         self.__logger.debug("Got new scope %s", scope)
         for connector in self.connectors:
-            connector.set_scope(scope)
+            connector.scope = scope
 
-    scope = property(get_scope, set_scope)
-
-    def get_connectors(self):
+    @property
+    def connectors(self):
         return self.__connectors
 
-    connectors = property(get_connectors)
-
-    def get_transport_urls(self):
+    @property
+    def transport_urls(self):
         """
         Return the transport URLs of all used connectors.
 
@@ -560,12 +558,9 @@ class Configurator:
         """
         return {x.get_transport_url() for x in self.__connectors}
 
-    transport_urls = property(get_transport_urls)
-
-    def is_active(self):
+    @property
+    def active(self):
         return self.__active
-
-    active = property(is_active)
 
     def activate(self):
         if self.__active:
@@ -589,7 +584,7 @@ class Configurator:
 
     def set_quality_of_service_spec(self, qos):
         for connector in self.connectors:
-            connector.set_quality_of_service_spec(qos)
+            connector.quality_of_service_spec = qos
 
 
 class InPushRouteConfigurator(Configurator):

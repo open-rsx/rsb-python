@@ -51,15 +51,13 @@ class RemoteCallError(RuntimeError):
         self._scope = scope
         self._method = method
 
-    def get_scope(self):
+    @property
+    def scope(self):
         return self._scope
 
-    scope = property(get_scope)
-
-    def get_method(self):
+    @property
+    def method(self):
         return self._method
-
-    method = property(get_method)
 
 ######################################################################
 #
@@ -106,39 +104,33 @@ class Method(rsb.Participant):
         self._request_type = request_type
         self._reply_type = reply_type
 
-    def get_server(self):
+    @property
+    def server(self):
         return self._server
 
-    server = property(get_server)
-
-    def get_name(self):
+    @property
+    def name(self):
         return self._name
 
-    name = property(get_name)
-
-    def get_listener(self):
+    @property
+    def listener(self):
         if self._listener is None:
             self._listener = self.make_listener()
         return self._listener
 
-    listener = property(get_listener)
-
-    def get_informer(self):
+    @property
+    def informer(self):
         if self._informer is None:
             self._informer = self.make_informer()
         return self._informer
 
-    informer = property(get_informer)
-
-    def get_request_type(self):
+    @property
+    def request_type(self):
         return self._request_type
 
-    request_type = property(get_request_type)
-
-    def get_reply_type(self):
+    @property
+    def reply_type(self):
         return self._reply_type
-
-    reply_type = property(get_reply_type)
 
     def deactivate(self):
         if self._informer is not None:
@@ -194,10 +186,9 @@ class Server(rsb.Participant):
         if self.__active:
             self.deactivate()
 
-    def get_methods(self):
+    @property
+    def methods(self):
         return list(self._methods.values())
-
-    methods = property(get_methods)
 
     def get_method(self, name):
         if name in self._methods:
