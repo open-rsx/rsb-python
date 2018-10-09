@@ -10,6 +10,8 @@ before_install:
   - sudo apt-get update -q
   - sudo apt-get install protobuf-compiler
 install:
-  - pip install tox-travis
+  - pip install tox-travis codecov
 script:
   - tox
+env:
+  - 'COVERAGE_COMMAND=codecov -e TOXENV'
