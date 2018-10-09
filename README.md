@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/open-rsx/rsb-python.svg?branch=master)](https://travis-ci.org/open-rsx/rsb-python)
+[![Build Status](https://travis-ci.org/open-rsx/rsb-python.svg?branch=master)](https://travis-ci.org/open-rsx/rsb-python) [![Coverage Report](https://codecov.io/gh/open-rsx/rsb-python/branch/master/graph/badge.svg)](https://codecov.io/gh/open-rsx/rsb-python)
 
 # Introduction
 
