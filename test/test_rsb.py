@@ -510,7 +510,7 @@ class TetsIntegration:
         class FooTypeConverter(Converter):
 
             def __init__(self):
-                Converter.__init__(self, bytes, FooType, "footype")
+                super().__init__(bytes, FooType, "footype")
 
             def serialize(self, inp):
                 return bytes(), self.wire_schema

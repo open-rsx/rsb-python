@@ -109,7 +109,7 @@ class OutConnector(transport.OutConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.OutConnector.__init__(self, wire_type=object, **kwargs)
+        super().__init__(wire_type=object, **kwargs)
         self.__bus = bus
 
     def handle(self, event):
@@ -138,7 +138,7 @@ class InPushConnector(transport.InPushConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.InPushConnector.__init__(self, wire_type=object, **kwargs)
+        super().__init__(wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None
         self.__observer_action = None
@@ -180,7 +180,7 @@ class InPullConnector(transport.InPullConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.InPullConnector.__init__(self, wire_type=object, **kwargs)
+        super().__init__(wire_type=object, **kwargs)
         self.__bus = bus
         self.__scope = None
         self.__event_queue = queue.Queue()

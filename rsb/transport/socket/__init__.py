@@ -82,7 +82,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         See Also:
             :obj:`get_bus_client_for`, :obj:`get_bus_server_for`.
         """
-        super(BusConnection, self).__init__()
+        super().__init__()
 
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
@@ -537,7 +537,7 @@ class BusClient(Bus):
             tcpnodelay (bool):
                 If True, the socket will be set to TCP_NODELAY.
         """
-        super(BusClient, self).__init__()
+        super().__init__()
 
         self.add_connection(BusConnection(host, port, tcpnodelay=tcpnodelay))
 
@@ -611,7 +611,7 @@ class BusServer(Bus):
             backlog (int):
                 The maximum number of queued connection attempts.
         """
-        super(BusServer, self).__init__()
+        super().__init__()
 
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
@@ -657,7 +657,7 @@ class BusServer(Bus):
     # Receiving notifications
 
     def handle_incoming(self, connection_and_notification):
-        super(BusServer, self).handle_incoming(connection_and_notification)
+        super().handle_incoming(connection_and_notification)
 
         # Distribute the notification to all connections except the
         # one that sent it.
@@ -668,7 +668,7 @@ class BusServer(Bus):
     # State management
 
     def activate(self):
-        super(BusServer, self).activate()
+        super().activate()
 
         if self.__active:
             raise RuntimeError('Trying to activate active BusServer')
@@ -711,7 +711,7 @@ class BusServer(Bus):
         if self.__acceptor_thread is not None:
             self.__acceptor_thread.join()
 
-        super(BusServer, self).deactivate()
+        super().deactivate()
 
 
 def remove_connector(bus, connector):
@@ -742,9 +742,7 @@ class Connector(rsb.transport.Connector,
     """
 
     def __init__(self, converters, options=None, **kwargs):
-        super(Connector, self).__init__(wire_type=bytes,
-                                        converters=converters,
-                                        **kwargs)
+        super().__init__(wire_type=bytes, converters=converters, **kwargs)
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
         if options is None:
@@ -856,7 +854,7 @@ class InPushConnector(Connector,
     def __init__(self, **kwargs):
         self.__action = None
 
-        super(InPushConnector, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def filter_notify(self, the_filter, action):
         pass
@@ -890,7 +888,7 @@ class OutConnector(Connector,
     """
 
     def __init__(self, **kwargs):
-        super(OutConnector, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def handle(self, event):
         # Create a notification fragment for the event and send it

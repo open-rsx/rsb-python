@@ -1666,7 +1666,7 @@ class Informer(Participant):
         See Also:
             :obj:`create_informer`
         """
-        super(Informer, self).__init__(scope, config)
+        super().__init__(scope, config)
 
         self.__logger = get_logger_by_class(self.__class__)
 
@@ -1781,7 +1781,7 @@ class Informer(Participant):
 
             self.__configurator.deactivate()
 
-        super(Informer, self).deactivate()
+        super().deactivate()
 
 
 class Listener(Participant):
@@ -1811,7 +1811,7 @@ class Listener(Participant):
         See Also:
             :obj:`create_listener`
         """
-        super(Listener, self).__init__(scope, config)
+        super().__init__(scope, config)
 
         self.__logger = get_logger_by_class(self.__class__)
 
@@ -1871,7 +1871,7 @@ class Listener(Participant):
 
             self.__active = False
 
-        super(Listener, self).deactivate()
+        super().deactivate()
 
     def add_filter(self, the_filter):
         """
@@ -1974,7 +1974,7 @@ class Reader(Participant):
         See Also:
             :obj:`create_reader`
         """
-        super(Reader, self).__init__(scope, config)
+        super().__init__(scope, config)
 
         self.__logger = get_logger_by_class(self.__class__)
 
@@ -2031,7 +2031,7 @@ class Reader(Participant):
 
             self.__active = False
 
-        super(Reader, self).deactivate()
+        super().deactivate()
 
     def read(self, block=True):
         """

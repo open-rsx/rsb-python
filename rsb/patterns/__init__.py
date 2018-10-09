@@ -45,7 +45,7 @@ class RemoteCallError(RuntimeError):
     """
 
     def __init__(self, scope, method, error):
-        super(RemoteCallError, self).__init__(
+        super().__init__(
             'failed to call method "%s" on remote server with scope %s. '
             'reason: %s'
             % (method.name, scope, error))
@@ -98,7 +98,7 @@ class Method(rsb.Participant):
             reply_type (types.TypeType):
                 The type of the replies produced by the method.
         """
-        super(Method, self).__init__(scope, config)
+        super().__init__(scope, config)
 
         self._server = server
         self._name = name
@@ -149,7 +149,7 @@ class Method(rsb.Participant):
             self._listener.deactivate()
             self._listener = None
 
-        super(Method, self).deactivate()
+        super().deactivate()
 
     def __str__(self):
         return '<%s "%s" at 0x%x>' % (type(self).__name__, self.name, id(self))
@@ -183,7 +183,7 @@ class Server(rsb.Participant):
                 The transport configuration that should be used for
                 communication performed by this server.
         """
-        super(Server, self).__init__(scope, config)
+        super().__init__(scope, config)
 
         self.__active = False
         self._methods = {}
@@ -214,7 +214,7 @@ class Server(rsb.Participant):
     def activate(self):
         self.__active = True
 
-        super(Server, self).activate()
+        super().activate()
 
     def deactivate(self):
         if not self.__active:
@@ -225,7 +225,7 @@ class Server(rsb.Participant):
         for m in list(self._methods.values()):
             m.deactivate()
 
-        super(Server, self).deactivate()
+        super().deactivate()
 
     # Printing
 
@@ -257,7 +257,7 @@ class LocalMethod(Method):
     def __init__(self, scope, config,
                  server, name, func, request_type, reply_type,
                  allow_parallel_execution):
-        super(LocalMethod, self).__init__(
+        super().__init__(
             scope, config, server, name, request_type, reply_type)
 
         self._allow_parallel_execution = allow_parallel_execution
@@ -357,7 +357,7 @@ class LocalServer(Server):
         See Also:
             :obj:`rsb.create_server`
         """
-        super(LocalServer, self).__init__(scope, config)
+        super().__init__(scope, config)
 
     def add_method(self, name, func, request_type=object, reply_type=object,
                    allow_parallel_execution=False):
@@ -394,13 +394,13 @@ class LocalServer(Server):
             request_type=request_type,
             reply_type=reply_type,
             allow_parallel_execution=allow_parallel_execution)
-        super(LocalServer, self).add_method(method)
+        super().add_method(method)
         return method
 
     def remove_method(self, method):
         if isinstance(method, str):
             method = self.get_method(method)
-        super(LocalServer, self).remove_method(method)
+        super().remove_method(method)
 
 ######################################################################
 #
@@ -419,9 +419,8 @@ class RemoteMethod(Method):
     """
 
     def __init__(self, scope, config, server, name, request_type, reply_type):
-        super(RemoteMethod, self).__init__(scope, config,
-                                           server, name,
-                                           request_type, reply_type)
+        super().__init__(scope, config, server, name,
+                         request_type, reply_type)
 
         self._calls = {}
         self._lock = threading.RLock()
@@ -605,10 +604,10 @@ class RemoteServer(Server):
         See Also:
             :obj:`rsb.create_remote_server`
         """
-        super(RemoteServer, self).__init__(scope, config)
+        super().__init__(scope, config)
 
     def ensure_method(self, name):
-        method = super(RemoteServer, self).get_method(name)
+        method = super().get_method(name)
         if method is None:
             scope = self.scope.concat(rsb.Scope('/' + name))
             method = rsb.create_participant(RemoteMethod, scope, self.config,
@@ -626,6 +625,6 @@ class RemoteServer(Server):
     def __getattr__(self, name):
         # Treat missing attributes as methods.
         try:
-            return super(RemoteServer, self).__getattr__(name)
+            return super().__getattr__(name)
         except AttributeError:
             return self.ensure_method(name)

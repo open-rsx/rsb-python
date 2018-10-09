@@ -339,7 +339,7 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     class Worker(threading.Thread):
 
         def __init__(self, handler, event, filters):
-            threading.Thread.__init__(self, name='DispatcherThread')
+            super().__init__(name='DispatcherThread')
             self.handler = handler
             self.event = event
             self.filters = filters
@@ -609,7 +609,7 @@ class InPushRouteConfigurator(Configurator):
                 The event receiving strategy according to which the filtering
                 and dispatching of incoming events should be performed.
         """
-        super(InPushRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
@@ -622,7 +622,7 @@ class InPushRouteConfigurator(Configurator):
             connector.set_observer_action(self.__receiving_strategy.handle)
 
     def deactivate(self):
-        super(InPushRouteConfigurator, self).deactivate()
+        super().deactivate()
 
         for connector in self.connectors:
             connector.set_observer_action(None)
@@ -667,7 +667,7 @@ class InPullRouteConfigurator(Configurator):
                 The event receiving strategy according to which the dispatching
                 of incoming events should be performed.
         """
-        super(InPullRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
@@ -695,7 +695,7 @@ class OutRouteConfigurator(Configurator):
     def __init__(self, connectors=None, sending_strategy=None):
         self.__logger = rsb.util.get_logger_by_class(self.__class__)
 
-        super(OutRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
         if sending_strategy is None:
             self.__sending_strategy = DirectEventSendingStrategy()

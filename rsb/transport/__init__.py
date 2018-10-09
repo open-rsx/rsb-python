@@ -60,7 +60,7 @@ class Connector(metaclass=abc.ABCMeta):
         self.__wire_type = wire_type
 
         # fails if still some arguments are left over
-        super(Connector, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def get_wire_type(self):
         """

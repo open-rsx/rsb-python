@@ -29,17 +29,17 @@ import threading
 
 class FutureError(RuntimeError):
     def __init__(self, *args):
-        super(FutureError, self).__init__(*args)
+        super().__init__(*args)
 
 
 class FutureTimeout(FutureError):
     def __init__(self, *args):
-        super(FutureTimeout, self).__init__(*args)
+        super().__init__(*args)
 
 
 class FutureExecutionError(FutureError):
     def __init__(self, *args):
-        super(FutureExecutionError, self).__init__(*args)
+        super().__init__(*args)
 
 
 class Future:
@@ -181,4 +181,4 @@ class DataFuture(Future):
     """
 
     def get(self, timeout=0):
-        return super(DataFuture, self).get(timeout=timeout).data
+        return super().get(timeout=timeout).data

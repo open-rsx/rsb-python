@@ -118,7 +118,7 @@ class UnknownConverterError(KeyError):
     """
 
     def __init__(self, source_type, wire_schema):
-        KeyError.__init__(
+        super().__init__(
             self,
             "No converter from type %s to type %s available" % (source_type,
                                                                 wire_schema))
@@ -254,7 +254,7 @@ class PredicateConverterList(ConverterMap):
     """
 
     def __init__(self, wire_type):
-        super(PredicateConverterList, self).__init__(wire_type)
+        super().__init__(wire_type)
         self._list = []
 
     def add_converter(self, converter,
@@ -289,7 +289,7 @@ class PredicateConverterList(ConverterMap):
 
 class UnambiguousConverterMap(ConverterMap):
     def __init__(self, wire_type):
-        super(UnambiguousConverterMap, self).__init__(wire_type)
+        super().__init__(wire_type)
 
     def add_converter(self, converter, replace_existing=False):
         for (wire_schema, data_type) in list(self.get_converters().keys()):
@@ -302,8 +302,7 @@ class UnambiguousConverterMap(ConverterMap):
                     % (converter.get_data_type(),
                        wire_schema,
                        data_type))
-        super(UnambiguousConverterMap, self).add_converter(
-            converter, replace_existing)
+        super().add_converter(converter, replace_existing)
 
 
 __global_converter_maps_lock = RLock()
@@ -359,7 +358,7 @@ class IdentityConverter(Converter):
     """
 
     def __init__(self):
-        super(IdentityConverter, self).__init__(bytes, type(None), 'void')
+        super().__init__(bytes, type(None), 'void')
 
     def serialize(self, inp):
         return bytes(), self.wire_schema
@@ -382,7 +381,7 @@ class NoneConverter(Converter):
     """
 
     def __init__(self):
-        super(NoneConverter, self).__init__(bytes, type(None), 'void')
+        super().__init__(bytes, type(None), 'void')
 
     def serialize(self, inp):
         return bytes(), self.wire_schema
@@ -394,8 +393,7 @@ class NoneConverter(Converter):
 def make_struct_based_converter(name, data_type, wire_schema, fmt, size):
     class NewConverter(Converter):
         def __init__(self):
-            super(self.__class__, self).__init__(
-                bytes, data_type, wire_schema)
+            super().__init__(bytes, data_type, wire_schema)
 
         def serialize(self, inp):
             return bytes(struct.pack(fmt, inp)), self.wire_schema
@@ -444,7 +442,7 @@ class BytesConverter(Converter):
     """
 
     def __init__(self, wire_schema="bytes", data_type=bytes):
-        super(BytesConverter, self).__init__(bytes, data_type, wire_schema)
+        super().__init__(bytes, data_type, wire_schema)
 
     def serialize(self, inp):
         return inp, self.wire_schema
@@ -464,7 +462,7 @@ class StringConverter(Converter):
     def __init__(self,
                  wire_schema='utf-8-string',
                  encoding='utf-8'):
-        super(StringConverter, self).__init__(bytes, str, wire_schema)
+        super().__init__(bytes, str, wire_schema)
         self.__encoding = encoding
 
     def serialize(self, inp):
@@ -482,7 +480,7 @@ class ByteArrayConverter(Converter):
     """
 
     def __init__(self):
-        super(ByteArrayConverter, self).__init__(bytes, bytes, '.*')
+        super().__init__(bytes, bytes, '.*')
 
     def serialize(self, data):
         return bytes(data), self.wire_schema
@@ -499,8 +497,7 @@ class SchemaAndByteArrayConverter(Converter):
     """
 
     def __init__(self):
-        super(SchemaAndByteArrayConverter, self).__init__(
-            bytes, tuple, '.*')
+        super().__init__(bytes, tuple, '.*')
 
     def serialize(self, data):
         return data[1], data[0]
@@ -520,7 +517,7 @@ class ProtocolBufferConverter(Converter):
     """
 
     def __init__(self, message_class):
-        super(ProtocolBufferConverter, self).__init__(
+        super().__init__(
             bytes, message_class, '.%s' % message_class.DESCRIPTOR.full_name)
 
         self.__message_class = message_class
@@ -561,7 +558,7 @@ class ScopeConverter(Converter):
     """
 
     def __init__(self):
-        super(ScopeConverter, self).__init__(bytes, Scope, 'scope')
+        super().__init__(bytes, Scope, 'scope')
 
     def serialize(self, inp):
         return bytes(inp.to_bytes()), \
@@ -586,8 +583,7 @@ class EventsByScopeMapConverter(Converter):
     def __init__(self, converter_repository=get_global_converter_map(bytes)):
         self.__converter_repository = converter_repository
         self.__converter = ProtocolBufferConverter(EventsByScopeMap)
-        super(EventsByScopeMapConverter, self).__init__(
-            bytes, dict, self.__converter.wire_schema)
+        super().__init__(bytes, dict, self.__converter.wire_schema)
 
     def serialize(self, data):
 
