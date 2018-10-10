@@ -16,6 +16,6 @@ setup.cfg
 /.tox
 /tags
 /.exrc
-/.mypy_cache/
+.mypy_cache/
 /.python-version
 /.ropeproject/
