@@ -47,17 +47,17 @@ class Connector(metaclass=abc.ABCMeta):
             wire_type (types.TypeType):
                 the type of serialized data used by this connector.
         """
-        self.__logger = get_logger_by_class(self.__class__)
+        self._logger = get_logger_by_class(self.__class__)
 
-        self.__wire_type = None
-        self.__scope = None
+        self._wire_type = None
+        self._scope = None
 
         if wire_type is None:
             raise ValueError("Wire type must be a type object, None given")
 
-        self.__logger.debug("Using specified converter map for wire-type %s",
-                            wire_type)
-        self.__wire_type = wire_type
+        self._logger.debug("Using specified converter map for wire-type %s",
+                           wire_type)
+        self._wire_type = wire_type
 
         # fails if still some arguments are left over
         super().__init__(**kwargs)
@@ -70,11 +70,11 @@ class Connector(metaclass=abc.ABCMeta):
         Returns:
             python serialization type
         """
-        return self.__wire_type
+        return self._wire_type
 
     @property
     def scope(self):
-        return self.__scope
+        return self._scope
 
     @scope.setter
     def scope(self, new_value):
@@ -87,7 +87,7 @@ class Connector(metaclass=abc.ABCMeta):
             new_value (rsb.Scope):
                 scope of the connector
         """
-        self.__scope = new_value
+        self._scope = new_value
 
     @abc.abstractmethod
     def activate(self):
@@ -194,9 +194,9 @@ class ConverterSelectingConnector:
                 connector. If ``None``, the global map of converters for the
                 wire-type of the connector is used.
         """
-        self.__converter_map = converters
+        self._converter_map = converters
 
-        assert(self.__converter_map.wire_type == self.wire_type)
+        assert(self._converter_map.wire_type == self.wire_type)
 
     def get_converter_for_data_type(self, data_type):
         """
@@ -214,7 +214,7 @@ class ConverterSelectingConnector:
             KeyError:
                 no converter is available for the supplied data.
         """
-        return self.__converter_map.get_converter_for_data_type(data_type)
+        return self._converter_map.get_converter_for_data_type(data_type)
 
     def get_converter_for_wire_schema(self, wire_schema):
         """
@@ -233,11 +233,11 @@ class ConverterSelectingConnector:
                 no converter is available for the specified wire-schema.
 
         """
-        return self.__converter_map.get_converter_for_wire_schema(wire_schema)
+        return self._converter_map.get_converter_for_wire_schema(wire_schema)
 
     @property
     def converter_map(self):
-        return self.__converter_map
+        return self._converter_map
 
 
 class TransportFactory(metaclass=abc.ABCMeta):
@@ -317,8 +317,8 @@ class TransportFactory(metaclass=abc.ABCMeta):
         pass
 
 
-__factories_by_name = {}
-__factory_lock = threading.Lock()
+_factories_by_name = {}
+_factory_lock = threading.Lock()
 
 
 def register_transport(factory):
@@ -338,12 +338,12 @@ def register_transport(factory):
 
     if factory is None:
         raise ValueError("None cannot be a TransportFactory")
-    with __factory_lock:
-        if factory.name in __factories_by_name:
+    with _factory_lock:
+        if factory.name in _factories_by_name:
             raise ValueError(
                 "There is already a transport with name {name}".format(
                     name=factory.name))
-        __factories_by_name[factory.name] = factory
+        _factories_by_name[factory.name] = factory
 
 
 def get_transport_factory(name):
@@ -362,5 +362,5 @@ def get_transport_factory(name):
         KeyError:
             there is not transport with the given name
     """
-    with __factory_lock:
-        return __factories_by_name[name]
+    with _factory_lock:
+        return _factories_by_name[name]

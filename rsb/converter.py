@@ -59,9 +59,9 @@ class Converter(metaclass=abc.ABCMeta):
                 Wire-schema understood by the converter when deserializing
                 (also wire-schema of data serialized with the converter)
         """
-        self.__wire_type = wire_type
-        self.__data_type = data_type
-        self.__wire_schema = wire_schema
+        self._wire_type = wire_type
+        self._data_type = data_type
+        self._wire_schema = wire_schema
 
     @property
     def wire_type(self):
@@ -75,7 +75,7 @@ class Converter(metaclass=abc.ABCMeta):
             types.TypeType:
                 A type object.
         """
-        return self.__wire_type
+        return self._wire_type
 
     @property
     def data_type(self):
@@ -86,7 +86,7 @@ class Converter(metaclass=abc.ABCMeta):
             types.TypeType:
                 A type object.
         """
-        return self.__data_type
+        return self._data_type
 
     @property
     def wire_schema(self):
@@ -98,7 +98,7 @@ class Converter(metaclass=abc.ABCMeta):
                 A string designating the wire schema from/to this converter can
                 (de)serialize
         """
-        return self.__wire_schema
+        return self._wire_schema
 
     @abc.abstractmethod
     def serialize(self, inp):
@@ -304,8 +304,8 @@ class UnambiguousConverterMap(ConverterMap):
         super().add_converter(converter, replace_existing)
 
 
-__global_converter_maps_lock = RLock()
-__global_converter_maps = {}
+_global_converter_maps_lock = RLock()
+_global_converter_maps = {}
 
 
 def register_global_converter(converter, replace_existing=False):
@@ -336,10 +336,10 @@ def get_global_converter_map(wire_type):
         converter map constantly updated
     """
 
-    with __global_converter_maps_lock:
-        if wire_type not in __global_converter_maps:
-            __global_converter_maps[wire_type] = ConverterMap(wire_type)
-        return __global_converter_maps[wire_type]
+    with _global_converter_maps_lock:
+        if wire_type not in _global_converter_maps:
+            _global_converter_maps[wire_type] = ConverterMap(wire_type)
+        return _global_converter_maps[wire_type]
 
 # --- converters with bytes as serialization type ---
 
@@ -462,13 +462,13 @@ class StringConverter(Converter):
                  wire_schema='utf-8-string',
                  encoding='utf-8'):
         super().__init__(bytes, str, wire_schema)
-        self.__encoding = encoding
+        self._encoding = encoding
 
     def serialize(self, inp):
-        return bytes(inp.encode(self.__encoding)), self.wire_schema
+        return bytes(inp.encode(self._encoding)), self.wire_schema
 
     def deserialize(self, inp, wire_schema):
-        return inp.decode(self.__encoding)
+        return inp.decode(self._encoding)
 
 
 class ByteArrayConverter(Converter):
@@ -519,11 +519,11 @@ class ProtocolBufferConverter(Converter):
         super().__init__(bytes, message_class,
                          '.{}'.format(message_class.DESCRIPTOR.full_name))
 
-        self.__message_class = message_class
+        self._message_class = message_class
 
     @property
     def message_class(self):
-        return self.__message_class
+        return self._message_class
 
     def get_message_class_name(self):
         return self.message_class.DESCRIPTOR.full_name
@@ -579,9 +579,9 @@ class EventsByScopeMapConverter(Converter):
     """
 
     def __init__(self, converter_repository=get_global_converter_map(bytes)):
-        self.__converter_repository = converter_repository
-        self.__converter = ProtocolBufferConverter(EventsByScopeMap)
-        super().__init__(bytes, dict, self.__converter.wire_schema)
+        self._converter_repository = converter_repository
+        self._converter = ProtocolBufferConverter(EventsByScopeMap)
+        super().__init__(bytes, dict, self._converter.wire_schema)
 
     def serialize(self, data):
 
@@ -595,17 +595,17 @@ class EventsByScopeMapConverter(Converter):
             for event in events:
 
                 wire, wire_schema = \
-                    self.__converter_repository.get_converter_for_data_type(
+                    self._converter_repository.get_converter_for_data_type(
                         type(event.data)).serialize(event.data)
 
                 notification = scope_set.notifications.add()
                 event_to_notification(notification, event,
                                       wire_schema, wire, True)
 
-        return self.__converter.serialize(event_map)
+        return self._converter.serialize(event_map)
 
     def deserialize(self, wire, wire_schema):
-        preliminary_map = self.__converter.deserialize(wire, wire_schema)
+        preliminary_map = self._converter.deserialize(wire, wire_schema)
 
         output = {}
 
@@ -615,7 +615,7 @@ class EventsByScopeMapConverter(Converter):
             for notification in scope_set.notifications:
 
                 converter = \
-                    self.__converter_repository.get_converter_for_wire_schema(
+                    self._converter_repository.get_converter_for_wire_schema(
                         notification.wire_schema.decode('ASCII'))
                 event = notification_to_event(
                     notification, notification.data,

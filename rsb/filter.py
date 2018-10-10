@@ -71,7 +71,7 @@ class ScopeFilter(AbstractFilter):
             scope:
                 top-level scope to accept and al child scopes
         """
-        self.__scope = scope
+        self._scope = scope
 
     @property
     def scope(self):
@@ -81,11 +81,11 @@ class ScopeFilter(AbstractFilter):
         Returns:
             scope
         """
-        return self.__scope
+        return self._scope
 
     def match(self, event):
-        return event.scope == self.__scope \
-            or event.scope.is_sub_scope_of(self.__scope)
+        return event.scope == self._scope \
+            or event.scope.is_sub_scope_of(self._scope)
 
 
 class OriginFilter(AbstractFilter):
@@ -107,16 +107,16 @@ class OriginFilter(AbstractFilter):
                 Controls whether matching results should inverted (i.e.
                 matching events ``not`` originating form ``origin``).
         """
-        self.__origin = origin
-        self.__invert = invert
+        self._origin = origin
+        self._invert = invert
 
     @property
     def origin(self):
-        return self.__origin
+        return self._origin
 
     @property
     def invert(self):
-        return self.__invert
+        return self._invert
 
     def match(self, event):
         result = self.origin == event.sender_id
@@ -159,16 +159,16 @@ class CauseFilter(AbstractFilter):
                 (i.e.  matching events that do ``not`` have the
                 specified event id in their cause vector).
         """
-        self.__cause = cause
-        self.__invert = invert
+        self._cause = cause
+        self._invert = invert
 
     @property
     def cause(self):
-        return self.__cause
+        return self._cause
 
     @property
     def invert(self):
-        return self.__invert
+        return self._invert
 
     def match(self, event):
         result = self.cause in event.causes
@@ -209,16 +209,16 @@ class MethodFilter(AbstractFilter):
                 matching events ``not`` having  ``method`` in their method
                 field).
         """
-        self.__method = method
-        self.__invert = invert
+        self._method = method
+        self._invert = invert
 
     @property
     def method(self):
-        return self.__method
+        return self._method
 
     @property
     def invert(self):
-        return self.__invert
+        return self._invert
 
     def match(self, event):
         result = self.method == event.method

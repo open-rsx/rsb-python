@@ -64,11 +64,11 @@ class Future:
         """
         Create a new :obj:`Future` object.
         """
-        self.__error = False
-        self.__result = None
+        self._error = False
+        self._result = None
 
-        self.__lock = threading.Lock()
-        self.__condition = threading.Condition(lock=self.__lock)
+        self._lock = threading.Lock()
+        self._condition = threading.Condition(lock=self._lock)
 
     @property
     def done(self):
@@ -80,8 +80,8 @@ class Future:
                 ``True`` is the represented operation finished successfully or
                 failed.
         """
-        with self.__lock:
-            return self.__result is not None
+        with self._lock:
+            return self._result is not None
 
     def get(self, timeout=0):
         """
@@ -105,22 +105,22 @@ class Future:
                 If the result does not become available within the amount of
                 time specified via ``timeout``.
         """
-        with self.__lock:
-            while self.__result is None:
+        with self._lock:
+            while self._result is None:
                 if timeout <= 0:
-                    self.__condition.wait()
+                    self._condition.wait()
                 else:
-                    self.__condition.wait(timeout=timeout)
-                    if self.__result is None:
+                    self._condition.wait(timeout=timeout)
+                    if self._result is None:
                         raise FutureTimeout(
                             'Timeout while waiting for result; '
                             'Waited {} seconds.'.format(timeout))
 
-        if self.__error:
+        if self._error:
             raise FutureExecutionError(
-                'Failed to execute operation: {}'.format(self.__result))
+                'Failed to execute operation: {}'.format(self._result))
 
-        return self.__result
+        return self._result
 
     def set_result(self, result):
         """
@@ -133,9 +133,9 @@ class Future:
             result:
                 The result of the :obj:`Future` object.
         """
-        with self.__lock:
-            self.__result = result
-            self.__condition.notifyAll()
+        with self._lock:
+            self._result = result
+            self._condition.notifyAll()
 
     def set_error(self, message):
         """
@@ -149,16 +149,16 @@ class Future:
             message (str):
                 An error message that explains why/how the operation failed.
         """
-        with self.__lock:
-            self.__result = message
-            self.__error = True
-            self.__condition.notify()
+        with self._lock:
+            self._result = message
+            self._error = True
+            self._condition.notify()
 
     def __str__(self):
-        with self.__lock:
-            if self.__result is None:
+        with self._lock:
+            if self._result is None:
                 state = 'running'
-            elif self.__error:
+            elif self._error:
                 state = 'failed'
             else:
                 state = 'completed'

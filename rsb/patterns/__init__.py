@@ -177,13 +177,13 @@ class Server(rsb.Participant):
         """
         super().__init__(scope, config)
 
-        self.__active = False
+        self._active = False
         self._methods = {}
 
         self.activate()
 
     def __del__(self):
-        if self.__active:
+        if self._active:
             self.deactivate()
 
     @property
@@ -203,15 +203,15 @@ class Server(rsb.Participant):
     # State management
 
     def activate(self):
-        self.__active = True
+        self._active = True
 
         super().activate()
 
     def deactivate(self):
-        if not self.__active:
+        if not self._active:
             raise RuntimeError('Trying to deactivate inactive server')
 
-        self.__active = False
+        self._active = False
 
         for m in list(self._methods.values()):
             m.deactivate()
