@@ -35,7 +35,7 @@ import rsb.filter
 import rsb.util
 
 
-class ScopeDispatcher(object):
+class ScopeDispatcher:
     """
     Maintains a map of :ref:`Scopes <scope>` to sink objects.
 
@@ -43,13 +43,13 @@ class ScopeDispatcher(object):
     """
 
     def __init__(self):
-        self.__map = {}
+        self._map = {}
 
     def __len__(self):
-        return len(self.__map)
+        return len(self._map)
 
     def __bool__(self):
-        return bool(self.__map)
+        return bool(self._map)
 
     def add_sink(self, scope, sink):
         """
@@ -61,11 +61,11 @@ class ScopeDispatcher(object):
             sink (object):
                 The arbitrary object that should be associated to `scope`.
         """
-        if scope in self.__map:
-            sinks = self.__map[scope]
+        if scope in self._map:
+            sinks = self._map[scope]
         else:
             sinks = []
-            self.__map[scope] = sinks
+            self._map[scope] = sinks
 
         sinks.append(sink)
 
@@ -80,12 +80,13 @@ class ScopeDispatcher(object):
                 The arbitrary object that should be disassociated from
                 `scope`.
         """
-        sinks = self.__map.get(scope)
+        sinks = self._map.get(scope)
         sinks.remove(sink)
         if not sinks:
-            del self.__map[scope]
+            del self._map[scope]
 
-    def get_sinks(self):
+    @property
+    def sinks(self):
         """
         Return a generator yielding all sinks.
 
@@ -94,11 +95,9 @@ class ScopeDispatcher(object):
                 A generator yielding all known sinks in an unspecified
                 order.
         """
-        for sinks in list(self.__map.values()):
+        for sinks in list(self._map.values()):
             for sink in sinks:
                 yield sink
-
-    sinks = property(get_sinks)
 
     def matching_sinks(self, scope):
         """
@@ -112,14 +111,14 @@ class ScopeDispatcher(object):
                 A generator yielding all matching sinks in an
                 unspecified order.
         """
-        for sink in self.__map.get(scope, []):
+        for sink in self._map.get(scope, []):
             yield sink
         for scope in scope.super_scopes():
-            for sink in self.__map.get(scope, []):
+            for sink in self._map.get(scope, []):
                 yield sink
 
 
-class BroadcastProcessor(object):
+class BroadcastProcessor:
     """
     Implements synchronous broadcast dispatch to a list of handlers.
 
@@ -127,23 +126,22 @@ class BroadcastProcessor(object):
     """
 
     def __init__(self, handlers=None):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
 
         if handlers is None:
-            self.__handlers = []
+            self._handlers = []
         else:
-            self.__handlers = list(handlers)
+            self._handlers = list(handlers)
 
-    def get_handlers(self):
-        return self.__handlers
+    @property
+    def handlers(self):
+        return self._handlers
 
     def add_handler(self, handler):
-        self.__handlers.append(handler)
+        self._handlers.append(handler)
 
     def remove_handler(self, handler):
-        self.__handlers.remove(handler)
-
-    handlers = property(get_handlers)
+        self._handlers.remove(handler)
 
     def __call__(self, event):
         self.handle(event)
@@ -156,12 +154,12 @@ class BroadcastProcessor(object):
             handler(event)
 
     def __str__(self):
-        return '<%s %d handlers at 0x%x>' % (type(self).__name__,
-                                             len(self.handlers),
-                                             id(self))
+        return '<{} {} handlers at 0x{:x}>'.format(type(self).__name__,
+                                                   len(self.handlers),
+                                                   id(self))
 
 
-class EventReceivingStrategy(object, metaclass=abc.ABCMeta):
+class EventReceivingStrategy(metaclass=abc.ABCMeta):
     """
     Superclass for event receiving strategies.
 
@@ -232,12 +230,12 @@ class FirstConnectorPullEventReceivingStrategy(PullEventReceivingStrategy):
     def set_connectors(self, connectors):
         if not connectors:
             raise ValueError("There must be at least on connector")
-        self.__connectors = connectors
+        self._connectors = connectors
 
     def raise_event(self, block):
-        assert self.__connectors
+        assert self._connectors
 
-        event = self.__connectors[0].raise_event(block)
+        event = self._connectors[0].raise_event(block)
         if event:
             event.meta_data.set_deliver_time()
         return event
@@ -255,30 +253,30 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
 
     def __init__(self, num_threads=5):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
-        self.__pool = rsb.util.OrderedQueueDispatcherPool(
-            thread_pool_size=num_threads, del_func=self.__deliver,
-            filter_func=self.__filter)
-        self.__pool.start()
-        self.__filters = []
-        self.__filtersMutex = threading.RLock()
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
+        self._pool = rsb.util.OrderedQueueDispatcherPool(
+            thread_pool_size=num_threads, del_func=self._deliver,
+            filter_func=self._filter)
+        self._pool.start()
+        self._filters = []
+        self._filtersMutex = threading.RLock()
 
     def __del__(self):
-        self.__logger.debug("Destructing ParallelEventReceivingStrategy")
+        self._logger.debug("Destructing ParallelEventReceivingStrategy")
         self.deactivate()
 
     def deactivate(self):
-        self.__logger.debug("Deactivating ParallelEventReceivingStrategy")
-        if self.__pool:
-            self.__pool.stop()
-            self.__pool = None
+        self._logger.debug("Deactivating ParallelEventReceivingStrategy")
+        if self._pool:
+            self._pool.stop()
+            self._pool = None
 
-    def __deliver(self, action, event):
+    def _deliver(self, action, event):
         action(event)
 
-    def __filter(self, action, event):
-        with self.__filtersMutex:
-            filter_copy = list(self.__filters)
+    def _filter(self, action, event):
+        with self._filtersMutex:
+            filter_copy = list(self._filters)
 
         for flt in filter_copy:
             if not flt.match(event):
@@ -293,27 +291,27 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
             event:
                 event to dispatch
         """
-        self.__logger.debug("Processing event %s", event)
+        self._logger.debug("Processing event %s", event)
         event.meta_data.set_deliver_time()
-        self.__pool.push(event)
+        self._pool.push(event)
 
     def add_handler(self, handler, wait):
         # We can ignore wait since the pool implements the desired
         # behavior.
-        self.__pool.register_receiver(handler)
+        self._pool.register_receiver(handler)
 
     def remove_handler(self, handler, wait):
         # We can ignore wait since the pool implements the desired
         # behavior.
-        self.__pool.unregister_receiver(handler)
+        self._pool.unregister_receiver(handler)
 
     def add_filter(self, the_filter):
-        with self.__filtersMutex:
-            self.__filters.append(the_filter)
+        with self._filtersMutex:
+            self._filters.append(the_filter)
 
     def remove_filter(self, the_filter):
-        with self.__filtersMutex:
-            self.__filters = [f for f in self.__filters if f != the_filter]
+        with self._filtersMutex:
+            self._filters = [f for f in self._filters if f != the_filter]
 
 
 class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
@@ -328,10 +326,10 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
 
     def __init__(self):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
-        self.__filters = []
-        self.__mutex = threading.RLock()
-        self.__handlers = []
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
+        self._filters = []
+        self._mutex = threading.RLock()
+        self._handlers = []
 
     def deactivate(self):
         pass
@@ -339,7 +337,7 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
     class Worker(threading.Thread):
 
         def __init__(self, handler, event, filters):
-            threading.Thread.__init__(self, name='DispatcherThread')
+            super().__init__(name='DispatcherThread')
             self.handler = handler
             self.event = event
             self.filters = filters
@@ -360,33 +358,33 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
             event:
                 event to dispatch
         """
-        self.__logger.debug("Processing event %s", event)
+        self._logger.debug("Processing event %s", event)
         event.meta_data.set_deliver_time()
         workers = []
-        with self.__mutex:
-            for h in self.__handlers:
-                workers.append(self.Worker(h, event, list(self.__filters)))
+        with self._mutex:
+            for h in self._handlers:
+                workers.append(self.Worker(h, event, list(self._filters)))
         for w in workers:
             w.start()
 
     def add_handler(self, handler, wait):
         # We can ignore wait since the pool implements the desired
         # behavior.
-        with self.__mutex:
-            self.__handlers.append(handler)
+        with self._mutex:
+            self._handlers.append(handler)
 
     def remove_handler(self, handler, wait):
         # TODO anything required to implement wait functionality?
-        with self.__mutex:
-            self.__handlers.remove(handler)
+        with self._mutex:
+            self._handlers.remove(handler)
 
     def add_filter(self, f):
-        with self.__mutex:
-            self.__filters.append(f)
+        with self._mutex:
+            self._filters.append(f)
 
     def remove_filter(self, the_filter):
-        with self.__mutex:
-            self.__filters = [f for f in self.__filters if f != the_filter]
+        with self._mutex:
+            self._filters = [f for f in self._filters if f != the_filter]
 
 
 class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
@@ -404,96 +402,102 @@ class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
 
     def __init__(self):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
-        self.__filters = []
-        self.__mutex = threading.RLock()
-        self.__handlers = []
-        self.__queue = queue.Queue(1)
-        self.__interrupted = False
-        self.__thread = threading.Thread(target=self.__work)
-        self.__thread.start()
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
+        self._filters = []
+        self._mutex = threading.RLock()
+        self._handlers = []
+        self._queue = queue.Queue(1)
+        self._interrupted = False
+        self._thread = threading.Thread(target=self._work)
+        self._thread.start()
 
     def deactivate(self):
-        self.__interrupted = True
-        self.__queue.put(None, True)
-        self.__thread.join()
+        self._interrupted = True
+        self._queue.put(None, True)
+        self._thread.join()
 
-    def __work(self):
+    def _work(self):
 
         while True:
 
-            event = self.__queue.get(True)
+            event = self._queue.get(True)
             # interruption checking is handled here and not in the head of the
             # loop since we need put an artificial item into the queue when
             # deactivating this strategy and this item must never receive at
             # any handler
-            if self.__interrupted:
+            if self._interrupted:
                 return
 
-            with self.__mutex:
-                for f in self.__filters:
+            with self._mutex:
+                for f in self._filters:
                     if not f.match(event):
                         return
-                for handler in self.__handlers:
+                for handler in self._handlers:
                     handler(event)
 
     def handle(self, event):
-        self.__logger.debug("Processing event %s", event)
+        self._logger.debug("Processing event %s", event)
         event.meta_data.set_deliver_time()
-        self.__queue.put(event, True)
+        self._queue.put(event, True)
 
     def add_handler(self, handler, wait):
-        with self.__mutex:
-            self.__handlers.append(handler)
+        with self._mutex:
+            self._handlers.append(handler)
 
     def remove_handler(self, handler, wait):
-        with self.__mutex:
-            self.__handlers.remove(handler)
+        with self._mutex:
+            self._handlers.remove(handler)
 
     def add_filter(self, f):
-        with self.__mutex:
-            self.__filters.append(f)
+        with self._mutex:
+            self._filters.append(f)
 
     def remove_filter(self, the_filter):
-        with self.__mutex:
-            self.__filters = [f for f in self.__filters if f != the_filter]
+        with self._mutex:
+            self._filters = [f for f in self._filters if f != the_filter]
 
 
-class EventSendingStrategy(object):
-    def get_connectors(self):
-        raise NotImplementedError
+class EventSendingStrategy(metaclass=abc.ABCMeta):
 
-    connectors = property(get_connectors)
+    @property
+    @abc.abstractmethod
+    def connectors(self):
+        pass
 
+    @abc.abstractmethod
     def add_connector(self, connector):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def remove_connector(self, connector):
-        raise NotImplementedError
+        pass
 
+    @abc.abstractmethod
     def handle(self, event):
-        raise NotImplementedError
+        pass
 
 
 class DirectEventSendingStrategy(EventSendingStrategy):
-    def __init__(self):
-        self.__connectors = []
 
-    def get_connectors(self):
-        return self.__connectors
+    def __init__(self):
+        self._connectors = []
+
+    @property
+    def connectors(self):
+        return self._connectors
 
     def add_connector(self, connector):
-        self.__connectors.append(connector)
+        self._connectors.append(connector)
 
     def remove_connector(self, connector):
-        self.__connectors.remove(connector)
+        self._connectors.remove(connector)
 
     def handle(self, event):
-        for connector in self.__connectors:
+        for connector in self._connectors:
             connector.handle(event)
 
 
-class Configurator(object):
+class Configurator:
     """
     Superclass for in- and out-direction Configurator classes.
 
@@ -505,24 +509,26 @@ class Configurator(object):
     """
 
     def __init__(self, connectors=None):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
 
-        self.__scope = None
+        self._scope = None
         if connectors is None:
-            self.__connectors = []
+            self._connectors = []
         else:
-            self.__connectors = copy.copy(connectors)
-        self.__active = False
+            self._connectors = copy.copy(connectors)
+        self._active = False
 
     def __del__(self):
-        self.__logger.debug("Destructing Configurator")
-        if self.__active:
+        self._logger.debug("Destructing Configurator")
+        if self._active:
             self.deactivate()
 
-    def get_scope(self):
-        return self.__scope
+    @property
+    def scope(self):
+        return self._scope
 
-    def set_scope(self, scope):
+    @scope.setter
+    def scope(self, scope):
         """
         Define the scope the in route has to be set up.
 
@@ -532,19 +538,17 @@ class Configurator(object):
             scope (rsb.Scope):
                 the scope of the in route
         """
-        self.__scope = scope
-        self.__logger.debug("Got new scope %s", scope)
+        self._scope = scope
+        self._logger.debug("Got new scope %s", scope)
         for connector in self.connectors:
-            connector.set_scope(scope)
+            connector.scope = scope
 
-    scope = property(get_scope, set_scope)
+    @property
+    def connectors(self):
+        return self._connectors
 
-    def get_connectors(self):
-        return self.__connectors
-
-    connectors = property(get_connectors)
-
-    def get_transport_urls(self):
+    @property
+    def transport_urls(self):
         """
         Return the transport URLs of all used connectors.
 
@@ -552,38 +556,35 @@ class Configurator(object):
             list:
                 List of transport URLs.
         """
-        return {x.get_transport_url() for x in self.__connectors}
+        return {x.get_transport_url() for x in self._connectors}
 
-    transport_urls = property(get_transport_urls)
-
-    def is_active(self):
-        return self.__active
-
-    active = property(is_active)
+    @property
+    def active(self):
+        return self._active
 
     def activate(self):
-        if self.__active:
+        if self._active:
             raise RuntimeError("Configurator is already active")
 
-        self.__logger.info("Activating configurator")
+        self._logger.info("Activating configurator")
         for connector in self.connectors:
             connector.activate()
 
-        self.__active = True
+        self._active = True
 
     def deactivate(self):
-        if not self.__active:
+        if not self._active:
             raise RuntimeError("Configurator is not active")
 
-        self.__logger.info("Deactivating configurator")
+        self._logger.info("Deactivating configurator")
         for connector in self.connectors:
             connector.deactivate()
 
-        self.__active = False
+        self._active = False
 
     def set_quality_of_service_spec(self, qos):
         for connector in self.connectors:
-            connector.set_quality_of_service_spec(qos)
+            connector.quality_of_service_spec = qos
 
 
 class InPushRouteConfigurator(Configurator):
@@ -609,38 +610,38 @@ class InPushRouteConfigurator(Configurator):
                 The event receiving strategy according to which the filtering
                 and dispatching of incoming events should be performed.
         """
-        super(InPushRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
 
         if receiving_strategy is None:
-            self.__receiving_strategy = ParallelEventReceivingStrategy()
+            self._receiving_strategy = ParallelEventReceivingStrategy()
         else:
-            self.__receiving_strategy = receiving_strategy
+            self._receiving_strategy = receiving_strategy
 
         for connector in self.connectors:
-            connector.set_observer_action(self.__receiving_strategy.handle)
+            connector.set_observer_action(self._receiving_strategy.handle)
 
     def deactivate(self):
-        super(InPushRouteConfigurator, self).deactivate()
+        super().deactivate()
 
         for connector in self.connectors:
             connector.set_observer_action(None)
-        self.__receiving_strategy.deactivate()
+        self._receiving_strategy.deactivate()
 
     def handler_added(self, handler, wait):
-        self.__receiving_strategy.add_handler(handler, wait)
+        self._receiving_strategy.add_handler(handler, wait)
 
     def handler_removed(self, handler, wait):
-        self.__receiving_strategy.remove_handler(handler, wait)
+        self._receiving_strategy.remove_handler(handler, wait)
 
     def filter_added(self, the_filter):
-        self.__receiving_strategy.add_filter(the_filter)
+        self._receiving_strategy.add_filter(the_filter)
         for connector in self.connectors:
             connector.filter_notify(the_filter, rsb.filter.FilterAction.ADD)
 
     def filter_removed(self, the_filter):
-        self.__receiving_strategy.remove_filter(the_filter)
+        self._receiving_strategy.remove_filter(the_filter)
         for connector in self.connectors:
             connector.filter_notify(the_filter, rsb.filter.FilterAction.REMOVE)
 
@@ -667,19 +668,19 @@ class InPullRouteConfigurator(Configurator):
                 The event receiving strategy according to which the dispatching
                 of incoming events should be performed.
         """
-        super(InPullRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
 
         if receiving_strategy is None:
-            self.__receiving_strategy = \
+            self._receiving_strategy = \
                 FirstConnectorPullEventReceivingStrategy()
         else:
-            self.__receiving_strategy = receiving_strategy
-        self.__receiving_strategy.set_connectors(connectors)
+            self._receiving_strategy = receiving_strategy
+        self._receiving_strategy.set_connectors(connectors)
 
     def get_receiving_strategy(self):
-        return self.__receiving_strategy
+        return self._receiving_strategy
 
 
 class OutRouteConfigurator(Configurator):
@@ -693,22 +694,22 @@ class OutRouteConfigurator(Configurator):
     """
 
     def __init__(self, connectors=None, sending_strategy=None):
-        self.__logger = rsb.util.get_logger_by_class(self.__class__)
+        self._logger = rsb.util.get_logger_by_class(self.__class__)
 
-        super(OutRouteConfigurator, self).__init__(connectors)
+        super().__init__(connectors)
 
         if sending_strategy is None:
-            self.__sending_strategy = DirectEventSendingStrategy()
+            self._sending_strategy = DirectEventSendingStrategy()
         else:
-            self.__sending_strategy = sending_strategy
+            self._sending_strategy = sending_strategy
 
         if connectors is not None:
-            list(map(self.__sending_strategy.add_connector, connectors))
+            list(map(self._sending_strategy.add_connector, connectors))
 
     def handle(self, event):
         if not self.active:
             raise RuntimeError("Trying to publish event on Configurator "
                                "which is not active.")
 
-        self.__logger.debug("Publishing event: %s", event)
-        self.__sending_strategy.handle(event)
+        self._logger.debug("Publishing event: %s", event)
+        self._sending_strategy.handle(event)

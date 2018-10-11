@@ -54,23 +54,23 @@ class TestParticipantConfig:
 
         copied = copy.deepcopy(config)
         copied.introspection = False
-        copied.transports[0].enabled = False
+        copied.enabled_transports[0].enabled = False
 
         # Assert source object is unmodified.
         assert config.introspection
-        assert config.transports[0].enabled
+        assert config.enabled_transports[0].enabled
 
     def test_from_file(self):
         config = ParticipantConfig.from_file('test/smoke-test.conf')
 
         # Check quality of service specs
-        assert config.get_quality_of_service_spec().get_reliability() == \
+        assert config.quality_of_service_spec.reliability == \
             QualityOfServiceSpec.Reliability.UNRELIABLE
-        assert config.get_quality_of_service_spec().get_ordering() == \
+        assert config.quality_of_service_spec.ordering == \
             QualityOfServiceSpec.Ordering.UNORDERED
 
-        assert len(config.get_transports()) == 1
-        assert len(config.get_transports(include_disabled=True)) == 2
+        assert len(config.enabled_transports) == 1
+        assert len(config.all_transports) == 2
 
         # Check introspection
         assert config.introspection
@@ -91,13 +91,13 @@ class TestParticipantConfig:
         config = ParticipantConfig.from_environment()
 
         # Check quality of service specs
-        assert config.get_quality_of_service_spec().get_reliability() == \
+        assert config.quality_of_service_spec.reliability == \
             QualityOfServiceSpec.Reliability.UNRELIABLE
-        assert config.get_quality_of_service_spec().get_ordering() == \
+        assert config.quality_of_service_spec.ordering == \
             QualityOfServiceSpec.Ordering.UNORDERED
 
-        assert len(config.get_transports()) == 1
-        assert len(config.get_transports(include_disabled=True)) == 1
+        assert len(config.enabled_transports) == 1
+        assert len(config.all_transports) == 1
 
         # Check introspection
         assert config.introspection
@@ -106,18 +106,18 @@ class TestParticipantConfig:
         defaults = {'transport.spread.enabled': 'yes',
                     'qualityofservice.reliability': 'UNRELIABLE'}
         config = ParticipantConfig.from_dict(defaults)
-        assert config.get_quality_of_service_spec().get_reliability() == \
+        assert config.quality_of_service_spec.reliability == \
             QualityOfServiceSpec.Reliability.UNRELIABLE
-        assert config.get_transport('spread').is_enabled()
+        assert config.get_transport('spread').enabled
 
         os.environ['RSB_QUALITYOFSERVICE_RELIABILITY'] = 'RELIABLE'
         os.environ['RSB_TRANSPORT_SPREAD_ENABLED'] = 'no'
         config = ParticipantConfig.from_environment(defaults)
 
         # Check overwritten values
-        assert config.get_quality_of_service_spec().get_reliability() == \
+        assert config.quality_of_service_spec.reliability == \
             QualityOfServiceSpec.Reliability.RELIABLE
-        assert not config.get_transport('spread').is_enabled()
+        assert not config.get_transport('spread').enabled
 
     def test_from_default_source(self):
         # TODO how to test this?
@@ -128,7 +128,7 @@ class TestParticipantConfig:
 
         config.introspection = True
         assert config.introspection
-        config.set_introspection(False)
+        config.introspection = False
         assert not config.introspection
 
 
@@ -137,9 +137,9 @@ class TestQualityOfServiceSpec:
     def test_construction(self):
 
         specs = QualityOfServiceSpec()
-        assert QualityOfServiceSpec.Ordering.UNORDERED == specs.get_ordering()
+        assert QualityOfServiceSpec.Ordering.UNORDERED == specs.ordering
         assert QualityOfServiceSpec.Reliability.RELIABLE == \
-            specs.get_reliability()
+            specs.reliability
 
     def test_comparison(self):
 
@@ -159,7 +159,7 @@ class TestScope:
     ])
     def test_parsing(self, str_repr, components):
         scope = rsb.Scope(str_repr)
-        assert scope.get_components() == components
+        assert scope.components == components
 
         # Non-ASCII characters are not allowed. However, unicode
         # object consisting of acceptable characters are OK.
@@ -260,9 +260,9 @@ class TestEventId:
     def test_hashing(self):
 
         id1 = EventId(uuid.uuid4(), 23)
-        id2 = EventId(id1.get_participant_id(), 23)
+        id2 = EventId(id1.participant_id, 23)
         id3 = EventId(uuid.uuid4(), 32)
-        id4 = EventId(id3.get_participant_id(), 33)
+        id4 = EventId(id3.participant_id, 33)
 
         assert hash(id1) == hash(id2)
         assert hash(id1) != hash(id3)
@@ -286,8 +286,8 @@ class TestEvent:
 
     def test_constructor(self):
         e = Event()
-        assert e.get_data() is None
-        assert Scope("/") == e.get_scope()
+        assert e.data is None
+        assert Scope("/") == e.scope
 
     def test_data(self):
         e = Event()
@@ -326,13 +326,13 @@ class TestEvent:
         sid = uuid.uuid4()
         e1 = Event(EventId(sid, 0))
         e2 = Event(EventId(sid, 0))
-        e2.get_meta_data().set_create_time(
-            e1.get_meta_data().get_create_time())
+        e2.meta_data.set_create_time(
+            e1.meta_data.create_time)
 
         e1.meta_data.set_user_time("foo")
         assert e1 != e2
         e2.meta_data.set_user_time(
-            "foo", e1.get_meta_data().get_user_times()["foo"])
+            "foo", e1.meta_data.user_times["foo"])
         assert e1 == e2
 
         cause = EventId(uuid4(), 42)
@@ -362,13 +362,13 @@ class TestMetaData:
         meta = MetaData()
         after = time.time()
 
-        assert meta.get_create_time() is not None
-        assert meta.get_send_time() is None
-        assert meta.get_receive_time() is None
-        assert meta.get_deliver_time() is None
+        assert meta.create_time is not None
+        assert meta.send_time is None
+        assert meta.receive_time is None
+        assert meta.deliver_time is None
 
-        assert meta.get_create_time() >= before
-        assert meta.get_create_time() <= after
+        assert meta.create_time >= before
+        assert meta.create_time <= after
 
     def test_times_auto(self):
 
@@ -383,20 +383,20 @@ class TestMetaData:
 
         after = time.time()
 
-        assert meta.get_create_time() is not None
-        assert meta.get_send_time() is not None
-        assert meta.get_receive_time() is not None
-        assert meta.get_deliver_time() is not None
+        assert meta.create_time is not None
+        assert meta.send_time is not None
+        assert meta.receive_time is not None
+        assert meta.deliver_time is not None
 
-        assert before <= meta.get_create_time()
-        assert before <= meta.get_send_time()
-        assert before <= meta.get_receive_time()
-        assert before <= meta.get_deliver_time()
+        assert before <= meta.create_time
+        assert before <= meta.send_time
+        assert before <= meta.receive_time
+        assert before <= meta.deliver_time
 
-        assert after >= meta.get_create_time()
-        assert after >= meta.get_send_time()
-        assert after >= meta.get_receive_time()
-        assert after >= meta.get_deliver_time()
+        assert after >= meta.create_time
+        assert after >= meta.send_time
+        assert after >= meta.receive_time
+        assert after >= meta.deliver_time
 
     def test_user_times(self):
 
@@ -414,37 +414,37 @@ class TestMetaData:
 
         meta1 = MetaData()
         meta2 = MetaData()
-        meta2.set_create_time(meta1.get_create_time())
+        meta2.set_create_time(meta1.create_time)
         assert meta1 == meta2
 
         meta1.set_create_time(213123)
         assert meta1 != meta2
-        meta2.set_create_time(meta1.get_create_time())
+        meta2.set_create_time(meta1.create_time)
         assert meta1 == meta2
 
         meta1.set_send_time()
         assert meta1 != meta2
-        meta2.set_send_time(meta1.get_send_time())
+        meta2.set_send_time(meta1.send_time)
         assert meta1 == meta2
 
         meta1.set_receive_time()
         assert meta1 != meta2
-        meta2.set_receive_time(meta1.get_receive_time())
+        meta2.set_receive_time(meta1.receive_time)
         assert meta1 == meta2
 
         meta1.set_deliver_time()
         assert meta1 != meta2
-        meta2.set_deliver_time(meta1.get_deliver_time())
+        meta2.set_deliver_time(meta1.deliver_time)
         assert meta1 == meta2
 
         meta1.set_user_time("foo")
         assert meta1 != meta2
-        meta2.set_user_time("foo", meta1.get_user_times()["foo"])
+        meta2.set_user_time("foo", meta1.user_times["foo"])
         assert meta1 == meta2
 
         meta1.set_user_info("foox", "bla")
         assert meta1 != meta2
-        meta2.set_user_info("foox", meta1.get_user_infos()["foox"])
+        meta2.set_user_info("foox", meta1.user_infos["foox"])
         assert meta1 == meta2
 
 
@@ -504,13 +504,13 @@ class TetsIntegration:
         requiring a completely new instance of the default participant config.
         """
 
-        class FooType(object):
+        class FooType:
             """Dummy data type for the test."""
 
         class FooTypeConverter(Converter):
 
             def __init__(self):
-                Converter.__init__(self, bytes, FooType, "footype")
+                super().__init__(bytes, FooType, "footype")
 
             def serialize(self, inp):
                 return bytes(), self.wire_schema

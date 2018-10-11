@@ -181,7 +181,7 @@ class TestParallelEventReceivingStrategy:
             ep.remove_handler(h1, wait=True)
 
 
-class MockConnector(object):
+class MockConnector:
     def activate(self):
         pass
 
@@ -343,7 +343,7 @@ class TestInPushRouteConfigurator:
 
 class TestFullyParallelEventReceivingStrategy:
 
-    class CollectingHandler(object):
+    class CollectingHandler:
 
         def __init__(self):
             self.condition = Condition()
@@ -404,14 +404,14 @@ class TestFullyParallelEventReceivingStrategy:
 
     def test_parallel_call_of_one_handler(self):
 
-        class Counter(object):
+        class Counter:
             def __init__(self):
                 self.value = 0
         max_parallel_calls = Counter()
         current_calls = []
         call_lock = Condition()
 
-        class Receiver(object):
+        class Receiver:
 
             def __init__(self, counter):
                 self.counter = counter

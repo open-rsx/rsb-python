@@ -55,7 +55,7 @@ class TestLocalServer:
 
         # Test creating a server that exposes method of an existing
         # object
-        class SomeClass(object):
+        class SomeClass:
             def bar(self, x):
                 pass
 

@@ -18,6 +18,7 @@
 #
 # ============================================================
 
+import abc
 import random
 import string
 import threading
@@ -35,7 +36,7 @@ from rsb import (create_informer,
                  Scope)
 
 
-class SettingReceiver(object):
+class SettingReceiver:
 
     def __init__(self, scope):
         self.result_event = None
@@ -48,24 +49,27 @@ class SettingReceiver(object):
             self.result_condition.notifyAll()
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.scope)
+        return "{}({!r})".format(self.__class__.__name__, self.scope)
 
 
-class TransportCheck(object):
+class TransportCheck(metaclass=abc.ABCMeta):
     """
     An abstract base class for ensuring interface assumptions about transports.
 
     .. codeauthor:: jwienke
     """
 
+    @abc.abstractmethod
     def _get_in_push_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def _get_in_pull_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
+    @abc.abstractmethod
     def _get_out_connector(self, scope, activate=True):
-        raise NotImplementedError()
+        pass
 
     @pytest.mark.timeout(5)
     def test_roundtrip(self):
@@ -95,8 +99,8 @@ class TransportCheck(object):
                 receiver.result_condition.wait(10)
             assert receiver.result_event
             # ignore meta data here
-            event.set_meta_data(None)
-            receiver.result_event.set_meta_data(None)
+            event.meta_data = None
+            receiver.result_event.meta_data = None
             assert receiver.result_event == event
 
         inconnector.deactivate()
@@ -139,8 +143,8 @@ class TransportCheck(object):
 
         received = inconnector.raise_event(True)
         # ignore meta data here
-        event.set_meta_data(None)
-        received.set_meta_data(None)
+        event.meta_data = None
+        received.meta_data = None
         assert received == event
 
         inconnector.deactivate()
@@ -167,13 +171,13 @@ class TransportCheck(object):
 
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
-        sent_event.set_data(data1)
-        sent_event.set_data_type(str)
-        sent_event.set_scope(scope)
-        sent_event.get_meta_data().set_user_info("test", "it")
-        sent_event.get_meta_data().set_user_info("test again", "it works?")
-        sent_event.get_meta_data().set_user_time("blubb", 234234.0)
-        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.data = data1
+        sent_event.data_type = str
+        sent_event.scope = scope
+        sent_event.meta_data.set_user_info("test", "it")
+        sent_event.meta_data.set_user_info("test again", "it works?")
+        sent_event.meta_data.set_user_time("blubb", 234234.0)
+        sent_event.meta_data.set_user_time("bla", 3434343.45)
         sent_event.add_cause(EventId(uuid.uuid4(), 1323))
         sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
@@ -226,13 +230,13 @@ class TransportCheck(object):
 
         data1 = "a string to test"
         sent_event = Event(EventId(uuid.uuid4(), 0))
-        sent_event.set_data(data1)
-        sent_event.set_data_type(str)
-        sent_event.set_scope(scope)
-        sent_event.get_meta_data().set_user_info("test", "it")
-        sent_event.get_meta_data().set_user_info("test again", "it works?")
-        sent_event.get_meta_data().set_user_time("blubb", 234234)
-        sent_event.get_meta_data().set_user_time("bla", 3434343.45)
+        sent_event.data = data1
+        sent_event.data_type = str
+        sent_event.scope = scope
+        sent_event.meta_data.set_user_info("test", "it")
+        sent_event.meta_data.set_user_info("test again", "it works?")
+        sent_event.meta_data.set_user_time("blubb", 234234)
+        sent_event.meta_data.set_user_time("bla", 3434343.45)
         sent_event.add_cause(EventId(uuid.uuid4(), 1323))
         sent_event.add_cause(EventId(uuid.uuid4(), 42))
 
@@ -291,9 +295,9 @@ class TransportCheck(object):
                 while receiver.result_event is None:
                     receiver.result_condition.wait(10)
                 if receiver.result_event is None:
-                    self.fail(
-                        "Listener on scope %s did not receive an event"
-                        % receiver.scope)
+                    pytest.fail(
+                        "Listener on scope {} did not receive an event".format(
+                            receiver.scope))
                 assert receiver.result_event.data == data
 
         for listener in listeners:
@@ -316,7 +320,7 @@ class TransportCheck(object):
         connector.handle(event)
         after = time.time()
 
-        assert event.get_meta_data().get_send_time() >= before
-        assert event.get_meta_data().get_send_time() <= after
+        assert event.meta_data.send_time >= before
+        assert event.meta_data.send_time <= after
 
         connector.deactivate()

@@ -37,8 +37,8 @@ from rsb.converter import (Converter,
 
 class ConflictingStringConverter(Converter):
     def __init__(self):
-        Converter.__init__(self, wire_type=bytes,
-                           wire_schema="utf-8-string", data_type=float)
+        super().__init__(wire_type=bytes,
+                         wire_schema="utf-8-string", data_type=float)
 
     def serialize(self, data):
         return str()

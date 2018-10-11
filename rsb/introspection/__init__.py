@@ -49,7 +49,7 @@ _display_name = None
 # Model
 
 
-class ParticipantInfo(object):
+class ParticipantInfo:
     """
     Instances of this class store information about a participant.
 
@@ -61,14 +61,15 @@ class ParticipantInfo(object):
 
     def __init__(self, kind, participant_id, scope, data_type, parent_id=None,
                  transport_urls=None):
-        self.__kind = kind
-        self.__id = participant_id
-        self.__scope = rsb.Scope.ensure_scope(scope)
-        self.__type = data_type
-        self.__parent_id = parent_id
-        self.__transport_urls = transport_urls or []
+        self._kind = kind
+        self._id = participant_id
+        self._scope = rsb.Scope.ensure_scope(scope)
+        self._type = data_type
+        self._parent_id = parent_id
+        self._transport_urls = transport_urls or []
 
-    def get_kind(self):
+    @property
+    def kind(self):
         """
         Return the kind of the participant.
 
@@ -79,11 +80,10 @@ class ParticipantInfo(object):
                 A lower-case, hyphen-separated string identifying the kind of
                 participant.
         """
-        return self.__kind
+        return self._kind
 
-    kind = property(get_kind)
-
-    def get_participant_id(self):
+    @property
+    def participant_id(self):
         """
         Return the unique id of the participant.
 
@@ -91,11 +91,10 @@ class ParticipantInfo(object):
             uuid.uuid:
                 The unique id of the participant.
         """
-        return self.__id
+        return self._id
 
-    participant_id = property(get_participant_id)
-
-    def get_scope(self):
+    @property
+    def scope(self):
         """
         Return the scope of the participant.
 
@@ -103,11 +102,10 @@ class ParticipantInfo(object):
             rsb.Scope:
                 The scope of the participant.
         """
-        return self.__scope
+        return self._scope
 
-    scope = property(get_scope)
-
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Return a representation of the type of the participant, if available.
 
@@ -118,11 +116,10 @@ class ParticipantInfo(object):
             type or tuple:
                 A representation of the type.
         """
-        return self.__type
+        return self._type
 
-    data_type = property(get_data_type)
-
-    def get_parent_id(self):
+    @property
+    def parent_id(self):
         """
         Return the unique id of the parent participant.
 
@@ -132,11 +129,10 @@ class ParticipantInfo(object):
             uuid.uuid or NoneType:
                 ``None`` or the unique id of the participant's parent.
         """
-        return self.__parent_id
+        return self._parent_id
 
-    parent_id = property(get_parent_id)
-
-    def get_transport_urls(self):
+    @property
+    def transport_urls(self):
         """
         Return list of transport URLs.
 
@@ -145,19 +141,17 @@ class ParticipantInfo(object):
                 List of transport URLs describing the transports used
                 by the participant.
         """
-        return self.__transport_urls
-
-    transport_urls = property(get_transport_urls)
+        return self._transport_urls
 
     def __str__(self):
-        return '<%s %s %s at 0x%0x>' % (
+        return '<{} {} {} at 0x{:x}>'.format(
             type(self).__name__, self.kind, self.scope.to_string(), id(self))
 
     def __repr__(self):
         return str(self)
 
 
-__process_start_time = None
+_process_start_time = None
 
 
 def process_start_time():
@@ -168,11 +162,11 @@ def process_start_time():
         float:
             Start time in factional seconds since UNIX epoch.
     """
-    global __process_start_time
+    global _process_start_time
 
     # Used cached value, if there is one.
-    if __process_start_time is not None:
-        return __process_start_time
+    if _process_start_time is not None:
+        return _process_start_time
 
     # Try to determine the start time of the current process in a
     # platform dependent way. Since all of these methods seem kind of
@@ -192,17 +186,17 @@ def process_start_time():
                 self_stat_content = f.read()
             start_time_boot_jiffies = int(self_stat_content.split(' ')[21])
 
-            __process_start_time = float(boot_time_unix_seconds) \
+            _process_start_time = float(boot_time_unix_seconds) \
                 + float(start_time_boot_jiffies) / 100.0
         except:  # noqa: E722 do not create an error in any case
             pass
 
     # Default/fallback strategy: just use the current time.
-    if __process_start_time is None:
+    if _process_start_time is None:
         import time
-        __process_start_time = time.time()
+        _process_start_time = time.time()
 
-    return __process_start_time
+    return _process_start_time
 
 
 def program_name():
@@ -213,7 +207,7 @@ def program_name():
         return '<no script>'
 
 
-class ProcessInfo(object):
+class ProcessInfo:
     """
     Stores information about operating system processes.
 
@@ -225,27 +219,28 @@ class ProcessInfo(object):
 
     def __init__(self,
                  process_id=os.getpid(),
-                 program_name='python%d.%d %s'
-                 % (sys.version_info.major,
-                    sys.version_info.minor,
-                    program_name()),
+                 program_name='python{}.{} {}'.format(
+                     sys.version_info.major,
+                     sys.version_info.minor,
+                     program_name()),
                  arguments=copy.copy(sys.argv),
                  start_time=process_start_time(),
                  executing_user=None,
                  rsb_version=rsb.version.get_version()):
-        self.__id = process_id
-        self.__program_name = program_name
-        self.__arguments = arguments
-        self.__start_time = start_time
-        self.__executing_user = executing_user
-        if not self.__executing_user:
+        self._id = process_id
+        self._program_name = program_name
+        self._arguments = arguments
+        self._start_time = start_time
+        self._executing_user = executing_user
+        if not self._executing_user:
             try:
-                self.__executing_user = getpass.getuser()
+                self._executing_user = getpass.getuser()
             except OSError:
                 pass
-        self.__rsb_version = rsb_version
+        self._rsb_version = rsb_version
 
-    def get_process_id(self):
+    @property
+    def process_id(self):
         """
         Return the numeric id of the process.
 
@@ -253,11 +248,10 @@ class ProcessInfo(object):
             int:
                 The numeric id of the process.
         """
-        return self.__id
+        return self._id
 
-    process_id = property(get_process_id)
-
-    def get_program_name(self):
+    @property
+    def program_name(self):
         """
         Return the name of the program being executed in the process.
 
@@ -265,11 +259,10 @@ class ProcessInfo(object):
             str:
                 The name of the program.
         """
-        return self.__program_name
+        return self._program_name
 
-    program_name = property(get_program_name)
-
-    def get_arguments(self):
+    @property
+    def arguments(self):
         """
         Return the list of commandline argument to the process.
 
@@ -277,11 +270,10 @@ class ProcessInfo(object):
             list:
                 A list of commandline argument strings
         """
-        return self.__arguments
+        return self._arguments
 
-    arguments = property(get_arguments)
-
-    def get_start_time(self):
+    @property
+    def start_time(self):
         """
         Return the start time of the process.
 
@@ -289,11 +281,10 @@ class ProcessInfo(object):
             float:
                 start time in fractional seconds since UNIX epoch.
         """
-        return self.__start_time
+        return self._start_time
 
-    start_time = property(get_start_time)
-
-    def get_executing_user(self):
+    @property
+    def executing_user(self):
         """
         Return the login- or account-name of the user executing the process.
 
@@ -302,11 +293,10 @@ class ProcessInfo(object):
                 login- or account-name of the user executing the process or
                 None if not determinable
         """
-        return self.__executing_user
+        return self._executing_user
 
-    executing_user = property(get_executing_user)
-
-    def get_rsb_version(self):
+    @property
+    def rsb_version(self):
         """
         Return the version of the RSB implementation used in this process.
 
@@ -316,14 +306,11 @@ class ProcessInfo(object):
 
                    MAJOR.MINOR.REVISION[-COMMIT]
         """
-        return self.__rsb_version
-
-    rsb_version = property(get_rsb_version)
+        return self._rsb_version
 
     def __str__(self):
-        return '<%s %s [%d] at 0x%0x>' \
-            % (type(self).__name__, self.program_name,
-               self.process_id, id(self))
+        return '<{} {} [{}] at 0x{:x}>'.format(
+            type(self).__name__, self.program_name, self.process_id, id(self))
 
     def __repr__(self):
         return str(self)
@@ -373,7 +360,7 @@ def machine_version():
             return None
 
 
-class HostInfo(object):
+class HostInfo:
     """
     Instances of this class store information about a host.
 
@@ -390,14 +377,15 @@ class HostInfo(object):
                  machine_version=machine_version(),
                  software_type=platform.system().lower(),
                  software_version=platform.release()):
-        self.__id = host_id
-        self.__hostname = hostname
-        self.__machine_type = machine_type
-        self.__machine_version = machine_version
-        self.__software_type = software_type
-        self.__software_version = software_version
+        self._id = host_id
+        self._hostname = hostname
+        self._machine_type = machine_type
+        self._machine_version = machine_version
+        self._software_type = software_type
+        self._software_version = software_version
 
-    def get_host_id(self):
+    @property
+    def host_id(self):
         """
         Return the unique id string for the host.
 
@@ -405,11 +393,10 @@ class HostInfo(object):
             str or None:
                 The platform-dependent, (hopefully) unique id string.
         """
-        return self.__id
+        return self._id
 
-    host_id = property(get_host_id)
-
-    def get_hostname(self):
+    @property
+    def hostname(self):
         """
         Return the hostname of the host.
 
@@ -417,11 +404,10 @@ class HostInfo(object):
             str:
                 The hostname.
         """
-        return self.__hostname
+        return self._hostname
 
-    hostname = property(get_hostname)
-
-    def get_machine_type(self):
+    @property
+    def machine_type(self):
         """
         Return the type of the machine, usually CPU architecture.
 
@@ -429,11 +415,10 @@ class HostInfo(object):
             str or NoneType:
                 The machine type when known.
         """
-        return self.__machine_type
+        return self._machine_type
 
-    machine_type = property(get_machine_type)
-
-    def get_machine_version(self):
+    @property
+    def machine_version(self):
         """
         Return the version of the machine within its type.
 
@@ -443,11 +428,10 @@ class HostInfo(object):
             str or NoneType:
                 The machine version when known.
         """
-        return self.__machine_version
+        return self._machine_version
 
-    machine_version = property(get_machine_version)
-
-    def get_software_type(self):
+    @property
+    def software_type(self):
         """
         Return the type of the operating system running on the host.
 
@@ -457,11 +441,10 @@ class HostInfo(object):
             str or NoneType:
                 The software type when known.
         """
-        return self.__software_type
+        return self._software_type
 
-    software_type = property(get_software_type)
-
-    def get_software_version(self):
+    @property
+    def software_version(self):
         """
         Return version information about the operating systems.
 
@@ -472,15 +455,12 @@ class HostInfo(object):
             str or NoneType:
                 The software version when known.
         """
-        return self.__software_version
-
-    software_version = property(get_software_version)
+        return self._software_version
 
     def __str__(self):
-        return '<%s %s %s %s at 0x%0x>' \
-            % (type(self).__name__,
-               self.hostname, self.machine_type, self.software_type,
-               id(self))
+        return '<{} {} {} {} at 0x{:x}>'.format(
+            type(self).__name__, self.hostname, self.machine_type,
+            self.software_type, id(self))
 
     def __repr__(self):
         return str(self)
@@ -488,7 +468,7 @@ class HostInfo(object):
 # IntrospectionSender
 
 
-BASE_SCOPE = rsb.Scope('/__rsb/introspection/')
+BASE_SCOPE = rsb.Scope('/_rsb/introspection/')
 PARTICIPANTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/participants/'))
 HOSTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/hosts/'))
 
@@ -503,7 +483,7 @@ def process_scope(host_id, process_id, base_scope=HOSTS_SCOPE):
             .concat(rsb.Scope('/' + process_id)))
 
 
-class IntrospectionSender(object):
+class IntrospectionSender:
     """
     Sends introspection information to other RSB processes.
 
@@ -520,15 +500,15 @@ class IntrospectionSender(object):
     """
 
     def __init__(self):
-        self.__logger = get_logger_by_class(self.__class__)
+        self._logger = get_logger_by_class(self.__class__)
 
-        self.__participants = []
+        self._participants = []
 
-        self.__process = ProcessInfo()
-        self.__host = HostInfo()
+        self._process = ProcessInfo()
+        self._host = HostInfo()
 
-        self.__informer = rsb.create_informer(PARTICIPANTS_SCOPE)
-        self.__listener = rsb.create_listener(PARTICIPANTS_SCOPE)
+        self._informer = rsb.create_informer(PARTICIPANTS_SCOPE)
+        self._listener = rsb.create_listener(PARTICIPANTS_SCOPE)
 
         def handle(event):
             # TODO use filter when we get conjunction filter
@@ -543,35 +523,35 @@ class IntrospectionSender(object):
                     participant_id = uuid.UUID(event.scope.components[-1])
                     if participant_id is not None:
                         participant = next(
-                            (p for p in self.__participants
+                            (p for p in self._participants
                              if p.participant_id == participant_id),
                             None)
-                except Exception as e:
-                    self.__logger.warn('Query event %s does not '
-                                       'properly address a participant: %s',
-                                       event, e)
+                except Exception:
+                    self._logger.warn('Query event %s does not '
+                                      'properly address a participant',
+                                      event, exc_info=True)
 
             def process(thunk):
                 if participant is not None and event.method == 'REQUEST':
                     thunk(query=event, participant=participant)
                 elif participant is None and event.method == 'SURVEY':
-                    for p in self.__participants:
+                    for p in self._participants:
                         thunk(query=event, participant=p)
                 else:
-                    self.__logger.warn('Query event %s not understood', event)
+                    self._logger.warn('Query event %s not understood', event)
 
             if event.data is None:
                 process(self.send_hello)
             elif event.data == 'ping':
                 process(self.send_pong)
             else:
-                self.__logger.warn('Query event %s not understood', event)
+                self._logger.warn('Query event %s not understood', event)
 
-        self.__listener.add_handler(handle)
+        self._listener.add_handler(handle)
 
-        self.__server = rsb.create_server(
-            process_scope(self.__host.host_id or self.__host.hostname,
-                          str(self.__process.process_id)))
+        self._server = rsb.create_server(
+            process_scope(self._host.host_id or self._host.hostname,
+                          str(self._process.process_id)))
 
         def echo(request):
             reply = rsb.Event(scope=request.scope,
@@ -582,24 +562,22 @@ class IntrospectionSender(object):
             reply.meta_data.set_user_time('request.receive',
                                           request.meta_data.receive_time)
             return reply
-        self.__server.add_method('echo', echo,
-                                 request_type=rsb.Event,
-                                 reply_type=rsb.Event)
+        self._server.add_method('echo', echo,
+                                request_type=rsb.Event,
+                                reply_type=rsb.Event)
 
     def deactivate(self):
-        self.__listener.deactivate()
-        self.__informer.deactivate()
-        self.__server.deactivate()
+        self._listener.deactivate()
+        self._informer.deactivate()
+        self._server.deactivate()
 
-    def get_process(self):
-        return self.__process
+    @property
+    def process(self):
+        return self._process
 
-    process = property(get_process)
-
-    def get_host(self):
-        return self.__host
-
-    host = property(get_host)
+    @property
+    def host(self):
+        return self._host
 
     def add_participant(self, participant, parent=None):
         parent_id = None
@@ -622,22 +600,22 @@ class IntrospectionSender(object):
             data_type=object,  # TODO
             transport_urls=participant.transport_urls)
 
-        self.__participants.append(info)
+        self._participants.append(info)
 
         self.send_hello(info)
 
     def remove_participant(self, participant):
         removed = None
-        for p in self.__participants:
+        for p in self._participants:
             if p.participant_id == participant.participant_id:
                 removed = p
                 break
 
         if removed is not None:
-            self.__participants.remove(removed)
+            self._participants.remove(removed)
             self.send_bye(removed)
 
-        return bool(self.__participants)
+        return bool(self._participants)
 
     def send_hello(self, participant, query=None):
         hello = Hello()
@@ -673,37 +651,37 @@ class IntrospectionSender(object):
         if _display_name:
             process.display_name = _display_name
         scope = participant_scope(participant.participant_id,
-                                  self.__informer.scope)
+                                  self._informer.scope)
         hello_event = rsb.Event(scope=scope,
                                 data=hello,
                                 data_type=type(hello))
         if query:
             hello_event.add_cause(query.event_id)
-        self.__informer.publish_event(hello_event)
+        self._informer.publish_event(hello_event)
 
     def send_bye(self, participant):
         bye = Bye()
         bye.id = participant.participant_id.bytes
 
         scope = participant_scope(participant.participant_id,
-                                  self.__informer.scope)
+                                  self._informer.scope)
         bye_event = rsb.Event(scope=scope,
                               data=bye,
                               data_type=type(bye))
-        self.__informer.publish_event(bye_event)
+        self._informer.publish_event(bye_event)
 
     def send_pong(self, participant, query=None):
         scope = participant_scope(
-            participant.participant_id, self.__informer.scope)
+            participant.participant_id, self._informer.scope)
         pong_event = rsb.Event(scope=scope,
                                data='pong',
                                data_type=str)
         if query:
             pong_event.add_cause(query.event_id)
-        self.__informer.publish_event(pong_event)
+        self._informer.publish_event(pong_event)
 
 
-__sender = None
+_sender = None
 
 
 def handle_participant_creation(participant, parent=None):
@@ -715,15 +693,15 @@ def handle_participant_creation(participant, parent=None):
     :obj:`IntrospectionSender.add_participant` when appropriate, first
     creating the :obj:`IntrospectionSender` instance, if necessary.
     """
-    global __sender
+    global _sender
 
     if participant.scope.is_sub_scope_of(BASE_SCOPE) \
        or not participant.config.introspection:
         return
 
-    if __sender is None:
-        __sender = IntrospectionSender()
-    __sender.add_participant(participant, parent=parent)
+    if _sender is None:
+        _sender = IntrospectionSender()
+    _sender.add_participant(participant, parent=parent)
 
 
 def handle_participant_destruction(participant):
@@ -736,15 +714,15 @@ def handle_participant_destruction(participant):
     potentially deleting the :obj:`IntrospectionSender` instance
     afterwards.
     """
-    global __sender
+    global _sender
 
     if participant.scope.is_sub_scope_of(BASE_SCOPE) \
        or not participant.config.introspection:
         return
 
-    if __sender and not __sender.remove_participant(participant):
-        __sender.deactivate()
-        __sender = None
+    if _sender and not _sender.remove_participant(participant):
+        _sender.deactivate()
+        _sender = None
 
 
 def initialize(display_name=None):

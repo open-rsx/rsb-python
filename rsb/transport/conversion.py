@@ -41,7 +41,7 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
     event.scope = rsb.Scope(notification.scope.decode('ASCII'))
     if notification.HasField("method"):
         event.method = notification.method.decode('ASCII')
-    event.data_type = converter.get_data_type()
+    event.data_type = converter.data_type
     event.data = converter.deserialize(wire_data, wire_schema)
 
     # Meta data
@@ -125,9 +125,10 @@ def event_and_wire_data_to_notifications(event, wire_data, wire_schema,
         # for the field header and one byte for the payload data.
         room = max_fragment_size - fragment.ByteSize()
         if room < 5:
-            raise ValueError('The event %s cannot be encoded in a '
+            raise ValueError('The event {} cannot be encoded in a '
                              'notification because the serialized meta-data '
-                             'would not fit into a single fragment' % event)
+                             'would not fit into a single fragment'.format(
+                                 event))
         # allow for 4 byte field header
         fragment_size = min(room - 4, remaining)
         event_to_notification(fragment.notification, event,

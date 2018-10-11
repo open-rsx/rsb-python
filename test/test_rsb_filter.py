@@ -31,7 +31,7 @@ class TestScopeFilter:
 
         scope = Scope("/bla")
         f = rsb.filter.ScopeFilter(scope)
-        assert scope == f.get_scope()
+        assert scope == f.scope
 
         e = rsb.Event()
         e.scope = scope

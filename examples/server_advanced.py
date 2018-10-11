@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # Finally, a LocalServer can be created by exposing some or all
     # methods of an ordinary Python object.
-    class MyObject(object):
+    class MyObject:
         def echo3(self, arg):
             return arg
 

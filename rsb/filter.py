@@ -35,7 +35,7 @@ class FilterAction(Enum):
     UPDATE = 3
 
 
-class AbstractFilter(object):
+class AbstractFilter:
     """
     Interface for concrete filters.
 
@@ -71,20 +71,21 @@ class ScopeFilter(AbstractFilter):
             scope:
                 top-level scope to accept and al child scopes
         """
-        self.__scope = scope
+        self._scope = scope
 
-    def get_scope(self):
+    @property
+    def scope(self):
         """
         Return the top-level scope this filter matches for.
 
         Returns:
             scope
         """
-        return self.__scope
+        return self._scope
 
     def match(self, event):
-        return event.scope == self.__scope \
-            or event.scope.is_sub_scope_of(self.__scope)
+        return event.scope == self._scope \
+            or event.scope.is_sub_scope_of(self._scope)
 
 
 class OriginFilter(AbstractFilter):
@@ -106,18 +107,16 @@ class OriginFilter(AbstractFilter):
                 Controls whether matching results should inverted (i.e.
                 matching events ``not`` originating form ``origin``).
         """
-        self.__origin = origin
-        self.__invert = invert
+        self._origin = origin
+        self._invert = invert
 
-    def get_origin(self):
-        return self.__origin
+    @property
+    def origin(self):
+        return self._origin
 
-    origin = property(get_origin)
-
-    def get_invert(self):
-        return self.__invert
-
-    invert = property(get_invert)
+    @property
+    def invert(self):
+        return self._invert
 
     def match(self, event):
         result = self.origin == event.sender_id
@@ -130,14 +129,14 @@ class OriginFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-        return '<%s %sfrom %s at 0x%x>' % (type(self).__name__,
-                                           inverted,
-                                           self.origin,
-                                           id(self))
+        return '<{} {}from {} at 0x{:x}>'.format(type(self).__name__,
+                                                 inverted,
+                                                 self.origin,
+                                                 id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.origin, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.origin, self.invert)
 
 
 class CauseFilter(AbstractFilter):
@@ -160,18 +159,16 @@ class CauseFilter(AbstractFilter):
                 (i.e.  matching events that do ``not`` have the
                 specified event id in their cause vector).
         """
-        self.__cause = cause
-        self.__invert = invert
+        self._cause = cause
+        self._invert = invert
 
-    def get_cause(self):
-        return self.__cause
+    @property
+    def cause(self):
+        return self._cause
 
-    cause = property(get_cause)
-
-    def get_invert(self):
-        return self.__invert
-
-    invert = property(get_invert)
+    @property
+    def invert(self):
+        return self._invert
 
     def match(self, event):
         result = self.cause in event.causes
@@ -184,12 +181,12 @@ class CauseFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-        return '<%s %scaused-by %s at 0x%x>' \
-            % (type(self).__name__, inverted, self.cause, id(self))
+        return '<{} {}caused-by {} at 0x{:x}>'.format(
+            type(self).__name__, inverted, self.cause, id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.cause, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.cause, self.invert)
 
 
 class MethodFilter(AbstractFilter):
@@ -212,18 +209,16 @@ class MethodFilter(AbstractFilter):
                 matching events ``not`` having  ``method`` in their method
                 field).
         """
-        self.__method = method
-        self.__invert = invert
+        self._method = method
+        self._invert = invert
 
-    def get_method(self):
-        return self.__method
+    @property
+    def method(self):
+        return self._method
 
-    method = property(get_method)
-
-    def get_invert(self):
-        return self.__invert
-
-    invert = property(get_invert)
+    @property
+    def invert(self):
+        return self._invert
 
     def match(self, event):
         result = self.method == event.method
@@ -236,12 +231,12 @@ class MethodFilter(AbstractFilter):
         inverted = ''
         if self.invert:
             inverted = 'not '
-            return '<%s %sfrom %s at 0x%x>' \
-                % (type(self).__name__, inverted, self.method, id(self))
+            return '<{} {}from {} at 0x{:x}>'.format(
+                type(self).__name__, inverted, self.method, id(self))
 
     def __repr__(self):
-        return '%s("%s", invert = %s)' \
-            % (type(self).__name__, self.method, self.invert)
+        return '{}("{}", invert = {})'.format(
+            type(self).__name__, self.method, self.invert)
 
 
 class RecordingTrueFilter(AbstractFilter):

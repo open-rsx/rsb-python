@@ -29,7 +29,7 @@ from rsb.util import OrderedQueueDispatcherPool
 
 class TestOrderedQueueDispatcherPool:
 
-    class StubReciever(object):
+    class StubReciever:
 
         next_receiver_num = 1
 
@@ -45,7 +45,7 @@ class TestOrderedQueueDispatcherPool:
             self.messages = []
 
         def __str__(self):
-            return "StubReceiver%d" % self.receiver_num
+            return "StubReceiver{}".format(self.receiver_num)
 
     def deliver(self, receiver, message):
 
@@ -97,7 +97,7 @@ class TestOrderedQueueDispatcherPool:
             for i in range(num_messages):
                 assert receiver.messages[i] == i
 
-    class RejectFilter(object):
+    class RejectFilter:
 
         def __init__(self):
             self.reject_calls = 0

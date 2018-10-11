@@ -29,7 +29,7 @@ def get_connector(clazz, scope, activate=True):
         converters=get_global_converter_map(bytes),
         options=rsb.get_default_participant_config().get_transport(
             'socket').options)
-    connector.set_scope(scope)
+    connector.scope = scope
     if activate:
         connector.activate()
     return connector
@@ -42,3 +42,6 @@ class TestSocketTransport(TransportCheck):
 
     def _get_out_connector(self, scope, activate=True):
         return get_connector(OutConnector, scope, activate=activate)
+
+    def _get_in_pull_connector(self, scope, activate=True):
+        raise NotImplementedError()

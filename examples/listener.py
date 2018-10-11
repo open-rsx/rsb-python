@@ -26,7 +26,7 @@ import rsb
 
 
 def handle(event):
-    print("Received event: %s" % event)
+    print("Received event: {}".format(event))
 
 
 if __name__ == '__main__':

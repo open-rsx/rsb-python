@@ -29,20 +29,20 @@ import threading
 
 class FutureError(RuntimeError):
     def __init__(self, *args):
-        super(FutureError, self).__init__(*args)
+        super().__init__(*args)
 
 
 class FutureTimeout(FutureError):
     def __init__(self, *args):
-        super(FutureTimeout, self).__init__(*args)
+        super().__init__(*args)
 
 
 class FutureExecutionError(FutureError):
     def __init__(self, *args):
-        super(FutureExecutionError, self).__init__(*args)
+        super().__init__(*args)
 
 
-class Future(object):
+class Future:
     """
     Represents the results of in-progress operations.
 
@@ -64,13 +64,14 @@ class Future(object):
         """
         Create a new :obj:`Future` object.
         """
-        self.__error = False
-        self.__result = None
+        self._error = False
+        self._result = None
 
-        self.__lock = threading.Lock()
-        self.__condition = threading.Condition(lock=self.__lock)
+        self._lock = threading.Lock()
+        self._condition = threading.Condition(lock=self._lock)
 
-    def is_done(self):
+    @property
+    def done(self):
         """
         Check whether the represented operation is still in progress.
 
@@ -79,10 +80,8 @@ class Future(object):
                 ``True`` is the represented operation finished successfully or
                 failed.
         """
-        with self.__lock:
-            return self.__result is not None
-
-    done = property(is_done)
+        with self._lock:
+            return self._result is not None
 
     def get(self, timeout=0):
         """
@@ -106,22 +105,22 @@ class Future(object):
                 If the result does not become available within the amount of
                 time specified via ``timeout``.
         """
-        with self.__lock:
-            while self.__result is None:
+        with self._lock:
+            while self._result is None:
                 if timeout <= 0:
-                    self.__condition.wait()
+                    self._condition.wait()
                 else:
-                    self.__condition.wait(timeout=timeout)
-                    if self.__result is None:
+                    self._condition.wait(timeout=timeout)
+                    if self._result is None:
                         raise FutureTimeout(
                             'Timeout while waiting for result; '
-                            'Waited %s seconds.' % timeout)
+                            'Waited {} seconds.'.format(timeout))
 
-        if self.__error:
-            raise FutureExecutionError('Failed to execute operation: %s' %
-                                       self.__result)
+        if self._error:
+            raise FutureExecutionError(
+                'Failed to execute operation: {}'.format(self._result))
 
-        return self.__result
+        return self._result
 
     def set_result(self, result):
         """
@@ -134,9 +133,9 @@ class Future(object):
             result:
                 The result of the :obj:`Future` object.
         """
-        with self.__lock:
-            self.__result = result
-            self.__condition.notifyAll()
+        with self._lock:
+            self._result = result
+            self._condition.notifyAll()
 
     def set_error(self, message):
         """
@@ -150,20 +149,20 @@ class Future(object):
             message (str):
                 An error message that explains why/how the operation failed.
         """
-        with self.__lock:
-            self.__result = message
-            self.__error = True
-            self.__condition.notify()
+        with self._lock:
+            self._result = message
+            self._error = True
+            self._condition.notify()
 
     def __str__(self):
-        with self.__lock:
-            if self.__result is None:
+        with self._lock:
+            if self._result is None:
                 state = 'running'
-            elif self.__error:
+            elif self._error:
                 state = 'failed'
             else:
                 state = 'completed'
-        return '<%s %s at 0x%x>' % (type(self).__name__, state, id(self))
+        return '<{} {} at 0x{:x}>'.format(type(self).__name__, state, id(self))
 
     def __repr__(self):
         return str(self)
@@ -181,4 +180,4 @@ class DataFuture(Future):
     """
 
     def get(self, timeout=0):
-        return super(DataFuture, self).get(timeout=timeout).data
+        return super().get(timeout=timeout).data

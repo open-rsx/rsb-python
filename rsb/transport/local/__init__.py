@@ -35,7 +35,7 @@ from threading import RLock
 from rsb import transport
 
 
-class Bus(object):
+class Bus:
     """
     Singleton-like representation of the local bus.
 
@@ -43,8 +43,8 @@ class Bus(object):
     """
 
     def __init__(self):
-        self.__mutex = RLock()
-        self.__sinks_by_scope = {}
+        self._mutex = RLock()
+        self._sinks_by_scope = {}
 
     def add_sink(self, sink):
         """
@@ -54,11 +54,11 @@ class Bus(object):
             sink:
                 the sink to add
         """
-        with self.__mutex:
+        with self._mutex:
             # ensure that there is a list of sinks for the given scope
-            if sink.get_scope() not in self.__sinks_by_scope:
-                self.__sinks_by_scope[sink.get_scope()] = []
-            self.__sinks_by_scope[sink.get_scope()].append(sink)
+            if sink.scope not in self._sinks_by_scope:
+                self._sinks_by_scope[sink.scope] = []
+            self._sinks_by_scope[sink.scope].append(sink)
 
     def remove_sink(self, sink):
         """
@@ -68,11 +68,11 @@ class Bus(object):
             sink:
                 sink to remove
         """
-        with self.__mutex:
+        with self._mutex:
             # return immediately if there is no such scope known for sinks
-            if sink.get_scope() not in self.__sinks_by_scope:
+            if sink.scope not in self._sinks_by_scope:
                 return
-            self.__sinks_by_scope[sink.get_scope()].remove(sink)
+            self._sinks_by_scope[sink.scope].remove(sink)
 
     def handle(self, event):
         """
@@ -83,9 +83,9 @@ class Bus(object):
                 event to dispatch
         """
 
-        with self.__mutex:
+        with self._mutex:
 
-            for scope, sink_list in list(self.__sinks_by_scope.items()):
+            for scope, sink_list in list(self._sinks_by_scope.items()):
                 if scope == event.scope or scope.is_super_scope_of(
                         event.scope):
                     for sink in sink_list:
@@ -109,12 +109,12 @@ class OutConnector(transport.OutConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.OutConnector.__init__(self, wire_type=object, **kwargs)
-        self.__bus = bus
+        super().__init__(wire_type=object, **kwargs)
+        self._bus = bus
 
     def handle(self, event):
         event.meta_data.set_send_time()
-        self.__bus.handle(event)
+        self._bus.handle(event)
 
     def activate(self):
         pass
@@ -126,7 +126,7 @@ class OutConnector(transport.OutConnector):
         pass
 
     def get_transport_url(self):
-        return self.__bus.get_transport_url()
+        return self._bus.get_transport_url()
 
 
 class InPushConnector(transport.InPushConnector):
@@ -138,29 +138,22 @@ class InPushConnector(transport.InPushConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.InPushConnector.__init__(self, wire_type=object, **kwargs)
-        self.__bus = bus
-        self.__scope = None
-        self.__observer_action = None
+        super().__init__(wire_type=object, **kwargs)
+        self._bus = bus
+        self._observer_action = None
 
     def filter_notify(self, filter_, action):
         pass
 
     def set_observer_action(self, action):
-        self.__observer_action = action
-
-    def set_scope(self, scope):
-        self.__scope = scope
-
-    def get_scope(self):
-        return self.__scope
+        self._observer_action = action
 
     def activate(self):
-        assert self.__scope is not None
-        self.__bus.add_sink(self)
+        assert self.scope is not None
+        self._bus.add_sink(self)
 
     def deactivate(self):
-        self.__bus.remove_sink(self)
+        self._bus.remove_sink(self)
 
     def set_quality_of_service_spec(self, qos):
         pass
@@ -168,46 +161,39 @@ class InPushConnector(transport.InPushConnector):
     def handle(self, event):
         # get reference which will survive parallel changes to the action
         event.meta_data.set_receive_time()
-        action = self.__observer_action
+        action = self._observer_action
         if action is not None:
             action(event)
 
     def get_transport_url(self):
-        return self.__bus.get_transport_url()
+        return self._bus.get_transport_url()
 
 
 class InPullConnector(transport.InPullConnector):
 
     def __init__(
             self, bus=global_bus, converters=None, options=None, **kwargs):
-        transport.InPullConnector.__init__(self, wire_type=object, **kwargs)
-        self.__bus = bus
-        self.__scope = None
-        self.__event_queue = queue.Queue()
-
-    def set_scope(self, scope):
-        self.__scope = scope
-
-    def get_scope(self):
-        return self.__scope
+        super().__init__(wire_type=object, **kwargs)
+        self._bus = bus
+        self._event_queue = queue.Queue()
 
     def activate(self):
-        assert self.__scope is not None
-        self.__bus.add_sink(self)
+        assert self.scope is not None
+        self._bus.add_sink(self)
 
     def deactivate(self):
-        self.__bus.remove_sink(self)
+        self._bus.remove_sink(self)
 
     def set_quality_of_service_spec(self, qos):
         pass
 
     def handle(self, event):
         event.meta_data.set_receive_time()
-        self.__event_queue.put(event)
+        self._event_queue.put(event)
 
     def raise_event(self, block):
         try:
-            return self.__event_queue.get(block)
+            return self._event_queue.get(block)
         except queue.Empty:
             return None
 
@@ -219,10 +205,12 @@ class TransportFactory(transport.TransportFactory):
     .. codeauthor:: jwienke
     """
 
-    def get_name(self):
+    @property
+    def name(self):
         return "inprocess"
 
-    def is_remote(self):
+    @property
+    def remote(self):
         return False
 
     def create_in_push_connector(self, converters, options):
