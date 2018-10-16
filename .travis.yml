@@ -20,6 +20,9 @@ jobs:
     - stage: archive
       script:
         - python setup.py bdist_wheel
+        - cd dist
+        - tar -czf "../rsb-python-${TRAVIS_BRANCH}.tar.gz" rsb_python-*.whl
+        - cd ..
           # includePattern requires a capture group to enable regex mode
         - |
           cat << EOF > bintray.json
@@ -40,8 +43,8 @@ jobs:
 
             "files": [
               {
-                "includePattern": "dist/(.*\\\\.whl)",
-                "uploadPattern": "rsb-python-${TRAVIS_BRANCH}.whl",
+                "includePattern": "\\./(rsb-python-.*\\\\.tar.gz)",
+                "uploadPattern": "\$1",
                 "matrixParams": {
                   "override": 1
                 }
