@@ -18,17 +18,21 @@
 #
 # ============================================================
 
+import pytest
+
 import rsb
 from rsb.converter import get_global_converter_map
 from rsb.transport.socket import InPushConnector, OutConnector
 from .transporttest import TransportCheck
 
 
-def get_connector(clazz, scope, activate=True):
+def get_connector(clazz, scope, activate=True, server='auto'):
+    options = dict(
+        rsb.get_default_participant_config().get_transport('socket').options)
+    options['server'] = server
     connector = clazz(
         converters=get_global_converter_map(bytes),
-        options=rsb.get_default_participant_config().get_transport(
-            'socket').options)
+        options=options)
     connector.scope = scope
     if activate:
         connector.activate()
@@ -36,12 +40,37 @@ def get_connector(clazz, scope, activate=True):
 
 
 class TestSocketTransport(TransportCheck):
+    """
+    Instantiation of the general transport test for the socket transport.
+
+    This test uses a 'hack' to ensure that real socket communication is
+    performed. The ``set_up`` fixture method resets a counter for each executed
+    test function that is used to set diverging connector options for the
+    different requests for connectors issued by the base class test functions.
+    By varying the 'server' parameter, this ensures that disconnected instances
+    are created and thus real network communication is performed.
+    """
+
+    @pytest.fixture(autouse=True)
+    def set_up(self):
+        self.counter = 0
+
+    def get_server_arg(self):
+        try:
+            if self.counter == 0:
+                return '1'
+            else:
+                return '0'
+        finally:
+            self.counter += 1
 
     def _get_in_push_connector(self, scope, activate=True):
-        return get_connector(InPushConnector, scope, activate=activate)
+        return get_connector(InPushConnector, scope, activate=activate,
+                             server=self.get_server_arg())
 
     def _get_out_connector(self, scope, activate=True):
-        return get_connector(OutConnector, scope, activate=activate)
+        return get_connector(OutConnector, scope, activate=activate,
+                             server=self.get_server_arg())
 
     def _get_in_pull_connector(self, scope, activate=True):
         raise NotImplementedError()

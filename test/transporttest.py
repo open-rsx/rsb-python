@@ -85,7 +85,7 @@ class TransportCheck(metaclass=abc.ABCMeta):
         # first an event that we do not want
         event = Event(EventId(uuid.uuid4(), 0))
         event.scope = Scope("/notGood")
-        event.data = "dummy data"
+        event.data = "x" * 600000
         event.data_type = str
         event.meta_data.sender_id = uuid.uuid4()
         outconnector.handle(event)
@@ -103,8 +103,8 @@ class TransportCheck(metaclass=abc.ABCMeta):
             receiver.result_event.meta_data = None
             assert receiver.result_event == event
 
-        inconnector.deactivate()
         outconnector.deactivate()
+        inconnector.deactivate()
 
     @pytest.mark.timeout(5)
     def test_pull_non_blocking(self):
@@ -156,15 +156,15 @@ class TransportCheck(metaclass=abc.ABCMeta):
         in_connector = self._get_in_push_connector(scope, activate=False)
         out_connector = self._get_out_connector(scope, activate=False)
 
-        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
-            connectors=[out_connector])
         in_configurator = rsb.eventprocessing.InPushRouteConfigurator(
             connectors=[in_connector])
+        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
+            connectors=[out_connector])
 
+        listener = create_listener(scope, configurator=in_configurator)
         publisher = create_informer(scope,
                                     data_type=str,
                                     configurator=out_configurator)
-        listener = create_listener(scope, configurator=in_configurator)
 
         receiver = SettingReceiver(scope)
         listener.add_handler(receiver)
@@ -206,8 +206,8 @@ class TransportCheck(metaclass=abc.ABCMeta):
                 receiver.result_event.meta_data.create_time
             assert sent_event == receiver.result_event
 
-        listener.deactivate()
         publisher.deactivate()
+        listener.deactivate()
 
     @pytest.mark.timeout(5)
     def test_user_pull_roundtrip(self):
