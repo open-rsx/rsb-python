@@ -468,7 +468,8 @@ class HostInfo:
 # IntrospectionSender
 
 
-BASE_SCOPE = rsb.Scope('/_rsb/introspection/')
+BASE_SCOPE = rsb.Scope('/__rsb/introspection/')
+
 PARTICIPANTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/participants/'))
 HOSTS_SCOPE = BASE_SCOPE.concat(rsb.Scope('/hosts/'))
 
