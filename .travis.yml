@@ -1,17 +1,63 @@
 language: python
 dist: xenial
 sudo: true
-matrix:
-  include:
-    - python: 3.6
-    - python: 3.7
+python:
+  - 3.6
+  - 3.7
 before_install:
   - sudo add-apt-repository ppa:maarten-fonville/protobuf -y
   - sudo apt-get update -q
   - sudo apt-get install protobuf-compiler
 install:
-  - pip install tox-travis codecov
+  - pip install tox-travis codecov wheel
 script:
   - tox
 env:
   - 'COVERAGE_COMMAND=codecov -e TOXENV'
+
+jobs:
+  include:
+    - stage: archive
+      script:
+        - python setup.py bdist_wheel
+          # includePattern requires a capture group to enable regex mode
+        - |
+          cat << EOF > bintray.json
+          {
+            "package": {
+              "name": "rsb-python",
+              "repo": "travis-artifacts",
+              "subject": "open-rsx",
+              "desc": "Travis artifact for branch ${TRAVIS_BRANCH}",
+              "vcs_url": "https://github.com/open-rsx/rsb-python.git",
+              "licenses": ["LGPL-3.0"]
+            },
+
+            "version": {
+              "name": "travis-${TRAVIS_BRANCH}",
+              "vcs_tag": "${TRAVIS_BRANCH}"
+            },
+
+            "files": [
+              {
+                "includePattern": "dist/(.*\\\\.whl)",
+                "uploadPattern": "rsb-python-${TRAVIS_BRANCH}.whl",
+                "matrixParams": {
+                  "override": 1
+                }
+              }
+            ],
+            "publish": true
+          }
+          EOF
+      # erase coverage command, which is not needed for deploying
+      env:
+      deploy:
+        provider: bintray
+        file: "bintray.json"
+        user: "languitar"
+        key: '${BINTRAY_KEY}'
+        skip_cleanup: true
+        on:
+          repo: open-rsx/rsb-python
+          all_branches: true
