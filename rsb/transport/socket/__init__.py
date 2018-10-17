@@ -143,7 +143,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
                                '(size: {})'.format(len(size)))
         size = size[0] | size[1] << 8 | size[2] << 16 | size[3] << 24
         self._logger.debug('Receiving notification of size %d', size)
-        notification = self._socket.recv(size)
+        notification = self._socket.recv(size, socket.MSG_WAITALL)
         if not (len(notification) == size):
             raise RuntimeError(
                 'Short read when receiving notification payload')
