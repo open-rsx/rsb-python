@@ -1,6 +1,6 @@
 # ============================================================
 #
-# Copyright (C) 2014 Jan Moringen
+# Copyright (C) 2014, 2018 Jan Moringen
 #
 # This file may be licensed under the terms of the
 # GNU Lesser General Public License Version 3 (the ``LGPL''),
@@ -18,8 +18,12 @@
 #
 # ============================================================
 
+import threading
 import uuid
 
+import pytest
+
+import rsb
 from rsb.introspection import HostInfo, ParticipantInfo, ProcessInfo
 
 
@@ -55,3 +59,38 @@ class TestHostInfo:
         assert isinstance(info.machine_type, str)
         assert isinstance(info.software_type, str)
         assert isinstance(info.software_version, str)
+
+
+class TestIntrospectionEvents:
+
+    @pytest.mark.usefixture('rsb_config_socket')
+    def test_introspection_events(self):
+        # The listener must be able to deserialize introspection events. But
+        # since it is created without introspection enabled, it does not force
+        # the initialization of the introspection module.
+        rsb._initialize_introspection()
+
+        # Collect events in a thread-safe way and make sure the number is
+        # right: one event is expected for the creation of the participant,
+        # followed by one event for its destruction.
+        events = []
+        events_cv = threading.Condition()
+        expected_events = 2
+
+        def add_event(event):
+            with events_cv:
+                events.append(event)
+                if len(events) == expected_events:
+                    events_cv.notify()
+
+        with rsb.create_listener(rsb.introspection.BASE_SCOPE) as listener:
+            listener.add_handler(add_event)
+            # Create and destroy a participant with enabled introspection. This
+            # generates two introspection events.
+            rsb.get_default_participant_config().introspection = True
+            with rsb.create_informer('/foo'):
+                pass
+            with events_cv:
+                events_cv.wait_for(lambda: len(events) >= expected_events,
+                                   timeout=10)
+        assert len(events) == expected_events
