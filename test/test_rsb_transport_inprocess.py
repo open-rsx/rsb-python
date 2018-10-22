@@ -22,7 +22,7 @@ import time
 
 from rsb import Event, Scope
 from rsb.transport.local import (Bus,
-                                 InPushConnector,
+                                 InConnector,
                                  OutConnector)
 from .transporttest import TransportCheck
 
@@ -97,17 +97,17 @@ class TestOutConnector:
         assert e.meta_data.send_time <= after
 
 
-class TestInPushConnector:
+class TestInConnector:
 
     def test_construction(self):
-        InPushConnector()
+        InConnector()
 
     def test_pass_to_action(self):
 
         scope = Scope("/lets/go")
 
         bus = Bus()
-        connector = InPushConnector(bus=bus)
+        connector = InConnector(bus=bus)
         connector.scope = scope
         connector.activate()
 
@@ -123,8 +123,8 @@ class TestInPushConnector:
 
 class TestLocalTransport(TransportCheck):
 
-    def _get_in_push_connector(self, scope, activate=True):
-        connector = InPushConnector()
+    def _get_in_connector(self, scope, activate=True):
+        connector = InConnector()
         connector.scope = scope
         if activate:
             connector.activate()

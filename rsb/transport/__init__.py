@@ -102,7 +102,7 @@ class Connector(metaclass=abc.ABCMeta):
         pass
 
 
-class InPushConnector(Connector):
+class InConnector(Connector):
     """
     Superclass for in-direction connectors that use asynchronous notification.
 
@@ -245,9 +245,9 @@ class TransportFactory(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def create_in_push_connector(self, converters, options):
+    def create_in_connector(self, converters, options):
         """
-        Create a new :obj:`InPushConnector` for the represented transport.
+        Create a new :obj:`InConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -255,7 +255,7 @@ class TransportFactory(metaclass=abc.ABCMeta):
                 options for the new connector
 
         Returns:
-            rsb.transport.InPushConnector:
+            rsb.transport.InConnector:
                 the new connector instance
         """
         pass

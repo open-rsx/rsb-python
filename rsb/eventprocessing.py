@@ -166,15 +166,6 @@ class EventReceivingStrategy(metaclass=abc.ABCMeta):
     .. codeauthor:: jwienke
     """
 
-
-class PushEventReceivingStrategy(EventReceivingStrategy):
-    """
-    Superclass for push-based event receiving strategies.
-
-    .. codeauthor:: jmoringe
-    .. codeauthor:: jwienke
-    """
-
     @abc.abstractmethod
     def add_handler(self, handler, wait):
         pass
@@ -196,11 +187,11 @@ class PushEventReceivingStrategy(EventReceivingStrategy):
         pass
 
 
-class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
+class ParallelEventReceivingStrategy(EventReceivingStrategy):
     """
     Dispatches events to multiple handlers in parallel.
 
-    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler is called only
     sequentially but potentially from different threads.
 
@@ -269,11 +260,11 @@ class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
             self._filters = [f for f in self._filters if f != the_filter]
 
 
-class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
+class FullyParallelEventReceivingStrategy(EventReceivingStrategy):
     """
     Dispatches events to multiple handlers that can be called in parallel.
 
-    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers in individual threads in parallel. Each handler can be called
     in parallel for different requests.
 
@@ -342,11 +333,11 @@ class FullyParallelEventReceivingStrategy(PushEventReceivingStrategy):
             self._filters = [f for f in self._filters if f != the_filter]
 
 
-class NonQueuingParallelEventReceivingStrategy(PushEventReceivingStrategy):
+class NonQueuingParallelEventReceivingStrategy(EventReceivingStrategy):
     """
     Dispatches events to handlers using a single thread and no queues.
 
-    An :obj:`PushEventReceivingStrategy` that dispatches events to multiple
+    An :obj:`EventReceivingStrategy` that dispatches events to multiple
     handlers using a single thread and without queuing. Only a single buffer
     is used to decouple the transport from the registered handlers. In case
     the handler processing is slower than the transport, the transport will
@@ -542,13 +533,13 @@ class Configurator:
             connector.quality_of_service_spec = qos
 
 
-class InPushRouteConfigurator(Configurator):
+class InRouteConfigurator(Configurator):
     """
     Manages event receiving using a push strategy.
 
     Instances of this class manage the receiving, filtering and
     dispatching of events via one or more :obj:`rsb.transport.Connector` s
-    and an :obj:`PushEventReceivingStrategy`.
+    and an :obj:`EventReceivingStrategy`.
 
     .. codeauthor:: jwienke
     .. codeauthor:: jmoringe

@@ -22,7 +22,7 @@ import pytest
 
 import rsb
 from rsb.converter import get_global_converter_map
-from rsb.transport.socket import InPushConnector, OutConnector
+from rsb.transport.socket import InConnector, OutConnector
 from .transporttest import TransportCheck
 
 
@@ -64,8 +64,8 @@ class TestSocketTransport(TransportCheck):
         finally:
             self.counter += 1
 
-    def _get_in_push_connector(self, scope, activate=True):
-        return get_connector(InPushConnector, scope, activate=activate,
+    def _get_in_connector(self, scope, activate=True):
+        return get_connector(InConnector, scope, activate=activate,
                              server=self.get_server_arg())
 
     def _get_out_connector(self, scope, activate=True):

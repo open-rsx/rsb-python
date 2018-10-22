@@ -128,9 +128,9 @@ class OutConnector(transport.OutConnector):
         return self._bus.get_transport_url()
 
 
-class InPushConnector(transport.InPushConnector):
+class InConnector(transport.InConnector):
     """
-    InPushConnector for the local transport.
+    InConnector for the local transport.
 
     .. codeauthor:: jwienke
     """
@@ -183,8 +183,8 @@ class TransportFactory(transport.TransportFactory):
     def remote(self):
         return False
 
-    def create_in_push_connector(self, converters, options):
-        return InPushConnector(converters=converters, options=options)
+    def create_in_connector(self, converters, options):
+        return InConnector(converters=converters, options=options)
 
     def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)

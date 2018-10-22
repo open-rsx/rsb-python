@@ -59,7 +59,7 @@ class TransportCheck(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def _get_in_push_connector(self, scope, activate=True):
+    def _get_in_connector(self, scope, activate=True):
         pass
 
     @abc.abstractmethod
@@ -71,7 +71,7 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
         good_scope = Scope("/good")
 
-        inconnector = self._get_in_push_connector(good_scope)
+        inconnector = self._get_in_connector(good_scope)
         outconnector = self._get_out_connector(good_scope)
 
         receiver = SettingReceiver(good_scope)
@@ -104,10 +104,10 @@ class TransportCheck(metaclass=abc.ABCMeta):
     @pytest.mark.timeout(5)
     def test_user_roundtrip(self):
         scope = Scope("/test/it")
-        in_connector = self._get_in_push_connector(scope, activate=False)
+        in_connector = self._get_in_connector(scope, activate=False)
         out_connector = self._get_out_connector(scope, activate=False)
 
-        in_configurator = rsb.eventprocessing.InPushRouteConfigurator(
+        in_configurator = rsb.eventprocessing.InRouteConfigurator(
             connectors=[in_connector])
         out_configurator = rsb.eventprocessing.OutRouteConfigurator(
             connectors=[out_connector])
@@ -178,8 +178,8 @@ class TransportCheck(metaclass=abc.ABCMeta):
         receivers = []
         for scope in super_scopes:
 
-            in_connector = self._get_in_push_connector(scope, activate=False)
-            in_configurator = rsb.eventprocessing.InPushRouteConfigurator(
+            in_connector = self._get_in_connector(scope, activate=False)
+            in_configurator = rsb.eventprocessing.InRouteConfigurator(
                 connectors=[in_connector])
 
             listener = create_listener(scope, configurator=in_configurator)

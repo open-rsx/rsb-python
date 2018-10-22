@@ -1647,8 +1647,8 @@ class Participant:
             converters = converters_from_transport_config(transport)
             if direction == 'in':
                 transports.append(
-                    factory.create_in_push_connector(converters,
-                                                     transport.options))
+                    factory.create_in_connector(converters,
+                                                transport.options))
             elif direction == 'out':
                 transports.append(
                     factory.create_out_connector(converters,
@@ -1855,7 +1855,7 @@ class Listener(Participant):
             for connector in connectors:
                 connector.quality_of_service_spec = \
                     config.quality_of_service_spec
-            self._configurator = rsb.eventprocessing.InPushRouteConfigurator(
+            self._configurator = rsb.eventprocessing.InRouteConfigurator(
                 connectors=connectors,
                 receiving_strategy=receiving_strategy)
         self._configurator.scope = self.scope
