@@ -30,7 +30,6 @@ import pytest
 import rsb
 from rsb import (create_informer,
                  create_listener,
-                 create_reader,
                  Event,
                  EventId,
                  Scope)
@@ -61,10 +60,6 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _get_in_push_connector(self, scope, activate=True):
-        pass
-
-    @abc.abstractmethod
-    def _get_in_pull_connector(self, scope, activate=True):
         pass
 
     @abc.abstractmethod
@@ -105,50 +100,6 @@ class TransportCheck(metaclass=abc.ABCMeta):
 
         outconnector.deactivate()
         inconnector.deactivate()
-
-    @pytest.mark.timeout(5)
-    def test_pull_non_blocking(self):
-        try:
-            inconnector = self._get_in_pull_connector(Scope("/somewhere"))
-        except NotImplementedError:
-            return
-
-        received = inconnector.raise_event(False)
-        assert received is None
-
-        inconnector.deactivate()
-
-    @pytest.mark.timeout(5)
-    def test_pull_roundtrip(self):
-
-        good_scope = Scope("/good")
-
-        try:
-            inconnector = self._get_in_pull_connector(good_scope)
-        except NotImplementedError:
-            return
-        outconnector = self._get_out_connector(good_scope)
-
-        # first an event that we do not want
-        event = Event(EventId(uuid.uuid4(), 0))
-        event.scope = Scope("/notGood")
-        event.data = "dummy data"
-        event.data_type = str
-        event.meta_data.sender_id = uuid.uuid4()
-        outconnector.handle(event)
-
-        # and then a desired event
-        event.scope = good_scope
-        outconnector.handle(event)
-
-        received = inconnector.raise_event(True)
-        # ignore meta data here
-        event.meta_data = None
-        received.meta_data = None
-        assert received == event
-
-        inconnector.deactivate()
-        outconnector.deactivate()
 
     @pytest.mark.timeout(5)
     def test_user_roundtrip(self):

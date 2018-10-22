@@ -22,7 +22,6 @@ import time
 
 from rsb import Event, Scope
 from rsb.transport.local import (Bus,
-                                 InPullConnector,
                                  InPushConnector,
                                  OutConnector)
 from .transporttest import TransportCheck
@@ -126,13 +125,6 @@ class TestLocalTransport(TransportCheck):
 
     def _get_in_push_connector(self, scope, activate=True):
         connector = InPushConnector()
-        connector.scope = scope
-        if activate:
-            connector.activate()
-        return connector
-
-    def _get_in_pull_connector(self, scope, activate=True):
-        connector = InPullConnector()
         connector.scope = scope
         if activate:
             connector.activate()

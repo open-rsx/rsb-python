@@ -196,51 +196,6 @@ class PushEventReceivingStrategy(EventReceivingStrategy):
         pass
 
 
-class PullEventReceivingStrategy(EventReceivingStrategy):
-    """
-    Superclass for pull-based event receiving.
-
-    .. codeauthor:: jwienke
-    """
-
-    @abc.abstractmethod
-    def set_connectors(self, connectors):
-        pass
-
-    @abc.abstractmethod
-    def raise_event(self, block):
-        """
-        Receive the next event.
-
-        Args:
-            block (bool):
-                if ``True``, wait for the next event. Else, immediately return,
-                potentially a ``None``.
-        """
-        pass
-
-
-class FirstConnectorPullEventReceivingStrategy(PullEventReceivingStrategy):
-    """
-    Directly receives events only from the first provided connector.
-
-    .. codeauthor:: jwienke
-    """
-
-    def set_connectors(self, connectors):
-        if not connectors:
-            raise ValueError("There must be at least on connector")
-        self._connectors = connectors
-
-    def raise_event(self, block):
-        assert self._connectors
-
-        event = self._connectors[0].raise_event(block)
-        if event:
-            event.meta_data.set_deliver_time()
-        return event
-
-
 class ParallelEventReceivingStrategy(PushEventReceivingStrategy):
     """
     Dispatches events to multiple handlers in parallel.
@@ -644,43 +599,6 @@ class InPushRouteConfigurator(Configurator):
         self._receiving_strategy.remove_filter(the_filter)
         for connector in self.connectors:
             connector.filter_notify(the_filter, rsb.filter.FilterAction.REMOVE)
-
-
-class InPullRouteConfigurator(Configurator):
-    """
-    Manages pull-based event receiving.
-
-    Instances of this class manage the pull-based receiving of events via one
-    or more :obj:`rsb.transport.Connector` s and an
-    :obj:`PullEventReceivingStrategy`.
-
-    .. codeauthor:: jwienke
-    """
-
-    def __init__(self, connectors=None, receiving_strategy=None):
-        """
-        Create a new configurator.
-
-        Args:
-            connectors:
-                Connectors through which events are received.
-            receiving_strategy:
-                The event receiving strategy according to which the dispatching
-                of incoming events should be performed.
-        """
-        super().__init__(connectors)
-
-        self._logger = rsb.util.get_logger_by_class(self.__class__)
-
-        if receiving_strategy is None:
-            self._receiving_strategy = \
-                FirstConnectorPullEventReceivingStrategy()
-        else:
-            self._receiving_strategy = receiving_strategy
-        self._receiving_strategy.set_connectors(connectors)
-
-    def get_receiving_strategy(self):
-        return self._receiving_strategy
 
 
 class OutRouteConfigurator(Configurator):

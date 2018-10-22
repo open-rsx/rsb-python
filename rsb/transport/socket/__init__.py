@@ -916,9 +916,6 @@ class TransportFactory(rsb.transport.TransportFactory):
     def create_in_push_connector(self, converters, options):
         return InPushConnector(converters=converters, options=options)
 
-    def create_in_pull_connector(self, converters, options):
-        raise NotImplementedError()
-
     def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)
 

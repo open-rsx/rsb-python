@@ -128,29 +128,6 @@ class InPushConnector(Connector):
         pass
 
 
-class InPullConnector(Connector):
-    """
-    Superclass for connectors that receive events using a pull style.
-
-    .. codeauthor:: jwienke
-    """
-
-    @abc.abstractmethod
-    def raise_event(self, block):
-        """
-        Return the next received event.
-
-        Args:
-            block (bool):
-                If ``True``, wait for the next event, else immediately return,
-                possibly ``None``.
-        Returns:
-            rsb.Event or ``None``
-                The next event or ``None`` if ``block`` is ``False``.
-        """
-        pass
-
-
 class OutConnector(Connector):
     """
     Superclass for connectors sending events to the outside world.
@@ -279,23 +256,6 @@ class TransportFactory(metaclass=abc.ABCMeta):
 
         Returns:
             rsb.transport.InPushConnector:
-                the new connector instance
-        """
-        pass
-
-    @abc.abstractmethod
-    def create_in_pull_connector(self, converters, options):
-        """
-        Create a new :obj:`InPullConnector` for the represented transport.
-
-        Args:
-            converters (ConverterSelectionStrategy):
-                the converters to use for this type
-            options (dict of str):
-                options for the new connector
-
-        Returns:
-            rsb.transport.InPullConnector:
                 the new connector instance
         """
         pass
