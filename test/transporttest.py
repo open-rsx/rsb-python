@@ -210,53 +210,6 @@ class TransportCheck(metaclass=abc.ABCMeta):
         listener.deactivate()
 
     @pytest.mark.timeout(5)
-    def test_user_pull_roundtrip(self):
-        scope = Scope("/test/it/pull")
-        try:
-            in_connector = self._get_in_pull_connector(scope, activate=False)
-        except NotImplementedError:
-            return
-        out_connector = self._get_out_connector(scope, activate=False)
-
-        out_configurator = rsb.eventprocessing.OutRouteConfigurator(
-            connectors=[out_connector])
-        in_configurator = rsb.eventprocessing.InPullRouteConfigurator(
-            connectors=[in_connector])
-
-        publisher = create_informer(scope,
-                                    data_type=str,
-                                    configurator=out_configurator)
-        reader = create_reader(scope, configurator=in_configurator)
-
-        data1 = "a string to test"
-        sent_event = Event(EventId(uuid.uuid4(), 0))
-        sent_event.data = data1
-        sent_event.data_type = str
-        sent_event.scope = scope
-        sent_event.meta_data.set_user_info("test", "it")
-        sent_event.meta_data.set_user_info("test again", "it works?")
-        sent_event.meta_data.set_user_time("blubb", 234234)
-        sent_event.meta_data.set_user_time("bla", 3434343.45)
-        sent_event.add_cause(EventId(uuid.uuid4(), 1323))
-        sent_event.add_cause(EventId(uuid.uuid4(), 42))
-
-        publisher.publish_event(sent_event)
-
-        result_event = reader.read(True)
-        assert result_event.meta_data.create_time <= \
-            result_event.meta_data.send_time
-        assert result_event.meta_data.send_time <= \
-            result_event.meta_data.receive_time
-        assert result_event.meta_data.receive_time <= \
-            result_event.meta_data.deliver_time
-        sent_event.meta_data.receive_time = result_event.meta_data.receive_time
-        sent_event.meta_data.deliver_time = result_event.meta_data.deliver_time
-        assert sent_event == result_event
-
-        reader.deactivate()
-        publisher.deactivate()
-
-    @pytest.mark.timeout(5)
     def test_hierarchy_sending(self):
 
         send_scope = Scope("/this/is/a/test")
