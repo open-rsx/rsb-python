@@ -17,6 +17,9 @@ env:
 
 jobs:
   include:
+    - stage: check
+      script:
+        - tox -e check
     - stage: archive
       script:
         - python setup.py bdist_wheel
