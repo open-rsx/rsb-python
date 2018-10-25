@@ -19,6 +19,7 @@
 # ============================================================
 
 from threading import Condition
+import uuid
 
 import pytest
 
@@ -81,7 +82,7 @@ class TestLocalServer:
                     methods=[('foo', lambda x: x, str, str)])
 
 
-class TestRoundTrip:
+class TestRpcRoundTrip:
 
     def test_round_trip(self):
 
@@ -165,3 +166,52 @@ class TestRoundTrip:
                     for x in range(num_parallel_calls)]
                 for r in results:
                     r.get(10)
+
+
+class TestReader:
+
+    @pytest.mark.timeout(5)
+    def test_roundtrip(self):
+        scope = rsb.Scope("/test/it")
+        reader = rsb.create_reader(scope)
+        informer = rsb.create_informer(scope, data_type=str)
+
+        try:
+
+            data1 = "a string to test"
+            sent_event = rsb.Event(rsb.EventId(uuid.uuid4(), 0))
+            sent_event.data = data1
+            sent_event.data_type = str
+            sent_event.scope = scope
+            sent_event.meta_data.set_user_info("test", "it")
+            sent_event.meta_data.set_user_info("test again", "it works?")
+            sent_event.meta_data.set_user_time("blubb", 234234.0)
+            sent_event.meta_data.set_user_time("bla", 3434343.45)
+            sent_event.add_cause(rsb.EventId(uuid.uuid4(), 1323))
+            sent_event.add_cause(rsb.EventId(uuid.uuid4(), 42))
+
+            informer.publish_event(sent_event)
+
+            received_event = reader.read(block=True)
+
+            assert received_event.meta_data.create_time <= \
+                received_event.meta_data.send_time
+            assert received_event.meta_data.send_time <= \
+                received_event.meta_data.receive_time
+            assert received_event.meta_data.receive_time <= \
+                received_event.meta_data.deliver_time
+            sent_event.meta_data.receive_time = \
+                received_event.meta_data.receive_time
+            sent_event.meta_data.deliver_time = \
+                received_event.meta_data.deliver_time
+            # HACK: floating point precision leads to an imprecision here,
+            # avoid this.
+            sent_event.meta_data.send_time = \
+                received_event.meta_data.send_time
+            sent_event.meta_data.create_time = \
+                received_event.meta_data.create_time
+            assert sent_event == received_event
+
+        finally:
+            informer.deactivate()
+            reader.deactivate()

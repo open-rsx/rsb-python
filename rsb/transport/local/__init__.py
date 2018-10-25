@@ -29,7 +29,6 @@ without serialization overhead.
 
 import os
 import platform
-import queue
 from threading import RLock
 
 from rsb import transport
@@ -129,9 +128,9 @@ class OutConnector(transport.OutConnector):
         return self._bus.get_transport_url()
 
 
-class InPushConnector(transport.InPushConnector):
+class InConnector(transport.InConnector):
     """
-    InPushConnector for the local transport.
+    InConnector for the local transport.
 
     .. codeauthor:: jwienke
     """
@@ -169,35 +168,6 @@ class InPushConnector(transport.InPushConnector):
         return self._bus.get_transport_url()
 
 
-class InPullConnector(transport.InPullConnector):
-
-    def __init__(
-            self, bus=global_bus, converters=None, options=None, **kwargs):
-        super().__init__(wire_type=object, **kwargs)
-        self._bus = bus
-        self._event_queue = queue.Queue()
-
-    def activate(self):
-        assert self.scope is not None
-        self._bus.add_sink(self)
-
-    def deactivate(self):
-        self._bus.remove_sink(self)
-
-    def set_quality_of_service_spec(self, qos):
-        pass
-
-    def handle(self, event):
-        event.meta_data.set_receive_time()
-        self._event_queue.put(event)
-
-    def raise_event(self, block):
-        try:
-            return self._event_queue.get(block)
-        except queue.Empty:
-            return None
-
-
 class TransportFactory(transport.TransportFactory):
     """
     :obj:`TransportFactory` implementation for the local transport.
@@ -213,11 +183,8 @@ class TransportFactory(transport.TransportFactory):
     def remote(self):
         return False
 
-    def create_in_push_connector(self, converters, options):
-        return InPushConnector(converters=converters, options=options)
-
-    def create_in_pull_connector(self, converters, options):
-        return InPullConnector(converters=converters, options=options)
+    def create_in_connector(self, converters, options):
+        return InConnector(converters=converters, options=options)
 
     def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)

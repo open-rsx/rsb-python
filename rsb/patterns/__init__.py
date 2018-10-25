@@ -28,12 +28,14 @@ For instance, RPC based on the basic participants :obj:`rsb.Listener` and
 .. codeauthor:: jwienke
 """
 
+import queue
 import threading
 
 import rsb
 from rsb.eventprocessing import FullyParallelEventReceivingStrategy
 import rsb.filter
 from rsb.patterns.future import DataFuture, Future
+from rsb.util import get_logger_by_class
 
 
 # TODO superclass for RSB Errors?
@@ -617,3 +619,104 @@ class RemoteServer(Server):
             return super().__getattr__(name)
         except AttributeError:
             return self.ensure_method(name)
+
+######################################################################
+#
+# Reader
+#
+######################################################################
+
+
+class Reader(rsb.Participant):
+    """
+    Provides a pull model for fetching received events.
+
+    Clients need to continuously call the :meth:`read` method to fetch
+    events. Internally, events are buffered in a queue until they are picked up
+    by clients.
+
+    .. codeauthor:: jwienke
+    """
+
+    def __init__(self, scope, config, queue_size=1):
+        """
+        Create a new :obj:`Reader` for ``scope``.
+
+        Args:
+            scope (Scope or accepted by Scope constructor):
+                The scope of the channel in which the new reader should
+                participate.
+            config (ParticipantConfig):
+                The configuration that should be used by this :obj:`Reader`.
+            queue_size (int):
+                Size of the internal queue of events that are held by the
+                reader. If ``read`` isn't called fast enough the underlying
+                transport will be blocked. Negative numbers create an infinite
+                queue.
+
+        See Also:
+            :meth:`rsb.create_reader`
+        """
+        super().__init__(scope, config)
+
+        self._logger = get_logger_by_class(self.__class__)
+
+        self._listener = None
+        self._mutex = threading.Lock()
+        self._active = False
+        self._queue = queue.Queue(maxsize=queue_size)
+
+        self.activate()
+
+    def __del__(self):
+        if self._active:
+            self.deactivate()
+
+    def activate(self):
+        with self._mutex:
+            if self._active:
+                raise RuntimeError('Activate called even though reader '
+                                   'was already active')
+
+            self._logger.info('Activating reader')
+
+            self._listener = rsb.create_listener(self.scope, self.config,
+                                                 parent=self)
+            self._listener.add_handler(self._handle_event)
+
+            self._active = True
+
+        super().activate()
+
+    def deactivate(self):
+        with self._mutex:
+            if not self._active:
+                raise RuntimeError("Deactivate called even though listener "
+                                   "was not active")
+
+            self._logger.info("Deactivating listener")
+
+            self._listener.deactivate()
+
+            self._active = False
+
+        super().deactivate()
+
+    def _handle_event(self, event):
+        self._queue.put(event, block=True)
+
+    def read(self, block=True):
+        """
+        Read the next event from the wire.
+
+        Optionally blocks until an event is available.
+
+        Args:
+            block (bool):
+                If ``True``, block until the next event is received.
+
+        Returns:
+            rsb.Event
+                the received event
+        """
+        return self._queue.get(block=block)

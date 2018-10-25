@@ -102,7 +102,7 @@ class Connector(metaclass=abc.ABCMeta):
         pass
 
 
-class InPushConnector(Connector):
+class InConnector(Connector):
     """
     Superclass for in-direction connectors that use asynchronous notification.
 
@@ -124,29 +124,6 @@ class InPushConnector(Connector):
             action:
                 action called if a new message is received from the connector.
                 Must accept an :obj:`Event` as parameter.
-        """
-        pass
-
-
-class InPullConnector(Connector):
-    """
-    Superclass for connectors that receive events using a pull style.
-
-    .. codeauthor:: jwienke
-    """
-
-    @abc.abstractmethod
-    def raise_event(self, block):
-        """
-        Return the next received event.
-
-        Args:
-            block (bool):
-                If ``True``, wait for the next event, else immediately return,
-                possibly ``None``.
-        Returns:
-            rsb.Event or ``None``
-                The next event or ``None`` if ``block`` is ``False``.
         """
         pass
 
@@ -268,9 +245,9 @@ class TransportFactory(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def create_in_push_connector(self, converters, options):
+    def create_in_connector(self, converters, options):
         """
-        Create a new :obj:`InPushConnector` for the represented transport.
+        Create a new :obj:`InConnector` for the represented transport.
 
         Args:
             converters (ConverterSelectionStrategy):
@@ -278,24 +255,7 @@ class TransportFactory(metaclass=abc.ABCMeta):
                 options for the new connector
 
         Returns:
-            rsb.transport.InPushConnector:
-                the new connector instance
-        """
-        pass
-
-    @abc.abstractmethod
-    def create_in_pull_connector(self, converters, options):
-        """
-        Create a new :obj:`InPullConnector` for the represented transport.
-
-        Args:
-            converters (ConverterSelectionStrategy):
-                the converters to use for this type
-            options (dict of str):
-                options for the new connector
-
-        Returns:
-            rsb.transport.InPullConnector:
+            rsb.transport.InConnector:
                 the new connector instance
         """
         pass

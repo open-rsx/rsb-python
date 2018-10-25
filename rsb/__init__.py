@@ -1633,9 +1633,9 @@ class Participant:
 
     @classmethod
     def get_connectors(cls, direction, config):
-        if direction not in ('in', 'in-pull', 'out'):
+        if direction not in ('in', 'out'):
             raise ValueError('Invalid direction: {} (valid directions '
-                             'are "in", "in-pull" and "out")'.format(
+                             'are "in" and "out")'.format(
                                  direction))
         if len(config.enabled_transports) == 0:
             raise ValueError(
@@ -1647,12 +1647,8 @@ class Participant:
             converters = converters_from_transport_config(transport)
             if direction == 'in':
                 transports.append(
-                    factory.create_in_push_connector(converters,
-                                                     transport.options))
-            elif direction == 'in-pull':
-                transports.append(
-                    factory.create_in_pull_connector(converters,
-                                                     transport.options))
+                    factory.create_in_connector(converters,
+                                                transport.options))
             elif direction == 'out':
                 transports.append(
                     factory.create_out_connector(converters,
@@ -1859,7 +1855,7 @@ class Listener(Participant):
             for connector in connectors:
                 connector.quality_of_service_spec = \
                     config.quality_of_service_spec
-            self._configurator = rsb.eventprocessing.InPushRouteConfigurator(
+            self._configurator = rsb.eventprocessing.InRouteConfigurator(
                 connectors=connectors,
                 receiving_strategy=receiving_strategy)
         self._configurator.scope = self.scope
@@ -1975,110 +1971,6 @@ class Listener(Participant):
             return list(self._handlers)
 
 
-class Reader(Participant):
-    """
-    Receives events by manually pulling them from the wire.
-
-    Clients need to continuously call the :meth:`read` method to receive
-    events. Being too slow to receive events will usually terminate the
-    connection and is fatal.
-
-    .. codeauthor:: jwienke
-    """
-
-    def __init__(self, scope, config, configurator=None,
-                 receiving_strategy=None):
-        """
-        Create a new :obj:`Reader` for ``scope``.
-
-        Args:
-            scope (Scope or accepted by Scope constructor):
-                The scope of the channel in which the new reader should
-                participate.
-            config (ParticipantConfig):
-                The configuration that should be used by this :obj:`Reader`.
-            configurator:
-                An in route configurator to manage the receiving of events from
-                in connectors and their filtering and dispatching.
-
-        See Also:
-            :obj:`create_reader`
-        """
-        super().__init__(scope, config)
-
-        self._logger = get_logger_by_class(self.__class__)
-
-        self._filters = []
-        self._configurator = None
-        self._active = False
-        self._mutex = threading.Lock()
-
-        if configurator:
-            self._configurator = configurator
-        else:
-            connectors = self.get_connectors('in-pull', config)
-            for connector in connectors:
-                connector.quality_of_service_spec = \
-                    config.quality_of_service_spec
-            self._configurator = rsb.eventprocessing.InPullRouteConfigurator(
-                connectors=connectors, receiving_strategy=receiving_strategy)
-        self._configurator.scope = self.scope
-
-        self._activate()
-
-    def __del__(self):
-        if self._active:
-            self.deactivate()
-
-    @property
-    def transport_urls(self):
-        return self._configurator.transport_urls
-
-    def _activate(self):
-        with self._mutex:
-            if self._active:
-                raise RuntimeError("Activate called even though listener "
-                                   "was already active")
-
-            self._logger.info("Activating listener")
-
-            self._configurator.activate()
-
-            self._active = True
-
-        self.activate()
-
-    def deactivate(self):
-        with self._mutex:
-            if not self._active:
-                raise RuntimeError("Deactivate called even though listener "
-                                   "was not active")
-
-            self._logger.info("Deactivating listener")
-
-            self._configurator.deactivate()
-
-            self._active = False
-
-        super().deactivate()
-
-    def read(self, block=True):
-        """
-        Read the next event from the wire.
-
-        Optionally blocks until an event is available.
-
-        Args:
-            block (bool):
-                If ``True``, block until the next event is received.
-
-        Returns:
-            rsb.Event
-                the received event
-        """
-        return self._configurator.get_receiving_strategy().raise_event(block)
-
-
 _default_configuration_options = _config_default_sources_to_dict()
 _default_participant_config = ParticipantConfig.from_dict(
     _default_configuration_options)
@@ -2189,8 +2081,8 @@ def create_reader(scope, config=None, parent=None, **kwargs):
         Reader:
             a new :obj:`Reader` object.
     """
-    return create_participant(Reader, scope, config, parent,
-                              **kwargs)
+    from rsb.patterns import Reader
+    return create_participant(Reader, scope, config, parent, **kwargs)
 
 
 def create_informer(scope, config=None, parent=None, data_type=object,

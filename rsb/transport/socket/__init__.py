@@ -351,7 +351,7 @@ class Bus:
         """
         self._logger.info('Adding connector %s', connector)
         with self.lock:
-            if isinstance(connector, InPushConnector):
+            if isinstance(connector, InConnector):
                 self._dispatcher.add_sink(connector.scope, connector)
             self._connectors.append(connector)
 
@@ -365,7 +365,7 @@ class Bus:
         """
         self._logger.info('Removing connector %s', connector)
         with self.lock:
-            if isinstance(connector, InPushConnector):
+            if isinstance(connector, InConnector):
                 self._dispatcher.remove_sink(connector.scope, connector)
             self._connectors.remove(connector)
             if not self._connectors:
@@ -387,7 +387,7 @@ class Bus:
                 return
 
             # Distribute the notification to participants in our
-            # process via InPushConnector instances.
+            # process via InConnector instances.
             self._to_connectors(notification)
 
     def handle_outgoing(self, notification):
@@ -403,7 +403,7 @@ class Bus:
             # network connections.
             failing = self._to_connections(notification)
             # Distribute the notification to participants in our own
-            # process via InPushConnector instances.
+            # process via InConnector instances.
             self._to_connectors(notification)
         # there are only failing connection in case of an unorderly shutdown.
         # So the shutdown protocol does not apply here and
@@ -829,8 +829,7 @@ class Connector(rsb.transport.Connector,
         return 'socket://' + self._host + ':' + str(self._port) + query
 
 
-class InPushConnector(Connector,
-                      rsb.transport.InPushConnector):
+class InConnector(Connector, rsb.transport.InConnector):
     """
     Receives events from a bus represented by a socket connection.
 
@@ -913,11 +912,8 @@ class TransportFactory(rsb.transport.TransportFactory):
     def remote(self):
         return True
 
-    def create_in_push_connector(self, converters, options):
-        return InPushConnector(converters=converters, options=options)
-
-    def create_in_pull_connector(self, converters, options):
-        raise NotImplementedError()
+    def create_in_connector(self, converters, options):
+        return InConnector(converters=converters, options=options)
 
     def create_out_connector(self, converters, options):
         return OutConnector(converters=converters, options=options)
