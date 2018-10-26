@@ -346,7 +346,7 @@ class LocalServer(Server):
                 communication performed by this server.
 
         See Also:
-            :obj:`rsb.create_server`
+            :obj:`rsb.create_local_server`
         """
         super().__init__(scope, config)
 

@@ -550,7 +550,7 @@ class IntrospectionSender:
 
         self._listener.add_handler(handle)
 
-        self._server = rsb.create_server(
+        self._server = rsb.create_local_server(
             process_scope(self._host.host_id or self._host.hostname,
                           str(self._process.process_id)))
 

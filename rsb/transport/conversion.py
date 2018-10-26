@@ -70,8 +70,8 @@ def notification_to_event(notification, wire_data, wire_schema, converter):
 def event_to_notification(
         notification, event, wire_schema, data, meta_data=True):
     # Identification information
-    notification.event_id.sender_id = event.sender_id.bytes
-    notification.event_id.sequence_number = event.sequence_number
+    notification.event_id.sender_id = event.event_id.participant_id.bytes
+    notification.event_id.sequence_number = event.event_id.sequence_number
 
     # Payload [fragment]
     notification.data = data
