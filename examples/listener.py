@@ -20,13 +20,18 @@
 
 # mark-start::body
 import logging
+import threading
 import time
 
 import rsb
 
 
+_received_event = threading.Event()
+
+
 def handle(event):
     print("Received event: {}".format(event))
+    _received_event.set()
 
 
 if __name__ == '__main__':
@@ -42,7 +47,8 @@ if __name__ == '__main__':
         # objects with the received event as the single argument.
         listener.add_handler(handle)
 
-        # Wait for events; clean up when interrupted.
-        while True:
-            time.sleep(1)
+        # Wait for an event to arrive and terminate afterwards
+        _received_event.wait()
+        # Give the informer some more time to finish for the socket transport
+        time.sleep(1)
 # mark-end::body

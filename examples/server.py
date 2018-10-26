@@ -20,6 +20,7 @@
 
 # mark-start::body
 import logging
+import threading
 import time
 
 import rsb
@@ -35,13 +36,22 @@ if __name__ == '__main__':
         # Create a function which processes requests and returns a
         # result. Note that the name of the function does not determine
         # the name of the exposed method. See addMethod below.
+        calls = [0]
+        condition = threading.Condition()
+
         def echo(x):
+            with condition:
+                calls[0] = calls[0] + 1
+                condition.notify_all()
             return x
 
         # Add the function to the server under the name "echo".
         server.add_method('echo', echo, str, str)
 
-        # Wait for method calls by clients.
-        while True:
-            time.sleep(1)
+        # Wait for all method calls made by the example client (2)
+        with condition:
+            while calls[0] < 2:
+                condition.wait()
+        # Give the client some more time to finish for the socket transport
+        time.sleep(1)
 # mark-end::body
