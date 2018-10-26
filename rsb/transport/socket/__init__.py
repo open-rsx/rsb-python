@@ -89,7 +89,7 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
         self._thread = None
         self._socket = None
 
-        self._error_hook = None
+        self._disconnect_hook = None
 
         self._active = False
         self._active_shutdown = False
@@ -124,12 +124,12 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
             self.deactivate()
 
     @property
-    def error_hook(self):
-        return self._error_hook
+    def disconnect_hook(self):
+        return self._disconnect_hook
 
-    @error_hook.setter
-    def error_hook(self, new_value):
-        self._error_hook = new_value
+    @disconnect_hook.setter
+    def disconnect_hook(self, new_value):
+        self._disconnect_hook = new_value
 
     # receiving
 
@@ -172,9 +172,11 @@ class BusConnection(rsb.eventprocessing.BroadcastProcessor):
                 break
             except Exception as e:
                 self._logger.warn('Receive error: %s', e, exc_info=True)
-                if self.error_hook is not None:
-                    self.error_hook(e)
                 break
+
+        if self.disconnect_hook is not None:
+            self.disconnect_hook()
+
         return
 
     # sending
@@ -306,7 +308,7 @@ class Bus:
                     self.handle_incoming((connection, notification))
             connection.add_handler(Handler())
 
-            def remove_and_deactivate(exception):
+            def remove_and_deactivate():
                 self.remove_connection(connection)
                 try:
                     connection.deactivate()
@@ -314,7 +316,7 @@ class Bus:
                     self._logger.warning(
                         "Error while deactivating connection %s: %s",
                         connection, e, exc_info=True)
-            connection.error_hook = remove_and_deactivate
+            connection.disconnect_hook = remove_and_deactivate
             connection.activate()
 
     def remove_connection(self, connection):
@@ -622,6 +624,7 @@ class BusServer(Bus):
         self._backlog = backlog
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._acceptor_thread = None
+        self._active_shutdown = False
 
     def __del__(self):
         if self.active:
@@ -648,7 +651,7 @@ class BusServer(Bus):
                         'Unexpected timeout in accept_clients: "%s"', e,
                         exc_info=True)
             except Exception as e:
-                if self.active:
+                if not self._active_shutdown:
                     self._logger.error('Exception in accept_clients: "%s"', e,
                                        exc_info=True)
                 else:
@@ -668,8 +671,6 @@ class BusServer(Bus):
     # State management
 
     def activate(self):
-        super().activate()
-
         # Bind the socket and start listening
         self._logger.info('Opening listen socket %s:%d',
                           '0.0.0.0', self._port)
@@ -680,9 +681,12 @@ class BusServer(Bus):
         self._acceptor_thread = threading.Thread(target=self.accept_clients)
         self._acceptor_thread.start()
 
+        super().activate()
+
     def deactivate(self):
         if not self.active:
             raise RuntimeError('Trying to deactivate inactive BusServer')
+        self._active_shutdown = True
 
         # If necessary, close the listening socket. This causes an
         # exception in the acceptor thread.
@@ -707,6 +711,7 @@ class BusServer(Bus):
             self._acceptor_thread.join()
 
         super().deactivate()
+        self._active_shutdown = False
 
 
 def remove_connector(bus, connector):
