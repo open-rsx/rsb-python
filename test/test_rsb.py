@@ -558,7 +558,7 @@ class TestContextManager:
 
     def test_rpc_roundtrip(self):
 
-        with rsb.create_server(self.scope) as server, \
+        with rsb.create_local_server(self.scope) as server, \
                 rsb.create_remote_server(self.scope) as client:
 
             method_name = 'test'

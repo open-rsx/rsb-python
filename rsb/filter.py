@@ -119,7 +119,7 @@ class OriginFilter(AbstractFilter):
         return self._invert
 
     def match(self, event):
-        result = self.origin == event.sender_id
+        result = self.origin == event.event_id.participant_id
         if self.invert:
             return not result
         else:

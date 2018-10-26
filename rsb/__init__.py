@@ -27,7 +27,7 @@ the RSB python implementation. It is the entry point for most users and only in
 advanced cases client programs need to use classes from other modules.
 
 In order to create basic objects have a look at the functions
-:obj:`create_informer`, :obj:`create_listener`, :obj:`create_server` and
+:obj:`create_informer`, :obj:`create_listener`, :obj:`create_local_server` and
 :obj:`create_remote_server`.
 
 .. codeauthor:: jwienke
@@ -1261,20 +1261,6 @@ class Event:
             self._causes = []
 
     @property
-    def sequence_number(self):
-        """
-        Return the sequence number of this event.
-
-        .. deprecated:: 0.13
-           use :meth:`getId` instead
-
-        Returns:
-            int:
-                sequence number of the event.
-        """
-        return self.event_id.sequence_number
-
-    @property
     def event_id(self):
         """
         Return the id of this event.
@@ -1319,21 +1305,6 @@ class Event:
         """
 
         self._scope = scope
-
-    @property
-    def sender_id(self):
-        """
-        Return the sender id of this event.
-
-        .. deprecated:: 0.13
-
-           use :func:`getId` instead
-
-        Returns:
-            uuid.UUID:
-                sender id
-        """
-        return self.event_id.participant_id
 
     @property
     def method(self):
@@ -1576,7 +1547,7 @@ class Participant:
 
         See Also:
             :obj:`create_listener`, :obj:`create_informer`,
-            :obj:`create_server`, :obj:`create_remote_server`
+            :obj:`create_local_server`, :obj:`create_remote_server`
         """
         self._id = uuid.uuid4()
         self._scope = Scope.ensure_scope(scope)
@@ -2194,22 +2165,6 @@ def create_remote_server(scope, config=None, parent=None, **kwargs):
     import rsb.patterns as patterns
     return create_participant(patterns.RemoteServer, scope, config,
                               parent=parent, **kwargs)
-
-
-def create_server(scope, config=None, parent=None,
-                  provider=None, expose=None, methods=None,
-                  **kwargs):
-    """
-    Like :obj:`create_local_server`.
-
-    .. deprecated:: 0.12
-
-       Use :obj:`create_local_server` instead.
-    """
-    return create_local_server(
-        scope, config, parent,
-        provider=provider, expose=expose, methods=methods,
-        **kwargs)
 
 
 _register_default_transports()
