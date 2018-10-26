@@ -38,6 +38,7 @@ import configparser
 import copy
 from enum import Enum
 from functools import reduce
+import importlib
 import logging
 import os
 import platform
@@ -65,23 +66,6 @@ class _NullHandler(logging.Handler):
 
 
 _logger.addHandler(_NullHandler())
-
-
-_default_transports_registered = False
-_transport_registration_lock = threading.RLock()
-
-
-def _register_default_transports():
-    """Register all available transports."""
-    global _default_transports_registered
-    with _transport_registration_lock:
-        if _default_transports_registered:
-            return
-        _default_transports_registered = True
-        import rsb.transport.local as local
-        local.initialize()
-        import rsb.transport.socket as socket
-        socket.initialize()
 
 
 class QualityOfServiceSpec:
@@ -2167,4 +2151,41 @@ def create_remote_server(scope, config=None, parent=None, **kwargs):
                               parent=parent, **kwargs)
 
 
-_register_default_transports()
+_plugins_loaded = False
+_plugins_lock = threading.RLock()
+
+
+def _load_plugins():
+    global _plugins_loaded
+
+    with _plugins_lock:
+        if _plugins_loaded:
+            return
+        _plugins_loaded = True
+
+        default_plugins = ['rsb.transport.local', 'rsb.transport.socket']
+
+        configured_plugins = _default_configuration_options.get(
+            'plugins.python.load', '').split(':')
+        configured_plugins = [p.strip()
+                              for p in configured_plugins
+                              if len(p.strip()) > 0]
+
+        # deduplicate
+        all_plugins = set(default_plugins + configured_plugins)
+
+        for plugin_name in all_plugins:
+            _logger.debug('Trying to load plugin with name %s', plugin_name)
+
+            try:
+                plugin = importlib.import_module(plugin_name)
+                plugin.rsb_initialize()
+            except (AttributeError, ModuleNotFoundError) as e:
+                raise RuntimeError(
+                    'Unable to load RSB plugin "{name}"'.format(
+                        name=plugin_name)) from e
+
+            _logger.info('Plugin %s successfully loaded', plugin_name)
+
+
+_load_plugins()
