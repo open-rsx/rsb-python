@@ -20,6 +20,7 @@
 
 # mark-start::body
 import logging
+import time
 
 import rsb
 
@@ -31,8 +32,9 @@ if __name__ == '__main__':
     # Create a reader on the specified scope.
     with rsb.create_reader("/example/informer") as reader:
 
-        # Wait for event and print them
-        while True:
-            event = reader.read()
-            print("Received event: {}".format(event))
+        # Wait for the event and print it
+        event = reader.read()
+        print("Received event: {}".format(event))
+        # Give the informer some more time to finish for the socket transport
+        time.sleep(1)
 # mark-end::body
