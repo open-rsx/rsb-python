@@ -1949,21 +1949,6 @@ def set_default_participant_config(config):
     _default_participant_config = config
 
 
-_introspection_display_name = _default_configuration_options.get(
-    'introspection.displayname')
-_introspection_initialized = False
-_introspection_mutex = threading.RLock()
-
-
-def _initialize_introspection():
-    global _introspection_initialized
-    import rsb.introspection as introspection
-    with _introspection_mutex:
-        if not _introspection_initialized:
-            introspection.initialize(_introspection_display_name)
-            _introspection_initialized = True
-
-
 def create_participant(cls, scope, config, parent=None, **kwargs):
     """
     Create and returns a new participant of type `cls`.
@@ -1987,9 +1972,6 @@ def create_participant(cls, scope, config, parent=None, **kwargs):
     """
     if config is None:
         config = get_default_participant_config()
-
-    if config.introspection:
-        _initialize_introspection()
 
     participant = cls(scope, config=config, **kwargs)
     participant_creation_hook.run(participant, parent=parent)
@@ -2172,7 +2154,9 @@ def _load_plugins():
                               if len(p.strip()) > 0]
 
         # deduplicate
-        all_plugins = set(default_plugins + configured_plugins)
+        all_plugins = list(set(default_plugins + configured_plugins))
+        # append introspection, because it might need configured transports
+        all_plugins.append('rsb.introspection')
 
         for plugin_name in all_plugins:
             _logger.debug('Trying to load plugin with name %s', plugin_name)

@@ -35,6 +35,7 @@ import getpass
 import os
 import platform
 import sys
+import threading
 import uuid
 
 import rsb
@@ -726,26 +727,34 @@ def handle_participant_destruction(participant):
         _sender = None
 
 
-def initialize(display_name=None):
+_introspection_initialized = False
+_introspection_mutex = threading.RLock()
+
+
+def rsb_initialize():
     """
     Initialize the introspection module.
 
-    Clients need to ensure that this method is called only once.
-
-    Args:
-        display_name (str or NoneType if not set, optional):
-            a user-defined process name to use in the introspection
+    Plugin hook implementation.
     """
+    global _introspection_initialized
     global _display_name
 
-    _display_name = display_name
+    with _introspection_mutex:
+        if not _introspection_initialized:
+            _introspection_initialized = True
 
-    # Register converters for introspection messages
-    for clazz in [Hello, Bye]:
-        converter = rsb.converter.ProtocolBufferConverter(message_class=clazz)
-        rsb.converter.register_global_converter(
-            converter, replace_existing=True)
+            _display_name = rsb._default_configuration_options.get(
+                'introspection.displayname')
 
-    rsb.participant_creation_hook.add_handler(handle_participant_creation)
-    rsb.participant_destruction_hook.add_handler(
-        handle_participant_destruction)
+            # Register converters for introspection messages
+            for clazz in [Hello, Bye]:
+                converter = rsb.converter.ProtocolBufferConverter(
+                    message_class=clazz)
+                rsb.converter.register_global_converter(
+                    converter, replace_existing=True)
+
+            rsb.participant_creation_hook.add_handler(
+                handle_participant_creation)
+            rsb.participant_destruction_hook.add_handler(
+                handle_participant_destruction)
