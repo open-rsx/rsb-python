@@ -23,7 +23,7 @@ import pytest
 import rsb
 from rsb.converter import get_global_converter_map
 from rsb.transport.socket import InConnector, OutConnector
-from .transporttest import TransportCheck
+from rsb.transport.transporttest import TransportCheck
 
 
 def get_connector(clazz, scope, activate=True, server='auto'):
