@@ -24,7 +24,7 @@ from rsb import Event, Scope
 from rsb.transport.local import (Bus,
                                  InConnector,
                                  OutConnector)
-from .transporttest import TransportCheck
+from rsb.transport.transporttest import TransportCheck
 
 
 class StubSink:
