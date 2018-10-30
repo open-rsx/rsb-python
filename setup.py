@@ -253,7 +253,7 @@ setup(name='rsb-python',
       author='Johannes Wienke',
       author_email='jwienke@techfak.uni-bielefeld.de',
       license='LGPLv3+',
-      url='https://code.cor-lab.org/projects/rsb',
+      url='https://github.com/open-rsx/rsb-python',
       keywords=['middleware', 'bus', 'robotics'],
       classifiers=[
           'Programming Language :: Python',
