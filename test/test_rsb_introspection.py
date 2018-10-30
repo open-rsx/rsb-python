@@ -68,7 +68,7 @@ class TestIntrospectionEvents:
         # The listener must be able to deserialize introspection events. But
         # since it is created without introspection enabled, it does not force
         # the initialization of the introspection module.
-        rsb._initialize_introspection()
+        rsb.introspection.rsb_initialize()
 
         # Collect events in a thread-safe way and make sure the number is
         # right: one event is expected for the creation of the participant,

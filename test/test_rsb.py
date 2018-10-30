@@ -633,3 +633,36 @@ class TestHook:
 
         assert server in self.destruction_calls
         assert method in self.destruction_calls
+
+
+class TestPlugins:
+
+    def test_smoke(self, monkeypatch):
+        import test.testplugin
+        test.testplugin.init_called = False
+
+        monkeypatch.setenv('RSB_PLUGINS_PYTHON_LOAD', 'test.testplugin')
+
+        # after changing the environment, we need to manually reparse the
+        # configuration
+        rsb._default_configuration_options = \
+            rsb._config_default_sources_to_dict()
+
+        # manually trigger plugin loading again
+        rsb._plugins_loaded = False
+        rsb._load_plugins()
+
+        assert test.testplugin.init_called
+
+    def test_runtime_error_on_exception(self, monkeypatch):
+        monkeypatch.setenv('RSB_PLUGINS_PYTHON_LOAD', 'test.doesntexist')
+
+        # after changing the environment, we need to manually reparse the
+        # configuration
+        rsb._default_configuration_options = \
+            rsb._config_default_sources_to_dict()
+
+        # manually trigger plugin loading again
+        rsb._plugins_loaded = False
+        with pytest.raises(RuntimeError):
+            rsb._load_plugins()

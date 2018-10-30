@@ -190,7 +190,7 @@ class TransportFactory(transport.TransportFactory):
         return OutConnector(converters=converters, options=options)
 
 
-def initialize():
+def rsb_initialize():
     try:
         transport.register_transport(TransportFactory())
     except ValueError:
