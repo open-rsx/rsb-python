@@ -638,7 +638,7 @@ class Reader(rsb.Participant):
     .. codeauthor:: jwienke
     """
 
-    def __init__(self, scope, config, queue_size=1):
+    def __init__(self, scope, config, queue_size=-1):
         """
         Create a new :obj:`Reader` for ``scope``.
 
