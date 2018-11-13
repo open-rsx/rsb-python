@@ -67,3 +67,9 @@ jobs:
         on:
           repo: open-rsx/rsb-python
           all_branches: true
+    - stage: trigger
+      if: branch = master AND type = push
+      # erase coverage command, which is not needed here
+      env:
+      script:
+        - bash <(curl https://raw.githubusercontent.com/plume-lib/trigger-travis/master/trigger-travis.sh) open-rsx rsb-integration-test "${TRAVIS_TOKEN}"
